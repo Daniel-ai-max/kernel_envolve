@@ -1,0 +1,55 @@
+{
+  "checked_at_utc": "2026-11-09T18:39:59.931371+00:00",
+  "scope": "Independent final validator self-check only. No agents or search claims. Public self-test seeds are not final-search seeds.",
+  "job_id": "07f399aceb1346f195458f708d6bb9f8",
+  "phase": "Completed",
+  "pods_remaining": 0,
+  "allocated_gpus": 1,
+  "session_limit": 32,
+  "topic_id": "topic_c7b8c988fd46",
+  "work_order_id": "WOC-ff0a397b3590121d",
+  "image": "839084984246.dkr.ecr.ap-south-2.amazonaws.com/pretrain/megatron:verify_batch_invariant_deepep_v2_efa_sm100_prebaked_b300_fa4_3de9f805_908a5adc_cb136@sha256:9da60d0cc131ffca03db54f02910b9b741de4ecc58a8c123b1786965b43aa74b",
+  "source_archive_sha256": "e2e75c5504ad786d47beb60665830acca1133064ddb5ac0e500c3bd3ed36fe15",
+  "verifier_sha256": "dbc1adbf2bb8e9cf5d9a75f89219dbb5ab46ba0a501e414ee7fc98602ac2c701",
+  "probe_sha256": "a563ba6ba89523c46210dd21541780f275d23829a1047c68316d1a1f59023916",
+  "cpu_scenarios": 18,
+  "gpu_scenarios": 21,
+  "faults_rejected_per_device": 15,
+  "correct_controls_per_device": 3,
+  "gpu_full_controls": 3,
+  "raw_report": "search_final_validation_raw.json.gz",
+  "raw_report_sha256": "6fe68fd200ec176263ccff4d630670ba2f3861286da522219adad7ff328f6e2e",
+  "gpu_full_summary": [
+    {
+      "task": "row_sum",
+      "checks": 36,
+      "timed_samples": 240,
+      "all_timed_outputs_verified": true,
+      "gain_by_batch": [
+        -0.011174235054541626,
+        -0.01694597217728888
+      ]
+    },
+    {
+      "task": "matmul",
+      "checks": 36,
+      "timed_samples": 240,
+      "all_timed_outputs_verified": true,
+      "gain_by_batch": [
+        0.0021537197845493683,
+        0.0017647186407525606
+      ]
+    },
+    {
+      "task": "fused_relu",
+      "checks": 36,
+      "timed_samples": 240,
+      "all_timed_outputs_verified": true,
+      "gain_by_batch": [
+        -0.0109128622482344,
+        4.323202628497835e-05
+      ]
+    }
+  ],
+  "notes": "Correct=true means functional verification, not a performance win. Every measured output is checked outside its timing interval. Pilot acceptance is limited to the declared pure forward single-file tasks; no external helpers."
+}

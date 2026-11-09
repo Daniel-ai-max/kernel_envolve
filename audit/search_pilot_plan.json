@@ -27,7 +27,8 @@
     "dtype": "FP32 inputs/outputs, independent FP64 arithmetic oracle rounded to FP32.",
     "precision": "TF32 disabled for the original baseline; a candidate may choose its implementation but must pass the same numerical rules.",
     "shapes": "Exactly the declared public shapes/layouts; final seeds withheld, no undisclosed out-of-domain shapes.",
-    "resources": "Identical initial code, common development evaluator, tool access and reference links; only workflow instructions differ."
+    "resources": "Identical initial code, common development evaluator, tool access and reference links; only workflow instructions differ.",
+    "candidate_format": "One candidate.py with run; installed torch/triton/CUDA compilation tools may be used. No external local helper files in this pilot. The same restriction applies to all arms."
   },
   "order_seed": 20261114,
   "schedule": [
@@ -89,12 +90,11 @@
     "row_sum/task.py": "45019d9b266c5cc88ae26fe6e6e15b98e8b85e9bfde02421c9bc3058596e2276"
   },
   "final_acceptance": {
-    "status": "not_yet_implemented_or_self_checked",
+    "status": "validator_cpu_and_cuda_self_checked; isolation_and_runner_not_yet_validated",
     "required_before_launch": [
       "Freeze the common prompt, exact arm prompts, model configuration and version identities.",
       "Establish independent directories/conversations and enforce no cross-arm candidate access.",
       "Precommit final input seeds outside the agents’ accessible workspace.",
-      "Self-check an independent final validator with correct and incorrect candidates; it must not trust any arm’s promotion decision.",
       "Validate deadline termination, final-source freezing and resource release before starting."
     ],
     "submission": "At the deadline freeze the explicitly declared delivery; do not retrospectively choose the candidate with best final-test score.",
@@ -105,7 +105,9 @@
       "diagnostic/quick/full calls and time",
       "failure and recovery costs"
     ],
-    "pilot_success": "All nine runs terminate within budget with frozen source and complete cost/final-acceptance records. Results validate the experimental procedure, not statistical superiority."
+    "pilot_success": "All nine runs terminate within budget with frozen source and complete cost/final-acceptance records. Results validate the experimental procedure, not statistical superiority.",
+    "verifier_sha256": "dbc1adbf2bb8e9cf5d9a75f89219dbb5ab46ba0a501e414ee7fc98602ac2c701",
+    "self_check_evidence": "search_final_validation.json"
   },
-  "formal_comparison": "After the pilot, at least five independent runs per task/arm with prespecified practical benefit and cost criteria. No full comparison is authorized or scheduled by this plan."
+  "formal_comparison": "After the pilot, at least five independent runs per task/arm with prespecified practical benefit and cost criteria. Expanded model budget and final settings remain to be confirmed; no formal runs are scheduled."
 }
