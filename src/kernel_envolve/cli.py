@@ -5,6 +5,7 @@ import contextlib
 import datetime as dt
 import fcntl
 import json
+import math
 import os
 import signal
 import subprocess
@@ -44,8 +45,8 @@ def evaluate(task, mode="quick", signal_only=False, timeout=300, baseline=False)
     cfg = config(task)
     if signal_only and mode != "quick":
         raise ValueError("Candidate-only timing is available in quick mode only")
-    if timeout <= 0:
-        raise ValueError("timeout must be positive")
+    if not math.isfinite(timeout) or timeout <= 0:
+        raise ValueError("timeout must be finite and positive")
     state = task / ".kernel_envolve"
     (state / "runs").mkdir(parents=True, exist_ok=True)
     with lock(state / "evaluate.lock"):

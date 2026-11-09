@@ -57,3 +57,11 @@ def test_torch_large_integer_and_bfloat16():
     assert_close(a, a.clone(), CFG)
     with pytest.raises(Mismatch):
         assert_close(a + 1, a, CFG)
+
+
+def test_torch_complex_output_keeps_imaginary_component():
+    torch = pytest.importorskip("torch")
+    a = torch.tensor([1 + 1j], dtype=torch.complex64)
+    assert_close(a + 1e-7j, a, CFG)
+    with pytest.raises(Mismatch):
+        assert_close(a + 1j, a, CFG)

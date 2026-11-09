@@ -16,7 +16,9 @@ def host(x):
         return x
     if is_torch(x):
         # NumPy does not represent bfloat16; comparison uses fp64 without changing dtype checks.
-        return x.detach().cpu().to(dtype=__import__("torch").float64).numpy()
+        torch = __import__("torch")
+        dtype = torch.complex128 if x.is_complex() else torch.float64
+        return x.detach().cpu().to(dtype=dtype).numpy()
     raise TypeError("Task inputs/outputs must be NumPy arrays or PyTorch tensors")
 
 
@@ -80,7 +82,7 @@ def assert_close(actual, expected, cfg, path="output"):
         raise Mismatch(f"{path}: dtype, shape or device differs: {actual_sig} vs {expected_sig}")
     a, e = host(actual), host(expected)
     exact = (isinstance(expected, np.ndarray) and expected.dtype.kind in "biu") or (
-        is_torch(expected) and not expected.is_floating_point()
+        is_torch(expected) and not (expected.is_floating_point() or expected.is_complex())
     )
     try:
         if exact:
