@@ -1,0 +1,468 @@
+{
+  "kind": "ako4all-native-cli-comparison",
+  "reference_commit": "bbd0e1cf1ce2fb19d4322a932680f4c3d175d80e",
+  "reference_sha256": "424d31220040d53c98da8d2bba85b78fd91078374b5f6bc28f2c3fb89cd5a5b8",
+  "reference_url": "https://github.com/TongmingLAIC/AKO4ALL/blob/bbd0e1cf1ce2fb19d4322a932680f4c3d175d80e/bench/kernelbench/bench.py",
+  "probe_sha256": "640952801d0faa43695a6a54b8c3b358ba851ebdac996d0ab40b2dbf8debaef0",
+  "evaluator_hash": "2eb9710c3ad61930c5ff4a6d113db96e39635b3e1c83ed7382ff7e9dffdc0c6c",
+  "device": "NVIDIA B300 SXM6 AC",
+  "torch": "2.12.1+cu130",
+  "cuda": "13.0",
+  "python": "3.12.3 (main, Jan 22 2026, 20:57:42) [GCC 13.3.0]",
+  "platform": "Linux-6.12.94-123.192.amzn2023.x86_64-x86_64-with-glibc2.39",
+  "correctness_seeds": [
+    734796314,
+    576165995,
+    2197670066
+  ],
+  "protocol": {
+    "scope": "Unmodified CLIs; same operation, input domain and float32 tolerance",
+    "cache": "AKO4ALL flushes L2 per trial; kernel_envolve does not",
+    "warmup": "AKO4ALL 10 per role; kernel_envolve 3 per role per batch",
+    "sampling": "12 quick / 80 full recorded timings; upstream additionally discards first",
+    "verification": "Base seeds match; reuse/mutation checks and comparator checks differ",
+    "cost": "Fresh subprocess command wall time; not kernel speed or search quality",
+    "trial_settings": "AKO4ALL configured correctness/performance trials 1/6 and 3/40; upstream CLI defaults are 10/50. Labels quick/full refer to this probe and kernel_envolve modes, not AKO4ALL default final gates."
+  },
+  "cost_medians_seconds": [
+    {
+      "arm": "ako4all",
+      "elements_per_input": 257,
+      "mode": "quick",
+      "seconds": 2.106527951080352
+    },
+    {
+      "arm": "kernel_envolve",
+      "elements_per_input": 257,
+      "mode": "quick",
+      "seconds": 1.987273396924138
+    },
+    {
+      "arm": "ako4all",
+      "elements_per_input": 257,
+      "mode": "full",
+      "seconds": 2.126777220983058
+    },
+    {
+      "arm": "kernel_envolve",
+      "elements_per_input": 257,
+      "mode": "full",
+      "seconds": 2.087888431735337
+    },
+    {
+      "arm": "ako4all",
+      "elements_per_input": 1048577,
+      "mode": "quick",
+      "seconds": 2.1378233660943806
+    },
+    {
+      "arm": "kernel_envolve",
+      "elements_per_input": 1048577,
+      "mode": "quick",
+      "seconds": 2.037310854997486
+    },
+    {
+      "arm": "ako4all",
+      "elements_per_input": 1048577,
+      "mode": "full",
+      "seconds": 2.149915583897382
+    },
+    {
+      "arm": "kernel_envolve",
+      "elements_per_input": 1048577,
+      "mode": "full",
+      "seconds": 2.04003073181957
+    }
+  ],
+  "checked_at_utc": "2026-11-09T17:54:21.779551+00:00",
+  "job_id": "b51d88b2ac8342ada2008ca925d464b7",
+  "phase": "Completed",
+  "pods_remaining": 0,
+  "allocated_gpus": 1,
+  "session_limit": 32,
+  "workspace": "flexible",
+  "topic_id": "topic_c7b8c988fd46",
+  "work_order_id": "WOC-ff0a397b3590121d",
+  "image": "839084984246.dkr.ecr.ap-south-2.amazonaws.com/pretrain/megatron:verify_batch_invariant_deepep_v2_efa_sm100_prebaked_b300_fa4_3de9f805_908a5adc_cb136@sha256:9da60d0cc131ffca03db54f02910b9b741de4ecc58a8c123b1786965b43aa74b",
+  "source_commit": "45d53febdf98e308fec2f1c0db03c958a74ca4c1",
+  "source_archive_sha256": "13a20f29ab01e43c29db767d4e54fc2dfdbf7ecf12efe9d0af35b3ac655fef12",
+  "raw_report": "ako4all_comparison_raw.json.gz",
+  "raw_report_uncompressed_sha256": "9ad3f7775720855c9f930b0742318ba5118e5220a737b645a4baff91df327ca2",
+  "probe": "probe_ako4all.py",
+  "correctness": [
+    {
+      "case": "valid_add",
+      "arm": "ako4all",
+      "expected_contract_pass": true,
+      "correctness_pass": true,
+      "has_positive_timings": true,
+      "exit_code": 0
+    },
+    {
+      "case": "valid_add",
+      "arm": "kernel_envolve",
+      "expected_contract_pass": true,
+      "correctness_pass": true,
+      "has_positive_timings": true,
+      "exit_code": 0
+    },
+    {
+      "case": "valid_strided_add",
+      "arm": "kernel_envolve",
+      "expected_contract_pass": true,
+      "correctness_pass": true,
+      "has_positive_timings": true,
+      "exit_code": 0
+    },
+    {
+      "case": "valid_strided_add",
+      "arm": "ako4all",
+      "expected_contract_pass": true,
+      "correctness_pass": true,
+      "has_positive_timings": true,
+      "exit_code": 0
+    },
+    {
+      "case": "wrong_value",
+      "arm": "ako4all",
+      "expected_contract_pass": false,
+      "correctness_pass": false,
+      "has_positive_timings": false,
+      "exit_code": 1
+    },
+    {
+      "case": "wrong_value",
+      "arm": "kernel_envolve",
+      "expected_contract_pass": false,
+      "correctness_pass": false,
+      "has_positive_timings": false,
+      "exit_code": 1
+    },
+    {
+      "case": "wrong_shape",
+      "arm": "kernel_envolve",
+      "expected_contract_pass": false,
+      "correctness_pass": false,
+      "has_positive_timings": false,
+      "exit_code": 1
+    },
+    {
+      "case": "wrong_shape",
+      "arm": "ako4all",
+      "expected_contract_pass": false,
+      "correctness_pass": false,
+      "has_positive_timings": false,
+      "exit_code": 1
+    },
+    {
+      "case": "valid_input_alias",
+      "arm": "ako4all",
+      "expected_contract_pass": true,
+      "correctness_pass": true,
+      "has_positive_timings": true,
+      "exit_code": 0
+    },
+    {
+      "case": "valid_input_alias",
+      "arm": "kernel_envolve",
+      "expected_contract_pass": true,
+      "correctness_pass": true,
+      "has_positive_timings": true,
+      "exit_code": 0
+    },
+    {
+      "case": "corrupted_input_alias",
+      "arm": "kernel_envolve",
+      "expected_contract_pass": false,
+      "correctness_pass": false,
+      "has_positive_timings": false,
+      "exit_code": 1
+    },
+    {
+      "case": "corrupted_input_alias",
+      "arm": "ako4all",
+      "expected_contract_pass": false,
+      "correctness_pass": true,
+      "has_positive_timings": true,
+      "exit_code": 0
+    },
+    {
+      "case": "correct_output_but_input_mutated",
+      "arm": "ako4all",
+      "expected_contract_pass": false,
+      "correctness_pass": false,
+      "has_positive_timings": true,
+      "exit_code": 1
+    },
+    {
+      "case": "correct_output_but_input_mutated",
+      "arm": "kernel_envolve",
+      "expected_contract_pass": false,
+      "correctness_pass": false,
+      "has_positive_timings": false,
+      "exit_code": 1
+    },
+    {
+      "case": "valid_inplace",
+      "arm": "kernel_envolve",
+      "expected_contract_pass": true,
+      "correctness_pass": true,
+      "has_positive_timings": true,
+      "exit_code": 0
+    },
+    {
+      "case": "valid_inplace",
+      "arm": "ako4all",
+      "expected_contract_pass": true,
+      "correctness_pass": true,
+      "has_positive_timings": true,
+      "exit_code": 0
+    },
+    {
+      "case": "wrong_inplace",
+      "arm": "ako4all",
+      "expected_contract_pass": false,
+      "correctness_pass": true,
+      "has_positive_timings": true,
+      "exit_code": 0
+    },
+    {
+      "case": "wrong_inplace",
+      "arm": "kernel_envolve",
+      "expected_contract_pass": false,
+      "correctness_pass": false,
+      "has_positive_timings": false,
+      "exit_code": 1
+    },
+    {
+      "case": "cached_identity",
+      "arm": "kernel_envolve",
+      "expected_contract_pass": false,
+      "correctness_pass": false,
+      "has_positive_timings": false,
+      "exit_code": 1
+    },
+    {
+      "case": "cached_identity",
+      "arm": "ako4all",
+      "expected_contract_pass": false,
+      "correctness_pass": false,
+      "has_positive_timings": true,
+      "exit_code": 1
+    },
+    {
+      "case": "late_exception",
+      "arm": "ako4all",
+      "expected_contract_pass": false,
+      "correctness_pass": true,
+      "has_positive_timings": false,
+      "exit_code": 0
+    },
+    {
+      "case": "late_exception",
+      "arm": "kernel_envolve",
+      "expected_contract_pass": false,
+      "correctness_pass": true,
+      "has_positive_timings": false,
+      "exit_code": 2
+    },
+    {
+      "case": "valid_sqrt_positive_domain",
+      "arm": "kernel_envolve",
+      "expected_contract_pass": true,
+      "correctness_pass": true,
+      "has_positive_timings": true,
+      "exit_code": 0
+    },
+    {
+      "case": "valid_sqrt_positive_domain",
+      "arm": "ako4all",
+      "expected_contract_pass": true,
+      "correctness_pass": false,
+      "has_positive_timings": true,
+      "exit_code": 1
+    }
+  ],
+  "cost_samples": [
+    {
+      "arm": "ako4all",
+      "mode": "quick",
+      "elements_per_input": 257,
+      "repeat": 0,
+      "command_wall_seconds": 2.106527951080352
+    },
+    {
+      "arm": "kernel_envolve",
+      "mode": "quick",
+      "elements_per_input": 257,
+      "repeat": 0,
+      "command_wall_seconds": 1.9369597462937236
+    },
+    {
+      "arm": "ako4all",
+      "mode": "full",
+      "elements_per_input": 257,
+      "repeat": 0,
+      "command_wall_seconds": 2.2089262208901346
+    },
+    {
+      "arm": "kernel_envolve",
+      "mode": "full",
+      "elements_per_input": 257,
+      "repeat": 0,
+      "command_wall_seconds": 1.9884004429914057
+    },
+    {
+      "arm": "ako4all",
+      "mode": "quick",
+      "elements_per_input": 1048577,
+      "repeat": 0,
+      "command_wall_seconds": 2.1375524741597474
+    },
+    {
+      "arm": "kernel_envolve",
+      "mode": "quick",
+      "elements_per_input": 1048577,
+      "repeat": 0,
+      "command_wall_seconds": 2.1875258730724454
+    },
+    {
+      "arm": "ako4all",
+      "mode": "full",
+      "elements_per_input": 1048577,
+      "repeat": 0,
+      "command_wall_seconds": 2.6661866479553282
+    },
+    {
+      "arm": "kernel_envolve",
+      "mode": "full",
+      "elements_per_input": 1048577,
+      "repeat": 0,
+      "command_wall_seconds": 2.04003073181957
+    },
+    {
+      "arm": "kernel_envolve",
+      "mode": "full",
+      "elements_per_input": 1048577,
+      "repeat": 1,
+      "command_wall_seconds": 2.087953215930611
+    },
+    {
+      "arm": "ako4all",
+      "mode": "full",
+      "elements_per_input": 1048577,
+      "repeat": 1,
+      "command_wall_seconds": 2.1156049626879394
+    },
+    {
+      "arm": "kernel_envolve",
+      "mode": "quick",
+      "elements_per_input": 1048577,
+      "repeat": 1,
+      "command_wall_seconds": 2.037310854997486
+    },
+    {
+      "arm": "ako4all",
+      "mode": "quick",
+      "elements_per_input": 1048577,
+      "repeat": 1,
+      "command_wall_seconds": 2.1378233660943806
+    },
+    {
+      "arm": "kernel_envolve",
+      "mode": "full",
+      "elements_per_input": 257,
+      "repeat": 1,
+      "command_wall_seconds": 2.0881102508865297
+    },
+    {
+      "arm": "ako4all",
+      "mode": "full",
+      "elements_per_input": 257,
+      "repeat": 1,
+      "command_wall_seconds": 2.126777220983058
+    },
+    {
+      "arm": "kernel_envolve",
+      "mode": "quick",
+      "elements_per_input": 257,
+      "repeat": 1,
+      "command_wall_seconds": 1.987273396924138
+    },
+    {
+      "arm": "ako4all",
+      "mode": "quick",
+      "elements_per_input": 257,
+      "repeat": 1,
+      "command_wall_seconds": 2.1399354161694646
+    },
+    {
+      "arm": "ako4all",
+      "mode": "quick",
+      "elements_per_input": 257,
+      "repeat": 2,
+      "command_wall_seconds": 2.089686044026166
+    },
+    {
+      "arm": "kernel_envolve",
+      "mode": "quick",
+      "elements_per_input": 257,
+      "repeat": 2,
+      "command_wall_seconds": 2.036401533987373
+    },
+    {
+      "arm": "ako4all",
+      "mode": "full",
+      "elements_per_input": 257,
+      "repeat": 2,
+      "command_wall_seconds": 2.1242605159059167
+    },
+    {
+      "arm": "kernel_envolve",
+      "mode": "full",
+      "elements_per_input": 257,
+      "repeat": 2,
+      "command_wall_seconds": 2.087888431735337
+    },
+    {
+      "arm": "ako4all",
+      "mode": "quick",
+      "elements_per_input": 1048577,
+      "repeat": 2,
+      "command_wall_seconds": 2.890243094880134
+    },
+    {
+      "arm": "kernel_envolve",
+      "mode": "quick",
+      "elements_per_input": 1048577,
+      "repeat": 2,
+      "command_wall_seconds": 2.037169447634369
+    },
+    {
+      "arm": "ako4all",
+      "mode": "full",
+      "elements_per_input": 1048577,
+      "repeat": 2,
+      "command_wall_seconds": 2.149915583897382
+    },
+    {
+      "arm": "kernel_envolve",
+      "mode": "full",
+      "elements_per_input": 1048577,
+      "repeat": 2,
+      "command_wall_seconds": 2.039146909955889
+    }
+  ],
+  "supporting_sources": [
+    {
+      "path": "SKILL.md",
+      "commit": "bbd0e1cf1ce2fb19d4322a932680f4c3d175d80e",
+      "sha256": "0ccd86b6475faf8aae5ac372e0dadf831ac3fba7fde7dc4d29a15b52a65e85ba"
+    },
+    {
+      "path": "GUIDE.md",
+      "commit": "bbd0e1cf1ce2fb19d4322a932680f4c3d175d80e",
+      "sha256": "19cb5dfdf08a7ad1a7de5572e660db64e85fc4703b3e2da78db5e4e1a08af21c"
+    }
+  ]
+}
