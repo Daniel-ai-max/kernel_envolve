@@ -1,0 +1,1524 @@
+{
+  "scope": "Synthetic timing sensitivity, native score functions only; correctness assumed. Not real GPU error rates or model search. No claim of calibrated statistical confidence from either gate. Native run medians constructed by this probe; no native runner, clock locking, correctness or remote recovery executed.",
+  "reference_commit": "bab3218768baea30ba56a87851705d60d64ebbf3",
+  "reference_loaded_sources_sha256": {
+    "src/aka/__init__.py": "1ca6f0b09131551bedba06614d99a8fac26b221317d324365e3d6eaf46cfcb89",
+    "src/aka/legacy/__init__.py": "c4df5fc7b03da24e0f75c68a8a37ee7f7e91151a88b6f345a1a4be68f3814ea3",
+    "src/aka/contracts/__init__.py": "3e5e9424e4eafda51c52064bbb84ebf1596923d975eb86b9b271adc0d3ec5946",
+    "src/aka/contracts/execution.py": "02c1d53ed678918ad0073b86f5044a2abb532a39df2f99ea6689d34a3bca872c",
+    "src/aka/contracts/content.py": "7bce5dae601d34f58b956cbae5ae558fe8846c97de022ee2770dc6d83ecf8a31",
+    "src/aka/contracts/problem.py": "28ae3182b04a2991cd16febbf90674e2dd54aefa74ec08fe9b59aacbf933c062",
+    "src/aka/contracts/workspace.py": "bade722da75f818431c59c1f8110cac52a48a543697862a496a92ec0a92f2b62",
+    "src/aka/contracts/evaluation.py": "c3cb1a94378bd7f007937b0a86f7f89946f5d4eab3bee80d2bba3ee2b7ae84b4",
+    "src/aka/legacy/task/__init__.py": "f68d2b8d7b7b85cef81b332763639e54cec26bea5240a68fff21310fecdb377f",
+    "src/aka/legacy/task/candidate_workspace/__init__.py": "17006a4581a9d4dbec0416a7cf977e1afe55d2cbad0ae43b0657c99660311c1b",
+    "src/aka/legacy/task/candidate_workspace/excludes.py": "f39472bfb9d09be9471c1e1e4115b19fa638fccadbad65cddbcc2cd7490e64d2",
+    "src/aka/legacy/evaluation/abba.py": "adac0607e5022c349cbcfa2fabfceca9cb3a5f1afddd83ec963763c5ff9cc2d7",
+    "src/aka/legacy/evaluation/drivers/__init__.py": "0a2e414657cd607e3181a6c52685e503d27575d70c365d030cd38ad34b491ac6",
+    "src/aka/legacy/evaluation/drivers/remote_abba.py": "1639bae95a1f29087f3d633ae082d2cdeac2625a6730d59b87e8f45cdea5873d",
+    "src/aka/legacy/evaluation/memory.py": "11ebc8ce865f793eedccc5bf648fe4603954a2ed52d43ded1c18c481fbf373ec",
+    "src/aka/legacy/evaluation/results.py": "063f2ea7d247d29b5bc7c72663fe5778c390fe03210446e05ac58a692a2d656d",
+    "src/aka/legacy/evaluation/evaluator.py": "1922445a027a31951b90ca4b6d629f5692e25ee30b86bf70a67ebd8a3eda5b3b",
+    "src/aka/core/errors.py": "c96b474ea006cde4365488edef6802ca5654fe334f0d64bfd6d031f943ef3a0e",
+    "src/aka/core/composition.py": "2acb0c2d0aed5608501bccc2e35ed1c211cd72518bdde5b245cdaef75ae9c198",
+    "src/aka/core/plugin_runtime/__init__.py": "009bf950c986941f251ea2475fb49de5c9239e927d946317dffc50bc1b1c39b3",
+    "src/aka/core/plugin_runtime/schema.py": "ffc3d2d99b1dc8be9aeab12bb72e146a95154422c7e66870f7e2ecd859c19df9",
+    "src/aka/core/effects.py": "2c39b9cddee414283f9c9d0228e1100c66fe1d63faa41d6fc33ec8f4aea4274d",
+    "src/aka/core/keys.py": "c33a992f3441a76e15239dee1447f965ba67f78be019b83e3def8fb5ca2f08ea",
+    "src/aka/core/declaration.py": "f17b36237beb4bcc1009f4ec7b1951325765acd71affa3fb88060242f6c86bbf",
+    "src/aka/core/events.py": "23bb10bcff0a74a166164575d91a5a73d3adbfc7ae4d66eb28013293507af636",
+    "src/aka/core/internal.py": "6ddedbf3dafeedb91d0a2fe1dde6caecc2919294ff14c9f76d8bc7ac4745aa18",
+    "src/aka/core/registry.py": "1a8076b5ff5636912290f7d544896c8926d4859b8f3086d36ea541db2d767f1a",
+    "src/aka/core/scope.py": "7fff6979f5b961a708fc2c7bab676294016dea522cfc6d89d43572660183acd1",
+    "src/aka/core/fiber.py": "cb336def045d62f100338b06d7dd56ed6c51db1ee1d0cd4bebb367574de57a09",
+    "src/aka/core/context.py": "5264e15ce9fecf059746efb18397f2f5f3e90c3e857e102573734df4c7152a47",
+    "src/aka/core/invariants.py": "df64ea52487fa82921ab8c73cc565f08f182c132e0b3ca4e102f713b7b82bfdb",
+    "src/aka/core/loader.py": "09e48a971bafbf9021994b89511508940e9c06d519e363b3e9332d8f99586ee1",
+    "src/aka/core/__init__.py": "e8ecc9c61e8113a8fb4b0e213849e44598bea85e03196d0bc8bfa0c4b6d07e6f",
+    "src/aka/legacy/evaluation/plugin.py": "f15c40c61ff480800654269dd01819224f306b6fe6147d77326cbf11a4067881",
+    "src/aka/legacy/evaluation/__init__.py": "a5f421b7fda09ecf2f781c3a471b937ec03277e3f814bb01fc2b3ac159a59334",
+    "src/aka/light/__init__.py": "304a0b15b8e2cc27ad8bfcccd47bfb5cc86d1658168ac449ea0f1c2296b95ac9",
+    "src/aka/light/acceptance/__init__.py": "eeb3355b6ab7f0a1c28e42d7631fc07c2e7924b6c0945e472f49c09949b94c8f",
+    "src/aka/light/evaluation/__init__.py": "8e1d0fcbd40f23ffa7e17604c20b1afdd5bbc2b754784849fd653660d634d6fb",
+    "src/aka/light/evaluation/policy.py": "bf06a251c77300cd4c4ac9f9e5b8778000a4618ce64b4138d2ede9f5d9894b95",
+    "src/aka/light/execution/__init__.py": "32b5b0e7ee45f3dcba67192856b1b7f7945eb15112a26ce2c4d4f4544550d3a8",
+    "src/aka/legacy/execution/__init__.py": "025afa9e61171999fd7d3bb1dce0b344bba41e6dbedae08469e7bb1bcf4af465",
+    "src/aka/legacy/execution/config.py": "d7afd56e1bbb6d511b17f67b9667a754c3f6ff290e1a9b7b641e1541d76456b2",
+    "src/aka/light/execution/config.py": "45664cf84f16bc5fc6097361d5be79f845a7be8e6c29ab113cf4f3693e91806a",
+    "src/aka/light/workflow/__init__.py": "950d14262286ecccb1ee460f71c082b451731ab1b37aeccf9679e73c5ef70749",
+    "src/aka/legacy/evaluation/models.py": "2cd4740d068ff66af188daa624d74d94e0146cb9c33344b03849a1d0c3d5a28b",
+    "src/aka/light/agent/__init__.py": "ea64b05adaf58a8174b74ffea02ebffbc3dc2163b598daaba383096435fb9d3b",
+    "src/aka/legacy/agent/__init__.py": "d726b8161b8ca60dc881fcb408a8b8732311be44aa958c6ac2ac42777d5fcada",
+    "src/aka/legacy/agent/markers.py": "2aca1de42ae6ed5b87904e01bc6a9d2fa596089a85d43a1250d76117ca0d34aa",
+    "src/aka/contracts/agent.py": "58a2e18520f50c58da546be1b09296bb4aee3f875c7554f49b452b68a30f581a",
+    "src/aka/legacy/agent/model.py": "ad2edd80dd16e42a4c6cd089eb2f9e7b7b1465a2cf4cfa4bee04d770a29f3bd4",
+    "src/aka/legacy/agent/adapter.py": "28091ddc6a251602e41bb6975459be7dd5380b005711857c232fc9a241aef98d",
+    "src/aka/light/agent/runtime/model.py": "1fa6bef2d7098b5ec91efc69c2065cd3eb4fc6b07d9c84b3cf8e7f96874a566e",
+    "src/aka/light/agent/runtime/provider_errors.py": "a105d70b3d727bd974767cb75a9547abff7e98757939382df2732ffe5fcdd083",
+    "src/aka/light/agent/runtime/adapter.py": "43e3903d9fbc7bd6e783e532c024612ac98561d6b6d472a474091a7fada71367",
+    "src/aka/legacy/task/durable.py": "6a7a4440a4f4900a5a192692adc61fe28e4165228bc34affb390536d96a25375",
+    "src/aka/legacy/execution/processes.py": "800af6313a4fba2afd2288b056a32194d465bc89898ad489226b65d4ed21f398",
+    "src/aka/legacy/agent/process.py": "323c10615c38fff064bff00527e94763a6b46e4cbdc3b400d49674cef9daeb06",
+    "src/aka/light/agent/recovery_processes.py": "fbbded650e355ed0bb55edf232dfcca09e9a53fdc2f59fab13c8275b57eb65c9",
+    "src/aka/light/agent/runtime/process.py": "1f3bc2b45072b7025b814d2c52fcbc7d57d0cfabf33ad422e5de0d5d62f597c2",
+    "src/aka/legacy/agent/codex_ledger.py": "91483125383ca78cd95478b48ac48361e490aad0d76132d9b461c3f4ad034ec4",
+    "src/aka/legacy/agent/runtime.py": "9d82f90330e724c8b38f3fa0f6299511251546a5905302549ed47d6a09a30295",
+    "src/aka/light/agent/runtime/markers.py": "6d3f8d19500ff29347861ab113e02206c3f4b945fce3c5161644169f6f41d1d4",
+    "src/aka/light/agent/runtime/codex_ledger.py": "09856bcee8402a02cff2d0b6b74086d5b24e993b95ecb676856bb5c6fc411ce4",
+    "src/aka/light/runtime/__init__.py": "443679d30032d676ea9fcbaf82880067d9b35d4db29d69e3ce958473a0012069",
+    "src/aka/light/runtime/paths.py": "727e9a4601e76fbd1f9445bd184cf1f1f1bba643d9bd1abbbee7572a3bb7dbf6",
+    "src/aka/light/agent/runtime/runtime.py": "5a43eb2a658fcd5ef8eaa1155247f2cabef0e0652dd5a9d3070bfc26a5516cf6",
+    "src/aka/light/agent/runtime/__init__.py": "a360879791130f70a876529f9770181a4ca8135d6a2e916e543022438870a7b5",
+    "src/aka/light/workflow/models.py": "981ea7b9a83d9387294af237c7251a891ee4db0408f7792cc59dc11f2c09010e",
+    "src/aka/light/acceptance/verifier.py": "0e87928fe50a05ce5f128d9435d6f2c1bf56f5f8545d8981cf05114bdc03bd9d"
+  },
+  "evaluator_hash": "2eb9710c3ad61930c5ff4a6d113db96e39635b3e1c83ed7382ff7e9dffdc0c6c",
+  "probe_sha256": "637a4ffbe1d8baafb57aefbd78236fa353ba685c82731d89d17cd2063d1dc4ff",
+  "python": "3.12.14 (main, Sep  1 2026, 14:09:38) [Clang 22.1.3 ]",
+  "platform": "macOS-26.5.2-arm64-arm-64bit",
+  "numpy": "2.5.4",
+  "seed": 20261110,
+  "conditions": {
+    "quiet_iid": {
+      "independent_log_sigma": 0.005
+    },
+    "noisy_iid": {
+      "independent_log_sigma": 0.1
+    },
+    "shared_quartet_clock": {
+      "independent_log_sigma": 0.002,
+      "quartet_log_sigma": 0.15
+    },
+    "smooth_clock_cycle": {
+      "independent_log_sigma": 0.002,
+      "cycle_log_amplitude": 0.15
+    }
+  },
+  "true_gains": [
+    0.0,
+    0.05,
+    0.2
+  ],
+  "repetitions": 2000,
+  "local_config": {
+    "cases": [
+      {
+        "id": "one",
+        "weight": 1
+      }
+    ],
+    "quick_seeds": [
+      0
+    ],
+    "full_seeds": [
+      0,
+      1,
+      2
+    ],
+    "quick_trials": 3,
+    "full_trials": 10,
+    "min_gain": 0.01,
+    "noise_multiplier": 2.0,
+    "max_regression": 0.05,
+    "max_baseline_regression": 0.05
+  },
+  "native_schedule": [
+    {
+      "revision": "incumbent",
+      "repeat": 0
+    },
+    {
+      "revision": "candidate",
+      "repeat": 0
+    },
+    {
+      "revision": "candidate",
+      "repeat": 1
+    },
+    {
+      "revision": "incumbent",
+      "repeat": 1
+    }
+  ],
+  "observations_per_policy": 80,
+  "interval_scope": "Wilson intervals quantify Monte Carlo sampling only, not deployment validity",
+  "results": [
+    {
+      "condition": "quiet_iid",
+      "true_gain": 0.0,
+      "repetitions": 2000,
+      "metric": "false_accept_rate",
+      "policies": {
+        "kernel_envolve": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        },
+        "atrex_threshold_1pct": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        },
+        "atrex_default_0pct": {
+          "accepted": 972,
+          "rate": 0.486,
+          "wilson_95": [
+            0.46414335632114256,
+            0.5079103210027324
+          ]
+        }
+      }
+    },
+    {
+      "condition": "quiet_iid",
+      "true_gain": 0.05,
+      "repetitions": 2000,
+      "metric": "true_gain_accept_rate",
+      "policies": {
+        "kernel_envolve": {
+          "accepted": 2000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9980829527187469,
+            0.9999999999999998
+          ]
+        },
+        "atrex_threshold_1pct": {
+          "accepted": 2000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9980829527187469,
+            0.9999999999999998
+          ]
+        },
+        "atrex_default_0pct": {
+          "accepted": 2000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9980829527187469,
+            0.9999999999999998
+          ]
+        }
+      }
+    },
+    {
+      "condition": "quiet_iid",
+      "true_gain": 0.2,
+      "repetitions": 2000,
+      "metric": "true_gain_accept_rate",
+      "policies": {
+        "kernel_envolve": {
+          "accepted": 2000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9980829527187469,
+            0.9999999999999998
+          ]
+        },
+        "atrex_threshold_1pct": {
+          "accepted": 2000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9980829527187469,
+            0.9999999999999998
+          ]
+        },
+        "atrex_default_0pct": {
+          "accepted": 2000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9980829527187469,
+            0.9999999999999998
+          ]
+        }
+      }
+    },
+    {
+      "condition": "noisy_iid",
+      "true_gain": 0.0,
+      "repetitions": 2000,
+      "metric": "false_accept_rate",
+      "policies": {
+        "kernel_envolve": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        },
+        "atrex_threshold_1pct": {
+          "accepted": 683,
+          "rate": 0.3415,
+          "wilson_95": [
+            0.321038650206326,
+            0.3625690537818312
+          ]
+        },
+        "atrex_default_0pct": {
+          "accepted": 958,
+          "rate": 0.479,
+          "wilson_95": [
+            0.4571674890056885,
+            0.500913026980124
+          ]
+        }
+      }
+    },
+    {
+      "condition": "noisy_iid",
+      "true_gain": 0.05,
+      "repetitions": 2000,
+      "metric": "true_gain_accept_rate",
+      "policies": {
+        "kernel_envolve": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        },
+        "atrex_threshold_1pct": {
+          "accepted": 1871,
+          "rate": 0.9355,
+          "wilson_95": [
+            0.9238775789943177,
+            0.9454526728237109
+          ]
+        },
+        "atrex_default_0pct": {
+          "accepted": 1943,
+          "rate": 0.9715,
+          "wilson_95": [
+            0.9632547404683076,
+            0.9779374839454709
+          ]
+        }
+      }
+    },
+    {
+      "condition": "noisy_iid",
+      "true_gain": 0.2,
+      "repetitions": 2000,
+      "metric": "true_gain_accept_rate",
+      "policies": {
+        "kernel_envolve": {
+          "accepted": 97,
+          "rate": 0.0485,
+          "wilson_95": [
+            0.03992009344287708,
+            0.05881100025209431
+          ]
+        },
+        "atrex_threshold_1pct": {
+          "accepted": 2000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9980829527187469,
+            0.9999999999999998
+          ]
+        },
+        "atrex_default_0pct": {
+          "accepted": 2000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9980829527187469,
+            0.9999999999999998
+          ]
+        }
+      }
+    },
+    {
+      "condition": "shared_quartet_clock",
+      "true_gain": 0.0,
+      "repetitions": 2000,
+      "metric": "false_accept_rate",
+      "policies": {
+        "kernel_envolve": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        },
+        "atrex_threshold_1pct": {
+          "accepted": 863,
+          "rate": 0.4315,
+          "wilson_95": [
+            0.40994528998916885,
+            0.4533173454883627
+          ]
+        },
+        "atrex_default_0pct": {
+          "accepted": 966,
+          "rate": 0.483,
+          "wilson_95": [
+            0.46115317354684554,
+            0.504912006060717
+          ]
+        }
+      }
+    },
+    {
+      "condition": "shared_quartet_clock",
+      "true_gain": 0.05,
+      "repetitions": 2000,
+      "metric": "true_gain_accept_rate",
+      "policies": {
+        "kernel_envolve": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        },
+        "atrex_threshold_1pct": {
+          "accepted": 1374,
+          "rate": 0.687,
+          "wilson_95": [
+            0.6663350327129758,
+            0.7069479916038357
+          ]
+        },
+        "atrex_default_0pct": {
+          "accepted": 1462,
+          "rate": 0.731,
+          "wilson_95": [
+            0.711136493558038,
+            0.7499778305980231
+          ]
+        }
+      }
+    },
+    {
+      "condition": "shared_quartet_clock",
+      "true_gain": 0.2,
+      "repetitions": 2000,
+      "metric": "true_gain_accept_rate",
+      "policies": {
+        "kernel_envolve": {
+          "accepted": 13,
+          "rate": 0.0065,
+          "wilson_95": [
+            0.0038025964940741515,
+            0.011089529172522494
+          ]
+        },
+        "atrex_threshold_1pct": {
+          "accepted": 1990,
+          "rate": 0.995,
+          "wilson_95": [
+            0.990820304050058,
+            0.9972818191415014
+          ]
+        },
+        "atrex_default_0pct": {
+          "accepted": 1991,
+          "rate": 0.9955,
+          "wilson_95": [
+            0.9914694867812403,
+            0.9976307193630382
+          ]
+        }
+      }
+    },
+    {
+      "condition": "smooth_clock_cycle",
+      "true_gain": 0.0,
+      "repetitions": 2000,
+      "metric": "false_accept_rate",
+      "policies": {
+        "kernel_envolve": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        },
+        "atrex_threshold_1pct": {
+          "accepted": 940,
+          "rate": 0.47,
+          "wilson_95": [
+            0.44820482770857345,
+            0.49191019512830153
+          ]
+        },
+        "atrex_default_0pct": {
+          "accepted": 968,
+          "rate": 0.484,
+          "wilson_95": [
+            0.4621498136091259,
+            0.5059115319038741
+          ]
+        }
+      }
+    },
+    {
+      "condition": "smooth_clock_cycle",
+      "true_gain": 0.05,
+      "repetitions": 2000,
+      "metric": "true_gain_accept_rate",
+      "policies": {
+        "kernel_envolve": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        },
+        "atrex_threshold_1pct": {
+          "accepted": 1083,
+          "rate": 0.5415,
+          "wilson_95": [
+            0.5196037857127578,
+            0.5632370993628981
+          ]
+        },
+        "atrex_default_0pct": {
+          "accepted": 1114,
+          "rate": 0.557,
+          "wilson_95": [
+            0.5351411243085789,
+            0.5786403323013585
+          ]
+        }
+      }
+    },
+    {
+      "condition": "smooth_clock_cycle",
+      "true_gain": 0.2,
+      "repetitions": 2000,
+      "metric": "true_gain_accept_rate",
+      "policies": {
+        "kernel_envolve": {
+          "accepted": 818,
+          "rate": 0.409,
+          "wilson_95": [
+            0.3876473245775952,
+            0.4307015780275927
+          ]
+        },
+        "atrex_threshold_1pct": {
+          "accepted": 1993,
+          "rate": 0.9965,
+          "wilson_95": [
+            0.9927928037467583,
+            0.9983035683029576
+          ]
+        },
+        "atrex_default_0pct": {
+          "accepted": 2000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9980829527187469,
+            0.9999999999999998
+          ]
+        }
+      }
+    }
+  ],
+  "raw_report": "acceptance_policy_raw.json.gz",
+  "raw_report_uncompressed_sha256": "dc858f8ea2a0c09d72bd03e1e2034906b911002ce266906c8a3ad75542a2ea2e",
+  "probe": "probe_acceptance_policy.py",
+  "source_commit": "b07cfdc6453bc22c35de07ed8112b179de59988d",
+  "reference_median_adapter_source": {
+    "path": "src/aka/light/evaluation/native_abba.py",
+    "sha256": "7f2295c964d80dc14f3614e612a97f2d4066082577a19a3aac3af0e62841fc75"
+  },
+  "rejected_proposal": {
+    "probe": "probe_paired_noise_proposal.py",
+    "status": "rejected_not_deployed",
+    "reason": "Smooth-cycle zero-gain condition accepted 198/2000; simply replacing dispersion while retaining marginal-median gain is not safe.",
+    "python": "3.12.14 (main, Sep  1 2026, 14:09:38) [Clang 22.1.3 ]",
+    "numpy": "2.5.4",
+    "scope": "Exploratory single-shape simulation of a rejected proposal; not a production scoring function or real GPU rates",
+    "seed": 20261111,
+    "evaluator_hash": "2eb9710c3ad61930c5ff4a6d113db96e39635b3e1c83ed7382ff7e9dffdc0c6c",
+    "probe_sha256": "9154956c284b331fa2b52963ed3a9c4502ab805c8022b587553be0df9393f2a6",
+    "rows": [
+      {
+        "condition": "quiet_iid",
+        "gain": 0.0,
+        "repetitions": 2000,
+        "current_accepted": 0,
+        "paired_accepted": 0
+      },
+      {
+        "condition": "quiet_iid",
+        "gain": 0.05,
+        "repetitions": 2000,
+        "current_accepted": 2000,
+        "paired_accepted": 2000
+      },
+      {
+        "condition": "quiet_iid",
+        "gain": 0.2,
+        "repetitions": 2000,
+        "current_accepted": 2000,
+        "paired_accepted": 2000
+      },
+      {
+        "condition": "noisy_iid",
+        "gain": 0.0,
+        "repetitions": 2000,
+        "current_accepted": 0,
+        "paired_accepted": 0
+      },
+      {
+        "condition": "noisy_iid",
+        "gain": 0.05,
+        "repetitions": 2000,
+        "current_accepted": 0,
+        "paired_accepted": 18
+      },
+      {
+        "condition": "noisy_iid",
+        "gain": 0.2,
+        "repetitions": 2000,
+        "current_accepted": 125,
+        "paired_accepted": 1767
+      },
+      {
+        "condition": "shared_quartet_clock",
+        "gain": 0.0,
+        "repetitions": 2000,
+        "current_accepted": 0,
+        "paired_accepted": 0
+      },
+      {
+        "condition": "shared_quartet_clock",
+        "gain": 0.05,
+        "repetitions": 2000,
+        "current_accepted": 0,
+        "paired_accepted": 2000
+      },
+      {
+        "condition": "shared_quartet_clock",
+        "gain": 0.2,
+        "repetitions": 2000,
+        "current_accepted": 16,
+        "paired_accepted": 2000
+      },
+      {
+        "condition": "smooth_clock_cycle",
+        "gain": 0.0,
+        "repetitions": 2000,
+        "current_accepted": 0,
+        "paired_accepted": 198
+      },
+      {
+        "condition": "smooth_clock_cycle",
+        "gain": 0.05,
+        "repetitions": 2000,
+        "current_accepted": 0,
+        "paired_accepted": 2000
+      },
+      {
+        "condition": "smooth_clock_cycle",
+        "gain": 0.2,
+        "repetitions": 2000,
+        "current_accepted": 821,
+        "paired_accepted": 2000
+      },
+      {
+        "condition": "heavy_tail",
+        "gain": 0.0,
+        "repetitions": 2000,
+        "current_accepted": 0,
+        "paired_accepted": 0
+      },
+      {
+        "condition": "heavy_tail",
+        "gain": 0.05,
+        "repetitions": 2000,
+        "current_accepted": 1,
+        "paired_accepted": 412
+      },
+      {
+        "condition": "heavy_tail",
+        "gain": 0.2,
+        "repetitions": 2000,
+        "current_accepted": 2000,
+        "paired_accepted": 2000
+      },
+      {
+        "condition": "rare_pause",
+        "gain": 0.0,
+        "repetitions": 2000,
+        "current_accepted": 0,
+        "paired_accepted": 0
+      },
+      {
+        "condition": "rare_pause",
+        "gain": 0.05,
+        "repetitions": 2000,
+        "current_accepted": 1998,
+        "paired_accepted": 1879
+      },
+      {
+        "condition": "rare_pause",
+        "gain": 0.2,
+        "repetitions": 2000,
+        "current_accepted": 1998,
+        "paired_accepted": 1879
+      },
+      {
+        "condition": "ar1_clock",
+        "gain": 0.0,
+        "repetitions": 2000,
+        "current_accepted": 0,
+        "paired_accepted": 0
+      },
+      {
+        "condition": "ar1_clock",
+        "gain": 0.05,
+        "repetitions": 2000,
+        "current_accepted": 0,
+        "paired_accepted": 849
+      },
+      {
+        "condition": "ar1_clock",
+        "gain": 0.2,
+        "repetitions": 2000,
+        "current_accepted": 658,
+        "paired_accepted": 2000
+      },
+      {
+        "condition": "single_step",
+        "gain": 0.0,
+        "repetitions": 2000,
+        "current_accepted": 0,
+        "paired_accepted": 0
+      },
+      {
+        "condition": "single_step",
+        "gain": 0.05,
+        "repetitions": 2000,
+        "current_accepted": 886,
+        "paired_accepted": 1954
+      },
+      {
+        "condition": "single_step",
+        "gain": 0.2,
+        "repetitions": 2000,
+        "current_accepted": 1104,
+        "paired_accepted": 2000
+      },
+      {
+        "condition": "alternating_clock",
+        "gain": 0.0,
+        "repetitions": 2000,
+        "current_accepted": 0,
+        "paired_accepted": 0
+      },
+      {
+        "condition": "alternating_clock",
+        "gain": 0.05,
+        "repetitions": 2000,
+        "current_accepted": 0,
+        "paired_accepted": 2000
+      },
+      {
+        "condition": "alternating_clock",
+        "gain": 0.2,
+        "repetitions": 2000,
+        "current_accepted": 0,
+        "paired_accepted": 2000
+      }
+    ],
+    "diagnostic_false_accept": {
+      "seed_components": [
+        20261111,
+        3,
+        22
+      ],
+      "true_gain": 0.0,
+      "current_decision": {
+        "eligible_for_best": false,
+        "performance": "inconclusive",
+        "reasons": [
+          "Meaningful gain over fixed baseline is not confirmed in every batch",
+          "Gain does not exceed the configured threshold and MAD/IQR noise guard in every batch"
+        ],
+        "cases": [
+          {
+            "case": "one",
+            "batch": 0,
+            "candidate_us": 99.88067577959816,
+            "candidate_mad_us": 10.095097252336508,
+            "candidate_iqr_us": 20.138935144838015,
+            "comparator_us": 101.20546632265959,
+            "comparator_mad_us": 10.535392144464986,
+            "comparator_iqr_us": 20.441323165736264,
+            "speedup": 1.0132637322757485
+          },
+          {
+            "case": "one",
+            "batch": 1,
+            "candidate_us": 98.89500253810641,
+            "candidate_mad_us": 9.96948474821339,
+            "candidate_iqr_us": 19.90850898718098,
+            "comparator_us": 100.02799833577211,
+            "comparator_mad_us": 10.68179338355845,
+            "comparator_iqr_us": 20.55452625192038,
+            "speedup": 1.0114565525920194
+          }
+        ],
+        "gain_by_batch": [
+          0.01309010858008175,
+          0.011326786664894395
+        ],
+        "noise_guard_by_batch": [
+          0.40769516008212675,
+          0.41290995471987785
+        ],
+        "fixed_baseline_gain_by_batch": [
+          0.01309010858008175,
+          0.011326786664894395
+        ],
+        "fixed_baseline_noise_guard_by_batch": [
+          0.40769516008212675,
+          0.41290995471987785
+        ]
+      },
+      "paired_median_gain_by_batch": [
+        -0.00033635939499733394,
+        -0.0003540947714098983
+      ],
+      "rejected_proposal_accepts": true,
+      "samples": [
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 0,
+          "role": "candidate",
+          "seed": 5033845773383876715,
+          "repeat": 0,
+          "us": 116.07035976266806
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 0,
+          "role": "comparator",
+          "seed": 5033845773383876715,
+          "repeat": 0,
+          "us": 116.16014033568788
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 0,
+          "role": "comparator",
+          "seed": 2786489197249534714,
+          "repeat": 1,
+          "us": 115.78680954821141
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 0,
+          "role": "candidate",
+          "seed": 2786489197249534714,
+          "repeat": 1,
+          "us": 115.47699077161863
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 1,
+          "role": "comparator",
+          "seed": 3484739238861477532,
+          "repeat": 0,
+          "us": 115.28170225881362
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 1,
+          "role": "candidate",
+          "seed": 3484739238861477532,
+          "repeat": 0,
+          "us": 115.2496035551402
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 1,
+          "role": "candidate",
+          "seed": 4479283221110320170,
+          "repeat": 1,
+          "us": 114.15580055669832
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 1,
+          "role": "comparator",
+          "seed": 4479283221110320170,
+          "repeat": 1,
+          "us": 113.94110082439866
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 2,
+          "role": "candidate",
+          "seed": 7978891306205814157,
+          "repeat": 0,
+          "us": 112.90618670811818
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 2,
+          "role": "comparator",
+          "seed": 7978891306205814157,
+          "repeat": 0,
+          "us": 112.3438298381825
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 2,
+          "role": "comparator",
+          "seed": 6183004160629727828,
+          "repeat": 1,
+          "us": 111.13788709606665
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 2,
+          "role": "candidate",
+          "seed": 6183004160629727828,
+          "repeat": 1,
+          "us": 110.11755805536983
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 3,
+          "role": "comparator",
+          "seed": 6945654218089443420,
+          "repeat": 0,
+          "us": 108.97730524410856
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 3,
+          "role": "candidate",
+          "seed": 6945654218089443420,
+          "repeat": 0,
+          "us": 108.55928703113507
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 3,
+          "role": "candidate",
+          "seed": 7893644579297702459,
+          "repeat": 1,
+          "us": 107.17457384639243
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 3,
+          "role": "comparator",
+          "seed": 7893644579297702459,
+          "repeat": 1,
+          "us": 105.65199485106902
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 4,
+          "role": "candidate",
+          "seed": 2054915861506938781,
+          "repeat": 0,
+          "us": 104.6318116838663
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 4,
+          "role": "comparator",
+          "seed": 2054915861506938781,
+          "repeat": 0,
+          "us": 103.77231246413112
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 4,
+          "role": "comparator",
+          "seed": 1257218496463748640,
+          "repeat": 1,
+          "us": 102.13701409218973
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 4,
+          "role": "candidate",
+          "seed": 1257218496463748640,
+          "repeat": 1,
+          "us": 101.1185066341591
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 5,
+          "role": "comparator",
+          "seed": 2551810006631267392,
+          "repeat": 0,
+          "us": 100.27391855312943
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 5,
+          "role": "candidate",
+          "seed": 2551810006631267392,
+          "repeat": 0,
+          "us": 98.64284492503722
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 5,
+          "role": "candidate",
+          "seed": 7151681092539888267,
+          "repeat": 1,
+          "us": 97.98945776865942
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 5,
+          "role": "comparator",
+          "seed": 7151681092539888267,
+          "repeat": 1,
+          "us": 96.5467292299671
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 6,
+          "role": "candidate",
+          "seed": 4327933677092505541,
+          "repeat": 0,
+          "us": 95.52128949096569
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 6,
+          "role": "comparator",
+          "seed": 4327933677092505541,
+          "repeat": 0,
+          "us": 94.10625160960097
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 6,
+          "role": "comparator",
+          "seed": 8995152437014682262,
+          "repeat": 1,
+          "us": 93.54406522462308
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 6,
+          "role": "candidate",
+          "seed": 8995152437014682262,
+          "repeat": 1,
+          "us": 92.71054858343523
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 7,
+          "role": "comparator",
+          "seed": 3709442892888878168,
+          "repeat": 0,
+          "us": 91.55764454235165
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 7,
+          "role": "candidate",
+          "seed": 3709442892888878168,
+          "repeat": 0,
+          "us": 90.92525224805958
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 7,
+          "role": "candidate",
+          "seed": 2061251808914225195,
+          "repeat": 1,
+          "us": 89.92736355069681
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 7,
+          "role": "comparator",
+          "seed": 2061251808914225195,
+          "repeat": 1,
+          "us": 89.31926483638247
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 8,
+          "role": "candidate",
+          "seed": 6437387920668213319,
+          "repeat": 0,
+          "us": 88.79472155395351
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 8,
+          "role": "comparator",
+          "seed": 6437387920668213319,
+          "repeat": 0,
+          "us": 88.27055632459381
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 8,
+          "role": "comparator",
+          "seed": 5934084831871025416,
+          "repeat": 1,
+          "us": 87.42957574177554
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 8,
+          "role": "candidate",
+          "seed": 5934084831871025416,
+          "repeat": 1,
+          "us": 87.06586973008442
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 9,
+          "role": "comparator",
+          "seed": 2895876355910879849,
+          "repeat": 0,
+          "us": 86.67785278566848
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 9,
+          "role": "candidate",
+          "seed": 2895876355910879849,
+          "repeat": 0,
+          "us": 86.91076449882804
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 9,
+          "role": "candidate",
+          "seed": 5117409483204491088,
+          "repeat": 1,
+          "us": 86.22913815450157
+        },
+        {
+          "case": "one",
+          "batch": 0,
+          "trial": 9,
+          "role": "comparator",
+          "seed": 5117409483204491088,
+          "repeat": 1,
+          "us": 86.02276020969984
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 0,
+          "role": "comparator",
+          "seed": 6978387852337520667,
+          "repeat": 0,
+          "us": 85.84890115233186
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 0,
+          "role": "candidate",
+          "seed": 6978387852337520667,
+          "repeat": 0,
+          "us": 86.14487519442055
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 0,
+          "role": "candidate",
+          "seed": 3421619195043769618,
+          "repeat": 1,
+          "us": 86.42759534483336
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 0,
+          "role": "comparator",
+          "seed": 3421619195043769618,
+          "repeat": 1,
+          "us": 86.72403959194746
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 1,
+          "role": "candidate",
+          "seed": 6678230693623134649,
+          "repeat": 0,
+          "us": 86.38105460676826
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 1,
+          "role": "comparator",
+          "seed": 6678230693623134649,
+          "repeat": 0,
+          "us": 87.0163512718389
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 1,
+          "role": "comparator",
+          "seed": 4544207584625583314,
+          "repeat": 1,
+          "us": 87.75778121769522
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 1,
+          "role": "candidate",
+          "seed": 4544207584625583314,
+          "repeat": 1,
+          "us": 87.66778854087086
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 2,
+          "role": "comparator",
+          "seed": 1891812476140131773,
+          "repeat": 0,
+          "us": 88.28695762570263
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 2,
+          "role": "candidate",
+          "seed": 1891812476140131773,
+          "repeat": 0,
+          "us": 89.05249889190168
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 2,
+          "role": "candidate",
+          "seed": 588841788038403290,
+          "repeat": 1,
+          "us": 90.13356892555315
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 2,
+          "role": "comparator",
+          "seed": 588841788038403290,
+          "repeat": 1,
+          "us": 90.65483032211674
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 3,
+          "role": "candidate",
+          "seed": 4342715034990070200,
+          "repeat": 0,
+          "us": 91.26874948976592
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 3,
+          "role": "comparator",
+          "seed": 4342715034990070200,
+          "repeat": 0,
+          "us": 92.36139161590265
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 3,
+          "role": "comparator",
+          "seed": 6066815238172515737,
+          "repeat": 1,
+          "us": 93.5870343710599
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 3,
+          "role": "candidate",
+          "seed": 6066815238172515737,
+          "repeat": 1,
+          "us": 94.15025075019562
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 4,
+          "role": "comparator",
+          "seed": 6488324419603451437,
+          "repeat": 0,
+          "us": 95.46241774319353
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 4,
+          "role": "candidate",
+          "seed": 6488324419603451437,
+          "repeat": 0,
+          "us": 96.46234389645618
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 4,
+          "role": "candidate",
+          "seed": 7103948391207027887,
+          "repeat": 1,
+          "us": 97.81823885221695
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 4,
+          "role": "comparator",
+          "seed": 7103948391207027887,
+          "repeat": 1,
+          "us": 99.18381539063778
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 5,
+          "role": "candidate",
+          "seed": 1912383474059545847,
+          "repeat": 0,
+          "us": 99.97176622399589
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 5,
+          "role": "comparator",
+          "seed": 1912383474059545847,
+          "repeat": 0,
+          "us": 100.87218128090643
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 5,
+          "role": "comparator",
+          "seed": 7994014946338178722,
+          "repeat": 1,
+          "us": 102.3399277546552
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 5,
+          "role": "candidate",
+          "seed": 7994014946338178722,
+          "repeat": 1,
+          "us": 103.86478091425933
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 6,
+          "role": "comparator",
+          "seed": 5263392687586552670,
+          "repeat": 0,
+          "us": 104.71534996648815
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 6,
+          "role": "candidate",
+          "seed": 5263392687586552670,
+          "repeat": 0,
+          "us": 106.24197536889903
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 6,
+          "role": "candidate",
+          "seed": 3041235862171251467,
+          "repeat": 1,
+          "us": 107.2317089750289
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 6,
+          "role": "comparator",
+          "seed": 3041235862171251467,
+          "repeat": 1,
+          "us": 108.11340967928227
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 7,
+          "role": "candidate",
+          "seed": 2471984449286003400,
+          "repeat": 0,
+          "us": 108.99146838832846
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 7,
+          "role": "comparator",
+          "seed": 2471984449286003400,
+          "repeat": 0,
+          "us": 110.52498508053661
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 7,
+          "role": "comparator",
+          "seed": 110211415707412876,
+          "repeat": 1,
+          "us": 110.89459835812451
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 7,
+          "role": "candidate",
+          "seed": 110211415707412876,
+          "repeat": 1,
+          "us": 112.11283645229967
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 8,
+          "role": "comparator",
+          "seed": 2663157977058753799,
+          "repeat": 0,
+          "us": 112.8036282945258
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 8,
+          "role": "candidate",
+          "seed": 2663157977058753799,
+          "repeat": 0,
+          "us": 113.49897257515092
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 8,
+          "role": "candidate",
+          "seed": 6723216873811349306,
+          "repeat": 1,
+          "us": 114.23583484100217
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 8,
+          "role": "comparator",
+          "seed": 6723216873811349306,
+          "repeat": 1,
+          "us": 114.78903135178071
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 9,
+          "role": "candidate",
+          "seed": 7130816471039930634,
+          "repeat": 0,
+          "us": 115.37144160575268
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 9,
+          "role": "comparator",
+          "seed": 7130816471039930634,
+          "repeat": 0,
+          "us": 115.14510629739063
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 9,
+          "role": "comparator",
+          "seed": 6350435793870317849,
+          "repeat": 1,
+          "us": 115.57878750227508
+        },
+        {
+          "case": "one",
+          "batch": 1,
+          "trial": 9,
+          "role": "candidate",
+          "seed": 6350435793870317849,
+          "repeat": 1,
+          "us": 116.16064676323828
+        }
+      ]
+    }
+  }
+}
