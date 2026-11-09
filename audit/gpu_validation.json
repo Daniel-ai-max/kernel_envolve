@@ -1,0 +1,156 @@
+{
+  "checked_at_utc": "2026-11-09T17:11:51.390533+00:00",
+  "job_id": "5c8f570a6d644141a252f9a728b58d42",
+  "phase": "Completed",
+  "pods_remaining": 0,
+  "allocated_gpus": 1,
+  "session_limit": 32,
+  "workspace": "flexible",
+  "topic_id": "topic_c7b8c988fd46",
+  "work_order_id": "WOC-ff0a397b3590121d",
+  "source_commit": "9b6a54227fcc295a995b6677c98127f2d6835d19",
+  "source_dirty_files": " M tests/test_devices.py\n",
+  "source_archive_sha256": "4e93596888db58d878cb61f20d6319293635c72c2bfe927a7a752c4c244fe3d3",
+  "test_devices_sha256": "8641ef48b361b3a78c6ea5a39fca2a9cd67377eb17f598a5728c827132d52d90",
+  "evaluator_hash": "2bbcdf9a8e21a451d9ca2f260e7fd0a17e337fb8a87a72ca99bc0be4502172d6",
+  "image": "839084984246.dkr.ecr.ap-south-2.amazonaws.com/pretrain/megatron:verify_batch_invariant_deepep_v2_efa_sm100_prebaked_b300_fa4_3de9f805_908a5adc_cb136@sha256:9da60d0cc131ffca03db54f02910b9b741de4ecc58a8c123b1786965b43aa74b",
+  "device": "NVIDIA B300 SXM6 AC",
+  "compute_capability": [
+    10,
+    3
+  ],
+  "python": "3.12.3 (main, Jan 22 2026, 20:57:42) [GCC 13.3.0]",
+  "torch": "2.12.1+cu130",
+  "triton": "3.7.1",
+  "cuda": "13.0",
+  "tests": {
+    "passed": 95,
+    "skipped": 0,
+    "seconds": 42.03
+  },
+  "raw_report": "gpu_validation_raw.json.gz",
+  "raw_report_sha256": "d4875e33cb600ea8f71e27ee02f5c5ffc280b6679c5b2e53fde234a0bb2ddbd6",
+  "scope": "Single-GPU real-hardware evaluator validation. Synthetic promotion baseline sleeps deliberately. No LLM search or upstream system ranking.",
+  "scenarios": [
+    {
+      "timer": "auto",
+      "mode": "check",
+      "execution": "completed",
+      "correctness": "pass",
+      "checks": 8,
+      "samples": 0,
+      "eligible_for_best": false,
+      "worker_wall_seconds": 2.974706402979791,
+      "gain_by_batch": null
+    },
+    {
+      "timer": "auto",
+      "mode": "signal",
+      "execution": "completed",
+      "correctness": "pass",
+      "checks": 8,
+      "samples": 12,
+      "eligible_for_best": false,
+      "worker_wall_seconds": 2.973530861083418,
+      "gain_by_batch": null
+    },
+    {
+      "timer": "auto",
+      "mode": "quick",
+      "execution": "completed",
+      "correctness": "pass",
+      "checks": 16,
+      "samples": 24,
+      "eligible_for_best": false,
+      "worker_wall_seconds": 3.6256013731472194,
+      "gain_by_batch": [
+        -1.3636821434778161
+      ]
+    },
+    {
+      "timer": "auto",
+      "mode": "full",
+      "execution": "completed",
+      "correctness": "pass",
+      "checks": 48,
+      "samples": 360,
+      "eligible_for_best": false,
+      "worker_wall_seconds": 4.530745605006814,
+      "gain_by_batch": [
+        -1.1939716224442218,
+        -1.228571444608233
+      ]
+    },
+    {
+      "timer": "auto",
+      "mode": "wrong-output",
+      "execution": "completed",
+      "correctness": "fail",
+      "checks": 1,
+      "samples": 0,
+      "eligible_for_best": false,
+      "worker_wall_seconds": 1.874176885932684,
+      "gain_by_batch": null
+    },
+    {
+      "timer": "wall",
+      "mode": "check",
+      "execution": "completed",
+      "correctness": "pass",
+      "checks": 8,
+      "samples": 0,
+      "eligible_for_best": false,
+      "worker_wall_seconds": 2.97418761998415,
+      "gain_by_batch": null
+    },
+    {
+      "timer": "wall",
+      "mode": "signal",
+      "execution": "completed",
+      "correctness": "pass",
+      "checks": 8,
+      "samples": 12,
+      "eligible_for_best": false,
+      "worker_wall_seconds": 3.22559450333938,
+      "gain_by_batch": null
+    },
+    {
+      "timer": "wall",
+      "mode": "quick",
+      "execution": "completed",
+      "correctness": "pass",
+      "checks": 16,
+      "samples": 24,
+      "eligible_for_best": false,
+      "worker_wall_seconds": 3.5258951601572335,
+      "gain_by_batch": [
+        -1.236997960188507
+      ]
+    },
+    {
+      "timer": "wall",
+      "mode": "full",
+      "execution": "completed",
+      "correctness": "pass",
+      "checks": 48,
+      "samples": 360,
+      "eligible_for_best": false,
+      "worker_wall_seconds": 4.830921785905957,
+      "gain_by_batch": [
+        -1.0675026814623236,
+        -1.0738483273626316
+      ]
+    },
+    {
+      "timer": "wall",
+      "mode": "wrong-output",
+      "execution": "completed",
+      "correctness": "fail",
+      "checks": 1,
+      "samples": 0,
+      "eligible_for_best": false,
+      "worker_wall_seconds": 1.8734474866650999,
+      "gain_by_batch": null
+    }
+  ]
+}

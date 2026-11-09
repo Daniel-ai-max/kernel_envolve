@@ -107,7 +107,7 @@ case 权重由任务明确给出。没有真实调用分布时，可以声明等
 | `reference_files` | `["task.py"]` | 固定 oracle/baseline/输入工厂的本地依赖 |
 | `candidate_files` | `["candidate.py"]` | 候选及其本地依赖，全部进入快照 |
 | `device` | `cpu` | `cpu` 或 `cuda:索引` |
-| `timer` | `auto` | CPU wall time / CUDA event；`wall` 在 CUDA 上测含设备同步的完整调用 |
+| `timer` | `auto` | CPU wall time / CUDA eager event 区间（可能含 host 发射间隙）；`wall` 在 CUDA 上测含设备同步的完整调用 |
 | `deterministic` | `false` | 同值复位后重跑，要求逐元素精确一致；不是通用 bitwise 规则 |
 | `rtol` / `atol` | `1e-5` / `1e-6` | 浮点逐元素容差，按任务数值要求配置 |
 | `equal_nan` | `false` | 是否允许同位置 NaN 相等 |
@@ -147,7 +147,7 @@ case 权重由任务明确给出。没有真实调用分布时，可以声明等
 
 quick 测所选 case，一批样本；full 测全部 case，两批样本，第二批倒序遍历 case。两个实现采用 A–B–B–A 并轮换起始角色；三个实现采用 A–B–C–C–B–A，并在各轮循环改变起始角色。每个角色的两次调用使用不同的值，同一 repeat 的各角色使用匹配的值。输入种子由 case、batch、trial、repeat 和任务 seeds 确定，每个测量样本都更新，可从记录复现。判定时同时核对样本身份、数量和实际执行顺序。
 
-CPU 使用 `perf_counter_ns`，测完整函数调用；CUDA 默认使用当前流上的 event。设置 `timer=wall` 时，CUDA 计时在调用前后做设备同步，包含 CPU launch 和完成等待；它与 event 指标是不同的任务契约，不能混比。输入构造/复位、预热和同步等待不计入延迟；实际 `run` 内的布局转换、临时缓冲和 kernel 工作保留在调用中。每次测量前重新生成输入，适用于声明的原地更新；测得的是该输入准备方式下的延迟。
+CPU 使用 `perf_counter_ns`，测完整函数调用；CUDA 默认使用当前流上的 event。**event 记录的是 eager 调用的事件区间：GPU 提前执行了 start event 时，等待 Python 发射 kernel 的空闲时间也可能计入，不能称为纯 kernel 时长。** 设置 `timer=wall` 时，CUDA 计时在调用前后做设备同步，包含 CPU launch 和完成等待；它与 event 指标是不同的任务契约，不能混比。输入构造/复位、预热和计时前同步在区间外；wall 的完成同步在区间内，event 的主机等待在区间外。实际 `run` 内的布局转换、临时缓冲和 kernel 工作保留在调用中。每次测量前重新生成输入，适用于声明的原地更新；测得的是该输入准备方式下的延迟。
 
 full 的每一批分别计算：
 
@@ -205,7 +205,7 @@ output = run(*inputs)
 
 已实现普通 CPU 函数、NumPy、PyTorch tensor 和 NVIDIA CUDA 当前流上的 kernel 评测，支持非连续输入、结构化输出和显式原地更新。更换实现语言不需要改 agent 流程：只要 `candidate.run` 能调用实际入口，并将本地依赖列入快照即可。
 
-本版不内置 CUDA Graph、多流事件汇合、分布式通信、autograd 图、显存上限判定或任意原生工程构建缓存。遇到这些任务时，保留该 skill 的迭代方法，接入任务已有的专用 evaluator。CUDA event 指标不能直接替代 CPU launch/端到端应用延迟，输出 alias/存储布局等特殊契约通过 task.validate 显式验证。GPU 示例需在目标机器上完成验证后再用于性能结论。
+本版不内置 CUDA Graph、多流事件汇合、分布式通信、autograd 图、显存上限判定或任意原生工程构建缓存。遇到这些任务时，保留该 skill 的迭代方法，接入任务已有的专用 evaluator。CUDA event 指标不能直接替代 CPU launch/端到端应用延迟，输出 alias/存储布局等特殊契约通过 task.validate 显式验证。B300 上的实际验证见下文；迁移硬件或运行方式时仍按对应契约重测。
 
 ## 详细设计对比与审查结论
 
@@ -273,7 +273,7 @@ full 已有 best 时 R 从 2 变为 3，因此计时调用数增加 50%；这是
 
 本次可以确认：**相对自己的 0.1 版本，评测完整性和迭代操作有具体改善，并有对应反例测试；相对纯流程规范，本仓库增加了可执行、可复算的保障。** 对目前的单 agent、少量算子、现有机器场景，这是建议使用的组合。
 
-目前不能确认“全面优于九个仓库”。我们继承了它们许多核心方法，也尚缺 GPU 实验、专用精度 gate 和远端恢复等证据。强行给所有行打胜出会掩盖实际缺口。
+目前不能确认“全面优于九个仓库”。我们继承了它们许多核心方法，已补充 B300 evaluator 验收，但仍缺同预算的 agent 搜索对照、复杂任务精度验收和远端恢复等证据。强行给所有行打胜出会掩盖实际缺口。
 
 要验证优化效果的优势，下一步应在同一 B200/B300、同一模型、同一任务集和预算下，先比较最相关的 **JustGoal 式目标驱动、AKO4ALL、本 skill**：共同使用独立的最终 evaluator，记录最终正确率、相对原始实现的逐 case/加权收益、总 wall time、模型成本、GPU 时间和失败恢复成本，保留多次独立运行。任务至少覆盖归约、GEMM 和含非连续/尾部形状的融合算子。先验证这组对照有收益，再决定是否引入更重的编排能力。
 
@@ -343,6 +343,28 @@ full 已有 best 时 R 从 2 变为 3，因此计时调用数增加 50%；这是
 [torch-timer]: https://github.com/pytorch/pytorch/blob/8a9a9e737dba491a2eea270641bff86eea6e1ea2/torch/utils/benchmark/utils/timer.py
 [torch-common]: https://github.com/pytorch/pytorch/blob/8a9a9e737dba491a2eea270641bff86eea6e1ea2/torch/utils/benchmark/utils/common.py
 [compute-eval]: https://github.com/NVIDIA/compute-eval/blob/00fbad91b63957a002b501f33a06510cd25beaae/README.md
+
+## B300 实机验证
+
+在 flexible 空间实际申请 1 张 B300（本会话上限 32 张），绑定工单 `WOC-ff0a397b3590121d` 和正确性课题。PyTorch 2.12.1 / CUDA 13.0 / Triton 3.7.1 环境中，**95 项测试通过、零跳过**；7 项 CUDA 测试覆盖 Triton 的 event/wall 完整评测、错误输出、输入篡改、旧输出缓存、精度设置污染，以及晋升后从正常入口加载 best。晋升测试故意让 baseline 等待，只验证晋升流程，不将它的加速比当作优化成果。任务已 Completed、Pods=0。[验收记录](audit/gpu_validation.json)与[完整原始结果](audit/gpu_validation_raw.json.gz)保留硬件、镜像、源码及测试哈希。
+
+额外跑通两种计时口径下的 check、signal、quick、full 和错误输出场景，共 10 个场景。真实 vector-add 示例在 eager 口径下慢于 `torch.add`，因此没有晋升。该样本的 quick 进程耗时约 3.5–3.6 秒，full 约 4.5–4.8 秒；启动和输入检查是实际开销的一部分。这说明单次测量条数不能直接代表 agent 的总迭代成本。
+
+### 计时校准发现的限制
+
+[独立计时探针](audit/probe_gpu_timing.py)在相同输入上比较本 evaluator 的 event/wall、Triton `do_bench` 和 `do_bench_cudagraph`，执行三轮并轮换实现顺序。[结果](audit/gpu_timer_probe.json)保存逐轮摘要，[原始数据](audit/gpu_timer_probe_raw.json.gz)还包含全部直接计时样本和安装版本的 Triton 计时源码。三轮中位数如下，单位为 μs：
+
+| 输入与实现 | eager event | 同步 wall | Triton do_bench | CUDA Graph 回放 |
+|---|---:|---:|---:|---:|
+| 257 元素，torch | 12.18 | 13.66 | 7.20 | 1.18 |
+| 257 元素，Triton | 24.18 | 23.88 | 7.14 | 1.02 |
+| 257 元素，torch 前增加 200 μs host sleep | 273.74 | 274.38 | 241.95 | 1.30 |
+| 非连续 65,539 元素，torch | 12.77 | 14.70 | 7.23 | 1.69 |
+| 非连续 65,539 元素，Triton | 23.50 | 23.33 | 7.20 | 1.38 |
+
+host sleep 不改变加法 kernel，却明显增加普通 event 区间；Graph 录制后的回放不重复执行这段 Python。非连续输入的快慢排序也从 eager 下 torch 更快变为该 Graph 样本中 Triton 更快。因此，**目前的内置 evaluator 适用于声明的 eager 调用目标，不能拿它决定 Graph 中的 kernel 优劣**。Triton 普通 bench 的缓存处理与 Graph 的固定地址、缓存复用、批量回放也不同，不能仅把三列差值都归因为 Python 开销；Graph 耗时也不等于 profiler 中孤立的单条 kernel 时长。
+
+这次实测补强了硬件验证，同时确认参考计时工具有当前内置 evaluator 未覆盖的运行方式。保持 skill 的轻量流程；先明确实际部署是 eager 还是 Graph，再选择覆盖该语义的任务 evaluator。这里没有把两种口径合成一个 speedup，也没有把硬件验收当作模型搜索效果排名。
 
 ## 开发检查
 

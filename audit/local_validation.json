@@ -8,8 +8,8 @@
   "test_command": ".venv/bin/pytest -q",
   "tests": {
     "passed": 88,
-    "skipped": 2,
-    "skip_reason": "CUDA event/wall hardware tests require explicit GPU opt-in; not executed locally"
+    "skipped": 7,
+    "skip_reason": "Seven CUDA hardware tests require explicit GPU opt-in; local macOS run skips them. Separate B300 receipt records actual execution."
   },
   "scenarios": [
     {
@@ -106,5 +106,6 @@
         "Candidate source is identical to best; no implementation change"
       ]
     }
-  ]
+  ],
+  "tests_checked_at_utc": "2026-11-09T17:11:51.391409+00:00"
 }
