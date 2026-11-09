@@ -1,0 +1,58 @@
+{
+  "checked_at_utc": "2026-11-09T18:51:17.992271+00:00",
+  "source_commit": "2a30abefafc7395a7180e72e3819e9536d218d35",
+  "version": "0.4.0",
+  "evaluator_hash": "c17fa8f33b0e7fe0279bd250de3bf46d13e2eec4b34827472bd2d679472703f7",
+  "scope": "Fresh non-editable wheel installation outside the repository, with PYTHONPATH unset. CPU functional closure only; no new kernel or search performance comparison.",
+  "wheel_sha256": "86c9a92cf092ab4e579a59ad845efc8147f1cf1b14c081ae32e46939425f38a0",
+  "wheel_bytes": 20767,
+  "wheel_members": [
+    "kernel_envolve/__init__.py",
+    "kernel_envolve/arrays.py",
+    "kernel_envolve/cli.py",
+    "kernel_envolve/protocol.py",
+    "kernel_envolve/runtime.py",
+    "kernel_envolve/scoring.py",
+    "kernel_envolve/storage.py",
+    "kernel_envolve/worker.py",
+    "kernel_envolve-0.4.0.dist-info/METADATA",
+    "kernel_envolve-0.4.0.dist-info/WHEEL",
+    "kernel_envolve-0.4.0.dist-info/entry_points.txt",
+    "kernel_envolve-0.4.0.dist-info/RECORD"
+  ],
+  "declared_requirements": [
+    "numpy>=1.26",
+    "torch>=2.5; extra == 'cuda'",
+    "triton>=3.1; (sys_platform == 'linux') and extra == 'cuda'",
+    "pytest>=8; extra == 'dev'",
+    "pyyaml>=6; extra == 'dev'",
+    "ruff>=0.9; extra == 'dev'"
+  ],
+  "installed_distributions": [
+    [
+      "kernel-envolve",
+      "0.4.0"
+    ],
+    [
+      "numpy",
+      "2.5.4"
+    ]
+  ],
+  "runtime_module_path": "/Users/daniel/Documents/ChatGPT/\u7b97\u5b50\u4f18\u5316/core-package-audit-20261110/venv/lib/python3.12/site-packages/kernel_envolve/__init__.py",
+  "execution": "completed",
+  "correctness": "pass",
+  "checks": 32,
+  "timed_samples": 160,
+  "promotion": "succeeded",
+  "public_entry": "verified",
+  "raw_report": "core_package_validation_raw.json.gz",
+  "raw_report_sha256": "a3cca4f44d2b0a04450d321ab1b02b8d40c1e93e837d202f871f6968f60877b0",
+  "smoke_source": "import json,sys,pathlib,importlib.metadata,numpy as np\nfrom kernel_envolve import load_best\nfrom kernel_envolve.cli import evaluate,promote\nfrom kernel_envolve.storage import evaluator_hash\nimport kernel_envolve\nroot=pathlib.Path(__file__).resolve().parent\ntask=root/'task'\nrun,result=evaluate(task,mode='full')\nassert result['execution']=='completed' and result['correctness']=='pass',result\nassert result['decision']['eligible_for_best'],result\npromote(run)\nfn=load_best(task)\nx=np.arange(19,dtype=np.float32);y=np.ones_like(x)\nnp.testing.assert_array_equal(fn(x,y),x+y)\nreport={'module_path':kernel_envolve.__file__,'version':kernel_envolve.__version__,'evaluator_hash':evaluator_hash(),'python':sys.version,'installed_distributions':sorted((d.metadata['Name'],d.version)for d in importlib.metadata.distributions()),'run_result':result,'promotion':'succeeded','public_entry':'verified'}\n(root/'installed-smoke.json').write_text(json.dumps(report,indent=2)+'\\n')\nprint('Installed module',kernel_envolve.__file__)\nprint('PASS',report['version'],report['evaluator_hash'],report['installed_distributions'])\n",
+  "reproduction": [
+    "uv build --wheel --out-dir <artifact-dir>",
+    "uv venv --python 3.12 <artifact-dir>/venv",
+    "uv pip install --python <artifact-dir>/venv/bin/python <artifact-dir>/kernel_envolve-0.4.0-py3-none-any.whl",
+    "Copy examples/vector_add to <artifact-dir>/task, excluding old .kernel_envolve and __pycache__.",
+    "Write smoke_source to <artifact-dir>/smoke.py; execute it from outside the repository with PYTHONPATH unset."
+  ]
+}
