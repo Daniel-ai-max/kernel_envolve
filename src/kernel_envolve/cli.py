@@ -43,6 +43,36 @@ def lock(path):
             fcntl.flock(handle, fcntl.LOCK_UN)
 
 
+def audit_result(result, request, cfg):
+    """The supervisor checks identity and recomputes decisions instead of trusting worker summaries."""
+    if not isinstance(result, dict):
+        raise ValueError("Worker result must be an object")
+    digest(
+        result
+    )  # Reject non-JSON/nonfinite data anywhere in the envelope before saving a receipt.
+    if result.get("schema") != 3:
+        raise ValueError("Unsupported worker result schema")
+    for key, value in request.items():
+        if key not in result or result[key] != value:
+            raise ValueError(f"Worker result does not match request: {key}")
+    if result["execution"] not in ("completed", "error") or result["correctness"] not in (
+        "pass",
+        "fail",
+        "partial",
+        "not_run",
+    ):
+        raise ValueError("Invalid execution/correctness status")
+    if result["execution"] == "completed" and result["correctness"] not in ("pass", "fail"):
+        raise ValueError("Completed result must have a correctness verdict")
+    if result["execution"] == "completed" and result["correctness"] == "fail":
+        if not any(r.get("status") == "fail" for r in result["checks"]):
+            raise ValueError("Correctness failure has no failing check")
+    decision = score(result, cfg)
+    if result.get("error"):
+        decision["reasons"].append(result["error"]["message"])
+    return decision
+
+
 def evaluate(
     task,
     mode="quick",
@@ -53,6 +83,10 @@ def evaluate(
     seeds=None,
     check_only=False,
 ):
+    if sys.flags.optimize:
+        raise ValueError(
+            "Evaluation requires Python without -O / PYTHONOPTIMIZE; task assertions must execute"
+        )
     task = Path(task).resolve()
     cfg = config(task)
     selection = {}
@@ -130,7 +164,7 @@ def evaluate(
                 raise
         if failure or not (run / "result.json").exists():
             result = {
-                "schema": 2,
+                "schema": 3,
                 **request,
                 "execution": "error",
                 "correctness": "partial",
@@ -144,7 +178,28 @@ def evaluate(
                 },
             }
             write_json(run / "result.json", result)
-        result = read_json(run / "result.json")
+        try:
+            result = read_json(run / "result.json")
+            if request["identity"]["evaluator_hash"] != evaluator_hash():
+                raise ValueError("Evaluator changed during execution")
+            verify_source(run, request["identity"])
+            result["decision"] = audit_result(result, request, config(run / "source"))
+        except (ValueError, OSError, KeyError, TypeError, OverflowError) as exc:
+            (run / "result.json").replace(run / "rejected_result.json")
+            result = {
+                "schema": 3,
+                **request,
+                "execution": "error",
+                "correctness": "partial",
+                "checks": [],
+                "samples": [],
+                "error": {"type": "EvidenceError", "message": str(exc)},
+                "decision": {
+                    "eligible_for_best": False,
+                    "performance": "not_measured",
+                    "reasons": [str(exc)],
+                },
+            }
         result["worker_wall_seconds"] = time.perf_counter() - started
         write_json(run / "result.json", result)
         # Receipt detects accidental later edits to the report and raw evidence.
@@ -168,7 +223,7 @@ def promote(run):
         cfg = config(run / "source")
         if contract(task, config(task)) != result["identity"]["contract"]:
             raise ValueError("Live task contract changed; evaluate again")
-        decision = score(result, cfg)
+        decision = audit_result(result, read_json(run / "request.json"), cfg)
         if not decision["eligible_for_best"]:
             raise ValueError("Not eligible: " + "; ".join(decision["reasons"]))
         best = read_best(task)

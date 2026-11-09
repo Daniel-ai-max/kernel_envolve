@@ -39,7 +39,8 @@ def test_torch_cpu_end_to_end(tmp_path):
 @pytest.mark.skipif(
     os.environ.get("KERNEL_ENVOLVE_TEST_CUDA") != "1", reason="explicit GPU opt-in required"
 )
-def test_triton_cuda_end_to_end(tmp_path):
+@pytest.mark.parametrize("timer", ["auto", "wall"])
+def test_triton_cuda_end_to_end(tmp_path, timer):
     torch = pytest.importorskip("torch")
     pytest.importorskip("triton")
     if not torch.cuda.is_available():
@@ -48,10 +49,12 @@ def test_triton_cuda_end_to_end(tmp_path):
     for file in example.glob("*.py"):
         shutil.copy(file, tmp_path / file.name)
     cfg = json.loads((example / "task.json").read_text())
-    cfg.update(full_trials=3, warmup=1)
+    cfg.update(full_trials=3, warmup=1, timer=timer)
     (tmp_path / "task.json").write_text(json.dumps(cfg))
     _, result = evaluate(tmp_path, "full", timeout=600)
     assert result["execution"] == "completed", result
     assert result["correctness"] == "pass", result
-    assert result["environment"]["timer"] == "cuda_events_current_stream"
+    assert result["environment"]["timer"] == (
+        "cuda_events_current_stream" if timer == "auto" else "synchronized_wall"
+    )
     assert all(s["us"] > 0 for s in result["samples"])

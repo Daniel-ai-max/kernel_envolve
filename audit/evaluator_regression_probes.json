@@ -1,0 +1,50 @@
+{
+  "checked_at_utc": "2026-11-09T16:32:01.077284+00:00",
+  "previous_commit": "b45ae3984b3b4e4e139ea266843f4316c02e753a",
+  "command": "PYTHONPATH=<checkout>/src python tests/probe_previous_release.py",
+  "scope": "Identical synthetic fault probes on our previous and current evaluator, using the same local Python environment. Not a comparison of upstream repositories or GPU optimization performance.",
+  "results": [
+    {
+      "version": "0.2.0",
+      "observations": {
+        "shared_oracle_buffer": [
+          "completed",
+          "pass"
+        ],
+        "shared_timed_output": [
+          "completed",
+          "pass"
+        ],
+        "global_numeric_policy_leak": [
+          "completed",
+          "pass"
+        ],
+        "unlisted_snapshot_source": "accepted",
+        "stale_bytecode_value": 2,
+        "zero_mad_multimodal_eligible": true,
+        "float16_tolerance_overflow": "accepted"
+      }
+    },
+    {
+      "version": "0.3.0",
+      "observations": {
+        "shared_oracle_buffer": [
+          "completed",
+          "fail"
+        ],
+        "shared_timed_output": [
+          "completed",
+          "fail"
+        ],
+        "global_numeric_policy_leak": [
+          "error",
+          "not_run"
+        ],
+        "unlisted_snapshot_source": "rejected",
+        "stale_bytecode_value": 1,
+        "zero_mad_multimodal_eligible": false,
+        "float16_tolerance_overflow": "rejected"
+      }
+    }
+  ]
+}

@@ -64,7 +64,7 @@ my_task/
 
 ```python
 def make_inputs(case: dict, seed: int) -> tuple:
-    # 每次返回新的数组/张量；同一 case/seed 的值、dtype、layout、alias 关系一致。
+    # 每次返回独立存储的数组/张量；同一 case/seed 值一致，同一 case 的 dtype/layout/shape/alias 不随 seed 变。
     ...
 
 
@@ -77,6 +77,8 @@ def baseline(*inputs):
     # 原始实现，独立于随迭代变化的 best。
     ...
 ```
+
+可运行的 [reduction 示例](examples/reduction/task.py)演示了普通 allclose 以外的精度检查：用 `math.fsum` 作为独立求和方法，限制相对 golden 的误差。测试验证了“容差内的小偏置被拒绝、精度改善的实现被接受”。示例门槛只适用于该任务，不能套到所有算子。
 
 任务还可以定义 `validate(inputs, output)`，用来检查输出 alias、布局或数学不变量：成功返回 `None`，失败抛出 `AssertionError`。evaluator 对 oracle 和每个实现都执行该检查；oracle 不满足它时报告任务错误，候选不满足时报告正确性失败。它的源码同样属于固定契约。复杂统计精度/梯度验证仍使用任务已有的专用 evaluator。
 
@@ -105,6 +107,8 @@ case 权重由任务明确给出。没有真实调用分布时，可以声明等
 | `reference_files` | `["task.py"]` | 固定 oracle/baseline/输入工厂的本地依赖 |
 | `candidate_files` | `["candidate.py"]` | 候选及其本地依赖，全部进入快照 |
 | `device` | `cpu` | `cpu` 或 `cuda:索引` |
+| `timer` | `auto` | CPU wall time / CUDA event；`wall` 在 CUDA 上测含设备同步的完整调用 |
+| `deterministic` | `false` | 同值复位后重跑，要求逐元素精确一致；不是通用 bitwise 规则 |
 | `rtol` / `atol` | `1e-5` / `1e-6` | 浮点逐元素容差，按任务数值要求配置 |
 | `equal_nan` | `false` | 是否允许同位置 NaN 相等 |
 | `mutable_inputs` | `[]` | 允许原地更新的输入索引；更新后的值仍须与 oracle 一致 |
@@ -119,7 +123,7 @@ case 权重由任务明确给出。没有真实调用分布时，可以声明等
 
 这些默认值用于起步，不是所有算子的精度或收益标准。任务建立时确定它们，迭代候选时保持不变。修改固定任务契约后，使用新的任务目录重新建立 best。
 
-本地 helper 用相对导入，例如 `from .helper import launch`，并写入对应 files 列表。配置、构建代码、小型常量文件也要列入。快照只收集显式文件，拒绝隐藏文件和符号链接，总大小上限 32 MiB。输入采用工厂生成；外部依赖使用当前 Python 环境，结果记录 Python、平台和 NumPy/PyTorch/Triton 版本。
+本地 helper 用相对导入，例如 `from .helper import launch`，并写入对应 files 列表。配置、构建代码、小型常量文件也要列入。快照只收集显式文件，拒绝隐藏文件和符号链接，总大小上限 32 MiB。快照中不允许未列出的新文件；编译产物、缓存写到快照外。Python 入口与 helper 直接从已校验源码编译，忽略时间戳匹配但内容过期的 `.pyc`。输入采用工厂生成；外部依赖使用当前 Python 环境，结果记录 Python、平台和 NumPy/PyTorch/Triton 版本。
 
 ## evaluate 如何判定
 
@@ -127,8 +131,11 @@ case 权重由任务明确给出。没有真实调用分布时，可以声明等
 
 每个 case、seed 都分别检查 candidate 和 comparator；full 比较 best 时还检查固定 baseline：
 
-- 新建匹配的输入，与固定 oracle 比较输出结构、shape、dtype、device 和逐元素值。整数/bool 精确比较。
-- 检查未声明的输入修改、输入布局/存储绑定改变和 alias 关系改变；声明的原地更新须与 oracle 更新后的输入一致。
+- 拒绝跨工厂调用共用输入存储，以及同一 case 随 seed 改变 shape/layout 的情况。否则 oracle 与候选可能互相污染，或把新 shape 的 JIT 编译计入延迟。
+- 新建匹配的输入，与固定 oracle 比较输出结构、shape、dtype、device 和逐元素值。整数/bool 精确比较。浮点比较提升计算精度，避免比较过程自身在 FP16 溢出；不改变被检查输出的 dtype 契约。
+- 在候选运行前冻结 oracle 的输出，在后续实现/oracle 运行前冻结抽查的真实计时输出，防止共享返回缓冲被覆盖后产生假 PASS。
+- `deterministic=true` 时，在相同值、相同对象上复位并重跑，要求结果逐元素一致；普通误差容差仍单独检查。
+- 检查未声明的输入修改、输入布局/存储绑定改变和 alias 关系改变（含零 stride 广播视图）；声明的原地更新须与 oracle 更新后的输入一致。
 - 保留原输入对象，用 `seed + 1000003` 生成的新值覆盖其内容，再执行并验证，捕获按对象地址缓存旧输出的问题。
 - 对每个 case/实现，直接检查最后一个实际计时调用的返回值及输入状态（`timed_output`），而非重新调用候选来代替它；这是抽查，不是所有计时输出的全量验证。随后在同一输入对象上换值验证，捕获预热/计时后才出现的错误。`--check-only` 没有计时阶段，只做前面的检查。
 
@@ -140,7 +147,7 @@ case 权重由任务明确给出。没有真实调用分布时，可以声明等
 
 quick 测所选 case，一批样本；full 测全部 case，两批样本，第二批倒序遍历 case。两个实现采用 A–B–B–A 并轮换起始角色；三个实现采用 A–B–C–C–B–A，并在各轮循环改变起始角色。每个角色的两次调用使用不同的值，同一 repeat 的各角色使用匹配的值。输入种子由 case、batch、trial、repeat 和任务 seeds 确定，每个测量样本都更新，可从记录复现。判定时同时核对样本身份、数量和实际执行顺序。
 
-CPU 使用 `perf_counter_ns`，测完整函数调用；CUDA 使用当前流上的 event。输入构造/复位、预热和同步等待不计入延迟；实际 `run` 内的布局转换、临时缓冲和 kernel 工作保留在调用中。每次测量前重新生成输入，适用于声明的原地更新；测得的是该输入准备方式下的延迟。
+CPU 使用 `perf_counter_ns`，测完整函数调用；CUDA 默认使用当前流上的 event。设置 `timer=wall` 时，CUDA 计时在调用前后做设备同步，包含 CPU launch 和完成等待；它与 event 指标是不同的任务契约，不能混比。输入构造/复位、预热和同步等待不计入延迟；实际 `run` 内的布局转换、临时缓冲和 kernel 工作保留在调用中。每次测量前重新生成输入，适用于声明的原地更新；测得的是该输入准备方式下的延迟。
 
 full 的每一批分别计算：
 
@@ -148,11 +155,12 @@ full 的每一批分别计算：
 T_candidate  = Σ weight(case) × median(candidate_samples)
 T_comparator = Σ weight(case) × median(comparator_samples)
 gain         = 1 - T_candidate / T_comparator
-noise_guard  = noise_multiplier × Σ weight(case) × (MAD_candidate + MAD_comparator)
+dispersion   = max(MAD, IQR / 2)
+noise_guard  = noise_multiplier × Σ weight(case) × (dispersion_candidate + dispersion_comparator)
                / T_comparator
 ```
 
-两批相对 best 的 gain 都必须超过 `max(min_gain, noise_guard)`；相对固定 baseline 也单独计算相同的收益/噪声门槛。所有 case 必须同时满足两套回退限制和绝对延迟上限。这避免逐轮 4% 的局部退化越积越大，也避免只赢过一个已经退化的 best。MAD 门槛是保守筛选规则，不是统计置信区间。结果接近门槛时，先检查环境竞争；确需调整协议时记录原因、保留旧结果，重新建立对应契约和对照。不要重复抽样直到出现有利结果；profiling 用于解释瓶颈，不与正式计时混跑。
+两批相对 best 的 gain 都必须超过 `max(min_gain, noise_guard)`；相对固定 baseline 也单独计算相同的收益/噪声门槛。所有 case 必须同时满足两套回退限制和绝对延迟上限。这避免逐轮 4% 的局部退化越积越大，也避免只赢过一个已经退化的 best。MAD/IQR 门槛是保守筛选规则，不是统计置信区间。结果接近门槛时，先检查环境竞争；确需调整协议时记录原因、保留旧结果，重新建立对应契约和对照。不要重复抽样直到出现有利结果；profiling 用于解释瓶颈，不与正式计时混跑。
 
 `--case`、`--seed`、`--check-only` 仅限 quick，可定位 full 中才运行的 case，不修改固定任务契约，也不能产生晋升资格。`worker_wall_seconds` 记录整个子进程耗时；`measurement_wall_seconds` 记录预热、输入生成、计时、后检查所在阶段的总耗时，两者都不是纯 GPU 执行时间。
 
@@ -172,6 +180,8 @@ my_task/.kernel_envolve/
   best.json          指向已验证 run；同时保留 previous run 指针
 ```
 
+父进程首先核对 worker 结果与原请求的模式、身份、选择范围等字段，并从原始证据重新计算判定；无效报告保留到 `rejected_result.json`，不发放合格 receipt。
+
 `promote` 会校验结果和源码、重算覆盖及收益、检查 evaluator 和任务契约是否变化，并在锁内核对 best 是否仍是当时比较的版本。quick、缺失/重复/乱序样本、无效耗时、噪声过大、旧 comparator、事后修改的证据均不能晋升。与 best 完全相同的候选源码也不能靠噪声再次晋升；注释变更虽会改变哈希，但仍需 agent 核实实际生效的机制变化。best 引用保存的源码及 helper，工作目录继续编辑不会改变 best。
 
 调用已验证版本时使用稳定入口：
@@ -185,7 +195,7 @@ output = run(*inputs)
 
 测试在新 Python 进程中验证该入口：即使工作目录的 candidate 已损坏，也仍调用保存的 best；快照损坏则拒绝加载。集成进已有模型的 dispatcher 时，仍需验证模型实际调用了这一入口。
 
-0.2 更新了验证/计时协议与累计预算。旧 run 保留为历史，不能沿用其晋升资格；已有 0.1 best 的任务请将 task.json、task.py、candidate.py 及声明的依赖复制到新任务目录后重测。
+0.3 更新了输入隔离、确定性选项、计时口径和噪声规则。旧 run 保留为历史，不能沿用其晋升资格；已有旧协议 best 的任务请将 task.json、task.py、candidate.py 及声明的依赖复制到新任务目录后重测。
 
 文件快照和哈希用于复现与防止误用；候选作为本机代码运行，这不是隔离不可信程序的安全沙箱。任务内有运行锁和晋升锁；GPU 性能实验仍需由使用者在目标设备上串行执行，其他任务目录不会自动共享设备锁。
 
@@ -245,7 +255,7 @@ output = run(*inputs)
 | 收尾 | 复算晋升谓词，检查 source/helper，正常入口加载 best | 合格 full 不无条件再做第三次；接入模型后另查 dispatcher 是否生效 |
 | 超时/恢复 | 新子进程、保留日志；远端 job 先查状态 | 本版超时后重跑该轮，尚未实现 Atrex 式批次断点恢复 |
 
-**默认成本可直接计算。** C 个 case、S 个 correctness seeds、T 个 timing trials、R 个实现：完整 quick/full 分别是 1/2 批，每批 `2×C×T×R` 次测量；完整正确性含 `C×R×(2S+2)` 条检查记录，额外的 2 是实际计时输出抽查和计时后换值检查；输出抽查复用真实返回值，不额外运行候选。check-only 是 `2×C×S×R` 次检查、零计时。每次实现检查另运行 oracle，成本不能忽略。
+**默认成本可直接计算。** C 个 case、S 个 correctness seeds、T 个 timing trials、R 个实现：完整 quick/full 分别是 1/2 批，每批 `2×C×T×R` 次测量；默认完整正确性含 `C×R×(2S+2)` 条检查记录，额外的 2 是实际计时输出抽查和计时后换值检查；输出抽查复用真实返回值，不额外运行候选。check-only 是 `2×C×S×R` 次检查、零计时。每次实现检查另运行 oracle，成本不能忽略。开启 deterministic 后，完整模式和 check-only 都再增加 `C×R×S` 条检查与对应调用。
 
 full 已有 best 时 R 从 2 变为 3，因此计时调用数增加 50%；这是修复累计预算缺口的明确代价。没有 best 时复用 baseline 对照，不重复测两遍。预算紧时减少探索轮的范围或用 signal，而不删正式验收的必要对照。任务的 `worker_wall_seconds` 用于检查这些开销是否值得；本次 [本地 smoke 记录](audit/local_validation.json)只测 CPU evaluator 开销：定点检查是 4 次检查、零计时；quick 是 8 次检查、12 个计时样本；full 起步为 32/160，已有 best 为 48/240。本例只有亚毫秒函数，Python 启动耗时足以掩盖样本数差异，单次数据不用于 wall time 排名；不能由更少样本直接推断 wall time 更短，也不据此推断 GPU 或 agent 总搜索效率。
 
@@ -254,7 +264,7 @@ full 已有 best 时 R 从 2 变为 3，因此计时调用数增加 50%；这是
 | 维度 | 已由代码和测试保障 | 不混淆的结论 |
 |---|---|---|
 | 数值与状态 | fresh/reuse/timed_output/post；整数精确检查；dtype/shape/device；非有限数；原地结果；自定义语义校验 | allclose 不等于梯度、方向漂移、批次不变性、race 或数学证明；按任务接入专用验证 |
-| 时间与目标 | 同期交错测量、原始顺序校验、正有限耗时、权重目标、双预算、两批噪声筛选 | MAD 是启发式门槛；case 预算针对声明的中位延迟，不是尾延迟 SLA 或置信上界 |
+| 时间与目标 | 同期交错测量、原始顺序校验、正有限耗时、权重目标、双预算、两批噪声筛选 | MAD/IQR 是启发式门槛；case 预算针对声明的中位延迟，不是尾延迟 SLA 或置信上界 |
 | 身份 | task/ref/candidate/helper/evaluator 哈希；结果 receipt；当前 best 重新核对 | 外部动态库、驱动与环境需部署固定；本地哈希不是对不可信候选的安全隔离 |
 | 晋升与入口 | 只接受 full；拒绝改写、漏测、乱序、旧比较对象、相同源码；新进程 load_best 验证 | 哈希变化不证明机制有用；模型中的默认 dispatcher 仍须集成测试 |
 | 迭代效率 | 诊断、signal、quick、full 各有用途；不强制多 agent、每轮 profiler 或额外稿件 | 减少固定步骤是已实现事实；节省多少模型/GPU 时间、最终 kernel 多快尚需实际任务对照 |
@@ -281,6 +291,39 @@ full 已有 best 时 R 从 2 变为 3，因此计时调用数增加 50%；这是
 [justgoal]: https://github.com/OpenBMB/JustGoal/blob/b0a2b582e39daf3344faac1414ec7c26660633e3/README.md#L26
 [kernelagent]: https://github.com/meta-pytorch/KernelAgent/blob/e0647170da36ef9b059ac0bd3d60103aa4ed378b/triton_kernel_agent/opt_worker_component/orchestrator/optimization_orchestrator.py#L311
 [geak]: https://github.com/AMD-AGI/GEAK/blob/f189eff7c4036d9e9bd1d4fe99ec5c25ab6b8b20/kernel_workflow/README.md#L1
+
+## Evaluate 深度审查：0.3 补齐的缺口
+
+这轮继续阅读 [robust-kbench 的 forward 检查][robust-forward]、[BackendBench 的结构化比较][backend-eval]、[PyTorch benchmark 的计时][torch-timer]与[离散度判断][torch-common]、[ComputeEval 的正确性/性能范围][compute-eval]，并复核 ForgeKernel 的精度 gate。新增来源固定在 [evaluator_sources.json](audit/evaluator_sources.json)。吸收具体机制，而不复制其默认容差或宣称覆盖了其完整功能。
+
+另外，用同一套 [故障探针](tests/probe_previous_release.py)实际运行旧版 0.2 和新版 0.3。[结果记录](audit/evaluator_regression_probes.json)复现了 7 项差异：旧版会放过共享 oracle/计时缓冲覆盖、公共数值设置泄漏、未登记源码、旧字节码、零 MAD 多峰计时和 FP16 比较溢出；新版分别拒绝错误证据或执行正确源码。这是同环境下对本仓库旧版的回归验证，不是对其他仓库的性能排名。
+
+| 发现的缺口 | 修复及行为 | 对应反例测试 |
+|---|---|---|
+| oracle 与候选共享返回缓冲，后调用把前结果改写 | 及时冻结 oracle 和真实计时输出；值比较与实际对象的 alias 校验分开 | `test_oracle_output_cannot_be_overwritten_by_candidate`、`test_actual_timed_output_cannot_be_overwritten_by_later_oracle` |
+| 工厂返回缓存输入，或 seed 改变 shape | 强制独立存储、固定每 case 的输入结构；参考计算与候选互不污染 | `test_cached_factory_inputs_are_rejected`、`test_factory_shape_drift_cannot_include_compilation_in_timing` |
+| 换值检查误拒广播视图和空张量 | 零 stride 维只写底层代表切片；空 storage 不视作跨输入共享 | `test_torch_expanded_views_and_empty_storage_are_valid` |
+| 容差内漂移掩盖不确定性，或比较算术自身溢出 | 可选同输入精确重跑；宽精度比较；正确处理 conjugate view | `test_optional_exact_value_determinism`、`test_float16_tolerance_math_must_not_overflow_to_infinity` |
+| allclose 允许小但系统性的精度退化 | 任务可设独立 golden gate；提供 reduction 正反例，不套统一统计方法 | `test_golden_gate_accepts_improved_accuracy_and_rejects_bias_within_allclose` |
+| 候选把全局 dtype/TF32/归约精度/线程等设置留给后续对照 | 冻结任务初始化后的运行设置；检查导入、验证、预热、计时调用后的持久变化 | `test_torch_default_dtype_cannot_leak_between_roles`、`test_numpy_global_error_policy_cannot_leak_between_roles` |
+| MAD=0 却存在多峰长尾 | 噪声尺度使用 `max(MAD, IQR/2)`，记录两者；无自动重跑直到通过 | `test_bimodal_timing_cannot_hide_behind_zero_mad` |
+| 有限原始耗时算出无限 speedup，或布尔值冒充耗时 | 同时验证原始和派生指标，拒绝非有限值与错误类型 | `test_derived_ratio_overflow_rejected_with_finite_raw_samples`、`test_boolean_is_not_a_timing_measurement` |
+| CUDA event 被误当完整调用成本 | 显式选择 event/wall 并绑定契约；wall 调用前后同步 | `test_wall_clock_synchronizes_before_and_after_device_work`；CUDA 两种模式有单独硬件 opt-in 测试 |
+| 源码哈希正确，实际却加载旧字节码或未列出文件 | 从源码编译快照模块、忽略 `.pyc`；核对完整文件清单 | `test_snapshot_import_ignores_timestamp_valid_stale_bytecode`、`test_added_source_file_invalidates_manifest` |
+| Python `-O` / `PYTHONOPTIMIZE` 静默移除断言 | 评测拒绝优化模式；快照源码始终保留 assert | `test_python_optimization_cannot_disable_task_assertions`、`test_snapshot_loader_keeps_assertions_even_in_optimized_python` |
+| 子进程报告串任务或自称 eligible | 父进程匹配请求、校验结构并重算；错误原报告保留供诊断 | `test_supervisor_does_not_trust_eligibility_or_wrong_identity`、`test_malformed_worker_envelope_is_rejected` |
+
+全局设置检查防止持久污染，不代替误差检查，也不是拦截所有进程状态的沙箱。task.py 可以在初始化时明确设置所需精度/线程策略；候选不得把变更留给其他实现。Torch 的 dtype、matmul 精度、TF32、FP16/BF16 reduction、deterministic algorithms、cuDNN 策略、线程以及当前 CUDA device/stream 会记录并核对；已知线程环境变量也进入结果。
+
+源码核对也发现不能照搬的细节：上述 BackendBench 固定提交中，`allclose(a, b, atol, rtol)` 调用 `_allclose(a, b)` 时没有转发容差。这里借鉴结构化输出与算子输入覆盖思路，保留显式传递任务容差，并用宽/严容差与 golden 正反例测试约束其行为。
+
+这些补强保持原来的四个操作：**定点检查 → quick/signal → full → promote**。强制新增检查只针对证据失真；同输入确定性与计时口径由任务明确选择。Golden 示例展示如何扩展现有 `validate`，不另建验证框架。GPU race/sanitizer、复杂梯度统计、CUDA Graph 和真正未见过的隐藏测试仍需相应任务 evaluator；ComputeEval 的 held-out harness 不能由公开可见的固定 full seeds 冒充。
+
+[robust-forward]: https://github.com/SakanaAI/robust-kbench/blob/078f5bab29934a822268d59a4e707d449abf9b4e/robust_kbench/sandbox/correct_forward_fn.py
+[backend-eval]: https://github.com/meta-pytorch/BackendBench/blob/2a8d7e19e2c13c789ff2dceb44883ea8ea04dab4/BackendBench/eval.py
+[torch-timer]: https://github.com/pytorch/pytorch/blob/8a9a9e737dba491a2eea270641bff86eea6e1ea2/torch/utils/benchmark/utils/timer.py
+[torch-common]: https://github.com/pytorch/pytorch/blob/8a9a9e737dba491a2eea270641bff86eea6e1ea2/torch/utils/benchmark/utils/common.py
+[compute-eval]: https://github.com/NVIDIA/compute-eval/blob/00fbad91b63957a002b501f33a06510cd25beaae/README.md
 
 ## 开发检查
 

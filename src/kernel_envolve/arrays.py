@@ -1,5 +1,7 @@
 """Array checks shared by fresh-input and same-object reuse verification."""
 
+import copy
+
 import numpy as np
 
 
@@ -13,12 +15,15 @@ def is_torch(x):
 
 def host(x):
     if isinstance(x, np.ndarray):
+        if x.dtype.kind in "fc":
+            # Compare fp16/fp32 differences in a wider dtype: tolerance arithmetic can overflow.
+            return x.astype(np.result_type(x.dtype, np.float64), copy=False)
         return x
     if is_torch(x):
         # NumPy does not represent bfloat16; comparison uses fp64 without changing dtype checks.
         torch = __import__("torch")
         dtype = torch.complex128 if x.is_complex() else torch.float64
-        return x.detach().cpu().to(dtype=dtype).numpy()
+        return x.detach().resolve_conj().resolve_neg().cpu().to(dtype=dtype).numpy()
     raise TypeError("Task inputs/outputs must be NumPy arrays or PyTorch tensors")
 
 
@@ -35,7 +40,11 @@ def aliases(inputs):
         if isinstance(a, np.ndarray) and isinstance(b, np.ndarray):
             return bool(np.shares_memory(a, b))
         if is_torch(a) and is_torch(b):
-            return a.untyped_storage().data_ptr() == b.untyped_storage().data_ptr()
+            return (
+                a.untyped_storage().nbytes() > 0
+                and b.untyped_storage().nbytes() > 0
+                and a.untyped_storage().data_ptr() == b.untyped_storage().data_ptr()
+            )
         return False
 
     return {(i, j): same(a, b) for i, a in enumerate(inputs) for j, b in enumerate(inputs) if i < j}
@@ -124,6 +133,38 @@ def binding(x):
     return x.data_ptr() if is_torch(x) else x.__array_interface__["data"][0]
 
 
+def freeze(value):
+    """Preserve oracle values before candidate code can reuse an output buffer."""
+    if isinstance(value, dict):
+        frozen = copy.copy(value)
+        for k, v in value.items():
+            frozen[k] = freeze(v)
+        return frozen
+    if isinstance(value, list):
+        frozen = copy.copy(value)
+        for i, v in enumerate(value):
+            frozen[i] = freeze(v)
+        return frozen
+    if isinstance(value, tuple):
+        items = tuple(freeze(v) for v in value)
+        return type(value)(*items) if hasattr(value, "_fields") else type(value)(items)
+    if isinstance(value, np.ndarray):
+        return value.copy()
+    if is_torch(value):
+        return value.detach().clone()
+    raise TypeError("Reference must return arrays/tensors or their nested containers")
+
+
+def independent(left, right):
+    relations = aliases(left + right)
+    if any(
+        relations[(i, j)]
+        for i in range(len(left))
+        for j in range(len(left), len(left) + len(right))
+    ):
+        raise ValueError("Input factory must allocate independent storage on each call")
+
+
 def copy_values(destination, source):
     if len(destination) != len(source) or aliases(destination) != aliases(source):
         raise ValueError("Input factory changes its alias structure between seeds")
@@ -133,7 +174,12 @@ def copy_values(destination, source):
         if isinstance(a, np.ndarray):
             np.copyto(a, b)
         else:
-            a.copy_(b)
+            # copy_ rejects expanded zero-stride dimensions; update their underlying slice once.
+            index = tuple(
+                0 if size > 1 and stride == 0 else slice(None)
+                for size, stride in zip(a.shape, a.stride())
+            )
+            a[index].copy_(b[index])
     # Overlapping inputs must be consistent after all copies, not just each copy.
     for a, b in zip(destination, source):
         assert_close(a, b, {"rtol": 0, "atol": 0, "equal_nan": True}, "reuse input reset")

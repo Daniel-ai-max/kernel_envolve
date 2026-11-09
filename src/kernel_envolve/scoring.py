@@ -6,6 +6,13 @@ import statistics as stats
 from .protocol import order, plan, post_seed, roles, timing_seed
 
 
+def ratio(numerator, denominator):
+    value = numerator / denominator
+    if not math.isfinite(value):
+        raise ValueError("Derived metric is not finite")
+    return value
+
+
 def score(result, cfg):
     decision = {"eligible_for_best": False, "performance": "not_measured", "reasons": []}
     if result["execution"] != "completed" or result["correctness"] != "pass":
@@ -18,7 +25,9 @@ def score(result, cfg):
         (c["id"], seed, kind, role)
         for c in cases
         for seed in seeds
-        for kind in ("fresh", "reuse")
+        for kind in (
+            ("fresh", "repeat", "reuse") if cfg.get("deterministic") else ("fresh", "reuse")
+        )
         for role in implementations
     }
     if not result.get("check_only"):
@@ -68,7 +77,7 @@ def score(result, cfg):
     if keys != ordered_keys:
         raise ValueError("Timing order does not match the paired schedule")
     for r in records:
-        if not isinstance(r["us"], (float, int)) or not math.isfinite(r["us"]) or r["us"] <= 0:
+        if type(r["us"]) not in (float, int) or not math.isfinite(r["us"]) or r["us"] <= 0:
             raise ValueError("Timing must be finite and positive")
     summaries = []
     gains, guards, baseline_gains, baseline_guards = [], [], [], []
@@ -85,14 +94,17 @@ def score(result, cfg):
                 ]
                 median = stats.median(values)
                 mad = stats.median(abs(v - median) for v in values)
+                q25, _, q75 = stats.quantiles(values, n=4, method="inclusive")
+                spread = max(mad, (q75 - q25) / 2)
                 row[role + "_us"] = median
                 row[role + "_mad_us"] = mad
+                row[role + "_iqr_us"] = q75 - q25
                 totals[role] += c["weight"] * median
-                uncertainties[role] += c["weight"] * mad
+                uncertainties[role] += c["weight"] * spread
             if "max_us" in c and row["candidate_us"] > c["max_us"]:
                 decision["reasons"].append(f"{c['id']}: exceeds absolute latency cap in batch {b}")
             if not result["signal_only"]:
-                row["speedup"] = row["comparator_us"] / row["candidate_us"]
+                row["speedup"] = ratio(row["comparator_us"], row["candidate_us"])
                 if row["candidate_us"] > row["comparator_us"] * (1 + cfg["max_regression"]):
                     decision["reasons"].append(
                         f"{c['id']}: exceeds regression allowance in batch {b}"
@@ -109,23 +121,27 @@ def score(result, cfg):
         if not all(math.isfinite(v) for v in uncertainties.values()):
             raise ValueError("Weighted noise must be finite")
         if not result["signal_only"]:
-            gains.append(1 - totals["candidate"] / totals["comparator"])
+            gains.append(1 - ratio(totals["candidate"], totals["comparator"]))
             guards.append(
-                cfg["noise_multiplier"]
-                * (uncertainties["candidate"] + uncertainties["comparator"])
-                / totals["comparator"]
+                ratio(
+                    cfg["noise_multiplier"]
+                    * (uncertainties["candidate"] + uncertainties["comparator"]),
+                    totals["comparator"],
+                )
             )
             if mode == "full":
                 baseline_gains.append(
-                    1 - totals["candidate"] / totals.get("baseline", totals["comparator"])
+                    1 - ratio(totals["candidate"], totals.get("baseline", totals["comparator"]))
                 )
                 baseline_guards.append(
-                    cfg["noise_multiplier"]
-                    * (
-                        uncertainties["candidate"]
-                        + uncertainties.get("baseline", uncertainties["comparator"])
+                    ratio(
+                        cfg["noise_multiplier"]
+                        * (
+                            uncertainties["candidate"]
+                            + uncertainties.get("baseline", uncertainties["comparator"])
+                        ),
+                        totals.get("baseline", totals["comparator"]),
                     )
-                    / totals.get("baseline", totals["comparator"])
                 )
     decision["cases"] = summaries
     if result["signal_only"]:
@@ -145,7 +161,7 @@ def score(result, cfg):
     decision["performance"] = "faster" if good else "slower" if bad else "inconclusive"
     if not good:
         decision["reasons"].append(
-            "Gain does not exceed the configured threshold and MAD noise guard in every batch"
+            "Gain does not exceed the configured threshold and MAD/IQR noise guard in every batch"
         )
     if mode != "full":
         decision["reasons"].append("Quick results cannot update best")

@@ -1,23 +1,10 @@
 import json
-import shutil
 import sys
-from pathlib import Path
 
 import pytest
 
 from kernel_envolve.cli import evaluate, promote
 from kernel_envolve.storage import read_best, read_json
-
-
-@pytest.fixture
-def task(tmp_path):
-    source = Path(__file__).parents[1] / "examples" / "vector_add"
-    for p in source.glob("*.py"):
-        shutil.copy(p, tmp_path / p.name)
-    cfg = json.loads((source / "task.json").read_text())
-    cfg.update(full_trials=3, quick_trials=1, warmup=1)
-    (tmp_path / "task.json").write_text(json.dumps(cfg))
-    return tmp_path
 
 
 def set_candidate(task, code):

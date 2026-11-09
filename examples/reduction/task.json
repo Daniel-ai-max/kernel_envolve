@@ -1,0 +1,11 @@
+{
+  "name": "sum-with-golden-accuracy-gate",
+  "objective": "Equal-weight CPU latency for the declared sum cases, subject to a separate golden error gate.",
+  "rtol": 0.001,
+  "atol": 0.001,
+  "deterministic": true,
+  "cases": [
+    {"id": "normal", "args": {"n": 64, "scale": 1.0}, "weight": 1},
+    {"id": "small", "args": {"n": 127, "scale": 0.0001}, "weight": 1}
+  ]
+}

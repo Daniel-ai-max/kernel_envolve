@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from kernel_envolve.arrays import Mismatch, assert_close, capture, copy_values, unchanged
+from kernel_envolve.arrays import Mismatch, assert_close, capture, copy_values, freeze, unchanged
 
 CFG = {"rtol": 1e-5, "atol": 1e-6, "equal_nan": False}
 
@@ -74,3 +74,23 @@ def test_torch_rebinding_storage_is_not_legal_inplace_mutation():
     a.set_(torch.ones(8))
     with pytest.raises(Mismatch, match="storage binding"):
         unchanged((a,), before, mutable=[0])
+
+
+def test_freezing_preserves_named_tuple_and_mapping_types():
+    from collections import OrderedDict, namedtuple
+
+    pair = namedtuple("Pair", "values auxiliary")
+    output = OrderedDict(out=pair(np.ones(3, dtype=np.float32), [np.zeros(2, dtype=np.float32)]))
+    saved = freeze(output)
+    assert type(saved) is OrderedDict and type(saved["out"]) is pair
+    assert_close(output, saved, CFG)
+    output["out"].values.fill(0)
+    assert np.all(saved["out"].values == 1)
+
+
+def test_freezing_preserves_torch_structured_return_types():
+    torch = pytest.importorskip("torch")
+    output = torch.max(torch.tensor([[1.0, 2.0]]), dim=1)
+    saved = freeze(output)
+    assert type(saved) is type(output)
+    assert_close(output, saved, CFG)

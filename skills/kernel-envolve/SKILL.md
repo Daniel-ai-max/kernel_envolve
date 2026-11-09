@@ -38,6 +38,7 @@ kernel-envolve evaluate --task <task目录> --mode full
 kernel-envolve promote <full输出的run目录>
 ```
 
+- 在 task.json 明确 timer 和是否要求 deterministic；初始化精度/线程等公共设置放在 task.py，不让 candidate 持久改动其他实现的运行条件。误差敏感任务可参考仓库 reduction 示例增加独立 golden gate。
 - quick 永不晋升；full 合格由 evaluator 计算。失败应修复或诊断，不能编辑结果绕过检查。
 - 对照对象 best 来自保存的快照，不从可变工作目录读取。full 自动核对原始 baseline；`--baseline` 可单独诊断原始实现，不能用它绕过当前 best。
 - 不在候选里按固定随机种子、输入地址、评测次数或评测状态投机。允许按公开 shape/dtype/layout 做合法 dispatch。

@@ -1,0 +1,46 @@
+{
+  "checked_at_utc": "2026-11-09T16:29:40.625769+00:00",
+  "scope": "Additional evaluator-focused source review; each file retrieved at the listed commit.",
+  "sources": [
+    {
+      "repo": "SakanaAI/robust-kbench",
+      "commit": "078f5bab29934a822268d59a4e707d449abf9b4e",
+      "path": "robust_kbench/sandbox/correct_forward_fn.py",
+      "url": "https://github.com/SakanaAI/robust-kbench/blob/078f5bab29934a822268d59a4e707d449abf9b4e/robust_kbench/sandbox/correct_forward_fn.py",
+      "sha256": "6b056ac2446121d73e5c5c3cfbd371b53278a52327c558650485a48545e43d96",
+      "bytes": 2816
+    },
+    {
+      "repo": "meta-pytorch/BackendBench",
+      "commit": "2a8d7e19e2c13c789ff2dceb44883ea8ea04dab4",
+      "path": "BackendBench/eval.py",
+      "url": "https://github.com/meta-pytorch/BackendBench/blob/2a8d7e19e2c13c789ff2dceb44883ea8ea04dab4/BackendBench/eval.py",
+      "sha256": "81a565616da4da14bd3f06276a60ff1f54842146e1d35dce2fcddd51ba0cf48f",
+      "bytes": 9131
+    },
+    {
+      "repo": "pytorch/pytorch",
+      "commit": "8a9a9e737dba491a2eea270641bff86eea6e1ea2",
+      "path": "torch/utils/benchmark/utils/timer.py",
+      "url": "https://github.com/pytorch/pytorch/blob/8a9a9e737dba491a2eea270641bff86eea6e1ea2/torch/utils/benchmark/utils/timer.py",
+      "sha256": "cc8507321d5247054e7de987b5c0463d58aa26d0f7d083e7f698923464204813",
+      "bytes": 20798
+    },
+    {
+      "repo": "pytorch/pytorch",
+      "commit": "8a9a9e737dba491a2eea270641bff86eea6e1ea2",
+      "path": "torch/utils/benchmark/utils/common.py",
+      "url": "https://github.com/pytorch/pytorch/blob/8a9a9e737dba491a2eea270641bff86eea6e1ea2/torch/utils/benchmark/utils/common.py",
+      "sha256": "61a4652909e5aa046ae7bdf10a91c9862fe094eaf162cb4db5af330c4cda1357",
+      "bytes": 13760
+    },
+    {
+      "repo": "NVIDIA/compute-eval",
+      "commit": "00fbad91b63957a002b501f33a06510cd25beaae",
+      "path": "README.md",
+      "url": "https://github.com/NVIDIA/compute-eval/blob/00fbad91b63957a002b501f33a06510cd25beaae/README.md",
+      "sha256": "7e6aabeb0459263f21c3c90ec653a05368edd244c33aa8080fcfb25a1af66a3b",
+      "bytes": 34316
+    }
+  ]
+}
