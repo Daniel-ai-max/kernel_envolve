@@ -1,0 +1,191 @@
+{
+  "scope": "Native unchanged BackendBench.eval correctness components on CPU, not its full CLI/backend workflow. kernel_envolve uses real isolated check-only evaluations. Both use float32 inputs and matching default tolerances/equal_nan policy. Base seeds match; kernel_envolve additionally checks reuse and input state. Input immutability is an extra enforced contract, not a claim that BackendBench advertises a mutation gate. No timing or agent-search ranking.",
+  "reference_commit": "2a8d7e19e2c13c789ff2dceb44883ea8ea04dab4",
+  "reference_url": "https://github.com/meta-pytorch/BackendBench/tree/2a8d7e19e2c13c789ff2dceb44883ea8ea04dab4",
+  "reference_loaded_sources_sha256": {
+    "BackendBench/backends/base.py": "a872572a48605587b372829760a32c7cc2485b1c6c848b5f718d5c7a8c411fdc",
+    "BackendBench/backends/aten.py": "f039efee7359532ce13c00a9788dea8fb4355d3decb7468f48adb8946de5b3d3",
+    "BackendBench/utils.py": "150d8f2817ae1ff39116781ff694a06df9b951e37aeb01bbf4193f123aed3889",
+    "BackendBench/backends/directory.py": "c47ed99cba1bded6a78d2fc139fba893fa6237db5c634b8a4c47f7671ccaf90d",
+    "BackendBench/opregistry.py": "760ff80a071578b45128de0d7139b5316775d22df492fafba265ae4c3c27d273",
+    "BackendBench/backends/flag_gems.py": "6a78629c462144f7742882921dbe151267f1ad1495a0b5443a4ef2aac61f1d6b",
+    "BackendBench/backends/kernel_agent.py": "39e22c5977da90bc051a25583d69ceee3c75194677beed814dd3c38d4442eed5",
+    "BackendBench/eval.py": "81a565616da4da14bd3f06276a60ff1f54842146e1d35dce2fcddd51ba0cf48f",
+    "BackendBench/prompts.py": "a106f8760bba32f6ba96553bcc3ed4bea1780e00863dab6ef7274b2cb8404b60",
+    "BackendBench/kernel_templates.py": "240ef4639839a0d4637437f809398527a2542f4e7f6263e03105b6b1481d8d59",
+    "BackendBench/llm_client.py": "7461c51a21c26d3afaa8ffab90f308b54ece4e137eef5c4387d99193213bb2f3",
+    "BackendBench/multiprocessing_eval.py": "f170d6c21ce759a7cd50438e8ac11e2bb0d9ea463e499d67b8caf486187d9f4a",
+    "BackendBench/backends/llm.py": "2e4d231cec85d308249a0cd84a06532c1d959160559e77d39509d06f177b0913",
+    "BackendBench/backends/__init__.py": "dc67577ffd2c625a5329974b6fc8525b0f6c8f3e99adad5a538b9d95f5805b28",
+    "BackendBench/__init__.py": "704be5193041e2d918947a28fa53ee928a6eaba27d433501e4917b1daaa66184"
+  },
+  "probe_sha256": "c358f949633635f33c6e5a33d0dbe1e72d7c295152c71936795936b9c3a0f88b",
+  "evaluator_hash": "2eb9710c3ad61930c5ff4a6d113db96e39635b3e1c83ed7382ff7e9dffdc0c6c",
+  "python": "3.12.14 (main, Sep  1 2026, 14:09:38) [Clang 22.1.3 ]",
+  "platform": "macOS-26.5.2-arm64-arm-64bit",
+  "packages": {
+    "torch": "2.15.0",
+    "numpy": "2.5.4",
+    "anthropic": "2.6.0",
+    "requests": "2.34.2",
+    "tenacity": "9.2.1",
+    "kernel-envolve": "0.3.1"
+  },
+  "raw_report": "backendbench_component_raw.json.gz",
+  "raw_report_uncompressed_sha256": "5f40be3a7169fede6ddfba4fd7e96ce6fb8723d946f532c2fbd01b8c3392adde",
+  "probe": "probe_backendbench.py",
+  "native_correctness_cases": [
+    {
+      "name": "valid_add",
+      "expected_contract_pass": true,
+      "backendbench_pass": true,
+      "kernel_envolve_pass": true
+    },
+    {
+      "name": "valid_strided_add",
+      "expected_contract_pass": true,
+      "backendbench_pass": true,
+      "kernel_envolve_pass": true
+    },
+    {
+      "name": "valid_tuple",
+      "expected_contract_pass": true,
+      "backendbench_pass": true,
+      "kernel_envolve_pass": true
+    },
+    {
+      "name": "wrong_value",
+      "expected_contract_pass": false,
+      "backendbench_pass": false,
+      "kernel_envolve_pass": false
+    },
+    {
+      "name": "wrong_shape",
+      "expected_contract_pass": false,
+      "backendbench_pass": false,
+      "kernel_envolve_pass": false
+    },
+    {
+      "name": "wrong_dtype",
+      "expected_contract_pass": false,
+      "backendbench_pass": false,
+      "kernel_envolve_pass": false
+    },
+    {
+      "name": "valid_input_alias",
+      "expected_contract_pass": true,
+      "backendbench_pass": true,
+      "kernel_envolve_pass": true
+    },
+    {
+      "name": "corrupted_input_alias",
+      "expected_contract_pass": false,
+      "backendbench_pass": true,
+      "kernel_envolve_pass": false
+    },
+    {
+      "name": "correct_output_but_input_mutated",
+      "expected_contract_pass": false,
+      "backendbench_pass": true,
+      "kernel_envolve_pass": false
+    },
+    {
+      "name": "valid_inplace",
+      "expected_contract_pass": true,
+      "backendbench_pass": true,
+      "kernel_envolve_pass": true
+    },
+    {
+      "name": "wrong_inplace",
+      "expected_contract_pass": false,
+      "backendbench_pass": true,
+      "kernel_envolve_pass": false
+    }
+  ],
+  "public_tolerance_helper_cases": [
+    {
+      "name": "strict_equal",
+      "reference_values": [
+        1.0
+      ],
+      "candidate_values": [
+        1.0
+      ],
+      "atol": 0.0,
+      "rtol": 0.0,
+      "expected_contract_pass": true,
+      "backendbench_pass": true,
+      "kernel_envolve_pass": true
+    },
+    {
+      "name": "strict_small_error",
+      "reference_values": [
+        1.0
+      ],
+      "candidate_values": [
+        1.0049999952316284
+      ],
+      "atol": 0.0,
+      "rtol": 0.0,
+      "expected_contract_pass": false,
+      "backendbench_pass": true,
+      "kernel_envolve_pass": false
+    },
+    {
+      "name": "loose_allowed_error",
+      "reference_values": [
+        1.0
+      ],
+      "candidate_values": [
+        1.0499999523162842
+      ],
+      "atol": 0.1,
+      "rtol": 0.0,
+      "expected_contract_pass": true,
+      "backendbench_pass": false,
+      "kernel_envolve_pass": true
+    },
+    {
+      "name": "loose_excess_error",
+      "reference_values": [
+        1.0
+      ],
+      "candidate_values": [
+        1.2000000476837158
+      ],
+      "atol": 0.1,
+      "rtol": 0.0,
+      "expected_contract_pass": false,
+      "backendbench_pass": false,
+      "kernel_envolve_pass": false
+    },
+    {
+      "name": "default_allowed_error",
+      "reference_values": [
+        1.0
+      ],
+      "candidate_values": [
+        1.0049999952316284
+      ],
+      "atol": 0.01,
+      "rtol": 0.01,
+      "expected_contract_pass": true,
+      "backendbench_pass": true,
+      "kernel_envolve_pass": true
+    },
+    {
+      "name": "default_excess_error",
+      "reference_values": [
+        1.0
+      ],
+      "candidate_values": [
+        1.2000000476837158
+      ],
+      "atol": 0.01,
+      "rtol": 0.01,
+      "expected_contract_pass": false,
+      "backendbench_pass": false,
+      "kernel_envolve_pass": false
+    }
+  ]
+}
