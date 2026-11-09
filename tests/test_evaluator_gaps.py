@@ -322,3 +322,11 @@ def test_cost_breakdown_includes_oracle_work_without_changing_coverage(task, che
     assert result["worker_process_wall_seconds"] <= result["worker_wall_seconds"]
     assert len(result["checks"]) == (4 if check_only else 8)
     assert len(result["samples"]) == (0 if check_only else 4)
+
+
+def test_one_trial_quick_remains_a_nonpromotable_diagnostic(task):
+    settings(task, quick_trials=1)
+    _, result = evaluate(task)
+    assert result["execution"] == "completed" and result["correctness"] == "pass", result
+    assert len(result["samples"]) == 4
+    assert not result["decision"]["eligible_for_best"]

@@ -1,0 +1,983 @@
+{
+  "scope": "Synthetic policy sensitivity and score-only CPU cost; no GPU or model-search rates",
+  "baseline_commit": "243059c875a0a6beb6e2023b0f792cc054055d36",
+  "baseline_scoring_sha256": "883f5f64840d3cf7e983e2086fd4d81aeeb36a9d4b49c8a93872bf9aa8abf7e8",
+  "evaluator_hash": "c17fa8f33b0e7fe0279bd250de3bf46d13e2eec4b34827472bd2d679472703f7",
+  "probe_sha256": "d1f7edd5fc6cd24e0fef5f393361c33ea7574d99d3310926c8cfa4d4a9742ee7",
+  "seed": 20261113,
+  "numpy": "2.5.4",
+  "local_config": {
+    "cases": [
+      {
+        "id": "one",
+        "weight": 1
+      }
+    ],
+    "quick_seeds": [
+      0
+    ],
+    "full_seeds": [
+      0,
+      1,
+      2
+    ],
+    "quick_trials": 3,
+    "full_trials": 10,
+    "min_gain": 0.01,
+    "noise_multiplier": 2.0,
+    "max_regression": 0.05,
+    "max_baseline_regression": 0.05
+  },
+  "scoring_cost": [
+    {
+      "cases": 1,
+      "calls_per_block": 30,
+      "seconds_per_call": {
+        "previous": [
+          0.00020672359969466924,
+          0.00022116390367348988,
+          0.00020847640310724577,
+          0.00020936386038859686,
+          0.00021245277021080254
+        ],
+        "current": [
+          0.00021877916684995096,
+          0.00020657640416175128,
+          0.00021694166741023462,
+          0.00022206249802062908,
+          0.00021701250225305557
+        ]
+      },
+      "median_seconds": {
+        "previous": 0.00020936386038859686,
+        "current": 0.00021701250225305557
+      }
+    },
+    {
+      "cases": 16,
+      "calls_per_block": 30,
+      "seconds_per_call": {
+        "previous": [
+          0.004232104169204831,
+          0.004301438899710774,
+          0.004138304168979327,
+          0.0041387875021124875,
+          0.00413603192816178
+        ],
+        "current": [
+          0.0036492833324397603,
+          0.0034834083324919145,
+          0.0034589388640597464,
+          0.003535352802524964,
+          0.0034639096974084776
+        ]
+      },
+      "median_seconds": {
+        "previous": 0.0041387875021124875,
+        "current": 0.0034834083324919145
+      }
+    }
+  ],
+  "raw_report": "paired_policy_validation_raw.json.gz",
+  "raw_report_sha256": "84452a21b27c455bbd69a2cf1b43097a5ef3d311fa33cddbf7369f0406ffcbde",
+  "scenarios": 78000,
+  "results": [
+    {
+      "condition": "quiet_iid",
+      "true_gain": 0.0,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        },
+        "current": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        }
+      }
+    },
+    {
+      "condition": "quiet_iid",
+      "true_gain": 0.05,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 2000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9980829527187469,
+            0.9999999999999998
+          ]
+        },
+        "current": {
+          "accepted": 2000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9980829527187469,
+            0.9999999999999998
+          ]
+        }
+      }
+    },
+    {
+      "condition": "quiet_iid",
+      "true_gain": 0.2,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 2000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9980829527187469,
+            0.9999999999999998
+          ]
+        },
+        "current": {
+          "accepted": 2000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9980829527187469,
+            0.9999999999999998
+          ]
+        }
+      }
+    },
+    {
+      "condition": "noisy_iid",
+      "true_gain": 0.0,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        },
+        "current": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        }
+      }
+    },
+    {
+      "condition": "noisy_iid",
+      "true_gain": 0.05,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        },
+        "current": {
+          "accepted": 11,
+          "rate": 0.0055,
+          "wilson_95": [
+            0.003073897009543817,
+            0.009822062751615332
+          ]
+        }
+      }
+    },
+    {
+      "condition": "noisy_iid",
+      "true_gain": 0.2,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 99,
+          "rate": 0.0495,
+          "wilson_95": [
+            0.040827254610808245,
+            0.059900004989600644
+          ]
+        },
+        "current": {
+          "accepted": 1749,
+          "rate": 0.8745,
+          "wilson_95": [
+            0.8592592943847576,
+            0.8883048372015839
+          ]
+        }
+      }
+    },
+    {
+      "condition": "shared_quartet_clock",
+      "true_gain": 0.0,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        },
+        "current": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        }
+      }
+    },
+    {
+      "condition": "shared_quartet_clock",
+      "true_gain": 0.05,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        },
+        "current": {
+          "accepted": 2000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9980829527187469,
+            0.9999999999999998
+          ]
+        }
+      }
+    },
+    {
+      "condition": "shared_quartet_clock",
+      "true_gain": 0.2,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 19,
+          "rate": 0.0095,
+          "wilson_95": [
+            0.006090240228609851,
+            0.014790383154299275
+          ]
+        },
+        "current": {
+          "accepted": 2000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9980829527187469,
+            0.9999999999999998
+          ]
+        }
+      }
+    },
+    {
+      "condition": "smooth_clock_cycle",
+      "true_gain": 0.0,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        },
+        "current": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        }
+      }
+    },
+    {
+      "condition": "smooth_clock_cycle",
+      "true_gain": 0.05,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        },
+        "current": {
+          "accepted": 2000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9980829527187469,
+            0.9999999999999998
+          ]
+        }
+      }
+    },
+    {
+      "condition": "smooth_clock_cycle",
+      "true_gain": 0.2,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 837,
+          "rate": 0.4185,
+          "wilson_95": [
+            0.39705640778591,
+            0.4402560709209341
+          ]
+        },
+        "current": {
+          "accepted": 2000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9980829527187469,
+            0.9999999999999998
+          ]
+        }
+      }
+    },
+    {
+      "condition": "heavy_tail",
+      "true_gain": 0.0,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        },
+        "current": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        }
+      }
+    },
+    {
+      "condition": "heavy_tail",
+      "true_gain": 0.05,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 2,
+          "rate": 0.001,
+          "wilson_95": [
+            0.0002742789176520342,
+            0.003638934269038394
+          ]
+        },
+        "current": {
+          "accepted": 453,
+          "rate": 0.2265,
+          "wilson_95": [
+            0.2086902655828713,
+            0.24535835927997401
+          ]
+        }
+      }
+    },
+    {
+      "condition": "heavy_tail",
+      "true_gain": 0.2,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 2000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9980829527187469,
+            0.9999999999999998
+          ]
+        },
+        "current": {
+          "accepted": 2000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9980829527187469,
+            0.9999999999999998
+          ]
+        }
+      }
+    },
+    {
+      "condition": "rare_pause",
+      "true_gain": 0.0,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        },
+        "current": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        }
+      }
+    },
+    {
+      "condition": "rare_pause",
+      "true_gain": 0.05,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 1999,
+          "rate": 0.9995,
+          "wilson_95": [
+            0.9971731374967338,
+            0.9999117322692944
+          ]
+        },
+        "current": {
+          "accepted": 1890,
+          "rate": 0.945,
+          "wilson_95": [
+            0.9341286162883299,
+            0.9541652116313549
+          ]
+        }
+      }
+    },
+    {
+      "condition": "rare_pause",
+      "true_gain": 0.2,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 1999,
+          "rate": 0.9995,
+          "wilson_95": [
+            0.9971731374967338,
+            0.9999117322692944
+          ]
+        },
+        "current": {
+          "accepted": 1890,
+          "rate": 0.945,
+          "wilson_95": [
+            0.9341286162883299,
+            0.9541652116313549
+          ]
+        }
+      }
+    },
+    {
+      "condition": "ar1_clock",
+      "true_gain": 0.0,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        },
+        "current": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        }
+      }
+    },
+    {
+      "condition": "ar1_clock",
+      "true_gain": 0.05,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        },
+        "current": {
+          "accepted": 943,
+          "rate": 0.4715,
+          "wilson_95": [
+            0.44969811087818734,
+            0.4934111608168439
+          ]
+        }
+      }
+    },
+    {
+      "condition": "ar1_clock",
+      "true_gain": 0.2,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 626,
+          "rate": 0.313,
+          "wilson_95": [
+            0.2930520083961643,
+            0.3336649672870242
+          ]
+        },
+        "current": {
+          "accepted": 2000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9980829527187469,
+            0.9999999999999998
+          ]
+        }
+      }
+    },
+    {
+      "condition": "single_step",
+      "true_gain": 0.0,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        },
+        "current": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        }
+      }
+    },
+    {
+      "condition": "single_step",
+      "true_gain": 0.05,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 838,
+          "rate": 0.419,
+          "wilson_95": [
+            0.39755185088828765,
+            0.4407587107712752
+          ]
+        },
+        "current": {
+          "accepted": 1950,
+          "rate": 0.975,
+          "wilson_95": [
+            0.9671932285868021,
+            0.9809855764960074
+          ]
+        }
+      }
+    },
+    {
+      "condition": "single_step",
+      "true_gain": 0.2,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 1050,
+          "rate": 0.525,
+          "wilson_95": [
+            0.5030873542295227,
+            0.5468167934064148
+          ]
+        },
+        "current": {
+          "accepted": 2000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9980829527187469,
+            0.9999999999999998
+          ]
+        }
+      }
+    },
+    {
+      "condition": "alternating_clock",
+      "true_gain": 0.0,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        },
+        "current": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        }
+      }
+    },
+    {
+      "condition": "alternating_clock",
+      "true_gain": 0.05,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        },
+        "current": {
+          "accepted": 2000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9980829527187469,
+            0.9999999999999998
+          ]
+        }
+      }
+    },
+    {
+      "condition": "alternating_clock",
+      "true_gain": 0.2,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        },
+        "current": {
+          "accepted": 2000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9980829527187469,
+            0.9999999999999998
+          ]
+        }
+      }
+    },
+    {
+      "condition": "gamma_iid",
+      "true_gain": 0.0,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        },
+        "current": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        }
+      }
+    },
+    {
+      "condition": "gamma_iid",
+      "true_gain": 0.05,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        },
+        "current": {
+          "accepted": 10,
+          "rate": 0.005,
+          "wilson_95": [
+            0.0027181808584985597,
+            0.009179695949941846
+          ]
+        }
+      }
+    },
+    {
+      "condition": "gamma_iid",
+      "true_gain": 0.2,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 107,
+          "rate": 0.0535,
+          "wilson_95": [
+            0.04446618753651597,
+            0.06424573568564287
+          ]
+        },
+        "current": {
+          "accepted": 1753,
+          "rate": 0.8765,
+          "wilson_95": [
+            0.8613547437598278,
+            0.8902017196373885
+          ]
+        }
+      }
+    },
+    {
+      "condition": "block_pause",
+      "true_gain": 0.0,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        },
+        "current": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        }
+      }
+    },
+    {
+      "condition": "block_pause",
+      "true_gain": 0.05,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 2000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9980829527187469,
+            0.9999999999999998
+          ]
+        },
+        "current": {
+          "accepted": 1787,
+          "rate": 0.8935,
+          "wilson_95": [
+            0.8792182266916742,
+            0.9062730570979796
+          ]
+        }
+      }
+    },
+    {
+      "condition": "block_pause",
+      "true_gain": 0.2,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 2000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9980829527187469,
+            0.9999999999999998
+          ]
+        },
+        "current": {
+          "accepted": 1787,
+          "rate": 0.8935,
+          "wilson_95": [
+            0.8792182266916742,
+            0.9062730570979796
+          ]
+        }
+      }
+    },
+    {
+      "condition": "two_steps",
+      "true_gain": 0.0,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        },
+        "current": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        }
+      }
+    },
+    {
+      "condition": "two_steps",
+      "true_gain": 0.05,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 364,
+          "rate": 0.182,
+          "wilson_95": [
+            0.16570477058207264,
+            0.19951447148880416
+          ]
+        },
+        "current": {
+          "accepted": 1910,
+          "rate": 0.955,
+          "wilson_95": [
+            0.9450093040187729,
+            0.9632461829552866
+          ]
+        }
+      }
+    },
+    {
+      "condition": "two_steps",
+      "true_gain": 0.2,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 562,
+          "rate": 0.281,
+          "wilson_95": [
+            0.2617349514473364,
+            0.30110471526185234
+          ]
+        },
+        "current": {
+          "accepted": 2000,
+          "rate": 1.0,
+          "wilson_95": [
+            0.9980829527187469,
+            0.9999999999999998
+          ]
+        }
+      }
+    },
+    {
+      "condition": "exponential_iid",
+      "true_gain": 0.0,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        },
+        "current": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        }
+      }
+    },
+    {
+      "condition": "exponential_iid",
+      "true_gain": 0.05,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 0,
+          "rate": 0.0,
+          "wilson_95": [
+            1.0842021724855044e-19,
+            0.001917047281252934
+          ]
+        },
+        "current": {
+          "accepted": 27,
+          "rate": 0.0135,
+          "wilson_95": [
+            0.009294493997659236,
+            0.019570793006999862
+          ]
+        }
+      }
+    },
+    {
+      "condition": "exponential_iid",
+      "true_gain": 0.2,
+      "repetitions": 2000,
+      "policies": {
+        "previous": {
+          "accepted": 629,
+          "rate": 0.3145,
+          "wilson_95": [
+            0.29452282583618306,
+            0.3351883987051617
+          ]
+        },
+        "current": {
+          "accepted": 1854,
+          "rate": 0.927,
+          "wilson_95": [
+            0.9147622011152128,
+            0.9376006405065973
+          ]
+        }
+      }
+    }
+  ]
+}

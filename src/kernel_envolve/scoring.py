@@ -13,6 +13,22 @@ def ratio(numerator, denominator):
     return value
 
 
+def distribution(values):
+    if not all(math.isfinite(v) for v in values):
+        raise ValueError("Derived timing distribution is not finite")
+    median = stats.median(values)
+    mad = stats.median(abs(v - median) for v in values)
+    # A one-trial quick probe cannot estimate spread; it never grants promotion.
+    if len(values) > 1:
+        q25, _, q75 = stats.quantiles(values, n=4, method="inclusive")
+        iqr = q75 - q25
+    else:
+        iqr = 0.0
+    if not all(math.isfinite(v) for v in (median, mad, iqr)):
+        raise ValueError("Derived timing distribution is not finite")
+    return median, mad, iqr, max(mad, iqr / 2)
+
+
 def score(result, cfg):
     decision = {"eligible_for_best": False, "performance": "not_measured", "reasons": []}
     if result["execution"] != "completed" or result["correctness"] != "pass":
@@ -76,30 +92,44 @@ def score(result, cfg):
                     repeats[role] += 1
     if keys != ordered_keys:
         raise ValueError("Timing order does not match the paired schedule")
+    grouped = {}
     for r in records:
         if type(r["us"]) not in (float, int) or not math.isfinite(r["us"]) or r["us"] <= 0:
             raise ValueError("Timing must be finite and positive")
+        key = (r["case"], r["batch"], r["role"])
+        if key not in grouped:
+            grouped[key] = [[] for _ in range(trials)]
+        grouped[key][r["trial"]].append(r["us"])
     summaries = []
     gains, guards, baseline_gains, baseline_guards = [], [], [], []
+    paired_gains, baseline_paired_gains = [], []
     for b in range(batches):
         totals = {role: 0.0 for role in implementations}
-        uncertainties = {role: 0.0 for role in implementations}
+        contrasts = {role: 0.0 for role in implementations if role != "candidate"}
+        uncertainties = dict.fromkeys(contrasts, 0.0)
         for c in cases:
             row = {"case": c["id"], "batch": b}
+            trial_medians = {}
             for role in implementations:
-                values = [
-                    r["us"]
-                    for r in records
-                    if r["case"] == c["id"] and r["batch"] == b and r["role"] == role
-                ]
-                median = stats.median(values)
-                mad = stats.median(abs(v - median) for v in values)
-                q25, _, q75 = stats.quantiles(values, n=4, method="inclusive")
-                spread = max(mad, (q75 - q25) / 2)
+                by_trial = grouped[(c["id"], b, role)]
+                values = [v for pair in by_trial for v in pair]
+                median, mad, iqr, _ = distribution(values)
                 row[role + "_us"] = median
                 row[role + "_mad_us"] = mad
-                row[role + "_iqr_us"] = q75 - q25
+                row[role + "_iqr_us"] = iqr
                 totals[role] += c["weight"] * median
+                if contrasts:
+                    trial_medians[role] = [stats.median(pair) for pair in by_trial]
+            for role in contrasts:
+                differences = [
+                    candidate - control
+                    for candidate, control in zip(trial_medians["candidate"], trial_medians[role])
+                ]
+                delta, mad, iqr, spread = distribution(differences)
+                row[f"paired_{role}_delta_us"] = delta
+                row[f"paired_{role}_mad_us"] = mad
+                row[f"paired_{role}_iqr_us"] = iqr
+                contrasts[role] += c["weight"] * delta
                 uncertainties[role] += c["weight"] * spread
             if "max_us" in c and row["candidate_us"] > c["max_us"]:
                 decision["reasons"].append(f"{c['id']}: exceeds absolute latency cap in batch {b}")
@@ -120,27 +150,27 @@ def score(result, cfg):
             raise ValueError("Weighted latency must be finite and positive")
         if not all(math.isfinite(v) for v in uncertainties.values()):
             raise ValueError("Weighted noise must be finite")
+        if not all(math.isfinite(v) for v in contrasts.values()):
+            raise ValueError("Weighted paired contrast must be finite")
         if not result["signal_only"]:
             gains.append(1 - ratio(totals["candidate"], totals["comparator"]))
+            paired_gains.append(ratio(-contrasts["comparator"], totals["comparator"]))
             guards.append(
                 ratio(
-                    cfg["noise_multiplier"]
-                    * (uncertainties["candidate"] + uncertainties["comparator"]),
+                    cfg["noise_multiplier"] * uncertainties["comparator"],
                     totals["comparator"],
                 )
             )
             if mode == "full":
-                baseline_gains.append(
-                    1 - ratio(totals["candidate"], totals.get("baseline", totals["comparator"]))
+                baseline_role = "baseline" if "baseline" in totals else "comparator"
+                baseline_gains.append(1 - ratio(totals["candidate"], totals[baseline_role]))
+                baseline_paired_gains.append(
+                    ratio(-contrasts[baseline_role], totals[baseline_role])
                 )
                 baseline_guards.append(
                     ratio(
-                        cfg["noise_multiplier"]
-                        * (
-                            uncertainties["candidate"]
-                            + uncertainties.get("baseline", uncertainties["comparator"])
-                        ),
-                        totals.get("baseline", totals["comparator"]),
+                        cfg["noise_multiplier"] * uncertainties[baseline_role],
+                        totals[baseline_role],
                     )
                 )
     decision["cases"] = summaries
@@ -148,20 +178,31 @@ def score(result, cfg):
         decision["reasons"].append("Candidate-only signal has no measured comparator")
         return decision
     decision["gain_by_batch"] = gains
+    decision["paired_gain_by_batch"] = paired_gains
     decision["noise_guard_by_batch"] = guards
     if baseline_gains:
         decision["fixed_baseline_gain_by_batch"] = baseline_gains
+        decision["fixed_baseline_paired_gain_by_batch"] = baseline_paired_gains
         decision["fixed_baseline_noise_guard_by_batch"] = baseline_guards
-        if not all(g > max(cfg["min_gain"], n) for g, n in zip(baseline_gains, baseline_guards)):
+        if not all(
+            g > cfg["min_gain"] and p > max(cfg["min_gain"], n)
+            for g, p, n in zip(baseline_gains, baseline_paired_gains, baseline_guards)
+        ):
             decision["reasons"].append(
                 "Meaningful gain over fixed baseline is not confirmed in every batch"
             )
-    good = all(g > max(cfg["min_gain"], n) for g, n in zip(gains, guards))
-    bad = all(g < -max(cfg["min_gain"], n) for g, n in zip(gains, guards))
+    good = all(
+        g > cfg["min_gain"] and p > max(cfg["min_gain"], n)
+        for g, p, n in zip(gains, paired_gains, guards)
+    )
+    bad = all(
+        g < -cfg["min_gain"] and p < -max(cfg["min_gain"], n)
+        for g, p, n in zip(gains, paired_gains, guards)
+    )
     decision["performance"] = "faster" if good else "slower" if bad else "inconclusive"
     if not good:
         decision["reasons"].append(
-            "Gain does not exceed the configured threshold and MAD/IQR noise guard in every batch"
+            "Aggregate gain and paired gain do not both clear their thresholds in every batch"
         )
     if mode != "full":
         decision["reasons"].append("Quick results cannot update best")

@@ -116,7 +116,7 @@ case 权重由任务明确给出。没有真实调用分布时，可以声明等
 | `quick_trials` / `full_trials` | `3` / `10` | 每个 case、每批的配对轮数 |
 | `warmup` | `3` | 每个实现、每批、每个 case 的预热次数 |
 | `min_gain` | `0.01` | 加权延迟下降比例必须超过该值 |
-| `noise_multiplier` | `2.0` | MAD 噪声门槛倍数 |
+| `noise_multiplier` | `2.0` | 配对差值的 MAD/IQR 噪声门槛倍数 |
 | `max_regression` | `0.05` | 任一 case 相对当前 comparator 的最大允许延迟增长 |
 | `max_baseline_regression` | `0.05` | 任一 case 相对固定起始 baseline 的累计延迟增长上限 |
 | case 的 `max_us` | 无 | 该 case 候选延迟的绝对上限，微秒 |
@@ -155,12 +155,13 @@ full 的每一批分别计算：
 T_candidate  = Σ weight(case) × median(candidate_samples)
 T_comparator = Σ weight(case) × median(comparator_samples)
 gain         = 1 - T_candidate / T_comparator
-dispersion   = max(MAD, IQR / 2)
-noise_guard  = noise_multiplier × Σ weight(case) × (dispersion_candidate + dispersion_comparator)
-               / T_comparator
+D(case, trial) = median(本组两次 candidate 调用) - median(本组两次 comparator 调用)
+paired_gain  = -Σ weight(case) × median(D(case, :)) / T_comparator
+dispersion   = max(MAD(D), IQR(D) / 2)
+noise_guard  = noise_multiplier × Σ weight(case) × dispersion(case) / T_comparator
 ```
 
-两批相对 best 的 gain 都必须超过 `max(min_gain, noise_guard)`；相对固定 baseline 也单独计算相同的收益/噪声门槛。所有 case 必须同时满足两套回退限制和绝对延迟上限。这避免逐轮 4% 的局部退化越积越大，也避免只赢过一个已经退化的 best。MAD/IQR 门槛是保守筛选规则，不是统计置信区间。结果接近门槛时，先检查环境竞争；确需调整协议时记录原因、保留旧结果，重新建立对应契约和对照。不要重复抽样直到出现有利结果；profiling 用于解释瓶颈，不与正式计时混跑。
+两批相对 best 都须满足 **`gain > min_gain` 且 `paired_gain > max(min_gain, noise_guard)`**；相对固定 baseline 也单独计算并满足相同条件。前者保留声明的加权总延迟目标，后者要求配对结果也支持收益，不能拿配对差值的低波动为不一致的总体中位数收益背书。所有 case 仍须满足两套回退限制和绝对延迟上限。这避免逐轮 4% 的局部退化越积越大，也避免只赢过一个已经退化的 best。MAD/IQR 门槛仍是保守筛选规则，不是统计置信区间。结果接近门槛时，先检查环境竞争；确需调整协议时记录原因、保留旧结果，重新建立对应契约和对照。不要重复抽样直到出现有利结果；profiling 用于解释瓶颈，不与正式计时混跑。
 
 `--case`、`--seed`、`--check-only` 仅限 quick，可定位 full 中才运行的 case，不修改固定任务契约，也不能产生晋升资格。`worker_process_wall_seconds` 记录子进程启动到退出的等待耗时；`worker_wall_seconds` 还包含父进程的结果核查。CLI 同时输出 `phase_wall_seconds`：setup（CUDA/模块初始化）、correctness、measurement（预热、输入生成、计时及后检查）、finalize（证据检查与评分）。阶段计时不进入算子计时区间，失败时保留已完成及当前阶段耗时；子进程耗时与阶段和的差值还包括 Python/NumPy 导入、退出及父进程唤醒，不能全部称为模型或 kernel 时间。兼容字段 `measurement_wall_seconds` 继续表示测量阶段总耗时。
 
@@ -195,7 +196,7 @@ output = run(*inputs)
 
 测试在新 Python 进程中验证该入口：即使工作目录的 candidate 已损坏，也仍调用保存的 best；快照损坏则拒绝加载。集成进已有模型的 dispatcher 时，仍需验证模型实际调用了这一入口。
 
-0.3 更新了输入隔离、确定性选项、计时口径和噪声规则。旧 run 保留为历史，不能沿用其晋升资格；已有旧协议 best 的任务请将 task.json、task.py、candidate.py 及声明的依赖复制到新任务目录后重测。
+0.4 将噪声门槛改为“总体收益 + 配对收益与配对噪声”共同确认，覆盖和调用次数不变。旧 run 保留为历史，不能直接沿用其晋升资格；已有 best 的源码仍保存在快照中。需要按新协议重新建立 best 时，将 task.json、task.py、candidate.py 及声明的依赖复制到新任务目录后重测，不修改旧证据。
 
 文件快照和哈希用于复现与防止误用；候选作为本机代码运行，这不是隔离不可信程序的安全沙箱。任务内有运行锁和晋升锁；GPU 性能实验仍需由使用者在目标设备上串行执行，其他任务目录不会自动共享设备锁。
 
@@ -233,7 +234,7 @@ output = run(*inputs)
 | **[kernel-lab][kl-eval]**：SKILL、evaluation、records | 探索与交付分离；独立 oracle、best、固定 baseline；代价预算；验证实际入口 | 将其中适合单算子延迟优化的规则落实为 evaluator、晋升检查和可调用的 best；任务无需试验/版本数量目标 | 它的多指标、梯度/漂移验证、批次不变性、版本 campaign 规范更完整。我们提供更直接的可执行实现，没有超越它全部语义覆盖 |
 | **[AKO4ALL][akoall-bench]**：bench.py、[skill][akoall-skill] | signal/verdict 分离；fresh-values；计时后 mutation sentinel；可换 bench | 增加固定 baseline 累计预算、结构化原始证据、source/helper 快照、确定性晋升；定点诊断不要求每轮紧跟日志和 commit 两次工具调用 | 它已有 KernelBench 和多个实现 backend 的适配。我们的 task 接口需转换；迭代程序步骤更少，但尚无相同 agent 预算下的耗时对照 |
 | **[KDA][kda-flow]**：agent-flow | 契约→实现→验证→证据→晋升；工作流与任务分开 | 常见数组/tensor 任务开箱具备 evaluate；一个 notes 足够，无须先准备 draft/plan 两个文档 | KDA 本身更通用、更轻，适合已有成熟 evaluator 的项目。我们减少评测接线工作，不是所有项目都需要本 evaluator |
-| **[Atrex Light][atrex-record]**：recorded_verifier、[native_abba][atrex-abba]、verifier | Supervisor 管正式证据、源码绑定、配对测量、完整策略匹配、恢复与复用 | 本地直接执行，无 runtime/provider 接入；加权总延迟与逐 case 双预算贴合当前任务 | 它的远端执行、记录所有权、批次恢复与接纳审计更成熟，测量默认锁频。下文模拟显示本仓库的保守噪声门槛会漏掉真实收益，不能将更严格直接等同于更优 |
+| **[Atrex Light][atrex-record]**：recorded_verifier、[native_abba][atrex-abba]、verifier | Supervisor 管正式证据、源码绑定、配对测量、完整策略匹配、恢复与复用 | 本地直接执行，无 runtime/provider 接入；加权总延迟与逐 case 双预算贴合当前任务；0.4 同时检查总体与配对收益 | 它的远端执行、记录所有权、批次恢复与接纳审计更成熟，测量默认锁频。旧版过于保守的问题促成了 0.4 修订，但噪声模型下仍有取舍，不能将更严格直接等同于更优 |
 | **[ForgeKernel][forge-driver]**：driver、[precision_gate][forge-precision]、恢复失效逻辑 | 允许性能回退作为重构脚手架；false-win 复测；precision gate；依赖恢复 | 保留探索与 best 两条线，去掉 teacher/meta 和依赖图组织；固定 oracle + 本地可复算判定 | 它对数值精度、复杂重构、跨阶段恢复更成熟。我们默认 allclose 不能替代它的高精度 gate；精度敏感任务应接入已有专用验证 |
 | **[AKO4X][akox-archive]**：archive_variant、compute_score | 代码、配置、父版本、失败经验一起继承；长期归档 | 小任务普通目录即可；归档与晋升明确区分，只有完整正式证据能改 best | 它的 master/child、长周期候选谱系与会话归档更完整。`archive_variant` 允许无评测证据是保存原型能力，不能把这一点写成它的晋升漏洞 |
 | **[JustGoal][justgoal]**：公开实现与消融目录 | 强 agent 自主构建搜索路线；少约束目标驱动是一条重要基线 | 预先提供可靠测量，避免每个任务重写同类 evaluator；保持路线自主 | 它有真实 B200 kernel 与实验产物，我们还没有同预算 GPU 对照。附加 skill 是否提升最终效果必须实测，不能从架构图推导 |
@@ -275,7 +276,7 @@ full 已有 best 时 R 从 2 变为 3，因此计时调用数增加 50%；这是
 
 目前不能确认“全面优于九个仓库”。我们继承了它们许多核心方法，已补充 B300 evaluator 验收，但仍缺同预算的 agent 搜索对照、复杂任务精度验收和远端恢复等证据。强行给所有行打胜出会掩盖实际缺口。
 
-还确认了自身的一个效率缺口：当前噪声门槛可能过于保守，尤其是两边共同漂移时。下文给出与 Atrex 原生评分函数的合成测量对照及被否决的改进原型；这些结果使“本仓库始终更科学、更有效”的判断不成立。
+还确认了 0.3.1 的一个效率缺口：噪声门槛可能过于保守，尤其是两边共同漂移时。下文保留与 Atrex 原生评分函数的对照、被否决的原型及 0.4 修订验证。修订改善了这一问题，但这些结果仍不足以支持“本仓库在所有场景始终更科学、更有效”。
 
 要验证优化效果的优势，下一步应在同一 B200/B300、同一模型、同一任务集和预算下，先比较最相关的 **JustGoal 式目标驱动、AKO4ALL、本 skill**：共同使用独立的最终 evaluator，记录最终正确率、相对原始实现的逐 case/加权收益、总 wall time、模型成本、GPU 时间和失败恢复成本，保留多次独立运行。任务至少覆盖归约、GEMM 和含非连续/尾部形状的融合算子。先验证这组对照有收益，再决定是否引入更重的编排能力。
 
@@ -433,7 +434,7 @@ host sleep 不改变加法 kernel，却明显增加普通 event 区间；Graph �
 
 [复现脚本](audit/probe_ako4all.py)、[摘要、配置及资源记录](audit/ako4all_comparison.json)、[完整 CLI 输出与逐任务源码](audit/ako4all_comparison_raw.json.gz)均保留。任务 `b51d88b2ac8342ada2008ca925d464b7` 已 Completed、Pods=0，本次使用 1 张 B300。
 
-## 与 Atrex 的接纳规则对照：更严格也有代价
+## 0.3.1 与 Atrex 的接纳规则对照：更严格也有代价
 
 用固定提交 `bab3218` 的原生 `score_verification_payload` 与本仓库 `score` 做了 **24,000 组固定条件的模拟**：四类噪声、真实收益 0%/5%/20%，每种组合 2,000 次。单个 shape 排除了跨 shape 聚合目标的差异；每方 80 个观察值。Atrex 按原生 ABBA 顺序分成四次运行，每次 20 个样本取中位数；本仓库按两批、每批 10 组交错测量组织。两边使用同一条模拟环境变化序列，最低收益都设为 1%。Atrex 默认 0% 门槛的结果另存原始记录。
 
@@ -454,15 +455,55 @@ host sleep 不改变加法 kernel，却明显增加普通 event 区间；Graph �
 | 平滑周期漂移，随机初相位 | 5% | 0% | 54.15% |
 | 平滑周期漂移，随机初相位 | 20% | 40.90% | 99.65% |
 
-**本仓库减少误接受的同时，可能漏掉明显收益。** 当前 guard 用两边各自的 MAD/IQR，没有充分利用它们共同变化的信息；它衡量的是样本离散程度，不是收益估计的标准误或置信区间。正常使用时，噪声导致的 inconclusive 应保留候选、检查环境，不能直接解释为“更慢”或“已到性能极限”。skill 已明确这个区别。
+**0.3.1 减少误接受的同时，可能漏掉明显收益。** 旧 guard 用两边各自的 MAD/IQR，没有充分利用它们共同变化的信息；它衡量的是样本离散程度，不是收益估计的标准误或置信区间。正常使用时，噪声导致的 inconclusive 应保留候选、检查环境，不能直接解释为“更慢”或“已到性能极限”。skill 已明确这个区别。
 
 这些比例属于上述合成模型，不是 GPU 实测误晋升率。Atrex 默认锁频，本模拟没有执行其运行环境控制、远端服务或正确性检查；80 个观察值也不表示两套系统占用相同 wall time。完整记录包含参数、种子、逐轮判定及 Wilson 区间；区间只描述模拟抽样误差，0/2,000 不等于真实概率为零。
 
-同时试验了一个小改动：仅将噪声估计换成每组配对差值的 MAD/IQR，保留原来的总体中位延迟收益。另用固定新种子检查九类噪声，包括重尾、偶发暂停、相关漂移、阶跃和交替抖动，共 **54,000 组模拟**。它提高了部分收益检出率，却在周期漂移的零收益场景接受了 **198/2,000（9.9%）**；收益统计量与噪声统计量没有同步对齐。因此**否决该原型，没有修改正式评分与晋升规则**。后续改进必须同时验证误接受和漏检，不能只追求让更多候选通过。
+随后试验了一个小改动：仅将噪声估计换成每组配对差值的 MAD/IQR，保留原来的总体中位延迟收益。另用固定新种子检查九类噪声，包括重尾、偶发暂停、相关漂移、阶跃和交替抖动，共 **54,000 组模拟**。它提高了部分收益检出率，却在周期漂移的零收益场景接受了 **198/2,000（9.9%）**；收益统计量与噪声统计量没有同步对齐。因此**否决该原型，未将它用于正式晋升**。0.4 的修订同时确认配对收益，见下文。
 
 一个已保存的反例中，两批总体中位延迟分别显示约 1.31%/1.13% 的收益，但配对差值的中位数对应约 −0.034%/−0.035%，真实收益为零。用后一种统计量的低波动去支持前一种统计量的收益，就会制造假确认；仅有 ABBA 顺序并不足以让任意统计公式成立。
 
 [原生规则对照脚本](audit/probe_acceptance_policy.py)、[被否决原型的复现脚本](audit/probe_paired_noise_proposal.py)、[完整摘要与原型结果](audit/acceptance_policy_comparison.json)、[逐轮判定及示例原始测量](audit/acceptance_policy_raw.json.gz)均已保存。本轮使用 CPU 模拟，未申请 GPU 或调用模型。
+
+## 0.4：改善收益判断，不增加评测调用
+
+0.3.1 会把两边共同的时钟漂移都计入噪声，导致明显收益也无法确认。0.4 同时检查**总体收益、每组配对收益及其波动**：前者守住加权总延迟目标，后两者使用同一组差值，避免上述被否决原型的统计错配。原有双批确认、逐 case 回退限制、固定 baseline、正确性与证据核查保持不变。评分时一次分组原始记录，避免逐 case 重复扫描。
+
+修订后换用新种子，在原先探索过的九类噪声之外增加 Gamma、连续暂停、双阶跃和指数抖动，共 **13 类环境 × 3 档收益 × 2,000 次 = 78,000 组对照**。旧、新评分接收完全相同的 80 个观察值。全部 **26,000 个零收益场景，两版都未接受**。部分有收益场景的接受率如下：
+
+| 模拟环境 | 真实收益 | 0.3.1 | 0.4 |
+|---|---:|---:|---:|
+| 约 10% 独立抖动 | 20% | 4.95% | 87.45% |
+| 每四个观察值共同漂移 | 5% | 0% | 100% |
+| 平滑周期漂移 | 5% | 0% | 100% |
+| 相关时钟漂移（AR1） | 20% | 31.30% | 100% |
+| 偶发暂停 | 5% | 99.95% | 94.50% |
+| 连续暂停 | 5% | 100% | 89.35% |
+
+它提高了多种噪声下的检出能力，但暂停场景仍有取舍；这些模拟结果不等于真实任务中的错误概率保证。[复现脚本](audit/probe_paired_policy.py)、[全部条件与评分成本](audit/paired_policy_validation.json)、[逐轮判定和原始示例](audit/paired_policy_validation_raw.json.gz)保留完整结果。单 case 的纯评分 CPU 中位耗时为 0.209 → 0.217 毫秒，16 case 为 4.139 → 3.483 毫秒；这不包含执行候选。
+
+随后在 **1 张 B300** 上运行最终版本，**104 项测试全部通过、零跳过**，并完成 42 次完整评测探针：
+
+| 实机探针 | 次数 | 0.3.1 在同一原始记录上重算后合格 | 0.4 实际合格 |
+|---|---:|---:|---:|
+| baseline/candidate 均为相同 torch.add，event 计时 | 30 | 0 | 0 |
+| 两边加入相同幅度的周期变化等待，wall 计时 | 6 | 0 | 0 |
+| candidate 等待幅度减少 20%，wall 计时 | 6 | 0 | 6 |
+
+第三项实际总体延迟下降约 18.4%–20.6%，用于检验有漂移时的收益判断，并非算子优化成果。旧版列是离线重算，未另跑一批计时，也未替换新版的实际结果。
+
+另外交替执行旧、新 evaluator，在两种尺寸、quick/full 下各测三次，共 **24 次 evaluate API 总耗时**，初始冷启动另列。两版 quick 均为 8 项正确性检查/12 个计时样本，full 均为 16/80；下表为包含子进程启动与父进程核查的中位数，单位秒：
+
+| 输入元素数 | 模式 | 0.3.1 | 0.4 |
+|---|---|---:|---:|
+| 257 | quick | 1.821 | 1.821 |
+| 257 | full | 1.873 | 1.822 |
+| 1,048,577 | quick | 1.921 | 1.971 |
+| 1,048,577 | full | 1.922 | 1.973 |
+
+总耗时仍约 2 秒，大输入中位数增加约 50 毫秒，本轮没有证明 evaluate 更快。实际流程继续根据成本选择：已接近交付且 quick/full 成本相近时直接 full；有已知错误时先定点检查；不要强制每个候选依次走完 check、quick、full。0.4 的价值主要是减少噪声下漏掉有效候选的情况，不是增加一个评测阶段。
+
+[实机摘要与资源记录](audit/paired_policy_gpu.json)、[完整结果、旧规则重算及复现脚本](audit/paired_policy_gpu_raw.json.gz)已保存。任务 `4eae86bad7144349a0f86925bd36b6de` 已 Completed，最终实时查询 Pods=0。本地 96 项测试通过、8 项 CUDA 测试跳过；[实际 smoke 记录](audit/local_validation.json)验证了定点检查、signal、quick、首次 full 晋升，以及相同源码不能再次晋升。参考仓库对照已证明若干具体检查和判定差异；完整 agent 搜索的速度与最终优化效果，仍需前述同模型、同预算对照。
 
 ## 开发检查
 

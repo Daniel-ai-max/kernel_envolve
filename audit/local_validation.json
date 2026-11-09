@@ -1,15 +1,15 @@
 {
-  "checked_at_utc": "2026-11-09T17:30:34.165086+00:00",
-  "version": "0.3.1",
+  "checked_at_utc": "2026-11-09T18:21:52.344855+00:00",
+  "version": "0.4.0",
   "platform": "macOS-26.5.2-arm64-arm-64bit",
   "python": "3.12.14 (main, Sep  1 2026, 14:09:38) [Clang 22.1.3 ]",
-  "evaluator_hash": "2eb9710c3ad61930c5ff4a6d113db96e39635b3e1c83ed7382ff7e9dffdc0c6c",
+  "evaluator_hash": "c17fa8f33b0e7fe0279bd250de3bf46d13e2eec4b34827472bd2d679472703f7",
   "scope": "One local NumPy smoke per mode. Timings include worker startup. GPU evidence is recorded separately.",
   "test_command": ".venv/bin/pytest -q",
   "tests": {
-    "passed": 92,
+    "passed": 96,
     "skipped": 8,
-    "skip_reason": "Eight CUDA hardware tests require explicit GPU opt-in; local macOS run skips them."
+    "skip_reason": "Eight CUDA tests require explicit GPU opt-in; local macOS skips them."
   },
   "scenarios": [
     {
@@ -20,16 +20,18 @@
       "checks": 4,
       "timed_samples": 0,
       "roles": [],
-      "worker_wall_seconds": 0.1473619998432696,
-      "worker_process_wall_seconds": 0.14568795799277723,
+      "worker_wall_seconds": 0.19406191702000797,
+      "worker_process_wall_seconds": 0.19222237495705485,
       "phase_wall_seconds": {
-        "correctness": 0.026932833017781377,
-        "finalize": 0.0006576660089194775,
-        "measurement": 7.920898497104645e-07,
-        "setup": 0.017588083865121007
+        "correctness": 0.026655749883502722,
+        "finalize": 0.0006452919915318489,
+        "measurement": 5.00120222568512e-07,
+        "setup": 0.027930499985814095
       },
       "measurement_wall_seconds": null,
       "gain_by_batch": null,
+      "paired_gain_by_batch": null,
+      "noise_guard_by_batch": null,
       "reasons": [
         "Correctness-only diagnostic cannot update best"
       ]
@@ -44,16 +46,18 @@
       "roles": [
         "candidate"
       ],
-      "worker_wall_seconds": 0.0915435419883579,
-      "worker_process_wall_seconds": 0.08984870882704854,
+      "worker_wall_seconds": 0.09165204199962318,
+      "worker_process_wall_seconds": 0.09015737497247756,
       "phase_wall_seconds": {
-        "correctness": 0.010981000028550625,
-        "finalize": 0.0006927079521119595,
-        "measurement": 0.0010423329658806324,
-        "setup": 0.009486667113378644
+        "correctness": 0.009700583992525935,
+        "finalize": 0.0006309580057859421,
+        "measurement": 0.0010082500521093607,
+        "setup": 0.008537165820598602
       },
-      "measurement_wall_seconds": 0.0010409587994217873,
+      "measurement_wall_seconds": 0.0010072500444948673,
       "gain_by_batch": null,
+      "paired_gain_by_batch": null,
+      "noise_guard_by_batch": null,
       "reasons": [
         "Candidate-only signal has no measured comparator"
       ]
@@ -69,17 +73,23 @@
         "candidate",
         "comparator"
       ],
-      "worker_wall_seconds": 0.09144583297893405,
-      "worker_process_wall_seconds": 0.08995291613973677,
+      "worker_wall_seconds": 0.08342516701668501,
+      "worker_process_wall_seconds": 0.08197445911355317,
       "phase_wall_seconds": {
-        "correctness": 0.011154166888445616,
-        "finalize": 0.000684583093971014,
-        "measurement": 0.004170499974861741,
-        "setup": 0.008674999931827188
+        "correctness": 0.012154500000178814,
+        "finalize": 0.0007127909921109676,
+        "measurement": 0.0038511669263243675,
+        "setup": 0.011070042150095105
       },
-      "measurement_wall_seconds": 0.0041692499071359634,
+      "measurement_wall_seconds": 0.0038497920613735914,
       "gain_by_batch": [
-        0.9958567623557265
+        0.9956594663278272
+      ],
+      "paired_gain_by_batch": [
+        0.9891994917407878
+      ],
+      "noise_guard_by_batch": [
+        0.015881829733163943
       ],
       "reasons": [
         "Quick results cannot update best"
@@ -96,20 +106,29 @@
         "candidate",
         "comparator"
       ],
-      "worker_wall_seconds": 0.14349479204975069,
-      "worker_process_wall_seconds": 0.14137966698035598,
+      "worker_wall_seconds": 0.14806149993091822,
+      "worker_process_wall_seconds": 0.14584204205311835,
       "phase_wall_seconds": {
-        "correctness": 0.02366754086688161,
-        "finalize": 0.0013933340087532997,
-        "measurement": 0.04956825007684529,
-        "setup": 0.009122875053435564
+        "correctness": 0.023056457983329892,
+        "finalize": 0.001162875210866332,
+        "measurement": 0.046784166945144534,
+        "setup": 0.008892874931916595
       },
-      "measurement_wall_seconds": 0.04956687497906387,
+      "measurement_wall_seconds": 0.046782833989709616,
       "gain_by_batch": [
-        0.994626727598136,
-        0.9947654189283561
+        0.9944720013840993,
+        0.9946459000579138
       ],
-      "reasons": []
+      "paired_gain_by_batch": [
+        0.9891518696259068,
+        0.9960874847913855
+      ],
+      "noise_guard_by_batch": [
+        0.04755720747883963,
+        0.03481416700185429
+      ],
+      "reasons": [],
+      "promotion": "succeeded"
     },
     {
       "scenario": "full-existing-best",
@@ -123,23 +142,34 @@
         "candidate",
         "comparator"
       ],
-      "worker_wall_seconds": 0.20880062482319772,
-      "worker_process_wall_seconds": 0.20575945894233882,
+      "worker_wall_seconds": 0.20210291701368988,
+      "worker_process_wall_seconds": 0.19909249991178513,
       "phase_wall_seconds": {
-        "correctness": 0.0286463750526309,
-        "finalize": 0.002235082909464836,
-        "measurement": 0.06071650004014373,
-        "setup": 0.0106154999230057
+        "correctness": 0.02751575014553964,
+        "finalize": 0.0021287910640239716,
+        "measurement": 0.056418666848912835,
+        "setup": 0.009612167021259665
       },
-      "measurement_wall_seconds": 0.060711625032126904,
+      "measurement_wall_seconds": 0.0564172079320997,
       "gain_by_batch": [
-        -0.00015586034912717928,
-        -0.006340579710144789
+        -0.026024622097553296,
+        -0.01967370441458738
+      ],
+      "paired_gain_by_batch": [
+        -0.016518622409225407,
+        -0.009916826615483126
+      ],
+      "noise_guard_by_batch": [
+        0.06813931743805517,
+        0.0666986564299426
       ],
       "reasons": [
-        "Gain does not exceed the configured threshold and MAD/IQR noise guard in every batch",
+        "contiguous: exceeds regression allowance in batch 1",
+        "Aggregate gain and paired gain do not both clear their thresholds in every batch",
         "Candidate source is identical to best; no implementation change"
-      ]
+      ],
+      "promotion": "rejected",
+      "promotion_reason": "Not eligible: contiguous: exceeds regression allowance in batch 1; Aggregate gain and paired gain do not both clear their thresholds in every batch; Candidate source is identical to best; no implementation change"
     }
   ]
 }

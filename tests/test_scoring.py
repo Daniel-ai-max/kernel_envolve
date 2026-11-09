@@ -228,3 +228,46 @@ def test_fixed_baseline_noise_cannot_be_used_to_confirm_original_gain():
         if r["role"] == "baseline":
             r["us"] = [5, 10, 15][r["trial"]]
     assert not score(result, cfg)["eligible_for_best"]
+
+
+def test_shared_clock_variation_does_not_hide_consistent_paired_gain():
+    result, cfg = evidence(compare_best=True)
+    for row in result["samples"]:
+        clock = [0.7, 1.0, 1.3][row["trial"]]
+        row["us"] = clock * {"candidate": 95, "comparator": 100, "baseline": 110}[row["role"]]
+    decision = score(result, cfg)
+    assert decision["eligible_for_best"]
+    assert all(
+        g > n for g, n in zip(decision["paired_gain_by_batch"], decision["noise_guard_by_batch"])
+    )
+
+
+def test_marginal_median_gain_cannot_borrow_zero_noise_from_equal_pairs():
+    result, cfg = evidence()
+    for row in result["samples"]:
+        values = (
+            [[10, 10], [20, 20], [30, 30]]
+            if row["role"] == "candidate"
+            else [[1, 19], [5, 35], [30, 30]]
+        )
+        row["us"] = values[row["trial"]][row["repeat"]]
+    decision = score(result, cfg)
+    assert min(decision["gain_by_batch"]) > 0.18
+    assert decision["paired_gain_by_batch"] == [0, 0]
+    assert decision["noise_guard_by_batch"] == [0, 0]
+    assert not decision["eligible_for_best"]
+
+
+def test_paired_gain_does_not_replace_the_declared_aggregate_objective():
+    result, cfg = evidence()
+    for row in result["samples"]:
+        values = (
+            [[0.5, 18.5], [4.5, 34.5], [29.5, 29.5]]
+            if row["role"] == "candidate"
+            else [[10, 10], [20, 20], [30, 30]]
+        )
+        row["us"] = values[row["trial"]][row["repeat"]]
+    decision = score(result, cfg)
+    assert min(decision["paired_gain_by_batch"]) > cfg["min_gain"]
+    assert max(decision["gain_by_batch"]) < 0
+    assert not decision["eligible_for_best"]
