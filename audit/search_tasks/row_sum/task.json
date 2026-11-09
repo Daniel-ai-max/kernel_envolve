@@ -1,0 +1,46 @@
+{
+  "name": "search-pilot-row_sum",
+  "objective": "Equal-weight total eager wall latency; FP32 input/output, no input mutation. This is a public development workload, not held-out final acceptance.",
+  "device": "cuda:0",
+  "timer": "wall",
+  "rtol": 1e-05,
+  "atol": 0.0001,
+  "min_gain": 0.02,
+  "max_regression": 0.05,
+  "max_baseline_regression": 0.05,
+  "cases": [
+    {
+      "id": "small-tail",
+      "args": {
+        "device": "cuda:0",
+        "rows": 32,
+        "columns": 257,
+        "stride": 1
+      },
+      "weight": 1,
+      "quick": true
+    },
+    {
+      "id": "wide",
+      "args": {
+        "device": "cuda:0",
+        "rows": 128,
+        "columns": 8193,
+        "stride": 1
+      },
+      "weight": 1,
+      "quick": false
+    },
+    {
+      "id": "strided-tail",
+      "args": {
+        "device": "cuda:0",
+        "rows": 127,
+        "columns": 1025,
+        "stride": 2
+      },
+      "weight": 1,
+      "quick": false
+    }
+  ]
+}

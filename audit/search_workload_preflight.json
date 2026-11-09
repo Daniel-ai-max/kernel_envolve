@@ -1,0 +1,200 @@
+{
+  "checked_at_utc": "2026-11-09T18:33:59.032898+00:00",
+  "scope": "Public development task correctness and complete evaluator preflight, not model search or independent final acceptance. One observation per task/probe; first-use initialization differs.",
+  "job_id": "85e358bdc1f14e9b82ab6d6c0cb40557",
+  "phase": "Completed",
+  "pods_remaining": 0,
+  "allocated_gpus": 1,
+  "session_limit": 32,
+  "topic_id": "topic_c7b8c988fd46",
+  "work_order_id": "WOC-ff0a397b3590121d",
+  "image": "839084984246.dkr.ecr.ap-south-2.amazonaws.com/pretrain/megatron:verify_batch_invariant_deepep_v2_efa_sm100_prebaked_b300_fa4_3de9f805_908a5adc_cb136@sha256:9da60d0cc131ffca03db54f02910b9b741de4ecc58a8c123b1786965b43aa74b",
+  "source_archive_sha256": "b054ef5e03b3823d4c6d6ca471a76f892c9405594e4311b414f2f097ff00341c",
+  "evaluator_hash": "c17fa8f33b0e7fe0279bd250de3bf46d13e2eec4b34827472bd2d679472703f7",
+  "workload_sha256": {
+    "fused_relu/candidate.py": "ee5619a09a94c7204db275f64dba4613b763fb173c155a63657e383f97fb3ab8",
+    "fused_relu/task.json": "748fd43f98a5d9bfa7df091fbd5820fdd761024c0ab500baeaaa01f16228b5d7",
+    "fused_relu/task.py": "88e568f5c8cdd08d9d965e81faa4115b7f7ca6487dc29bf560df607369400c98",
+    "matmul/candidate.py": "30ba4eaeb3bc4b570bcd7de7ad1ba518b598c238cd080ca3f38ea6bf2f4f73d9",
+    "matmul/task.json": "9b945ae9af3ce045fad58deeb199ff209354584d864349cd26e3d49258fe1fc3",
+    "matmul/task.py": "32a2443b4f3cffef883c2dd70d6edeac7a191050f05e39128ef8fe5f11342afc",
+    "row_sum/candidate.py": "6d424b392974b448ee39c6c628fb90d3107a44d00dc919328f3b2c8906939d6f",
+    "row_sum/task.json": "72955a35e246eb8a3b4958df83b48dc90ce8bcd80c55f37275f9db13dd47bbd6",
+    "row_sum/task.py": "45019d9b266c5cc88ae26fe6e6e15b98e8b85e9bfde02421c9bc3058596e2276"
+  },
+  "probe_sha256": "7c1120f01d9e3c332c6f82167c3bae0a5439c3317e36ed8023337ee885025a1f",
+  "raw_report": "search_workload_preflight_raw.json.gz",
+  "raw_report_sha256": "6156d83f36a25fc2f82d95b59cbe0bf9df36ed3cdbdaf3d7598938e1b9640703",
+  "cpu_probes": 9,
+  "gpu_probes": 12,
+  "gpu_summary": [
+    {
+      "task": "fused_relu",
+      "probe": "original",
+      "correctness": "pass",
+      "checks": 36,
+      "samples": 0,
+      "worker_wall_seconds": 3.6739016689825803,
+      "phase_wall_seconds": {
+        "correctness": 1.7179482399951667,
+        "finalize": 0.001412521000020206,
+        "measurement": 5.441950634121895e-06,
+        "setup": 1.3378241330501623
+      },
+      "eligible_for_best": false
+    },
+    {
+      "task": "fused_relu",
+      "probe": "wrong-value",
+      "correctness": "fail",
+      "checks": 1,
+      "samples": 0,
+      "worker_wall_seconds": 2.4203679300262593,
+      "phase_wall_seconds": {
+        "correctness": 0.20012409100309014,
+        "setup": 1.3374546479899436
+      },
+      "eligible_for_best": false
+    },
+    {
+      "task": "fused_relu",
+      "probe": "input-mutation",
+      "correctness": "fail",
+      "checks": 1,
+      "samples": 0,
+      "worker_wall_seconds": 2.0195021480321884,
+      "phase_wall_seconds": {
+        "correctness": 0.20297084498452023,
+        "setup": 1.304701945045963
+      },
+      "eligible_for_best": false
+    },
+    {
+      "task": "fused_relu",
+      "probe": "original-full",
+      "correctness": "pass",
+      "checks": 48,
+      "samples": 240,
+      "worker_wall_seconds": 2.626190089038573,
+      "phase_wall_seconds": {
+        "correctness": 0.6522494609816931,
+        "finalize": 0.0031642839894630015,
+        "measurement": 0.1648238420020789,
+        "setup": 1.2584452209994197
+      },
+      "eligible_for_best": false
+    },
+    {
+      "task": "matmul",
+      "probe": "original",
+      "correctness": "pass",
+      "checks": 36,
+      "samples": 0,
+      "worker_wall_seconds": 3.9224900690023787,
+      "phase_wall_seconds": {
+        "correctness": 2.055517421977129,
+        "finalize": 0.0012212269939482212,
+        "measurement": 1.6900012269616127e-06,
+        "setup": 1.283479880017694
+      },
+      "eligible_for_best": false
+    },
+    {
+      "task": "matmul",
+      "probe": "wrong-value",
+      "correctness": "fail",
+      "checks": 1,
+      "samples": 0,
+      "worker_wall_seconds": 2.368706170003861,
+      "phase_wall_seconds": {
+        "correctness": 0.49391199700767174,
+        "setup": 1.2974779770011082
+      },
+      "eligible_for_best": false
+    },
+    {
+      "task": "matmul",
+      "probe": "input-mutation",
+      "correctness": "fail",
+      "checks": 1,
+      "samples": 0,
+      "worker_wall_seconds": 2.318717268994078,
+      "phase_wall_seconds": {
+        "correctness": 0.49253551103174686,
+        "setup": 1.280495898972731
+      },
+      "eligible_for_best": false
+    },
+    {
+      "task": "matmul",
+      "probe": "original-full",
+      "correctness": "pass",
+      "checks": 48,
+      "samples": 240,
+      "worker_wall_seconds": 2.4715186539688148,
+      "phase_wall_seconds": {
+        "correctness": 0.5592414429993369,
+        "finalize": 0.00295890198322013,
+        "measurement": 0.08061672898475081,
+        "setup": 1.2423203170183115
+      },
+      "eligible_for_best": false
+    },
+    {
+      "task": "row_sum",
+      "probe": "original",
+      "correctness": "pass",
+      "checks": 36,
+      "samples": 0,
+      "worker_wall_seconds": 2.6692358299624175,
+      "phase_wall_seconds": {
+        "correctness": 0.5346764249843545,
+        "finalize": 0.0011434240150265396,
+        "measurement": 1.7649726942181587e-06,
+        "setup": 1.5088211680413224
+      },
+      "eligible_for_best": false
+    },
+    {
+      "task": "row_sum",
+      "probe": "wrong-value",
+      "correctness": "fail",
+      "checks": 1,
+      "samples": 0,
+      "worker_wall_seconds": 1.9681911439984106,
+      "phase_wall_seconds": {
+        "correctness": 0.16524529398884624,
+        "setup": 1.3008761139935814
+      },
+      "eligible_for_best": false
+    },
+    {
+      "task": "row_sum",
+      "probe": "input-mutation",
+      "correctness": "fail",
+      "checks": 1,
+      "samples": 0,
+      "worker_wall_seconds": 1.9680888029979542,
+      "phase_wall_seconds": {
+        "correctness": 0.1632815869525075,
+        "setup": 1.3053352200076915
+      },
+      "eligible_for_best": false
+    },
+    {
+      "task": "row_sum",
+      "probe": "original-full",
+      "correctness": "pass",
+      "checks": 48,
+      "samples": 240,
+      "worker_wall_seconds": 2.1711771470145322,
+      "phase_wall_seconds": {
+        "correctness": 0.3053096309886314,
+        "finalize": 0.0028758749831467867,
+        "measurement": 0.04866088600829244,
+        "setup": 1.2912124400027096
+      },
+      "eligible_for_best": false
+    }
+  ]
+}

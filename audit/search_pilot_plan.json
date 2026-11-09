@@ -1,0 +1,111 @@
+{
+  "status": "prepared_not_started_pending_explicit_agent_authorization",
+  "purpose": "Feasibility pilot for workflow ablation, not a full-system comparison or a superiority test. Runtime evaluator remains unchanged.",
+  "source_base_commit": "3f25448c51e057cca08e5809a06efdc9000e20e9",
+  "model": {
+    "proposed": "gpt-6-astra",
+    "selection_confirmed": false,
+    "settings": "Resolve and pin actual supported reasoning/configuration before any search; identical for all arms."
+  },
+  "budget": {
+    "runs": 9,
+    "repetitions_per_task_arm": 1,
+    "wall_seconds_per_run": 480,
+    "gpu_count": 1,
+    "gpu_seconds_total_cap": 5400,
+    "token_budget": "Not yet confirmed; log all usage. No model calls have been made."
+  },
+  "arms": {
+    "goal_only": "A goal-only prompt baseline inspired by JustGoal. This is not a reproduction of the entire JustGoal system.",
+    "ako4all_workflow_adaptation": "Pinned bbd0e1cf1ce2fb19d4322a932680f4c3d175d80e workflow, adapted to the common evaluator and Codex tools. Record exact instruction/command changes before launching; do not call it the native system.",
+    "kernel_envolve_skill": "Current repository skill; the same evaluator and resources as other arms."
+  },
+  "common_contract": {
+    "device": "One idle B300; serialize performance measurement.",
+    "timer": "Synchronized eager wall latency, including CPU launch and device completion. No CUDA Graph.",
+    "objective": "Equal-weight sum of per-case median latency; report individual cases and >5% regressions.",
+    "dtype": "FP32 inputs/outputs, independent FP64 arithmetic oracle rounded to FP32.",
+    "precision": "TF32 disabled for the original baseline; a candidate may choose its implementation but must pass the same numerical rules.",
+    "shapes": "Exactly the declared public shapes/layouts; final seeds withheld, no undisclosed out-of-domain shapes.",
+    "resources": "Identical initial code, common development evaluator, tool access and reference links; only workflow instructions differ."
+  },
+  "order_seed": 20261114,
+  "schedule": [
+    {
+      "index": 0,
+      "task": "row_sum",
+      "arm": "ako4all_workflow_adaptation"
+    },
+    {
+      "index": 1,
+      "task": "row_sum",
+      "arm": "kernel_envolve_skill"
+    },
+    {
+      "index": 2,
+      "task": "row_sum",
+      "arm": "goal_only"
+    },
+    {
+      "index": 3,
+      "task": "matmul",
+      "arm": "kernel_envolve_skill"
+    },
+    {
+      "index": 4,
+      "task": "matmul",
+      "arm": "goal_only"
+    },
+    {
+      "index": 5,
+      "task": "matmul",
+      "arm": "ako4all_workflow_adaptation"
+    },
+    {
+      "index": 6,
+      "task": "fused_relu",
+      "arm": "goal_only"
+    },
+    {
+      "index": 7,
+      "task": "fused_relu",
+      "arm": "ako4all_workflow_adaptation"
+    },
+    {
+      "index": 8,
+      "task": "fused_relu",
+      "arm": "kernel_envolve_skill"
+    }
+  ],
+  "workload_sha256": {
+    "fused_relu/candidate.py": "ee5619a09a94c7204db275f64dba4613b763fb173c155a63657e383f97fb3ab8",
+    "fused_relu/task.json": "748fd43f98a5d9bfa7df091fbd5820fdd761024c0ab500baeaaa01f16228b5d7",
+    "fused_relu/task.py": "88e568f5c8cdd08d9d965e81faa4115b7f7ca6487dc29bf560df607369400c98",
+    "matmul/candidate.py": "30ba4eaeb3bc4b570bcd7de7ad1ba518b598c238cd080ca3f38ea6bf2f4f73d9",
+    "matmul/task.json": "9b945ae9af3ce045fad58deeb199ff209354584d864349cd26e3d49258fe1fc3",
+    "matmul/task.py": "32a2443b4f3cffef883c2dd70d6edeac7a191050f05e39128ef8fe5f11342afc",
+    "row_sum/candidate.py": "6d424b392974b448ee39c6c628fb90d3107a44d00dc919328f3b2c8906939d6f",
+    "row_sum/task.json": "72955a35e246eb8a3b4958df83b48dc90ce8bcd80c55f37275f9db13dd47bbd6",
+    "row_sum/task.py": "45019d9b266c5cc88ae26fe6e6e15b98e8b85e9bfde02421c9bc3058596e2276"
+  },
+  "final_acceptance": {
+    "status": "not_yet_implemented_or_self_checked",
+    "required_before_launch": [
+      "Freeze the common prompt, exact arm prompts, model configuration and version identities.",
+      "Establish independent directories/conversations and enforce no cross-arm candidate access.",
+      "Precommit final input seeds outside the agents’ accessible workspace.",
+      "Self-check an independent final validator with correct and incorrect candidates; it must not trust any arm’s promotion decision.",
+      "Validate deadline termination, final-source freezing and resource release before starting."
+    ],
+    "submission": "At the deadline freeze the explicitly declared delivery; do not retrospectively choose the candidate with best final-test score.",
+    "outcomes": [
+      "correct delivery count including all failures",
+      "per-case and weighted latency gain",
+      "total wall/GPU/model costs",
+      "diagnostic/quick/full calls and time",
+      "failure and recovery costs"
+    ],
+    "pilot_success": "All nine runs terminate within budget with frozen source and complete cost/final-acceptance records. Results validate the experimental procedure, not statistical superiority."
+  },
+  "formal_comparison": "After the pilot, at least five independent runs per task/arm with prespecified practical benefit and cost criteria. No full comparison is authorized or scheduled by this plan."
+}
