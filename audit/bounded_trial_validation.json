@@ -1,0 +1,72 @@
+{
+  "scope": "Static Python container probes only, no model or GPU work. No-network filesystem isolation; model authentication and remote GPU bridge remain untested.",
+  "runner_sha256": "f542c93a60a532cd0a87f378ddc77723a4131001eae5796374c3e3476ddf36ae",
+  "image": "sha256:6a0e06f5ba0b373d051aabd3fffb9b873f27f9a2a3a14bcbe37dee6f0e3bbc70",
+  "results": [
+    {
+      "scenario": "normal",
+      "report": {
+        "image": "sha256:6a0e06f5ba0b373d051aabd3fffb9b873f27f9a2a3a14bcbe37dee6f0e3bbc70",
+        "command": [
+          "python",
+          "probe.py"
+        ],
+        "deadline_seconds": 10.0,
+        "network": "none",
+        "timed_out": false,
+        "submission": {
+          "sha256": "cd19659f576c876094dceb0b533f845b0ccdad1c8cfd9e526908a46a34b06277",
+          "bytes": 25
+        },
+        "container_removed": true,
+        "returncode": 0,
+        "wall_seconds_including_cleanup": 0.7436082910280675,
+        "outcome": "declared_submission_frozen",
+        "frozen_submission_unchanged": true
+      }
+    },
+    {
+      "scenario": "timeout",
+      "report": {
+        "image": "sha256:6a0e06f5ba0b373d051aabd3fffb9b873f27f9a2a3a14bcbe37dee6f0e3bbc70",
+        "command": [
+          "python",
+          "probe.py"
+        ],
+        "deadline_seconds": 3.0,
+        "network": "none",
+        "timed_out": true,
+        "submission": {
+          "sha256": "2d0e3dfbd9c309fb5c99d7cc2b3fcb46ad79ded333506a02717b72e6fb5fbadb",
+          "bytes": 25
+        },
+        "container_removed": true,
+        "returncode": 137,
+        "wall_seconds_including_cleanup": 3.0960807919036597,
+        "outcome": "declared_submission_frozen",
+        "detached_child_stopped": true,
+        "frozen_submission_unchanged": true
+      }
+    },
+    {
+      "scenario": "no-submission",
+      "report": {
+        "image": "sha256:6a0e06f5ba0b373d051aabd3fffb9b873f27f9a2a3a14bcbe37dee6f0e3bbc70",
+        "command": [
+          "python",
+          "probe.py"
+        ],
+        "deadline_seconds": 10.0,
+        "network": "none",
+        "timed_out": false,
+        "submission": null,
+        "container_removed": true,
+        "returncode": 0,
+        "wall_seconds_including_cleanup": 0.2795997909270227,
+        "outcome": "no_submission"
+      }
+    }
+  ],
+  "reproduction_script": "import tempfile,pathlib,subprocess,sys,json,time,hashlib\nrepo=pathlib.Path('/Users/daniel/Documents/ChatGPT/kernel_envolve')\noutput=pathlib.Path('/Users/daniel/Documents/ChatGPT/\u7b97\u5b50\u4f18\u5316/bounded-trial-selftest-r2-20261110');output.mkdir(exist_ok=True)\nimage=subprocess.check_output(['docker','image','inspect','python:3.12-slim-bookworm','--format','{{.Id}}'],text=True).strip()\nrows=[]\nwith tempfile.TemporaryDirectory(prefix='ke-trial-isolation-',dir=repo.parent) as temp:\n root=pathlib.Path(temp);secret=root/'heldout-seeds.json';secret.write_text('[19073,38053,51031]')\n for kind in ['normal','timeout','no-submission']:\n  work=root/kind;work.mkdir();(work/'host-secret-link').symlink_to(secret)\n  script='''from pathlib import Path\nimport subprocess,sys,time\np=Path('/work')\n'''\n  if kind=='normal':\n   script+=f\"assert not Path({str(secret)!r}).exists()\\n\"\n   script+=\"try:\\n (p/'host-secret-link').read_text()\\nexcept OSError: pass\\nelse: raise AssertionError('Host secret accessible')\\n\"\n   script+=\"try:\\n Path('/outside-workspace').write_text('bad')\\nexcept OSError: pass\\nelse: raise AssertionError('Root filesystem writable')\\n\"\n   script+=\"(p/'submission.py').write_text('def run(x): return x + 1\\\\n')\\n\"\n  elif kind=='timeout':\n   script+=\"(p/'submission.py').write_text('def run(x): return x + 2\\\\n')\\n\"\n   child=\"import time\\nfrom pathlib import Path\\nwhile True:\\n with Path('/work/ticks').open('a') as f:f.write('tick\\\\n')\\n time.sleep(.05)\\n\"\n   script+=f\"subprocess.Popen([sys.executable,'-c',{child!r}],start_new_session=True)\\ntime.sleep(60)\\n\"\n  else:script+=\"print('No candidate was delivered')\\n\"\n  (work/'probe.py').write_text(script)\n  dest=output/kind\n  assert not dest.exists(),'Inspect existing evidence instead of overwriting'\n  command=[str(repo/'.venv/bin/python'),str(repo/'audit/run_bounded_trial.py'),'--workspace',str(work),'--output',str(dest),'--image',image,'--seconds','3' if kind=='timeout' else '10','--','python','probe.py']\n  result=subprocess.run(command,capture_output=True,text=True,timeout=45);report=json.loads((dest/'trial.json').read_text())\n  assert result.returncode==(1 if kind=='no-submission' else 0),(result.stdout,result.stderr)\n  assert report['container_removed'] and report['timed_out']==(kind=='timeout'),report\n  cid=(dest/'container-id').read_text().strip();inspect=subprocess.run(['docker','inspect',cid],capture_output=True,text=True);assert inspect.returncode!=0\n  if kind=='timeout':\n   assert (work/'ticks').exists();before=(work/'ticks').read_bytes();time.sleep(.3);assert before==(work/'ticks').read_bytes();report['detached_child_stopped']=True\n  if kind!='no-submission':\n   frozen=(dest/'submission.py').read_bytes();(work/'submission.py').write_text('changed after freeze');assert frozen==(dest/'submission.py').read_bytes();assert hashlib.sha256(frozen).hexdigest()==report['submission']['sha256'];report['frozen_submission_unchanged']=True\n  rows.append({'scenario':kind,'report':report});print(kind,report['outcome'],report['wall_seconds_including_cleanup'])\nsummary={'scope':'Static Python container probes only, no model or GPU work. No-network filesystem isolation; model authentication and remote GPU bridge remain untested.','runner_sha256':hashlib.sha256((repo/'audit/run_bounded_trial.py').read_bytes()).hexdigest(),'image':image,'results':rows}\n(output/'summary.json').write_text(json.dumps(summary,indent=2)+'\\n')\n",
+  "reproduction_note": "Use a fresh output directory when reproducing. This Colima host shares /Users but not the macOS private temp directory. The first attempt failed before container creation because its bind source was not shared; the successful run uses a temporary folder under the project parent."
+}

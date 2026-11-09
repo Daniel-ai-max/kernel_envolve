@@ -90,12 +90,12 @@
     "row_sum/task.py": "45019d9b266c5cc88ae26fe6e6e15b98e8b85e9bfde02421c9bc3058596e2276"
   },
   "final_acceptance": {
-    "status": "validator_cpu_and_cuda_self_checked; isolation_and_runner_not_yet_validated",
+    "status": "validator_and_static_container_runner_self_checked; model_and_remote_gpu_adapter_pending",
     "required_before_launch": [
       "Freeze the common prompt, exact arm prompts, model configuration and version identities.",
       "Establish independent directories/conversations and enforce no cross-arm candidate access.",
       "Precommit final input seeds outside the agents’ accessible workspace.",
-      "Validate deadline termination, final-source freezing and resource release before starting."
+      "Integrate the authorized model and remote GPU feedback inside the isolated runner; verify deadline cancellation of any active remote evaluations and record all startup/cleanup costs. Static no-network container tests alone do not prove this integration."
     ],
     "submission": "At the deadline freeze the explicitly declared delivery; do not retrospectively choose the candidate with best final-test score.",
     "outcomes": [
@@ -107,7 +107,9 @@
     ],
     "pilot_success": "All nine runs terminate within budget with frozen source and complete cost/final-acceptance records. Results validate the experimental procedure, not statistical superiority.",
     "verifier_sha256": "dbc1adbf2bb8e9cf5d9a75f89219dbb5ab46ba0a501e414ee7fc98602ac2c701",
-    "self_check_evidence": "search_final_validation.json"
+    "self_check_evidence": "search_final_validation.json",
+    "runner_sha256": "f542c93a60a532cd0a87f378ddc77723a4131001eae5796374c3e3476ddf36ae",
+    "runner_self_check_evidence": "bounded_trial_validation.json"
   },
   "formal_comparison": "After the pilot, at least five independent runs per task/arm with prespecified practical benefit and cost criteria. Expanded model budget and final settings remain to be confirmed; no formal runs are scheduled."
 }
