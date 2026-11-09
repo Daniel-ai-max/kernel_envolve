@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kernel Envolve"
+  short_description: "Iterate kernels with independent correctness and timing"
+  default_prompt: "Use $kernel-envolve to optimize this kernel on the specified hardware, verify each promising candidate, and preserve a reproducible best."

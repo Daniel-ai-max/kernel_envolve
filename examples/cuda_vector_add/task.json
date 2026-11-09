@@ -1,0 +1,16 @@
+{
+  "name": "triton-vector-add",
+  "objective": "Equal-weight CUDA event latency of the declared size/layout suite.",
+  "device": "cuda:0",
+  "rtol": 0.00001,
+  "atol": 0.000001,
+  "cases": [
+    {"id": "tiny-tail", "args": {"n": 257, "stride": 1}, "weight": 1},
+    {"id": "bandwidth", "args": {"n": 1048576, "stride": 1}, "weight": 1},
+    {"id": "strided-tail", "args": {"n": 65539, "stride": 2}, "weight": 1, "quick": false}
+  ],
+  "warmup": 5,
+  "full_trials": 15,
+  "min_gain": 0.02,
+  "max_regression": 0.05
+}

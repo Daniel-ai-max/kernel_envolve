@@ -1,0 +1,10 @@
+{
+  "name": "numpy-vector-add",
+  "objective": "Equal-weight demonstration latency across contiguous and strided arrays; not a training workload estimate.",
+  "cases": [
+    {"id": "contiguous", "args": {"n": 4096, "stride": 1}, "weight": 1},
+    {"id": "strided", "args": {"n": 8193, "stride": 2}, "weight": 1, "quick": false}
+  ],
+  "min_gain": 0.02,
+  "max_regression": 0.05
+}
