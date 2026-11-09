@@ -10,12 +10,15 @@ import os
 import signal
 import subprocess
 import sys
+import time
 import uuid
 from pathlib import Path
 
+from .protocol import plan
 from .scoring import score
 from .storage import (
     bundle,
+    candidate_identity,
     config,
     contract,
     digest,
@@ -40,9 +43,26 @@ def lock(path):
             fcntl.flock(handle, fcntl.LOCK_UN)
 
 
-def evaluate(task, mode="quick", signal_only=False, timeout=300, baseline=False):
+def evaluate(
+    task,
+    mode="quick",
+    signal_only=False,
+    timeout=300,
+    baseline=False,
+    cases=None,
+    seeds=None,
+    check_only=False,
+):
     task = Path(task).resolve()
     cfg = config(task)
+    selection = {}
+    if cases:
+        selection["cases"] = cases
+    if seeds:
+        selection["seeds"] = seeds
+    plan(cfg, mode, selection)
+    if check_only and mode != "quick":
+        raise ValueError("Check-only diagnostics require quick mode")
     if signal_only and mode != "quick":
         raise ValueError("Candidate-only timing is available in quick mode only")
     if not math.isfinite(timeout) or timeout <= 0:
@@ -58,6 +78,7 @@ def evaluate(task, mode="quick", signal_only=False, timeout=300, baseline=False)
         run.mkdir()
         identity = bundle(task, run / "source", cfg)
         comparator = {"kind": "baseline"}
+        same_candidate = False
         if best and not baseline:
             pointer, old_run, old_result = best
             if old_result["identity"]["contract"] != identity["contract"]:
@@ -69,6 +90,9 @@ def evaluate(task, mode="quick", signal_only=False, timeout=300, baseline=False)
                 "run": str(old_run),
                 "result_hash": pointer["result_hash"],
             }
+            same_candidate = candidate_identity(
+                identity, config(run / "source")
+            ) == candidate_identity(old_result["identity"], config(old_run / "source"))
         request = {
             "task_root": str(task),
             "mode": mode,
@@ -76,8 +100,12 @@ def evaluate(task, mode="quick", signal_only=False, timeout=300, baseline=False)
             "identity": identity,
             "comparator": comparator,
             "initial_best_hash": digest(best[0]) if best else None,
+            "selection": selection,
+            "check_only": check_only,
+            "same_candidate_as_best": same_candidate,
         }
         write_json(run / "request.json", request)
+        started = time.perf_counter()
         with (run / "stdout.log").open("w") as stdout, (run / "stderr.log").open("w") as stderr:
             process = subprocess.Popen(
                 [sys.executable, "-m", "kernel_envolve.worker", str(run)],
@@ -102,7 +130,7 @@ def evaluate(task, mode="quick", signal_only=False, timeout=300, baseline=False)
                 raise
         if failure or not (run / "result.json").exists():
             result = {
-                "schema": 1,
+                "schema": 2,
                 **request,
                 "execution": "error",
                 "correctness": "partial",
@@ -117,6 +145,8 @@ def evaluate(task, mode="quick", signal_only=False, timeout=300, baseline=False)
             }
             write_json(run / "result.json", result)
         result = read_json(run / "result.json")
+        result["worker_wall_seconds"] = time.perf_counter() - started
+        write_json(run / "result.json", result)
         # Receipt detects accidental later edits to the report and raw evidence.
         write_json(run / "receipt.json", {"result_hash": digest(result)})
         return run, result
@@ -164,6 +194,21 @@ def main(argv=None):
     ev.add_argument("--mode", choices=("quick", "full"), default="quick")
     ev.add_argument("--signal-only", action="store_true")
     ev.add_argument(
+        "--case", action="append", dest="cases", help="Diagnostic case id; repeatable, quick only"
+    )
+    ev.add_argument(
+        "--seed",
+        action="append",
+        type=int,
+        dest="seeds",
+        help="Diagnostic seed; repeatable, quick only",
+    )
+    ev.add_argument(
+        "--check-only",
+        action="store_true",
+        help="Skip timing for correctness debugging; quick only",
+    )
+    ev.add_argument(
         "--baseline", action="store_true", help="Compare fixed baseline, even if best exists"
     )
     ev.add_argument("--timeout", type=float, default=300)
@@ -176,7 +221,16 @@ def main(argv=None):
         if args.command == "promote":
             print(json.dumps(promote(args.run), indent=2))
             return 0
-        run, result = evaluate(args.task, args.mode, args.signal_only, args.timeout, args.baseline)
+        run, result = evaluate(
+            args.task,
+            args.mode,
+            args.signal_only,
+            args.timeout,
+            args.baseline,
+            args.cases,
+            args.seeds,
+            args.check_only,
+        )
         print(
             json.dumps(
                 {

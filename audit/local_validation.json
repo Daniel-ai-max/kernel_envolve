@@ -1,0 +1,109 @@
+{
+  "checked_at_utc": "2026-11-09T16:09:58.354517+00:00",
+  "platform": "macOS-26.5.2-arm64-arm-64bit",
+  "python": "3.12.14 (main, Sep  1 2026, 14:09:38) [Clang 22.1.3 ]",
+  "evaluator_hash": "f81cda3642906ec45d4131a8a7b7ada39a9f9f5d52f74bb99275c8ccb016796b",
+  "scope": "One local NumPy smoke per mode. Timings include worker startup. No GPU or model search comparison.",
+  "test_command": ".venv/bin/pytest -q",
+  "tests": {
+    "passed": 56,
+    "skipped": 1,
+    "skip_reason": "CUDA opt-in; no NVIDIA GPU on this macOS host"
+  },
+  "scenarios": [
+    {
+      "scenario": "targeted-correctness",
+      "execution": "completed",
+      "correctness": "pass",
+      "eligible_for_best": false,
+      "checks": 4,
+      "timed_samples": 0,
+      "roles": [],
+      "worker_wall_seconds": 0.17547941696830094,
+      "measurement_wall_seconds": null,
+      "gain_by_batch": null,
+      "reasons": [
+        "Correctness-only diagnostic cannot update best"
+      ]
+    },
+    {
+      "scenario": "candidate-signal",
+      "execution": "completed",
+      "correctness": "pass",
+      "eligible_for_best": false,
+      "checks": 4,
+      "timed_samples": 6,
+      "roles": [
+        "candidate"
+      ],
+      "worker_wall_seconds": 0.13094195909798145,
+      "measurement_wall_seconds": 0.0008911248296499252,
+      "gain_by_batch": null,
+      "reasons": [
+        "Candidate-only signal has no measured comparator"
+      ]
+    },
+    {
+      "scenario": "quick",
+      "execution": "completed",
+      "correctness": "pass",
+      "eligible_for_best": false,
+      "checks": 8,
+      "timed_samples": 12,
+      "roles": [
+        "candidate",
+        "comparator"
+      ],
+      "worker_wall_seconds": 0.1274853330105543,
+      "measurement_wall_seconds": 0.004049999872222543,
+      "gain_by_batch": [
+        0.9953573882523352
+      ],
+      "reasons": [
+        "Quick results cannot update best"
+      ]
+    },
+    {
+      "scenario": "full-first-baseline",
+      "execution": "completed",
+      "correctness": "pass",
+      "eligible_for_best": true,
+      "checks": 32,
+      "timed_samples": 160,
+      "roles": [
+        "candidate",
+        "comparator"
+      ],
+      "worker_wall_seconds": 0.18560008285567164,
+      "measurement_wall_seconds": 0.049017790937796235,
+      "gain_by_batch": [
+        0.9945105259648056,
+        0.994377669613589
+      ],
+      "reasons": []
+    },
+    {
+      "scenario": "full-existing-best",
+      "execution": "completed",
+      "correctness": "pass",
+      "eligible_for_best": false,
+      "checks": 48,
+      "timed_samples": 240,
+      "roles": [
+        "baseline",
+        "candidate",
+        "comparator"
+      ],
+      "worker_wall_seconds": 0.18775654095225036,
+      "measurement_wall_seconds": 0.0573621669318527,
+      "gain_by_batch": [
+        -0.006268154716404073,
+        -0.006347731847035298
+      ],
+      "reasons": [
+        "Gain does not exceed the configured threshold and MAD noise guard in every batch",
+        "Candidate source is identical to best; no implementation change"
+      ]
+    }
+  ]
+}

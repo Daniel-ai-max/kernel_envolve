@@ -1,0 +1,159 @@
+{
+  "checked_at_utc": "2026-11-09T16:02:24.086613+00:00",
+  "scope": "Pinned source/design inspection; not matched GPU/model performance experiments",
+  "sources": [
+    {
+      "repo": "guts-ssss/kernel-lab",
+      "commit": "c7f576b5917491d790dd091a20dcbc6c4d0c6d61",
+      "path": "SKILL.md",
+      "url": "https://github.com/guts-ssss/kernel-lab/blob/c7f576b5917491d790dd091a20dcbc6c4d0c6d61/SKILL.md",
+      "sha256": "04c28eae6a739f156d9e2fbcd891cb6d37c0b622af6aafdc5b543bd8fa518344",
+      "bytes": 20344,
+      "remote_verified": true
+    },
+    {
+      "repo": "guts-ssss/kernel-lab",
+      "commit": "c7f576b5917491d790dd091a20dcbc6c4d0c6d61",
+      "path": "references/evaluation.md",
+      "url": "https://github.com/guts-ssss/kernel-lab/blob/c7f576b5917491d790dd091a20dcbc6c4d0c6d61/references/evaluation.md",
+      "sha256": "eafada724e73e991e5c890e7d30b7711b4c226b9322278ce68da364ed833f678",
+      "bytes": 19635,
+      "remote_verified": true
+    },
+    {
+      "repo": "guts-ssss/kernel-lab",
+      "commit": "c7f576b5917491d790dd091a20dcbc6c4d0c6d61",
+      "path": "references/records.md",
+      "url": "https://github.com/guts-ssss/kernel-lab/blob/c7f576b5917491d790dd091a20dcbc6c4d0c6d61/references/records.md",
+      "sha256": "7cba4b14136f27a418c14dbb624a3cef89c878de595c9068c07d5ea44c5664c1",
+      "bytes": 13969,
+      "remote_verified": true
+    },
+    {
+      "repo": "alibaba/atrex-kernel-agent",
+      "commit": "bab3218768baea30ba56a87851705d60d64ebbf3",
+      "path": "src/aka/light/acceptance/verifier.py",
+      "url": "https://github.com/alibaba/atrex-kernel-agent/blob/bab3218768baea30ba56a87851705d60d64ebbf3/src/aka/light/acceptance/verifier.py",
+      "sha256": "0e87928fe50a05ce5f128d9435d6f2c1bf56f5f8545d8981cf05114bdc03bd9d",
+      "bytes": 9835,
+      "remote_verified": true
+    },
+    {
+      "repo": "alibaba/atrex-kernel-agent",
+      "commit": "bab3218768baea30ba56a87851705d60d64ebbf3",
+      "path": "src/aka/light/acceptance/recorded_verifier.py",
+      "url": "https://github.com/alibaba/atrex-kernel-agent/blob/bab3218768baea30ba56a87851705d60d64ebbf3/src/aka/light/acceptance/recorded_verifier.py",
+      "sha256": "a1b192919ad45fcb1152b5b2e129769d23cbcd871615554885e5256699953c63",
+      "bytes": 7344,
+      "remote_verified": true
+    },
+    {
+      "repo": "alibaba/atrex-kernel-agent",
+      "commit": "bab3218768baea30ba56a87851705d60d64ebbf3",
+      "path": "src/aka/light/evaluation/native_abba.py",
+      "url": "https://github.com/alibaba/atrex-kernel-agent/blob/bab3218768baea30ba56a87851705d60d64ebbf3/src/aka/light/evaluation/native_abba.py",
+      "sha256": "7f2295c964d80dc14f3614e612a97f2d4066082577a19a3aac3af0e62841fc75",
+      "bytes": 24574,
+      "remote_verified": true
+    },
+    {
+      "repo": "OpenBMB/ForgeKernel",
+      "commit": "6664d6080c37803605d6c6bc25f87656423ff114",
+      "path": "src/forgekernel/loop/driver.py",
+      "url": "https://github.com/OpenBMB/ForgeKernel/blob/6664d6080c37803605d6c6bc25f87656423ff114/src/forgekernel/loop/driver.py",
+      "sha256": "ffeb4c9794fec61cb4e0774d4c82cd9b7e8b3e09539596a6521b4adbfecd5c01",
+      "bytes": 674392,
+      "remote_verified": true
+    },
+    {
+      "repo": "OpenBMB/ForgeKernel",
+      "commit": "6664d6080c37803605d6c6bc25f87656423ff114",
+      "path": "src/forgekernel/loop/precision_gate.py",
+      "url": "https://github.com/OpenBMB/ForgeKernel/blob/6664d6080c37803605d6c6bc25f87656423ff114/src/forgekernel/loop/precision_gate.py",
+      "sha256": "fb91b0a24610acbd9f85aaafbf2fb7bb16208320648bc7ecfefca10ad4c1bad7",
+      "bytes": 11804,
+      "remote_verified": true
+    },
+    {
+      "repo": "OpenBMB/ForgeKernel",
+      "commit": "6664d6080c37803605d6c6bc25f87656423ff114",
+      "path": "src/forgekernel/resume/invalidation.py",
+      "url": "https://github.com/OpenBMB/ForgeKernel/blob/6664d6080c37803605d6c6bc25f87656423ff114/src/forgekernel/resume/invalidation.py",
+      "sha256": "3d4182b0067afcec192ec579c20bf94a11409681aecc13fd07f8f3ebe831c44f",
+      "bytes": 4790,
+      "remote_verified": true
+    },
+    {
+      "repo": "TongmingLAIC/AKO4X",
+      "commit": "ce030ebd855dffb7ba6bdaef7ba7504a92cb9393",
+      "path": "master/master.py",
+      "url": "https://github.com/TongmingLAIC/AKO4X/blob/ce030ebd855dffb7ba6bdaef7ba7504a92cb9393/master/master.py",
+      "sha256": "349a03b2eb29b97ccf94c1e27d7702618eea1cf21d6d5ed2eccc2273aabb36f5",
+      "bytes": 39594,
+      "remote_verified": true
+    },
+    {
+      "repo": "TongmingLAIC/AKO4X",
+      "commit": "ce030ebd855dffb7ba6bdaef7ba7504a92cb9393",
+      "path": "scripts/bench_utils.py",
+      "url": "https://github.com/TongmingLAIC/AKO4X/blob/ce030ebd855dffb7ba6bdaef7ba7504a92cb9393/scripts/bench_utils.py",
+      "sha256": "4fb26e069ed94d259a4dbe98446b83ce3e2d9caa8d0bb6aaa0f9eb08fb166892",
+      "bytes": 79891,
+      "remote_verified": true
+    },
+    {
+      "repo": "TongmingLAIC/AKO4ALL",
+      "commit": "bbd0e1cf1ce2fb19d4322a932680f4c3d175d80e",
+      "path": "bench/kernelbench/bench.py",
+      "url": "https://github.com/TongmingLAIC/AKO4ALL/blob/bbd0e1cf1ce2fb19d4322a932680f4c3d175d80e/bench/kernelbench/bench.py",
+      "sha256": "424d31220040d53c98da8d2bba85b78fd91078374b5f6bc28f2c3fb89cd5a5b8",
+      "bytes": 51677,
+      "remote_verified": true
+    },
+    {
+      "repo": "NVlabs/kda",
+      "commit": "acdd79343c5e9d0c7cb96289f26fd3f1051ce785",
+      "path": "docs/agent-flow.md",
+      "url": "https://github.com/NVlabs/kda/blob/acdd79343c5e9d0c7cb96289f26fd3f1051ce785/docs/agent-flow.md",
+      "sha256": "c0bf00c893197cbcebdb8dbbbe742c0fd4b51ac7b34e5bab5c3ea4cd94cdb7de",
+      "bytes": 2118,
+      "remote_verified": true
+    },
+    {
+      "repo": "OpenBMB/JustGoal",
+      "commit": "b0a2b582e39daf3344faac1414ec7c26660633e3",
+      "path": "README.md",
+      "url": "https://github.com/OpenBMB/JustGoal/blob/b0a2b582e39daf3344faac1414ec7c26660633e3/README.md",
+      "sha256": "0c49c2b094f4bb105ddb454577fe21236940adbeddbe49ce6b06ab283bd24492",
+      "bytes": 5179,
+      "remote_verified": true
+    },
+    {
+      "repo": "TongmingLAIC/AKO4ALL",
+      "commit": "bbd0e1cf1ce2fb19d4322a932680f4c3d175d80e",
+      "path": "SKILL.md",
+      "url": "https://github.com/TongmingLAIC/AKO4ALL/blob/bbd0e1cf1ce2fb19d4322a932680f4c3d175d80e/SKILL.md",
+      "sha256": "0ccd86b6475faf8aae5ac372e0dadf831ac3fba7fde7dc4d29a15b52a65e85ba",
+      "bytes": 16156,
+      "remote_verified": true
+    },
+    {
+      "repo": "meta-pytorch/KernelAgent",
+      "commit": "e0647170da36ef9b059ac0bd3d60103aa4ed378b",
+      "path": "triton_kernel_agent/opt_worker_component/orchestrator/optimization_orchestrator.py",
+      "url": "https://github.com/meta-pytorch/KernelAgent/blob/e0647170da36ef9b059ac0bd3d60103aa4ed378b/triton_kernel_agent/opt_worker_component/orchestrator/optimization_orchestrator.py",
+      "sha256": "ca53a2f360bb5f4f07e5966b9c02cc6d15a122fc9ba3c6ec07fac9f57050457c",
+      "bytes": 52836,
+      "remote_verified": true
+    },
+    {
+      "repo": "AMD-AGI/GEAK",
+      "commit": "f189eff7c4036d9e9bd1d4fe99ec5c25ab6b8b20",
+      "path": "kernel_workflow/README.md",
+      "url": "https://github.com/AMD-AGI/GEAK/blob/f189eff7c4036d9e9bd1d4fe99ec5c25ab6b8b20/kernel_workflow/README.md",
+      "sha256": "2ee769b2e5a45d684c4319aabd62cd2e9b09fe129d9d8b52d0e8b95805b19d52",
+      "bytes": 25454,
+      "remote_verified": true
+    }
+  ]
+}

@@ -2,10 +2,11 @@ import copy
 
 import pytest
 
+from kernel_envolve.protocol import order, post_seed, roles, timing_seed
 from kernel_envolve.scoring import score
 
 
-def evidence(mode="full", signal_only=False):
+def evidence(mode="full", signal_only=False, compare_best=False):
     cfg = {
         "cases": [{"id": "a", "weight": 1}, {"id": "b", "weight": 2}],
         "quick_seeds": [0],
@@ -15,19 +16,22 @@ def evidence(mode="full", signal_only=False):
         "min_gain": 0.02,
         "noise_multiplier": 2,
         "max_regression": 0.05,
+        "max_baseline_regression": 0.05,
     }
     result = {
         "mode": mode,
+        "comparator": {"kind": "best" if compare_best else "baseline"},
         "signal_only": signal_only,
         "execution": "completed",
         "correctness": "pass",
         "checks": [],
         "samples": [],
     }
-    roles = ["candidate"] if signal_only else ["candidate", "comparator"]
+    implementations = roles(result)
+    seeds = cfg[f"{mode}_seeds"]
     for case in cfg["cases"]:
-        for seed in cfg[f"{mode}_seeds"]:
-            for role in roles:
+        for seed in seeds:
+            for role in implementations:
                 for kind in ("fresh", "reuse"):
                     result["checks"].append(
                         {
@@ -38,21 +42,43 @@ def evidence(mode="full", signal_only=False):
                             "status": "pass",
                         }
                     )
-        for b in range(2 if mode == "full" else 1):
+        for role in implementations:
+            result["checks"].append(
+                {
+                    "case": case["id"],
+                    "seed": post_seed(case["id"], seeds),
+                    "role": role,
+                    "kind": "post",
+                    "status": "pass",
+                }
+            )
+            result["checks"].append(
+                {
+                    "case": case["id"],
+                    "seed": timing_seed(case["id"], (2 if mode == "full" else 1) - 1, 2, 1, seeds),
+                    "role": role,
+                    "kind": "timed_output",
+                    "status": "pass",
+                }
+            )
+    for b in range(2 if mode == "full" else 1):
+        for case in cfg["cases"] if b == 0 else reversed(cfg["cases"]):
             for t in range(3):
-                for role in roles:
-                    for repeat in range(2):
-                        result["samples"].append(
-                            {
-                                "case": case["id"],
-                                "batch": b,
-                                "trial": t,
-                                "seed": cfg[f"{mode}_seeds"][t % len(cfg[f"{mode}_seeds"])],
-                                "role": role,
-                                "repeat": repeat,
-                                "us": 8 if role == "candidate" else 10,
-                            }
-                        )
+                repeats = dict.fromkeys(implementations, 0)
+                for role in order(implementations, b, t):
+                    repeat = repeats[role]
+                    result["samples"].append(
+                        {
+                            "case": case["id"],
+                            "batch": b,
+                            "trial": t,
+                            "seed": timing_seed(case["id"], b, t, repeat, seeds),
+                            "role": role,
+                            "repeat": repeat,
+                            "us": 8 if role == "candidate" else 10,
+                        }
+                    )
+                    repeats[role] += 1
     return result, cfg
 
 
@@ -138,4 +164,67 @@ def test_case_caps_and_regression():
 def test_numeric_failure_is_completed_but_ineligible():
     result, cfg = evidence()
     result["correctness"] = "fail"
+    assert not score(result, cfg)["eligible_for_best"]
+
+
+def test_cumulative_regression_cannot_hide_behind_better_aggregate():
+    result, cfg = evidence(compare_best=True)
+    for r in result["samples"]:
+        # a: 100 -> prior best 104 -> candidate 108; this step fits 5%, total does not.
+        # b: 100 -> 90 -> 70; this dominates the aggregate, but cannot excuse a.
+        values = {
+            "a": {"baseline": 100, "comparator": 104, "candidate": 108},
+            "b": {"baseline": 100, "comparator": 90, "candidate": 70},
+        }
+        r["us"] = values[r["case"]][r["role"]]
+    decision = score(result, cfg)
+    assert decision["performance"] == "faster"
+    assert not decision["eligible_for_best"]
+    assert any("fixed baseline budget" in r for r in decision["reasons"])
+
+
+def test_improving_degraded_best_is_not_original_baseline_win():
+    result, cfg = evidence(compare_best=True)
+    cfg["max_baseline_regression"] = 0.5
+    for r in result["samples"]:
+        r["us"] = {"baseline": 10, "comparator": 20, "candidate": 15}[r["role"]]
+    decision = score(result, cfg)
+    assert decision["performance"] == "faster"
+    assert not decision["eligible_for_best"]
+    assert any("Meaningful gain over fixed baseline" in r for r in decision["reasons"])
+
+
+def test_three_role_measurement_can_qualify():
+    result, cfg = evidence(compare_best=True)
+    assert score(result, cfg)["eligible_for_best"]
+    result["samples"] = [r for r in result["samples"] if r["role"] != "baseline"]
+    with pytest.raises(ValueError, match="coverage"):
+        score(result, cfg)
+
+
+def test_wrong_temporal_order_rejected_even_with_complete_coverage():
+    result, cfg = evidence()
+    result["samples"].sort(key=lambda r: r["role"])
+    with pytest.raises(ValueError, match="paired schedule"):
+        score(result, cfg)
+
+
+def test_post_timing_check_is_required():
+    result, cfg = evidence()
+    result["checks"] = [r for r in result["checks"] if r["kind"] != "post"]
+    with pytest.raises(ValueError, match="coverage"):
+        score(result, cfg)
+
+
+def test_identical_source_cannot_be_promoted_by_noise():
+    result, cfg = evidence(compare_best=True)
+    result["same_candidate_as_best"] = True
+    assert not score(result, cfg)["eligible_for_best"]
+
+
+def test_fixed_baseline_noise_cannot_be_used_to_confirm_original_gain():
+    result, cfg = evidence(compare_best=True)
+    for r in result["samples"]:
+        if r["role"] == "baseline":
+            r["us"] = [5, 10, 15][r["trial"]]
     assert not score(result, cfg)["eligible_for_best"]

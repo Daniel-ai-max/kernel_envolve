@@ -65,3 +65,12 @@ def test_torch_complex_output_keeps_imaginary_component():
     assert_close(a + 1e-7j, a, CFG)
     with pytest.raises(Mismatch):
         assert_close(a + 1j, a, CFG)
+
+
+def test_torch_rebinding_storage_is_not_legal_inplace_mutation():
+    torch = pytest.importorskip("torch")
+    a = torch.ones(8)
+    before = capture((a,))
+    a.set_(torch.ones(8))
+    with pytest.raises(Mismatch, match="storage binding"):
+        unchanged((a,), before, mutable=[0])

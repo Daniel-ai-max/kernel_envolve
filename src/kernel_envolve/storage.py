@@ -69,6 +69,7 @@ def config(root):
         "min_gain": 0.01,
         "noise_multiplier": 2.0,
         "max_regression": 0.05,
+        "max_baseline_regression": 0.05,
     }
     unknown = set(cfg) - (set(defaults) | {"name", "objective", "cases"})
     if unknown:
@@ -90,17 +91,28 @@ def config(root):
             raise ValueError("Explicit case weights are required")
     if not any(c.get("quick", True) for c in cases):
         raise ValueError("At least one quick case is required")
-    for key in ("rtol", "atol", "min_gain", "noise_multiplier", "max_regression"):
+    for key in (
+        "rtol",
+        "atol",
+        "min_gain",
+        "noise_multiplier",
+        "max_regression",
+        "max_baseline_regression",
+    ):
         if not math.isfinite(cfg[key]) or cfg[key] < 0:
             raise ValueError(f"{key} must be finite and nonnegative")
-    if cfg["min_gain"] >= 1 or cfg["max_regression"] >= 1:
+    if any(cfg[k] >= 1 for k in ("min_gain", "max_regression", "max_baseline_regression")):
         raise ValueError("Gain and regression settings are fractions less than 1")
     for key in ("quick_trials", "full_trials", "warmup"):
         if type(cfg[key]) is not int or cfg[key] < 1:
             raise ValueError(f"{key} must be a positive integer")
     for key in ("quick_seeds", "full_seeds"):
         values = cfg[key]
-        if not values or len(set(values)) != len(values) or any(type(x) is not int for x in values):
+        if (
+            not values
+            or len(set(values)) != len(values)
+            or any(type(x) is not int or x < 0 for x in values)
+        ):
             raise ValueError(f"{key} must contain distinct integer seeds")
     if cfg["full_trials"] < 3:
         raise ValueError("full_trials must be at least 3 for a noise estimate")
@@ -149,6 +161,10 @@ def bundle(root, destination, cfg):
 
 def evaluator_hash():
     return digest({p.name: file_hash(p) for p in sorted(Path(__file__).parent.glob("*.py"))})
+
+
+def candidate_identity(identity, cfg):
+    return digest({name: identity["files"][name] for name in cfg["candidate_files"]})
 
 
 def verify_source(run, identity):

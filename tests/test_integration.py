@@ -185,3 +185,134 @@ def test_cli_exit_status(task):
     )
     assert proc.returncode == 1
     assert json.loads(proc.stdout)["correctness"] == "fail"
+
+
+def test_targeted_check_only_keeps_contract_and_covers_excluded_case(task):
+    original = (task / "task.json").read_bytes()
+    run, result = evaluate(task, cases=["strided"], seeds=[17], check_only=True)
+    assert result["execution"] == "completed", result
+    assert result["correctness"] == "pass", result
+    assert {r["case"] for r in result["checks"]} == {"strided"}
+    assert {r["seed"] for r in result["checks"]} == {17}
+    assert not result["samples"]
+    assert (task / "task.json").read_bytes() == original
+    with pytest.raises(ValueError, match="diagnostic"):
+        promote(run)
+
+
+@pytest.mark.parametrize("kwargs", [{"cases": ["strided"]}, {"seeds": [17]}, {"check_only": True}])
+def test_full_cannot_silently_reduce_coverage(task, kwargs):
+    with pytest.raises(ValueError, match="quick mode"):
+        evaluate(task, mode="full", **kwargs)
+
+
+def test_timing_values_vary_and_match_across_roles(task):
+    _, result = evaluate(task, "full")
+    rows = [r for r in result["samples"] if r["case"] == "contiguous"]
+    for role in ("candidate", "comparator"):
+        seeds = [r["seed"] for r in rows if r["role"] == role]
+        assert len(seeds) == len(set(seeds))
+        assert not set(seeds) & {0, 1, 2}
+    candidate = {
+        (r["batch"], r["trial"], r["repeat"]): r["seed"] for r in rows if r["role"] == "candidate"
+    }
+    comparator = {
+        (r["batch"], r["trial"], r["repeat"]): r["seed"] for r in rows if r["role"] == "comparator"
+    }
+    assert candidate == comparator
+
+
+def test_best_full_includes_fixed_baseline_but_quick_does_not(task):
+    run, _ = evaluate(task, "full")
+    promote(run)
+    _, full = evaluate(task, "full")
+    assert full["execution"] == "completed", full
+    assert full["same_candidate_as_best"]
+    assert not full["decision"]["eligible_for_best"]
+    assert {s["role"] for s in full["samples"]} == {"candidate", "comparator", "baseline"}
+    assert any(c["role"] == "baseline" and c["kind"] == "post" for c in full["checks"])
+    _, quick = evaluate(task)
+    assert {s["role"] for s in quick["samples"]} == {"candidate", "comparator"}
+    _, signal = evaluate(task, signal_only=True)
+    assert signal["execution"] == "completed", signal
+
+
+def test_post_check_detects_failure_after_initial_correctness(task):
+    # quick: two correctness calls, one warmup, two timed calls, then post check.
+    set_candidate(
+        task, "count=0\ndef run(x,y):\n global count\n count+=1\n return x+y if count<6 else x-y\n"
+    )
+    _, result = evaluate(task)
+    assert result["execution"] == "completed"
+    assert result["correctness"] == "fail"
+    assert result["checks"][-1]["kind"] == "post"
+    assert result["samples"]
+
+
+def test_actual_timed_output_is_checked_without_candidate_rerun(task):
+    # Initial and post checks would pass. Only the outputs actually timed are wrong.
+    set_candidate(
+        task,
+        "count=0\ndef run(x,y):\n global count\n count+=1\n return x-y if 4<=count<=5 else x+y\n",
+    )
+    _, result = evaluate(task)
+    assert result["correctness"] == "fail", result
+    assert result["checks"][-1]["kind"] == "timed_output"
+
+
+def test_nondeterministic_factory_is_configuration_error(task):
+    with (task / "task.py").open("a") as f:
+        f.write(
+            "\ndef make_inputs(case,seed): return tuple(np.random.randn(10).astype(np.float32) for _ in range(2))\n"
+        )
+    _, result = evaluate(task)
+    assert result["execution"] == "error"
+    assert "factory is not deterministic" in result["error"]["message"]
+
+
+def test_task_validator_checks_output_alias(task):
+    with (task / "task.py").open("a") as f:
+        f.write(
+            "\ndef reference(x,y): return x\nbaseline=reference\ndef validate(inputs,output):\n assert output is inputs[0], 'output must alias input 0'\n"
+        )
+    set_candidate(task, "def run(x,y): return x.copy()\n")
+    _, result = evaluate(task, check_only=True)
+    assert result["correctness"] == "fail"
+    assert "alias input" in result["error"]["message"]
+    set_candidate(task, "def run(x,y): return x\n")
+    _, result = evaluate(task, check_only=True)
+    assert result["correctness"] == "pass"
+
+
+def test_validator_cannot_silently_return_false(task):
+    with (task / "task.py").open("a") as f:
+        f.write("\ndef validate(inputs,output): return False\n")
+    _, result = evaluate(task, check_only=True)
+    assert result["execution"] == "error"
+    assert "must return None" in result["error"]["message"]
+
+
+def test_public_entry_uses_verified_snapshot_in_fresh_process(task):
+    import subprocess
+
+    run, _ = evaluate(task, "full")
+    promote(run)
+    set_candidate(task, "raise RuntimeError('unverified working copy')\n")
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import sys,numpy as np; from kernel_envolve import load_best; "
+            "f=load_best(sys.argv[1]); a=np.arange(5,dtype=np.float32); "
+            "np.testing.assert_array_equal(f(a,a),a+a)",
+            str(task),
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert proc.returncode == 0, proc.stderr
+    (run / "source" / "candidate.py").write_text("def run(x,y): return x-y\n")
+    from kernel_envolve import load_best
+
+    with pytest.raises(ValueError, match="Source changed"):
+        load_best(task)

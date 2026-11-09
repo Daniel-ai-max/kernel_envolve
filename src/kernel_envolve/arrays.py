@@ -103,7 +103,7 @@ def assert_close(actual, expected, cfg, path="output"):
 def capture(inputs):
     # deep value copies only; the original objects/layout/aliasing remain untouched.
     return [
-        (signature(x), x.detach().clone() if is_torch(x) else x.copy()) for x in inputs
+        (signature(x), binding(x), x.detach().clone() if is_torch(x) else x.copy()) for x in inputs
     ], aliases(inputs)
 
 
@@ -111,13 +111,17 @@ def unchanged(inputs, before, mutable):
     saved, alias = before
     if aliases(inputs) != alias:
         raise Mismatch("Input alias relationships changed")
-    for i, (x, (sig, value)) in enumerate(zip(inputs, saved)):
-        if signature(x) != sig:
-            raise Mismatch(f"Input {i}: shape/dtype/layout/device changed")
+    for i, (x, (sig, address, value)) in enumerate(zip(inputs, saved)):
+        if signature(x) != sig or binding(x) != address:
+            raise Mismatch(f"Input {i}: shape/dtype/layout/device/storage binding changed")
         if i not in mutable:
             assert_close(
                 x, value, {"rtol": 0, "atol": 0, "equal_nan": True}, f"input[{i}] mutation"
             )
+
+
+def binding(x):
+    return x.data_ptr() if is_torch(x) else x.__array_interface__["data"][0]
 
 
 def copy_values(destination, source):
