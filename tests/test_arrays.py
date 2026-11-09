@@ -94,3 +94,74 @@ def test_freezing_preserves_torch_structured_return_types():
     saved = freeze(output)
     assert type(saved) is type(output)
     assert_close(output, saved, CFG)
+
+
+def test_equal_tensors_and_integer_rejections_need_no_host_copy(monkeypatch):
+    torch = pytest.importorskip("torch")
+    from kernel_envolve import arrays
+
+    def no_host_copy(value):
+        raise AssertionError("A full tensor host copy is unnecessary here")
+
+    monkeypatch.setattr(arrays, "host", no_host_copy)
+    for dtype in (torch.float16, torch.float32, torch.float64, torch.int64, torch.bool):
+        value = torch.tensor([0, 1], dtype=dtype)
+        assert_close(value, value.clone(), CFG)
+    with pytest.raises(Mismatch, match="integer/bool"):
+        assert_close(torch.tensor([2**60 + 1]), torch.tensor([2**60]), CFG)
+
+
+def tensor_comparison_matrix(device, large=False):
+    """The fast path must preserve the original wide-precision NumPy comparison."""
+    import torch
+
+    pairs = [
+        ([0.0, -0.0], [-0.0, 0.0]),
+        ([1.0, 2.0], [1.0, 2.0]),
+        ([1.000001], [1.0]),
+        ([1.01], [1.0]),
+        ([float("nan")], [float("nan")]),
+        ([float("nan")], [0.0]),
+        ([float("inf")], [float("inf")]),
+        ([float("inf")], [-float("inf")]),
+        ([1 + 2j], [1 + 2j]),
+        ([1 + 2j], [1 + 3j]),
+        ([complex(float("nan"), 1)], [complex(2, float("nan"))]),
+    ]
+    for left, right in pairs:
+        dtype = torch.complex64 if isinstance(left[0], complex) else torch.float32
+        for equal_nan in (False, True):
+            actual, expected = torch.tensor(left, dtype=dtype), torch.tensor(right, dtype=dtype)
+            cfg = CFG | {"equal_nan": equal_nan}
+            np_dtype = np.complex128 if dtype == torch.complex64 else np.float64
+            oracle_pass = True
+            try:
+                np.testing.assert_allclose(
+                    actual.numpy().astype(np_dtype),
+                    expected.numpy().astype(np_dtype),
+                    rtol=cfg["rtol"],
+                    atol=cfg["atol"],
+                    equal_nan=equal_nan,
+                )
+            except AssertionError:
+                oracle_pass = False
+            actual, expected = actual.to(device), expected.to(device)
+            if large:
+                actual = actual.repeat(1_048_576 // actual.numel() + 1)
+                expected = expected.repeat(1_048_576 // expected.numel() + 1)
+            if oracle_pass:
+                assert_close(actual, expected, cfg)
+            else:
+                with pytest.raises(Mismatch):
+                    assert_close(actual, expected, cfg)
+    value = torch.tensor([float("nan")], device=device)
+    if large:
+        value = value.repeat(1_048_576)
+    with pytest.raises(Mismatch):
+        assert_close(value, value, CFG)
+    assert_close(value, value, CFG | {"equal_nan": True})
+
+
+def test_tensor_fast_path_preserves_comparison_semantics():
+    pytest.importorskip("torch")
+    tensor_comparison_matrix("cpu")

@@ -106,6 +106,16 @@ def environment(clock):
 
 
 def execute(run):
+    phase_started = time.perf_counter()
+    phase = "setup"
+    durations = {}
+
+    def advance(next_phase):
+        nonlocal phase, phase_started
+        now = time.perf_counter()
+        durations[phase] = now - phase_started
+        phase, phase_started = next_phase, now
+
     request = read_json(run / "request.json")
     result = {
         "schema": 3,
@@ -122,6 +132,7 @@ def execute(run):
         "selection": request["selection"],
         "check_only": request["check_only"],
         "same_candidate_as_best": request["same_candidate_as_best"],
+        "phase_wall_seconds": durations,
     }
     cfg = config(run / "source")
     try:
@@ -229,6 +240,7 @@ def execute(run):
             row["status"] = "pass"
             return freeze(actual) if cfg["deterministic"] and kind == "fresh" else None
 
+        advance("correctness")
         result["correctness"] = "partial"
         for case in cases:
             for seed in seeds:
@@ -244,12 +256,13 @@ def execute(run):
                     copy_values(args, replacement)
                     check(case, seed, role, "reuse", args, sentinel_seed)
         result["correctness"] = "pass"
+        advance("measurement")
 
         if request["check_only"]:
+            advance("finalize")
             result["execution"] = "completed"
             result["decision"] = score(result, cfg)
             verify_source(run, request["identity"])
-            write_json(run / "result.json", result)
             return
 
         phase_start = time.perf_counter()
@@ -324,6 +337,7 @@ def execute(run):
                         copy_values(args, inputs(case, seed))
                         check(case, seed, role, "post", args, seed)
         result["measurement_wall_seconds"] = time.perf_counter() - phase_start
+        advance("finalize")
         verify_source(run, request["identity"])
         if request["comparator"]["kind"] == "best" and not request["signal_only"]:
             if digest(read_json(old_run / "result.json")) != request["comparator"]["result_hash"]:
@@ -347,7 +361,9 @@ def execute(run):
             "reasons": [str(exc)],
         }
         traceback.print_exc()
-    write_json(run / "result.json", result)
+    finally:
+        durations[phase] = time.perf_counter() - phase_started
+        write_json(run / "result.json", result)
 
 
 if __name__ == "__main__":

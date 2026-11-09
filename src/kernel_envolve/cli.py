@@ -162,6 +162,7 @@ def evaluate(
                     os.killpg(process.pid, signal.SIGKILL)
                     process.wait()
                 raise
+        process_wall_seconds = time.perf_counter() - started
         if failure or not (run / "result.json").exists():
             result = {
                 "schema": 3,
@@ -201,6 +202,7 @@ def evaluate(
                 },
             }
         result["worker_wall_seconds"] = time.perf_counter() - started
+        result["worker_process_wall_seconds"] = process_wall_seconds
         write_json(run / "result.json", result)
         # Receipt detects accidental later edits to the report and raw evidence.
         write_json(run / "receipt.json", {"result_hash": digest(result)})
@@ -292,6 +294,8 @@ def main(argv=None):
                     "run": str(run),
                     "execution": result["execution"],
                     "correctness": result["correctness"],
+                    "worker_process_wall_seconds": result["worker_process_wall_seconds"],
+                    "phase_wall_seconds": result.get("phase_wall_seconds", {}),
                     **result["decision"],
                 },
                 indent=2,

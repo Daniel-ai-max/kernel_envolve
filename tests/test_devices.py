@@ -140,3 +140,16 @@ def test_cuda_promotion_and_public_entry(tmp_path):
     _, repeat = evaluate(tmp_path, mode="full", timeout=120)
     assert repeat["execution"] == "completed" and repeat["correctness"] == "pass", repeat
     assert repeat["same_candidate_as_best"] and not repeat["decision"]["eligible_for_best"]
+
+
+@pytest.mark.skipif(
+    os.environ.get("KERNEL_ENVOLVE_TEST_CUDA") != "1", reason="explicit GPU opt-in required"
+)
+def test_cuda_comparison_fast_path_preserves_nonfinite_and_tolerance_rules():
+    from test_arrays import tensor_comparison_matrix
+
+    torch = pytest.importorskip("torch")
+    if not torch.cuda.is_available():
+        pytest.skip("CUDA unavailable")
+    tensor_comparison_matrix("cuda")
+    tensor_comparison_matrix("cuda", large=True)

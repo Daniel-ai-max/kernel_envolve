@@ -303,3 +303,22 @@ def test_snapshot_loader_keeps_assertions_even_in_optimized_python(tmp_path):
     )
     assert process.returncode != 0
     assert "snapshot assertion remains active" in process.stderr
+
+
+@pytest.mark.parametrize("check_only", [True, False])
+def test_cost_breakdown_includes_oracle_work_without_changing_coverage(task, check_only):
+    with (task / "task.py").open("a") as f:
+        f.write(
+            "\nimport time\noriginal_reference=reference\n"
+            "def reference(*args):\n time.sleep(0.01)\n return original_reference(*args)\n"
+        )
+    _, result = evaluate(task, check_only=check_only)
+    assert result["execution"] == "completed" and result["correctness"] == "pass", result
+    phases = result["phase_wall_seconds"]
+    assert set(phases) == {"setup", "correctness", "measurement", "finalize"}
+    assert all(value >= 0 for value in phases.values())
+    assert phases["correctness"] >= 0.04  # Four oracle calls, each deliberately sleeps 10ms.
+    assert sum(phases.values()) <= result["worker_process_wall_seconds"]
+    assert result["worker_process_wall_seconds"] <= result["worker_wall_seconds"]
+    assert len(result["checks"]) == (4 if check_only else 8)
+    assert len(result["samples"]) == (0 if check_only else 4)

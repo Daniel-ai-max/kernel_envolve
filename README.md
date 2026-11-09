@@ -45,11 +45,11 @@ skill 中的循环很短：
 
 1. 确认语义、shape/layout、精度、设备、计时范围和目标权重；先跑通基线。
 2. 提出一个可检验的瓶颈假设，选择最便宜的有效实验。
-3. 修复正确性；quick 筛掉明显失败/退化的候选。
+3. 选择反馈范围：quick 自带正确性检查；若 quick 成本接近 full 且候选大概率进入确认，直接 full。
 4. 对有希望的候选做 full；根据原始测量和噪声判断，而非相信候选输出的分数。
 5. full 合格后 promote；失败的结构性原型仍可保留为下一轮素材。
 
-每轮无需固定重读全部文档、全量 profiling 或重复 full。结构尚未写完时先做编译/局部检查；调 tile 等参数可以成批探索。代码父版本可以来自失败原型，性能比较对象始终是已验证 best。
+正常迭代无需固定执行 check-only → quick → full 三连：check-only 用于修复已知失败，quick/signal 用于筛选，full 可直接运行。每轮无需固定重读全部文档、全量 profiling 或重复 full。结构尚未写完时先做编译/局部检查；调 tile 等参数可以成批探索。代码父版本可以来自失败原型，性能比较对象始终是已验证 best。
 
 ## 一个任务，三个文件
 
@@ -162,7 +162,7 @@ noise_guard  = noise_multiplier × Σ weight(case) × (dispersion_candidate + di
 
 两批相对 best 的 gain 都必须超过 `max(min_gain, noise_guard)`；相对固定 baseline 也单独计算相同的收益/噪声门槛。所有 case 必须同时满足两套回退限制和绝对延迟上限。这避免逐轮 4% 的局部退化越积越大，也避免只赢过一个已经退化的 best。MAD/IQR 门槛是保守筛选规则，不是统计置信区间。结果接近门槛时，先检查环境竞争；确需调整协议时记录原因、保留旧结果，重新建立对应契约和对照。不要重复抽样直到出现有利结果；profiling 用于解释瓶颈，不与正式计时混跑。
 
-`--case`、`--seed`、`--check-only` 仅限 quick，可定位 full 中才运行的 case，不修改固定任务契约，也不能产生晋升资格。`worker_wall_seconds` 记录整个子进程耗时；`measurement_wall_seconds` 记录预热、输入生成、计时、后检查所在阶段的总耗时，两者都不是纯 GPU 执行时间。
+`--case`、`--seed`、`--check-only` 仅限 quick，可定位 full 中才运行的 case，不修改固定任务契约，也不能产生晋升资格。`worker_process_wall_seconds` 记录子进程启动到退出的等待耗时；`worker_wall_seconds` 还包含父进程的结果核查。CLI 同时输出 `phase_wall_seconds`：setup（CUDA/模块初始化）、correctness、measurement（预热、输入生成、计时及后检查）、finalize（证据检查与评分）。阶段计时不进入算子计时区间，失败时保留已完成及当前阶段耗时；子进程耗时与阶段和的差值还包括 Python/NumPy 导入、退出及父进程唤醒，不能全部称为模型或 kernel 时间。兼容字段 `measurement_wall_seconds` 继续表示测量阶段总耗时。
 
 `--signal-only` 仅限 quick：仍检查候选正确性，只测候选延迟，适合快速调参。不产生 speedup，也不能晋升。
 
@@ -336,7 +336,7 @@ full 已有 best 时 R 从 2 变为 3，因此计时调用数增加 50%；这是
 
 源码核对也发现不能照搬的细节：上述 BackendBench 固定提交中，`allclose(a, b, atol, rtol)` 调用 `_allclose(a, b)` 时没有转发容差。这里借鉴结构化输出与算子输入覆盖思路，保留显式传递任务容差，并用宽/严容差与 golden 正反例测试约束其行为。
 
-这些补强保持原来的四个操作：**定点检查 → quick/signal → full → promote**。强制新增检查只针对证据失真；同输入确定性与计时口径由任务明确选择。Golden 示例展示如何扩展现有 `validate`，不另建验证框架。GPU race/sanitizer、复杂梯度统计、CUDA Graph 和真正未见过的隐藏测试仍需相应任务 evaluator；ComputeEval 的 held-out harness 不能由公开可见的固定 full seeds 冒充。
+这些补强保留四类操作：**定点检查、quick/signal、full、promote**。探索步骤按反馈成本选择，只有正式 full 是晋升的必经步骤。强制新增检查只针对证据失真；同输入确定性与计时口径由任务明确选择。Golden 示例展示如何扩展现有 `validate`，不另建验证框架。GPU race/sanitizer、复杂梯度统计、CUDA Graph 和真正未见过的隐藏测试仍需相应任务 evaluator；ComputeEval 的 held-out harness 不能由公开可见的固定 full seeds 冒充。
 
 [robust-forward]: https://github.com/SakanaAI/robust-kbench/blob/078f5bab29934a822268d59a4e707d449abf9b4e/robust_kbench/sandbox/correct_forward_fn.py
 [backend-eval]: https://github.com/meta-pytorch/BackendBench/blob/2a8d7e19e2c13c789ff2dceb44883ea8ea04dab4/BackendBench/eval.py
@@ -344,7 +344,7 @@ full 已有 best 时 R 从 2 变为 3，因此计时调用数增加 50%；这是
 [torch-common]: https://github.com/pytorch/pytorch/blob/8a9a9e737dba491a2eea270641bff86eea6e1ea2/torch/utils/benchmark/utils/common.py
 [compute-eval]: https://github.com/NVIDIA/compute-eval/blob/00fbad91b63957a002b501f33a06510cd25beaae/README.md
 
-## B300 实机验证
+## B300 实机验证：0.3.0 初始验收
 
 在 flexible 空间实际申请 1 张 B300（本会话上限 32 张），绑定工单 `WOC-ff0a397b3590121d` 和正确性课题。PyTorch 2.12.1 / CUDA 13.0 / Triton 3.7.1 环境中，**95 项测试通过、零跳过**；7 项 CUDA 测试覆盖 Triton 的 event/wall 完整评测、错误输出、输入篡改、旧输出缓存、精度设置污染，以及晋升后从正常入口加载 best。晋升测试故意让 baseline 等待，只验证晋升流程，不将它的加速比当作优化成果。任务已 Completed、Pods=0。[验收记录](audit/gpu_validation.json)与[完整原始结果](audit/gpu_validation_raw.json.gz)保留硬件、镜像、源码及测试哈希。
 
@@ -365,6 +365,25 @@ full 已有 best 时 R 从 2 变为 3，因此计时调用数增加 50%；这是
 host sleep 不改变加法 kernel，却明显增加普通 event 区间；Graph 录制后的回放不重复执行这段 Python。非连续输入的快慢排序也从 eager 下 torch 更快变为该 Graph 样本中 Triton 更快。因此，**目前的内置 evaluator 适用于声明的 eager 调用目标，不能拿它决定 Graph 中的 kernel 优劣**。Triton 普通 bench 的缓存处理与 Graph 的固定地址、缓存复用、批量回放也不同，不能仅把三列差值都归因为 Python 开销；Graph 耗时也不等于 profiler 中孤立的单条 kernel 时长。
 
 这次实测补强了硬件验证，同时确认参考计时工具有当前内置 evaluator 未覆盖的运行方式。保持 skill 的轻量流程；先明确实际部署是 eager 还是 Graph，再选择覆盖该语义的任务 evaluator。这里没有把两种口径合成一个 speedup，也没有把硬件验收当作模型搜索效果排名。
+
+## 0.3.1：评测效率与迭代成本
+
+这轮重点减少验证中的重复数据搬运。Torch 整数/bool 直接精确比较；浮点/复数先判断是否完全相等，相等时省去整张量复制到 CPU，不相等时仍走原有宽精度容差比较。NaN 规则保持不变。实测发现小 CUDA 张量增加比较 kernel 的初始化反而可能更慢，因此浮点/复数的 CUDA 快速路径仅用于 **至少 1,048,576 个元素**；小张量保留原路径。CPU tensor 使用相等快速路径。
+
+在同一张 B300 上，针对三个尺寸、check/signal/quick/full 四种模式，对 0.3.0 与 0.3.1 各运行三轮，共 **72 次评测**。交替旧新版本次序、轮换模式次序，两次初始冷启动单独保留。oracle、baseline 和 candidate 均为相同的 `torch.add`，旧新版本检查数与计时样本数完全一致。下表是包含子进程启动及父进程核查的 **evaluate API 总耗时中位数**，单位秒：
+
+| 每个输入的元素数 | 模式 | 0.3.0 | 0.3.1 | 耗时变化 |
+|---|---|---:|---:|---:|
+| 257 | full | 1.872 | 1.923 | 增加 2.7% |
+| 1,048,577 | full | 3.975 | 1.923 | 减少 51.6% |
+| 4,194,305 | quick | 4.925 | 2.071 | 减少 58.0% |
+| 4,194,305 | full | 7.830 | 1.973 | 减少 74.8% |
+
+大张量相等检查的收益明确；小张量仍受约 2 秒的进程启动与初始化成本影响，quick/full 中位数增加约 50 毫秒，没有证明小张量加速。相等快速路径也不代表所有近似数值输出都能获得同样收益。此次测量针对 evaluator 开销，未测 agent 搜索效果或 kernel 加速比。
+
+**流程应根据实际成本选择反馈。** 新增的阶段耗时让 agent 看清时间花在哪里；本例 quick 与 full 成本接近，对已准备正式确认的候选直接 full，可省掉额外一次 quick 启动。已知正确性错误优先定点 check-only，大量候选筛选仍可用 quick/signal。无需强制三阶段串行，也不跨候选复用 PASS、不复用失败 CUDA context、不减少正式 full 的覆盖。
+
+最终版本在 B300 上 **100 项测试全部通过、零跳过**，包括大小张量、容差、NaN/Inf、复数和别名 NaN 的比较规则；本地为 92 通过、8 项 CUDA 测试跳过。[实测记录与复现脚本](audit/evaluator_efficiency.json)、[72 次完整结果](audit/evaluator_efficiency_raw.json.gz)和[调整阈值前的探索结果](audit/evaluator_efficiency_exploratory_raw.json.gz)均已保存。此次最多同时使用 1 张 GPU，验证任务已完成并释放资源；上述 0.3.0 初始验收与计时探针保留原版本身份。
 
 ## 开发检查
 

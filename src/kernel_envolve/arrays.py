@@ -89,18 +89,27 @@ def assert_close(actual, expected, cfg, path="output"):
         raise Mismatch(f"{path}: expected array/tensor output") from exc
     if actual_sig[:2] != expected_sig[:2] or actual_sig[-1] != expected_sig[-1]:
         raise Mismatch(f"{path}: dtype, shape or device differs: {actual_sig} vs {expected_sig}")
-    a, e = host(actual), host(expected)
     exact = (isinstance(expected, np.ndarray) and expected.dtype.kind in "biu") or (
         is_torch(expected) and not (expected.is_floating_point() or expected.is_complex())
     )
+    if is_torch(expected):
+        torch = __import__("torch")
+        # Most factory/mutation checks compare identical values. Reduce on the device
+        # for large tensors. Small CUDA comparisons retain the host path to avoid
+        # loading extra reduction kernels into every short-lived worker.
+        use_equal = exact or not expected.is_cuda or expected.numel() >= 1_048_576
+        same = use_equal and torch.equal(actual, expected)
+        if exact:
+            if not same:
+                raise Mismatch(f"{path}: integer/bool values differ")
+            return
+        # Do not rely on equality's alias shortcuts to implement the NaN policy.
+        if same and (cfg["equal_nan"] or not torch.isnan(expected).any().item()):
+            return
+    a, e = host(actual), host(expected)
     try:
         if exact:
-            # Preserve torch int64 values: converting large integers to float loses bits.
-            if is_torch(expected):
-                if not __import__("torch").equal(actual, expected):
-                    raise AssertionError("integer/bool values differ")
-            else:
-                np.testing.assert_array_equal(a, e, strict=True)
+            np.testing.assert_array_equal(a, e, strict=True)
         else:
             np.testing.assert_allclose(
                 a, e, rtol=cfg["rtol"], atol=cfg["atol"], equal_nan=cfg["equal_nan"]

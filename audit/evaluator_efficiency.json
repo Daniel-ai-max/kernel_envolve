@@ -1,0 +1,501 @@
+{
+  "checked_at_utc": "2026-11-09T17:36:04.717805+00:00",
+  "version": "0.3.1",
+  "baseline_commit": "ff7e49702c0ea3e0865b49079ccf43141b490e7d",
+  "current_evaluator_hash": "2eb9710c3ad61930c5ff4a6d113db96e39635b3e1c83ed7382ff7e9dffdc0c6c",
+  "job_id": "17af0ee7865a4fe8b098dcd04d2d4242",
+  "workspace": "flexible",
+  "topic_id": "topic_c7b8c988fd46",
+  "work_order_id": "WOC-ff0a397b3590121d",
+  "phase": "Completed",
+  "pods_remaining": 0,
+  "allocated_gpus": 1,
+  "session_limit": 32,
+  "image": "839084984246.dkr.ecr.ap-south-2.amazonaws.com/pretrain/megatron:verify_batch_invariant_deepep_v2_efa_sm100_prebaked_b300_fa4_3de9f805_908a5adc_cb136@sha256:9da60d0cc131ffca03db54f02910b9b741de4ecc58a8c123b1786965b43aa74b",
+  "source_archive_sha256": "5e4a710677a956009dc8ab971f7a8e26a6c2b736872ef79c3a65f3d1be2c8f8d",
+  "source_base_commit": "ff7e49702c0ea3e0865b49079ccf43141b490e7d",
+  "source_dirty_files": " M README.md\n M pyproject.toml\n M skills/kernel-envolve/SKILL.md\n M src/kernel_envolve/__init__.py\n M src/kernel_envolve/arrays.py\n M src/kernel_envolve/cli.py\n M src/kernel_envolve/worker.py\n M tests/test_arrays.py\n M tests/test_devices.py\n M tests/test_evaluator_gaps.py\n",
+  "device": "NVIDIA B300 SXM6 AC",
+  "torch": "2.12.1+cu130",
+  "triton": "3.7.1",
+  "cuda": "13.0",
+  "tests": {
+    "passed": 100,
+    "skipped": 0,
+    "seconds": 39.43
+  },
+  "scope": "Identical torch.add baseline/candidate. Three matched repeats, reverse old/new order on alternate blocks, rotated mode order. Cold bootstrap excluded. No agent search comparison. Same correctness and timing coverage across revisions; API wall time includes worker startup. Small-tensor differences are not a demonstrated speedup.",
+  "raw_report": "evaluator_efficiency_raw.json.gz",
+  "raw_report_sha256": "0f6a58d9eaa97da39c8dcff2f92b4d386498e2ce8ada502e70ad56a7ed5fc920",
+  "summary": [
+    {
+      "elements_per_input": 257,
+      "mode": "check",
+      "previous": {
+        "evaluate_seconds": [
+          1.8206925569102168,
+          1.8707482339814305,
+          1.92098780721426
+        ],
+        "median_seconds": 1.8707482339814305,
+        "command_seconds": [
+          1.8882570853456855,
+          1.9372067907825112,
+          1.9889225848019123
+        ]
+      },
+      "current": {
+        "evaluate_seconds": [
+          1.8708011386916041,
+          1.8707698313519359,
+          1.8207927383482456
+        ],
+        "median_seconds": 1.8707698313519359,
+        "command_seconds": [
+          1.9379056803882122,
+          1.93679741024971,
+          1.8883788157254457
+        ]
+      },
+      "phase_median_seconds": {
+        "setup": 1.2577914744615555,
+        "correctness": 0.06870529614388943,
+        "measurement": 1.016072928905487e-06,
+        "finalize": 0.0009872782975435257
+      },
+      "median_reduction_fraction": -1.1544776636895904e-05
+    },
+    {
+      "elements_per_input": 257,
+      "mode": "signal",
+      "previous": {
+        "evaluate_seconds": [
+          1.821008457802236,
+          1.9711102927103639,
+          2.121304432861507
+        ],
+        "median_seconds": 1.9711102927103639,
+        "command_seconds": [
+          1.8886141404509544,
+          2.038342133164406,
+          2.1887065274640918
+        ]
+      },
+      "current": {
+        "evaluate_seconds": [
+          1.8709431625902653,
+          2.521740031428635,
+          1.9211713885888457
+        ],
+        "median_seconds": 1.9211713885888457,
+        "command_seconds": [
+          1.9386418834328651,
+          2.5889132088050246,
+          1.9880313659086823
+        ]
+      },
+      "phase_median_seconds": {
+        "setup": 1.2983889346942306,
+        "correctness": 0.06780016887933016,
+        "measurement": 0.0032848427072167397,
+        "finalize": 0.0010700570419430733
+      },
+      "median_reduction_fraction": 0.025335418472626325
+    },
+    {
+      "elements_per_input": 257,
+      "mode": "quick",
+      "previous": {
+        "evaluate_seconds": [
+          1.9212298393249512,
+          1.871224901638925,
+          1.8712384039536119
+        ],
+        "median_seconds": 1.8712384039536119,
+        "command_seconds": [
+          1.9890911215916276,
+          1.938678272999823,
+          1.9388482309877872
+        ]
+      },
+      "current": {
+        "evaluate_seconds": [
+          1.9714556708931923,
+          1.9213126916438341,
+          1.8712633233517408
+        ],
+        "median_seconds": 1.9213126916438341,
+        "command_seconds": [
+          2.0390000650659204,
+          1.9878423614427447,
+          1.938562079332769
+        ]
+      },
+      "phase_median_seconds": {
+        "setup": 1.2966046696528792,
+        "correctness": 0.07001003343611956,
+        "measurement": 0.006241908296942711,
+        "finalize": 0.0011492995545268059
+      },
+      "median_reduction_fraction": -0.026759972211143124
+    },
+    {
+      "elements_per_input": 257,
+      "mode": "full",
+      "previous": {
+        "evaluate_seconds": [
+          1.8224229412153363,
+          1.9726148024201393,
+          1.8724744589999318
+        ],
+        "median_seconds": 1.8724744589999318,
+        "command_seconds": [
+          1.8896777452901006,
+          2.039711069315672,
+          1.9397831400856376
+        ]
+      },
+      "current": {
+        "evaluate_seconds": [
+          1.8725404171273112,
+          1.9225033121183515,
+          1.922615798190236
+        ],
+        "median_seconds": 1.9225033121183515,
+        "command_seconds": [
+          1.9402307840064168,
+          1.9897041376680136,
+          1.9911765130236745
+        ]
+      },
+      "phase_median_seconds": {
+        "setup": 1.28969887457788,
+        "correctness": 0.07651419192552567,
+        "measurement": 0.014399728737771511,
+        "finalize": 0.001596934162080288
+      },
+      "median_reduction_fraction": -0.02671804300344882
+    },
+    {
+      "elements_per_input": 1048577,
+      "mode": "check",
+      "previous": {
+        "evaluate_seconds": [
+          2.3715008394792676,
+          2.471550107933581,
+          2.3715151455253363
+        ],
+        "median_seconds": 2.3715151455253363,
+        "command_seconds": [
+          2.438729304820299,
+          2.5398847311735153,
+          2.4387392038479447
+        ]
+      },
+      "current": {
+        "evaluate_seconds": [
+          1.8708103857934475,
+          1.970948769710958,
+          1.9710367321968079
+        ],
+        "median_seconds": 1.970948769710958,
+        "command_seconds": [
+          1.9408253394067287,
+          2.0385568188503385,
+          2.039196572266519
+        ]
+      },
+      "phase_median_seconds": {
+        "setup": 1.2614457551389933,
+        "correctness": 0.15704661048948765,
+        "measurement": 1.2991949915885925e-06,
+        "finalize": 0.000988280400633812
+      },
+      "median_reduction_fraction": 0.1689073656435136
+    },
+    {
+      "elements_per_input": 1048577,
+      "mode": "signal",
+      "previous": {
+        "evaluate_seconds": [
+          2.5719345528632402,
+          2.2215989055112004,
+          2.371758207678795
+        ],
+        "median_seconds": 2.371758207678795,
+        "command_seconds": [
+          2.640302710235119,
+          2.288720302283764,
+          2.4399765748530626
+        ]
+      },
+      "current": {
+        "evaluate_seconds": [
+          1.921148099936545,
+          1.9709679409861565,
+          1.9711608784273267
+        ],
+        "median_seconds": 1.9709679409861565,
+        "command_seconds": [
+          1.9890123289078474,
+          2.0386840756982565,
+          2.0378497699275613
+        ]
+      },
+      "phase_median_seconds": {
+        "setup": 1.2444527801126242,
+        "correctness": 0.1579321688041091,
+        "measurement": 0.0026994114741683006,
+        "finalize": 0.0010637464001774788
+      },
+      "median_reduction_fraction": 0.16898445439971133
+    },
+    {
+      "elements_per_input": 1048577,
+      "mode": "quick",
+      "previous": {
+        "evaluate_seconds": [
+          3.2229110188782215,
+          3.02269752509892,
+          3.37303832732141
+        ],
+        "median_seconds": 3.2229110188782215,
+        "command_seconds": [
+          3.2902691708877683,
+          3.090593386441469,
+          3.4402723368257284
+        ]
+      },
+      "current": {
+        "evaluate_seconds": [
+          1.8710519447922707,
+          1.9713202891871333,
+          1.921228307299316
+        ],
+        "median_seconds": 1.921228307299316,
+        "command_seconds": [
+          1.9364297175779939,
+          2.038089295849204,
+          1.9891342986375093
+        ]
+      },
+      "phase_median_seconds": {
+        "setup": 1.2444817973300815,
+        "correctness": 0.16022733226418495,
+        "measurement": 0.004954837262630463,
+        "finalize": 0.0012900801375508308
+      },
+      "median_reduction_fraction": 0.4038841606095517
+    },
+    {
+      "elements_per_input": 1048577,
+      "mode": "full",
+      "previous": {
+        "evaluate_seconds": [
+          3.9751913752406836,
+          4.175368988886476,
+          3.9250654904171824
+        ],
+        "median_seconds": 3.9751913752406836,
+        "command_seconds": [
+          4.043054128997028,
+          4.242941462434828,
+          3.992299495264888
+        ]
+      },
+      "current": {
+        "evaluate_seconds": [
+          1.922667633742094,
+          1.972475971095264,
+          1.9225376956164837
+        ],
+        "median_seconds": 1.922667633742094,
+        "command_seconds": [
+          1.9906022055074573,
+          2.040028929710388,
+          1.9903771430253983
+        ]
+      },
+      "phase_median_seconds": {
+        "setup": 1.2254054704681039,
+        "correctness": 0.16434744372963905,
+        "measurement": 0.014043358154594898,
+        "finalize": 0.0015834672376513481
+      },
+      "median_reduction_fraction": 0.5163333152417893
+    },
+    {
+      "elements_per_input": 4194305,
+      "mode": "check",
+      "previous": {
+        "evaluate_seconds": [
+          3.3726138630881906,
+          3.4728040723130107,
+          3.472885884344578
+        ],
+        "median_seconds": 3.4728040723130107,
+        "command_seconds": [
+          3.440515998750925,
+          3.541042098775506,
+          3.5404180688783526
+        ]
+      },
+      "current": {
+        "evaluate_seconds": [
+          1.921539611183107,
+          1.920958137139678,
+          2.3715154733508825
+        ],
+        "median_seconds": 1.921539611183107,
+        "command_seconds": [
+          1.990137075074017,
+          1.9883406534790993,
+          2.4402933549135923
+        ]
+      },
+      "phase_median_seconds": {
+        "setup": 1.251161784864962,
+        "correctness": 0.1608410570770502,
+        "measurement": 1.2349337339401245e-06,
+        "finalize": 0.0009937724098563194
+      },
+      "median_reduction_fraction": 0.4466893118150218
+    },
+    {
+      "elements_per_input": 4194305,
+      "mode": "signal",
+      "previous": {
+        "evaluate_seconds": [
+          3.573175234720111,
+          3.7735059894621372,
+          3.4731135070323944
+        ],
+        "median_seconds": 3.573175234720111,
+        "command_seconds": [
+          3.641189880669117,
+          3.8461835300549865,
+          3.5405471604317427
+        ]
+      },
+      "current": {
+        "evaluate_seconds": [
+          1.921065709553659,
+          1.92108307313174,
+          1.9211655054241419
+        ],
+        "median_seconds": 1.92108307313174,
+        "command_seconds": [
+          1.989468832500279,
+          1.9906789101660252,
+          1.9883983824402094
+        ]
+      },
+      "phase_median_seconds": {
+        "setup": 1.2402978902682662,
+        "correctness": 0.16108447220176458,
+        "measurement": 0.002920270897448063,
+        "finalize": 0.0010437024757266045
+      },
+      "median_reduction_fraction": 0.46235968097371527
+    },
+    {
+      "elements_per_input": 4194305,
+      "mode": "quick",
+      "previous": {
+        "evaluate_seconds": [
+          5.125286225229502,
+          4.77476962748915,
+          4.925132838077843
+        ],
+        "median_seconds": 4.925132838077843,
+        "command_seconds": [
+          5.193801463581622,
+          4.84276410471648,
+          4.993323164060712
+        ]
+      },
+      "current": {
+        "evaluate_seconds": [
+          2.171571866609156,
+          2.071195662021637,
+          1.9213838977739215
+        ],
+        "median_seconds": 2.071195662021637,
+        "command_seconds": [
+          2.2385654263198376,
+          2.1384905129671097,
+          1.9896716736257076
+        ]
+      },
+      "phase_median_seconds": {
+        "setup": 1.2890602927654982,
+        "correctness": 0.16094945278018713,
+        "measurement": 0.005970792844891548,
+        "finalize": 0.0013114875182509422
+      },
+      "median_reduction_fraction": 0.5794640002380174
+    },
+    {
+      "elements_per_input": 4194305,
+      "mode": "full",
+      "previous": {
+        "evaluate_seconds": [
+          7.930032570846379,
+          7.830113107338548,
+          7.8301232466474175
+        ],
+        "median_seconds": 7.8301232466474175,
+        "command_seconds": [
+          7.99612623360008,
+          7.89747607242316,
+          7.897061327472329
+        ]
+      },
+      "current": {
+        "evaluate_seconds": [
+          1.9725515712052584,
+          1.922646432183683,
+          2.1728221653029323
+        ],
+        "median_seconds": 1.9725515712052584,
+        "command_seconds": [
+          2.039534093812108,
+          1.989100736565888,
+          2.2404647497460246
+        ]
+      },
+      "phase_median_seconds": {
+        "setup": 1.2723674606531858,
+        "correctness": 0.16579104028642178,
+        "measurement": 0.014756609685719013,
+        "finalize": 0.0015773763880133629
+      },
+      "median_reduction_fraction": 0.7480816701001691
+    }
+  ],
+  "reproduction_scripts": {
+    "validate_gpu.py": {
+      "source": "import pathlib,json,os,sys,time,subprocess,tarfile,gzip,base64,statistics,hashlib\nroot=pathlib.Path(__file__).resolve().parent\nold=root/'previous';old.mkdir()\nwith tarfile.open(root/'previous.tar.gz')as t:t.extractall(old,filter='data')\nimport torch,triton\nreport={'kind':'evaluator-efficiency-before-after','device':torch.cuda.get_device_name(0),'torch':torch.__version__,'triton':triton.__version__,'cuda':torch.version.cuda,'scenarios':[],'baseline_commit':'ff7e49702c0ea3e0865b49079ccf43141b490e7d','task_scope':'Identical torch.add baseline/candidate. Three matched repeats, reverse old/new order on alternate blocks, rotated mode order. Cold bootstrap excluded. No agent search comparison.'}\nassert torch.cuda.device_count()==1\nprint('KE_ENV '+json.dumps(report),flush=True)\n# Same correctness suite, including all GPU gates, runs against the optimized evaluator.\ntests=subprocess.run([sys.executable,'-m','pytest','-q','--junitxml='+str(root/'pytest.xml')],cwd=root,env=os.environ|{'KERNEL_ENVOLVE_TEST_CUDA':'1'},stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,timeout=600)\n(root/'pytest.log').write_text(tests.stdout);print(tests.stdout,flush=True)\nreport['tests_returncode']=tests.returncode;report['test_summary']=tests.stdout.splitlines()[-1]\nassert tests.returncode==0,tests.stdout\n\ndef one(revision,size,mode):\n src=(old if revision=='previous' else root)/'src'\n started=time.perf_counter()\n out=subprocess.run([sys.executable,str(root/'measure_revision.py'),str(size),mode],cwd=root,env=os.environ|{'PYTHONPATH':str(src)},stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,timeout=240)\n elapsed=time.perf_counter()-started\n assert out.returncode==0,(revision,size,mode,out.stdout[-3000:],out.stderr[-3000:])\n row=json.loads(out.stdout);row['revision']=revision;row['command_wall_seconds']=elapsed\n return row\n# Bootstrap both versions once, so cold CUDA initialization/file cache does not favor one arm.\nreport['bootstrap']=[one(revision,257,'check')for revision in ['previous','current']]\nfor repeat in range(3):\n sizes=[257,1048577,4194305]if repeat%2==0 else [4194305,1048577,257]\n modes=['check','signal','quick','full'];modes=modes[repeat:]+modes[:repeat]\n for size in sizes:\n  for i,mode in enumerate(modes):\n   revisions=['previous','current']if (repeat+i)%2==0 else ['current','previous']\n   for revision in revisions:\n    row=one(revision,size,mode);row['repeat']=repeat;report['scenarios'].append(row)\n    print('KE_COST '+json.dumps({k:v for k,v in row.items()if k!='result'}|{'phases':row['result'].get('phase_wall_seconds'),'checks':len(row['result']['checks']),'samples':len(row['result']['samples'])}),flush=True)\nreport['completed']=True\n(root/'efficiency.json').write_text(json.dumps(report,indent=2))\nblob=base64.b64encode(gzip.compress(json.dumps(report).encode())).decode()\n# Bounded log chunks preserve a report even when it exceeds one CloudWatch event.\nfor offset in range(0,len(blob),32000):print('KE_REPORT_PART '+json.dumps({'index':offset//32000,'total':(len(blob)+31999)//32000,'sha256':hashlib.sha256(blob.encode()).hexdigest(),'data':blob[offset:offset+32000]}),flush=True)\nprint('KE_VALIDATION_DONE',flush=True)\n",
+      "sha256": "ccbc26c25f2e60a6f0c3988daf911a2e13944c3e92e0619441d2c01e22125863"
+    },
+    "measure_revision.py": {
+      "source": "import sys,json,pathlib,time,tempfile\nfrom kernel_envolve.cli import evaluate\nfrom kernel_envolve.storage import evaluator_hash\nsize,mode=int(sys.argv[1]),sys.argv[2]\nwith tempfile.TemporaryDirectory(prefix='ke-efficiency-') as tmp:\n task=pathlib.Path(tmp).resolve()\n (task/'task.json').write_text(json.dumps({'name':'efficiency-cost-probe','objective':'Evaluator wall time on identical torch.add implementations; no kernel speedup claim','device':'cuda:0','cases':[{'id':'fixed','args':{'n':size},'weight':1}]}))\n (task/'task.py').write_text('import torch\\ndef make_inputs(case,seed):\\n g=torch.Generator(device=\"cuda\").manual_seed(seed)\\n return tuple(torch.randn(case[\"n\"],device=\"cuda\",generator=g) for _ in range(2))\\ndef reference(x,y): return x+y\\nbaseline=reference\\n')\n (task/'candidate.py').write_text('def run(x,y): return x+y\\n')\n kw={'check_only':True}if mode=='check' else {'signal_only':True}if mode=='signal'else {'mode':mode}\n started=time.perf_counter();run,result=evaluate(task,timeout=180,**kw);elapsed=time.perf_counter()-started\n assert result['execution']=='completed' and result['correctness']=='pass',result\n counts={'check':(4,0),'signal':(4,6),'quick':(8,12),'full':(16,80)}\n assert (len(result['checks']),len(result['samples']))==counts[mode]\n print(json.dumps({'size':size,'mode':mode,'evaluator_hash':evaluator_hash(),'evaluate_wall_seconds':elapsed,'result':result}),flush=True)\n",
+      "sha256": "402484e01d2e07f8c69ddd01e0878685161f00c47315719c16f1a671d9a096d1"
+    }
+  },
+  "reproduction": "Place the two scripts at the tested checkout root; create previous.tar.gz with git archive --format=tar.gz ff7e497 src pyproject.toml. Set PYTHONPATH to the current src and run validate_gpu.py on one idle CUDA device. The script expands previous/, executes GPU tests, then runs isolated workers with each revision. Use a fresh checkout for each repetition of the entire probe.",
+  "exploratory_run": {
+    "job_id": "01e57146aec1411da935223fdbb2614c",
+    "phase": "Completed",
+    "pods_remaining": 0,
+    "raw_report": "evaluator_efficiency_exploratory_raw.json.gz",
+    "raw_report_sha256": "a2e6912a7d3c421c695cf17a9d32b9a55dd039f7875f31608f8c0f3fc4bf841a",
+    "change_after_observation": "Unconditional CUDA equality showed extra cost on small tensors. Final implementation limits the floating/complex CUDA fast path to >=1048576 elements; final rerun adds the 1048577-element size."
+  },
+  "aborted_bootstrap": {
+    "job_id": "6bb95aad622949b48c1d18e24b6d3b2b",
+    "phase": "Stopped",
+    "pods_remaining": 0,
+    "reason": "Embedded command argument was 262673 bytes; container exited before validation. Stopped the owned job, retained request/state, then reduced archive to required sources and added a pre-submit argument-length check. No sample from this job is counted."
+  }
+}
