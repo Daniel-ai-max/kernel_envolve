@@ -1,0 +1,115 @@
+{
+  "date": "2026-11-10",
+  "version": "0.6.1",
+  "evaluator_hash": "6ebbd223820688043934cf3f047b780bb0683fdbaf1b5687df56dc28465f54c1",
+  "changes": [
+    "Separate native configuration, native checks and shared process cleanup from evaluation control flow",
+    "Compare bitwise output dictionaries by keys and accept shape/dtype tensor keys",
+    "Reject invalid latency caps and ignored unmeasured performance constraints",
+    "Stop surviving process-group descendants after parent exit",
+    "Check worker deadlines before starting work",
+    "Compare candidate source contents independent of Git metadata; reject identical baseline promotion"
+  ],
+  "local_tests": {
+    "passed": 148,
+    "skipped": 8,
+    "seconds": 49.34,
+    "skip_reason": "Existing GPU-only tests on local Mac",
+    "initial_regression_reproduction_failures": 11
+  },
+  "static_checks": [
+    "ruff check .",
+    "ruff format --check .",
+    "git diff --check",
+    "No relative module import cycles",
+    "Shipped runtime, tests and example hashes match local files"
+  ],
+  "environment": {
+    "gpu": "NVIDIA B300 SXM6 AC",
+    "torch": "2.12.1+cu130",
+    "triton": "3.7.1",
+    "cuda": "13.0",
+    "evaluator_hash": "6ebbd223820688043934cf3f047b780bb0683fdbaf1b5687df56dc28465f54c1"
+  },
+  "source_pins": {
+    "core": {
+      "sha": "0b8b9b8da1624f8f994e4e54c9126f22c3b00361"
+    },
+    "megatron": {
+      "sha": "eb2c08444c46ad7bfca0f51c7554970cab6edf48"
+    }
+  },
+  "image_source": {
+    "repo": "ApodexAI/Megatron-LM",
+    "commit": "eb2c08444c46ad7bfca0f51c7554970cab6edf48",
+    "path": ".ci/dlc/targets.yaml",
+    "target": "aps2-b300"
+  },
+  "image": "839084984246.dkr.ecr.ap-south-2.amazonaws.com/pretrain/megatron:verify_batch_invariant_deepep_v2_efa_sm100_20261030_124749_cb114@sha256:622816be6322690a0b9e0ebeafe8f8fa0833eca77544163280c26c794513139d",
+  "gpu_runner_tests": {
+    "passed": 33,
+    "skipped": 1,
+    "skip_reason": "No-CUDA rejection test requires a host without CUDA",
+    "pytest_seconds": 79.6,
+    "subprocess_seconds": 80.601599512971,
+    "report": "report.json.gz"
+  },
+  "production_tests": {
+    "core_pytest": 124,
+    "gate_operators": 3,
+    "gate_R_per_operator": 4096,
+    "megatron_pytest": 9,
+    "skipped": 0,
+    "megatron_variants": [
+      "TEGroupedMLP",
+      "SequentialMLP",
+      "DeepGemmGroupedMLP"
+    ],
+    "report": "report.json.gz"
+  },
+  "evaluation": {
+    "full_seconds": 184.33313074801117,
+    "profile": "validation-profile.json",
+    "samples": 48,
+    "contract_checks": 32,
+    "native_check_seconds": {
+      "core_contract": 15.338908420992084,
+      "core_numerics": 24.901668525999412,
+      "host_dispatch": 63.14665756793693
+    },
+    "correctness": "pass",
+    "same_source_control": {
+      "eligible_for_best": false,
+      "performance": "inconclusive",
+      "gain_by_batch": [
+        -0.05825865119707374,
+        -0.04147801645466309
+      ],
+      "reasons": [
+        "bf16-padded: exceeds regression allowance in batch 0",
+        "bf16-padded: exceeds fixed baseline budget in batch 0",
+        "fp32-tail: exceeds regression allowance in batch 0",
+        "fp32-tail: exceeds fixed baseline budget in batch 0",
+        "Meaningful gain over fixed baseline is not confirmed in every batch",
+        "Aggregate gain and paired gain do not both clear their thresholds in every batch",
+        "Candidate source is identical to fixed baseline"
+      ]
+    },
+    "interpretation": "Evaluator integration and regression validation on one B300. Identical-source timings vary; these measurements establish no kernel speedup or optimization-search advantage."
+  },
+  "source_verification": {
+    "snapshot_files_match_reviewed_upstream": true,
+    "files_per_role": {
+      "core": 673,
+      "megatron": 2905
+    }
+  },
+  "resource_status": {
+    "job_id": "d66ba469597f456f8497d96bee506bb9",
+    "phase": "Completed",
+    "remaining_pods": 0,
+    "gpus": 1,
+    "model_calls": 0
+  },
+  "launcher_shutdown": "After reporting that the training script exited successfully, HyperPod logged SIGTERM/CancelledError during shutdown. Job phase is Completed, full report is complete, and remaining pods are zero."
+}

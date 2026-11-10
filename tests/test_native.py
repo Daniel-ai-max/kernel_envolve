@@ -98,6 +98,26 @@ def test_native_full_autograd_frozen_best(native_task):
     assert result["decision"]["eligible_for_best"], result["decision"]
     assert len(result["native_checks"]) == 3
     promote_native(run)
+    subprocess.run(
+        [
+            "git",
+            "-c",
+            "user.name=Test",
+            "-c",
+            "user.email=test@example.test",
+            "commit",
+            "--allow-empty",
+            "-qm",
+            "Metadata-only revision",
+        ],
+        cwd=candidate,
+        check=True,
+        capture_output=True,
+    )
+    _, unchanged = evaluate_native(task, "quick", timeout=60)
+    assert unchanged["correctness"] == "pass", unchanged.get("error")
+    assert unchanged["same_candidate_as_best"]
+    assert not unchanged["decision"]["eligible_for_best"]
     # Changing the live package cannot alter the frozen best worker.
     (candidate / "toyop.py").write_text("def run(x): return x*2 + 0\n")
     _, again = evaluate_native(task, "quick", timeout=60)
@@ -306,3 +326,68 @@ def test_native_source_runtime_setting_change_rejected(native_task):
     _, result = evaluate_native(task, "quick", timeout=40)
     assert result["execution"] == "error"
     assert "environments differ" in result["error"]["message"]
+
+
+def test_bitwise_outputs_match_by_key_not_insertion_order():
+    torch = pytest.importorskip("torch")
+    from kernel_envolve.training import Session, Workload
+
+    x = torch.tensor([1.0])
+    session = Session(Workload({"x": x}, lambda: x), "cpu")
+    expected = session.observe({"output": x, "gradients": {"x": x + 1, "y": x + 2}})
+    actual = session.observe({"gradients": {"y": x + 2, "x": x + 1}, "output": x})
+    cfg = {"rtol": 0, "atol": 0, "equal_nan": False, "bitwise": True, "check_output_layout": False}
+    compare(actual, expected, cfg)
+    actual["output"]["gradients"]["x"].add_(1)
+    with pytest.raises(AssertionError):
+        compare(actual, expected, cfg)
+
+
+def test_output_keys_can_be_named_shape_and_dtype():
+    torch = pytest.importorskip("torch")
+    from kernel_envolve.training import Session, Workload
+
+    x = torch.tensor([1.0])
+    session = Session(Workload({"x": x}, lambda: x), "cpu")
+    observation = session.observe({"shape": x, "dtype": x})
+    compare(
+        observation,
+        observation,
+        {"rtol": 0, "atol": 0, "equal_nan": False, "bitwise": True, "check_output_layout": False},
+    )
+
+
+@pytest.mark.parametrize("cap", [float("nan"), float("inf"), -1, 0, True, "fast"])
+def test_native_latency_cap_must_be_positive_finite(native_task, cap):
+    from kernel_envolve.native import load_config
+
+    task, _ = native_task
+    cfg = json.loads((task / "native.json").read_text())
+    cfg["cases"][0]["max_us"] = cap
+    (task / "native.json").write_text(json.dumps(cfg))
+    with pytest.raises(ValueError, match="max_us"):
+        load_config(task)
+
+
+@pytest.mark.parametrize("cap", ["max_us", "max_peak_bytes"])
+def test_unmeasured_cases_cannot_silently_ignore_caps(native_task, cap):
+    from kernel_envolve.native import load_config
+
+    task, _ = native_task
+    cfg = json.loads((task / "native.json").read_text())
+    cfg["device"] = "cuda:0"
+    cfg["cases"].append({"id": "correctness", "args": {}, "measure": False, cap: 100})
+    (task / "native.json").write_text(json.dumps(cfg))
+    with pytest.raises(ValueError, match="Unmeasured"):
+        load_config(task)
+
+
+def test_native_identical_baseline_cannot_be_promoted(native_task):
+    task, candidate = native_task
+    # Different Git metadata does not make equal production source an optimization.
+    baseline = candidate.parent / "baseline"
+    (candidate / "toyop.py").write_text((baseline / "toyop.py").read_text())
+    _, result = evaluate_native(task, "full", timeout=90)
+    assert result["correctness"] == "pass", result.get("error")
+    assert not result["decision"]["eligible_for_best"]
+    assert "Candidate source is identical to fixed baseline" in result["decision"]["reasons"]

@@ -1,176 +1,22 @@
 """Native project evaluation with frozen sources, isolated workers and native gates."""
 
-import fnmatch
 import json
 import math
-import os
 import shutil
-import signal
 import statistics
 import subprocess
 import sys
 import time
 import uuid
-import xml.etree.ElementTree as ET
 from pathlib import Path
 
-from .cli import lock
+from .execution import lock, stop
+from .native_checks import junit as junit  # Preserve the existing native helper import.
+from .native_checks import native_checks
+from .native_config import environment, load_config
 from .protocol import order, plan, post_seed, timing_seed
 from .scoring import score
 from .storage import digest, evaluator_hash, file_hash, read_json, write_json
-
-
-def load_config(task):
-    raw = read_json(task / "native.json")
-    defaults = {
-        "device": "cuda:0",
-        "quick_seeds": [0],
-        "full_seeds": [0, 17, 101],
-        "quick_trials": 3,
-        "full_trials": 6,
-        "warmup": 3,
-        "iterations": 5,
-        "rtol": 1e-5,
-        "atol": 1e-6,
-        "equal_nan": False,
-        "bitwise": False,
-        "deterministic": True,
-        "min_gain": 0.01,
-        "noise_multiplier": 2.0,
-        "max_regression": 0.05,
-        "max_baseline_regression": 0.05,
-        "check_output_layout": False,
-        "threads": 1,
-        "env": {},
-        "artifacts": {},
-        "checks": [],
-        "required_scopes": ["operator", "numerical", "integration"],
-        "required_outputs": ["output", "gradients"],
-    }
-    unknown = set(raw) - (set(defaults) | {"name", "objective", "sources", "imports", "cases"})
-    if unknown:
-        raise ValueError(f"Unknown native settings: {sorted(unknown)}")
-    cfg = defaults | raw
-    if not cfg["required_outputs"] or any(
-        not isinstance(p, str) or not p for p in cfg["required_outputs"]
-    ):
-        raise ValueError("Declare required output/gradient paths")
-    if not cfg.get("name") or not cfg.get("objective") or not cfg.get("imports"):
-        raise ValueError("Declare name, objective, and production package imports")
-    if not (task / "adapter.py").is_file():
-        raise ValueError("Missing adapter.py")
-    if set(cfg["sources"]) != {"candidate", "baseline"}:
-        raise ValueError("Provide candidate and fixed baseline sources")
-    if (
-        not cfg["sources"]["candidate"]
-        or cfg["sources"]["candidate"].keys() != cfg["sources"]["baseline"].keys()
-    ):
-        raise ValueError("Source roles must have the same nonempty named roots")
-    for roots in cfg["sources"].values():
-        for name, path in roots.items():
-            if not name.isidentifier():
-                raise ValueError("Source root names must be identifiers")
-            expanded = os.path.expandvars(path)
-            if "$" in expanded:
-                raise ValueError(f"Unresolved source environment variable: {path}")
-            roots[name] = str((task / expanded).resolve())
-    if set(cfg["imports"].values()) - cfg["sources"]["candidate"].keys():
-        raise ValueError("Unknown import root")
-    if cfg["device"] != "cpu" and not (
-        cfg["device"].startswith("cuda:") and cfg["device"][5:].isdigit()
-    ):
-        raise ValueError("device must be cpu or cuda:N")
-    for key in ("quick_trials", "full_trials", "warmup", "iterations", "threads"):
-        if type(cfg[key]) is not int or cfg[key] < 1:
-            raise ValueError(f"Invalid {key}")
-    if cfg["full_trials"] < 3:
-        raise ValueError("full_trials >= 3 required for noise estimation")
-    for key in (
-        "rtol",
-        "atol",
-        "min_gain",
-        "max_regression",
-        "max_baseline_regression",
-        "noise_multiplier",
-    ):
-        if type(cfg[key]) not in (float, int) or not math.isfinite(cfg[key]) or cfg[key] < 0:
-            raise ValueError(f"Invalid {key}")
-    for key in ("min_gain", "max_regression", "max_baseline_regression"):
-        if cfg[key] >= 1:
-            raise ValueError(f"Invalid fraction {key}")
-    for key in ("deterministic", "equal_nan", "bitwise", "check_output_layout"):
-        if type(cfg[key]) is not bool:
-            raise ValueError(f"Invalid boolean {key}")
-    ids = [c["id"] for c in cfg["cases"]]
-    if not ids or len(set(ids)) != len(ids):
-        raise ValueError("Unique nonempty cases required")
-    for case in cfg["cases"]:
-        if set(case) - {"id", "args", "weight", "quick", "measure", "max_us", "max_peak_bytes"}:
-            raise ValueError("Unknown case field")
-        for flag in ("quick", "measure"):
-            if flag in case and type(case[flag]) is not bool:
-                raise ValueError(f"Invalid case flag: {flag}")
-        if "max_peak_bytes" in case and cfg["device"] == "cpu":
-            raise ValueError("CUDA peak-memory limits require CUDA")
-        if case.get("measure", True):
-            if (
-                type(case.get("weight")) not in (float, int)
-                or not math.isfinite(case["weight"])
-                or case["weight"] <= 0
-            ):
-                raise ValueError("Explicit positive case weights required")
-        elif "weight" in case:
-            raise ValueError("Correctness-only cases cannot have weights")
-        if "max_peak_bytes" in case and (
-            type(case["max_peak_bytes"]) is not int or case["max_peak_bytes"] < 1
-        ):
-            raise ValueError("max_peak_bytes must be positive")
-    for mode in ("quick", "full"):
-        selected, _, _, _ = plan(cfg, mode)
-        if not any(c.get("measure", True) for c in selected):
-            raise ValueError("Each mode needs measured cases")
-    if not set(cfg["quick_seeds"]).issubset(cfg["full_seeds"]):
-        raise ValueError("quick seeds must be included in full seeds")
-    if not cfg["required_scopes"] or set(cfg["required_scopes"]) - {
-        "operator",
-        "numerical",
-        "integration",
-    }:
-        raise ValueError("Declare required native validation scopes")
-    if set(cfg["env"]) & {"PYTHONPATH", "PYTHONOPTIMIZE", "PYTHONHOME"}:
-        raise ValueError("Python import/optimization overrides are not allowed")
-    check_ids = [c["id"] for c in cfg["checks"]]
-    if len(check_ids) != len(set(check_ids)) or any(not s.isidentifier() for s in check_ids):
-        raise ValueError("Native checks need unique identifier names")
-    for check in cfg["checks"]:
-        if check.get("scope") not in {"operator", "numerical", "integration"}:
-            raise ValueError("Unknown check scope")
-        if type(check.get("min_tests", 1)) is not int or check.get("min_tests", 1) < 1:
-            raise ValueError("min_tests must be positive")
-        if "devices" in check and (
-            not check["devices"]
-            or len(set(check["devices"])) != len(check["devices"])
-            or any(type(d) is not int or d < 0 for d in check["devices"])
-        ):
-            raise ValueError("Check devices must be unique nonnegative visible indices")
-        if check["root"] not in cfg["sources"]["candidate"]:
-            raise ValueError("Unknown check root")
-        if check["kind"] == "gate":
-            if not check.get("operators") or len(set(check["operators"])) != len(
-                check["operators"]
-            ):
-                raise ValueError("Declare exact unique gate operators")
-            if check.get("scope") != "numerical":
-                raise ValueError("Gate scope must be numerical")
-        elif check["kind"] == "pytest":
-            if not check.get("required_tests") or not check.get("reports") or not check.get("argv"):
-                raise ValueError("pytest requires argv, exact report paths and required_tests")
-            for report in check["reports"]:
-                if Path(report).is_absolute() or ".." in Path(report).parts:
-                    raise ValueError("JUnit paths must be relative to the fresh reports directory")
-        else:
-            raise ValueError("Native check kind must be gate or pytest")
-    return cfg
 
 
 def snapshot(root, dest, artifacts=()):
@@ -245,132 +91,15 @@ def verify_roots(run, identities, role):
                     raise ValueError(f"Unrecorded executable source: {name}")
 
 
-def environment(cfg, roots):
-    env = os.environ.copy()
-    env.pop("PYTHONOPTIMIZE", None)
-    env.update(cfg["env"])
-    env["PYTHONDONTWRITEBYTECODE"] = "1"
-    env["PYTHONPATH"] = os.pathsep.join([str(Path(__file__).resolve().parents[1]), *roots.values()])
-    return env
-
-
-def stop(process):
-    if process.poll() is None:
-        os.killpg(process.pid, signal.SIGTERM)
-        try:
-            process.wait(timeout=2)
-        except subprocess.TimeoutExpired:
-            os.killpg(process.pid, signal.SIGKILL)
-            process.wait()
-
-
-def junit(directory, reports, required, min_tests=1):
-    expected = {str(Path(n)) for n in reports}
-    actual = {str(p.relative_to(directory)) for p in directory.rglob("*.xml")}
-    if actual != expected or not expected:
-        raise ValueError("Missing or unexpected rank JUnit reports")
-    summary = {}
-    for name in reports:
-        root = ET.parse(directory / name).getroot()
-        cases = root.findall(".//testcase")
-        if len(cases) < min_tests or any(
-            root.find(f".//{tag}") is not None for tag in ("skipped", "failure", "error")
-        ):
-            raise ValueError(f"Empty, skipped or failed JUnit: {name}")
-        ids = [c.get("classname", "") + "::" + c.get("name", "") for c in cases]
-        if len(ids) != len(set(ids)):
-            raise ValueError("Duplicate JUnit test identities")
-        for pattern in required:
-            if not any(fnmatch.fnmatchcase(node, pattern) for node in ids):
-                raise ValueError(f"Missing required test {pattern} in {name}")
-        summary[name] = ids
-    return summary
-
-
-def native_checks(run, cfg, roots, deadline, records=None):
-    records = records if records is not None else []
-    for check in cfg["checks"]:
-        if time.monotonic() >= deadline:
-            raise TimeoutError("Native evaluation time budget exhausted")
-        folder = run / "native_checks" / check["id"]
-        folder.mkdir(parents=True)
-        cwd = Path(roots[check["root"]])
-        if check["kind"] == "gate":
-            history = cwd / "apodex_core/verification/results/gate_history.json"
-            history.unlink(missing_ok=True)
-            argv = [
-                sys.executable,
-                "-m",
-                "apodex_core.verification.method.gate",
-                "--source",
-                "operations",
-                "--only",
-                ",".join(check["operators"]),
-            ]
-        else:
-            replacements = {"python": sys.executable, "reports": str(folder), **roots}
-            argv = [part.format_map(replacements) for part in check["argv"]]
-        log = folder / "command.log"
-        write_json(folder / "command.json", {"argv": argv, "cwd": str(cwd)})
-        started = time.perf_counter()
-        check_env = environment(cfg, roots)
-        if cfg.get("device", "cpu").startswith("cuda"):
-            devices = check.get("devices", [int(cfg["device"].split(":")[1])])
-            visible = check_env.get("CUDA_VISIBLE_DEVICES")
-            names = visible.split(",") if visible else None
-            check_env["CUDA_VISIBLE_DEVICES"] = ",".join(
-                names[i] if names else str(i) for i in devices
-            )
-        with log.open("w") as stream:
-            process = subprocess.Popen(
-                argv,
-                cwd=cwd,
-                env=check_env,
-                stdout=stream,
-                stderr=subprocess.STDOUT,
-                start_new_session=True,
-            )
-            try:
-                code = process.wait(timeout=max(0.01, deadline - time.monotonic()))
-            finally:
-                stop(process)
-        if code != 0:
-            raise ValueError(f"Native check failed ({code}): {check['id']}; see {log}")
-        if check["kind"] == "gate":
-            observed = read_json(history)
-            if (
-                set(observed) != set(check["operators"])
-                or "GATE RESULT: PASS (no blocking verdicts)" not in log.read_text()
-            ):
-                raise ValueError("Missing native gate operators/final verdict")
-            if any(
-                r.get("overall") not in {"PASS", "WARN"}
-                or type(r.get("R")) is not int
-                or r["R"] <= 0
-                for r in observed.values()
-            ):
-                raise ValueError("Invalid native gate record")
-            # Native CLI owns WARN policy; no --emit-observed or local waiver substitute.
-            write_json(folder / "observed.json", observed)
-            detail = observed
-        else:
-            detail = junit(
-                folder, check["reports"], check["required_tests"], check.get("min_tests", 1)
-            )
-        records.append(
-            {
-                "id": check["id"],
-                "scope": check["scope"],
-                "status": "pass",
-                "seconds": time.perf_counter() - started,
-                "detail": detail,
-            }
-        )
-    return records
+def source_contents(identities):
+    """Compare actual bundled contents; an empty Git commit is not a new kernel."""
+    return {name: identity["files"] for name, identity in identities.items()}
 
 
 class Worker:
     def __init__(self, run, cfg, roots, role, deadline):
+        if time.monotonic() >= deadline:
+            raise TimeoutError("Native evaluation time budget exhausted")
         self.folder = run / "workers" / role
         self.folder.mkdir(parents=True)
         self.deadline = deadline
@@ -395,6 +124,8 @@ class Worker:
     def call(self, kind, case, seed):
         import torch
 
+        if time.monotonic() >= self.deadline:
+            raise TimeoutError("Native evaluation time budget exhausted")
         self.count += 1
         base = self.folder / str(self.count)
         reply, output = base.with_suffix(".json"), base.with_suffix(".pt")
@@ -432,7 +163,7 @@ class Worker:
 
 def compare(actual, expected, cfg):
     from .arrays import assert_close
-    from .training import equal, tensor_tree
+    from .training import equal
 
     for path in cfg.get("required_outputs", []):
         for observation in (actual, expected):
@@ -451,11 +182,11 @@ def compare(actual, expected, cfg):
         raise AssertionError("Input values differ (including signed zero and NaN payloads)")
 
     def check_meta(a, b):
-        if isinstance(b, dict) and "shape" in b and "dtype" in b:
+        if isinstance(b, dict) and isinstance(b.get("dtype"), str):
             keys = ("shape", "dtype", "device")
             if cfg["check_output_layout"]:
                 keys += ("stride", "offset", "conjugate", "negative")
-            if any(a.get(k) != b[k] for k in keys):
+            if not isinstance(a, dict) or any(a.get(k) != b[k] for k in keys):
                 raise AssertionError("Output shape/dtype/device/layout differs")
         elif type(a) is not type(b) or len(a) != len(b):
             raise AssertionError("Output structure differs")
@@ -468,17 +199,20 @@ def compare(actual, expected, cfg):
             for x, y in zip(a, b):
                 check_meta(x, y)
 
+    def check_bits(a, b):
+        if isinstance(b, dict):
+            return all(check_bits(a[k], b[k]) for k in b)
+        if isinstance(b, (tuple, list)):
+            return all(check_bits(x, y) for x, y in zip(a, b))
+        return equal(a, b)
+
     check_meta(actual["output_metadata"], expected["output_metadata"])
     for key in ("output", "state"):
         if key == "state" and not expected[key] and not actual[key]:
             continue
         assert_close(actual[key], expected[key], cfg, key)
-        if cfg["bitwise"]:
-            left, right = [], []
-            tensor_tree(actual[key], lambda x: left.append(x))
-            tensor_tree(expected[key], lambda x: right.append(x))
-            if len(left) != len(right) or any(not equal(a, b) for a, b in zip(left, right)):
-                raise AssertionError(f"Bitwise mismatch: {key}")
+        if cfg["bitwise"] and not check_bits(actual[key], expected[key]):
+            raise AssertionError(f"Bitwise mismatch: {key}")
 
 
 def _roots(run, role, identities):
@@ -560,7 +294,9 @@ def _evaluate(task, state, cfg, mode, timeout):
         roots = _roots(run, "candidate", result["identities"]["candidate"])
         result["comparator"] = {"kind": "best" if best else "baseline"}
         result["same_candidate_as_best"] = bool(
-            best and result["identities"]["candidate"] == best[2]["identities"]["candidate"]
+            best
+            and source_contents(result["identities"]["candidate"])
+            == source_contents(best[2]["identities"]["candidate"])
         )
         role_roots = {
             "oracle": _roots(run, "baseline", result["identities"]["baseline"]),
@@ -704,6 +440,11 @@ def _evaluate(task, state, cfg, mode, timeout):
 
 def native_decision(result, cfg):
     decision = score(result, cfg)
+    identities = result["identities"]
+    if {"candidate", "baseline"} <= identities.keys() and source_contents(
+        identities["candidate"]
+    ) == source_contents(identities["baseline"]):
+        decision["reasons"].append("Candidate source is identical to fixed baseline")
     if result["mode"] == "full":
         scopes = {s["scope"] for s in result["native_checks"] if s["status"] == "pass"}
         if set(cfg["required_scopes"]) - scopes:

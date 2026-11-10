@@ -1,19 +1,16 @@
 """CLI supervision and atomic promotion; no model API or orchestration service."""
 
 import argparse
-import contextlib
 import datetime as dt
-import fcntl
 import json
 import math
-import os
-import signal
 import subprocess
 import sys
 import time
 import uuid
 from pathlib import Path
 
+from .execution import lock, stop
 from .protocol import measured_cases, plan
 from .scoring import score
 from .storage import (
@@ -28,19 +25,6 @@ from .storage import (
     verify_source,
     write_json,
 )
-
-
-@contextlib.contextmanager
-def lock(path):
-    with path.open("a") as handle:
-        try:
-            fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError as exc:
-            raise ValueError(f"Another operation holds {path}; inspect it before retrying") from exc
-        try:
-            yield
-        finally:
-            fcntl.flock(handle, fcntl.LOCK_UN)
 
 
 def audit_result(result, request, cfg):
@@ -157,13 +141,9 @@ def evaluate(
                     failure = f"Worker exited with code {code}"
             except subprocess.TimeoutExpired:
                 failure = f"Worker exceeded {timeout}s timeout"
-                os.killpg(process.pid, signal.SIGKILL)
-                process.wait()
-            except BaseException:
-                if process.poll() is None:
-                    os.killpg(process.pid, signal.SIGKILL)
-                    process.wait()
-                raise
+            finally:
+                stop(process)
+
         process_wall_seconds = time.perf_counter() - started
         if failure or not (run / "result.json").exists():
             result = {

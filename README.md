@@ -158,11 +158,21 @@ output = run(*inputs)
 
 迭代阶段使用代表用例，完整验证时扩大正确性覆盖；补充用例可设置 `measure: false` 以减少计时开销。交付前冻结实现，再验证未参与调参的尺寸、布局组合和数值种子，并保存结果与源码哈希。
 
-## 资料与开发
+## 仓库结构与开发
+
+```text
+src/kernel_envolve/     评测、证据保存与版本晋升
+skills/kernel-envolve/  迭代流程、PR 规范和参考入口
+examples/              独立算子及内部项目的任务示例
+tests/                 正常路径、故障注入与回归测试
+audit/                 按实验或版本保存的验证证据
+```
+
+内部评测由 `native.py` 调度，`native_config.py` 校验任务配置，`native_checks.py` 执行原生检查，`training.py` 管理训练输入与状态。两类评测共用采样协议、收益判定和进程管理；历史实验代码与运行代码分开放置。
 
 - [硬件文档与参考实现](skills/kernel-envolve/references/hardware.md)
 - [参考架构来源](audit/reference_sources.json)与[评测设计来源](audit/evaluator_sources.json)
-- [内部 evaluator 的 B300 集成验证](audit/native_gpu_060/summary.json)
+- [内部 evaluator 的 B300 集成验证](audit/native_gpu_061/summary.json)
 - [通用 evaluator 的 B300 验证](audit/general_contract_gpu/verified/summary.json)与[输入泛化验证](audit/generality_gpu_050/summary.json)
 
 ```bash
