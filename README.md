@@ -85,6 +85,8 @@ kernel-envolve native-evaluate --task examples/apodex_probs_scale --mode full --
 kernel-envolve native-promote /path/to/run
 ```
 
+`implementation_paths` 明确列出允许变更的实现文件或目录，并纳入冻结契约。原生检查使用固定 baseline 的测试、参考实现、阈值和项目配置，仅覆盖这些候选实现；候选修改检查代码会被拒绝。旧任务需要建立新契约，不能沿用原收据。详见[受信原生检查](docs/native-harness.md)。
+
 `native-promote` 的路径取自合格的 full 结果。数值 gate 或 CI 通过仅说明相应检查通过，性能收益仍需测量确认。配置与适配接口见 [内部项目评测](skills/kernel-envolve/SKILL.md#apodex-内部项目评测)及[内部 evaluator](skills/kernel-envolve/SKILL.md#使用内部-evaluator)。
 
 ## 持续优化

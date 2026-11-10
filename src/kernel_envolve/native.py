@@ -14,6 +14,7 @@ from .execution import lock, spawn, stop
 from .native_checks import junit as junit  # Preserve the existing native helper import.
 from .native_checks import native_checks
 from .native_config import environment, load_config
+from .native_harness import prepare_harness, validate_overlay
 from .protocol import order, plan, post_seed, timing_seed
 from .scoring import score
 from .storage import digest, evaluator_hash, file_hash, read_json, write_json
@@ -287,6 +288,7 @@ def _evaluate(task, state, cfg, mode, timeout):
                 "baseline": result["identities"]["baseline"],
             }
         )
+        validate_overlay(cfg, result["identities"])
         best = _best(state)
         result["initial_best_hash"] = digest(best[0]) if best else None
         if best and best[2]["contract"] != result["contract"]:
@@ -351,7 +353,11 @@ def _evaluate(task, state, cfg, mode, timeout):
             for seed in seeds:
                 check(case, seed, kinds)
         if mode == "full":
-            native_checks(run, cfg, roots, deadline, result["native_checks"])
+            validation, seconds = prepare_harness(run, cfg, result["identities"])
+            result["identities"]["validation"] = validation
+            result["harness_seconds"] = seconds
+            validation_roots = _roots(run, "validation", validation)
+            native_checks(run, cfg, validation_roots, deadline, result["native_checks"])
             scopes = {r["scope"] for r in result["native_checks"]}
             if set(cfg["required_scopes"]) - scopes:
                 raise ValueError("Missing required native validation scopes")
