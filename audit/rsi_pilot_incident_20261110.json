@@ -1,0 +1,39 @@
+{
+  "recorded_at": 1794313526.450036,
+  "instance_id": "1510446e-8614-4b9a-abdf-c8da928c6a00",
+  "authorized_pilot_seconds": 1800,
+  "conservative_resource_seconds": 6511.071068048477,
+  "model_calls": 1,
+  "rsi_trials": 0,
+  "gpu_release_verified": true,
+  "release_evidence": {
+    "instance_id": "1510446e-8614-4b9a-abdf-c8da928c6a00",
+    "phase": "Stopped",
+    "nodes_checked": [
+      "hyperpod-i-0397fca268bc84f87"
+    ],
+    "remaining_pods": [],
+    "conservative_gpu_seconds": 6511.071068048477
+  },
+  "failure": "Local watchdog hit a DNS resolution error before issuing stop. Resource was still Available on continuation; explicit stop and empty owned Pod verification followed.",
+  "next_constraint": "No further GPU allocation until a platform-enforced deadline and a fresh explicit pilot budget are agreed. Do not restart this spent attempt.",
+  "observed_stop_state": {
+    "id": "1510446e-8614-4b9a-abdf-c8da928c6a00",
+    "workspace_id": "4b070c1a-398d-4fb3-847c-fd9e5a318707",
+    "creator_user_id": "daniel",
+    "name": "daniel-rsi-pilot-20261110",
+    "phase": "Stopped",
+    "desired_status": "Stopped"
+  },
+  "replacement_preview": {
+    "passed": true,
+    "platform_deadline_seconds": 1200,
+    "gpus": 1,
+    "no_retries": true,
+    "no_persistent_production_mounts": true,
+    "priority": 80,
+    "allocated": false,
+    "request_sha256": "a73d5a790373ca4ef7e839556c09639dcae5ae16e4951be156826436177e97c6"
+  },
+  "replacement_submitted": false
+}
