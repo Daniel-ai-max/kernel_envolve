@@ -50,7 +50,9 @@ def test_public_and_sample_inputs_obey_the_same_numerical_contract(modules):
             assert [(a.shape, a.stride(), a.dtype) for a in x] == [
                 (a.shape, a.stride(), a.dtype) for a in y
             ]
-            output = factory.baseline(name, *x)
+            # Factory/oracle consistency is independent of a CPU BF16 GEMM backend.
+            # Native target-device baselines are checked by probe_general_tasks.
+            output = factory.reference(name, *x)
             factory.validate(name, x, output)
             rtol, atol = verifier.TOLERANCES[name][case["args"]["dtype"]]
             np.testing.assert_allclose(
@@ -96,3 +98,20 @@ def test_independent_acceptance_checks_actual_timed_outputs(modules, tmp_path):
     result = verifier.accept(folder, folder / "candidate.py", [0], trials=1)
     assert result["correct"], result
     assert len(result["samples"]) == 8
+
+
+def test_independent_acceptance_detects_precision_policy_leak(modules):
+    torch, builder, factory, verifier = modules
+    case = builder.public_cases("matmul", "cpu")[1]
+    inputs = factory.make_inputs("matmul", case["args"], 0)
+    policy = torch.backends.cuda.matmul.allow_bf16_reduced_precision_reduction
+
+    def bad(a, b):
+        torch.backends.cuda.matmul.allow_bf16_reduced_precision_reduction = not policy
+        return a @ b
+
+    try:
+        with pytest.raises(AssertionError, match="Changed precision settings"):
+            verifier.check_call("matmul", bad, inputs, verifier.golden("matmul", inputs), "cpu")
+    finally:
+        torch.backends.cuda.matmul.allow_bf16_reduced_precision_reduction = policy

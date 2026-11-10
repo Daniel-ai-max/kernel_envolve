@@ -143,6 +143,7 @@ def run(directory, device, measure):
                 "input-mutation": "    out=original(*inputs)\n    inputs[0].add_(1)\n    return out\n",
                 "padding-write": "    out=original(*inputs)\n    inputs[0]._base[-1]=0\n    return out\n",
                 "wrong-dtype": "    return original(*inputs).float()\n",
+                "precision-policy": "    import torch\n    policy=torch.backends.cuda.matmul\n    policy.allow_bf16_reduced_precision_reduction=not policy.allow_bf16_reduced_precision_reduction\n    return original(*inputs)\n",
                 "packed-row-assumption": "    import torch\n    x=inputs[0]\n    x=torch.as_strided(x,x.shape,(x.shape[1]*x.stride(1),x.stride(1)),x.storage_offset())\n    return original(x,*inputs[1:])\n",
                 "empty-reduction-assumption": "    import torch\n    if inputs[0].shape[1]==0: return torch.empty((0,),dtype=inputs[0].dtype,device=inputs[0].device)\n    return original(*inputs)\n",
             }
@@ -170,7 +171,11 @@ def run(directory, device, measure):
                 row = {
                     "task": name,
                     "probe": fault,
-                    "dev_rejected": dev.get("correctness") == "fail",
+                    "dev_rejected": (
+                        dev.get("execution") == "error"
+                        if fault == "precision-policy"
+                        else dev.get("correctness") == "fail"
+                    ),
                     "independent_rejected": not final["correct"],
                     "development": dev,
                     "independent": final,

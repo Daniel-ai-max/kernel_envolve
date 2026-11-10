@@ -63,11 +63,26 @@ def fused_relu(x, scale, bias, residual):
 
 
 def settings():
-    return (
-        torch.backends.cuda.matmul.allow_tf32,
-        torch.get_float32_matmul_precision(),
-        torch.get_default_dtype(),
-    )
+    values = {
+        "matmul_tf32": torch.backends.cuda.matmul.allow_tf32,
+        "precision": torch.get_float32_matmul_precision(),
+        "default_dtype": str(torch.get_default_dtype()),
+        "fp16_reduction": torch.backends.cuda.matmul.allow_fp16_reduced_precision_reduction,
+        "bf16_reduction": torch.backends.cuda.matmul.allow_bf16_reduced_precision_reduction,
+        "threads": torch.get_num_threads(),
+        "grad": torch.is_grad_enabled(),
+        "deterministic": torch.are_deterministic_algorithms_enabled(),
+        "cudnn_tf32": torch.backends.cudnn.allow_tf32,
+        "cudnn_benchmark": torch.backends.cudnn.benchmark,
+        "cudnn_deterministic": torch.backends.cudnn.deterministic,
+        "numpy_errors": np.geterr(),
+    }
+    if torch.cuda.is_initialized():
+        values.update(
+            cuda_device=torch.cuda.current_device(),
+            cuda_stream=torch.cuda.current_stream().cuda_stream,
+        )
+    return values
 
 
 def synchronize(device):
@@ -144,6 +159,7 @@ def accept(folder, candidate_path, seeds, *, check_only=False, trials=10):
         torch.backends.cuda.matmul.allow_tf32 = False
         torch.set_float32_matmul_precision("highest")
         policy = settings()
+        report["runtime_policy"] = policy
         candidate = load(candidate_path).run
         assert policy == settings(), "Import changed precision settings"
         functions = {

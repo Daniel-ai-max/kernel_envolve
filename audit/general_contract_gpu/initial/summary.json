@@ -1,0 +1,36 @@
+{
+  "scope": "Broad public task/validator controls and acceptance costs; no agent search, no hidden final tests",
+  "source_commit": "48cfd4071bf65697a38843ce10329d09cfea0a6e",
+  "environment": {
+    "gpu": "NVIDIA B300 SXM6 AC",
+    "capability": [
+      10,
+      3
+    ],
+    "torch": "2.12.1+cu130",
+    "triton": "3.7.1",
+    "numpy": "2.3.5",
+    "cuda": "13.0",
+    "evaluator_hash": "8dec002fc1b11789b353c58ff541acb9b0b3aaad45915fda46c8cf31628c32d8"
+  },
+  "tests": {
+    "returncode": 1,
+    "wall_seconds": 44.15381065895781,
+    "output": "/opt/venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py:247: PytestDeprecationWarning: The configuration option \"asyncio_default_fixture_loop_scope\" is unset.\nThe event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: \"function\", \"class\", \"module\", \"package\", \"session\"\n\n  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))\n...................................................................F.... [ 59%]\n.................................................                        [100%]\n=================================== FAILURES ===================================\n________ test_public_and_sample_inputs_obey_the_same_numerical_contract ________\n\nmodules = (<module 'torch' from '/opt/venv/lib/python3.12/site-packages/torch/__init__.py'>, <module 'build_general_tasks' from ...'/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-050724/audit/general_final_acceptance.py'>)\n\n    def test_public_and_sample_inputs_obey_the_same_numerical_contract(modules):\n        torch, builder, factory, verifier = modules\n        for name in builder.NAMES:\n            public = builder.public_cases(name, \"cpu\")\n            sample = builder.sample_cases(name, \"cpu\", 20261110)\n            assert len({json.dumps(c[\"args\"], sort_keys=True) for c in public + sample}) == len(\n                public + sample\n            )\n            for case in public + sample:\n                x = factory.make_inputs(name, case[\"args\"], 7)\n                y = factory.make_inputs(name, case[\"args\"], 8)\n                assert all(\n                    a.untyped_storage().data_ptr() != b.untyped_storage().data_ptr()\n                    for a, b in zip(x, y)\n                )\n                assert [(a.shape, a.stride(), a.dtype) for a in x] == [\n                    (a.shape, a.stride(), a.dtype) for a in y\n                ]\n                output = factory.baseline(name, *x)\n>               factory.validate(name, x, output)\n\ntests/test_general_acceptance.py:54: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\nname = 'matmul'\ninputs = (tensor([[-0.8203,  0.3965,  0.8984,  ..., -0.1729,  0.7578,  0.9844],\n        [-0.8242,  0.1631,  0.5000,  ..., -0.69...-0.3945,  1.3281],\n        [ 0.3691, -1.7969, -1.9141,  ..., -0.8555, -1.5312, -0.8477]],\n       dtype=torch.bfloat16))\noutput = tensor([[     nan,      nan,      nan,  ...,      nan,      nan,      nan],\n        [     nan,      nan,      nan,  .....8, -12.2500],\n        [ 14.9375,   4.6562, -18.2500,  ...,   1.2422, -24.8750,   2.6719]],\n       dtype=torch.bfloat16)\n\n    def validate(name, inputs, output):\n        dtype = str(inputs[0].dtype).split(\".\")[-1]\n        rtol, atol = TOLERANCES[name][dtype]\n        expected = reference(name, *inputs)\n        assert output.shape == expected.shape and output.dtype == expected.dtype\n        assert output.device == expected.device\n>       torch.testing.assert_close(output, expected, rtol=rtol, atol=atol, equal_nan=False)\nE       AssertionError: Tensor-likes are not close!\nE       \nE       Mismatched elements: 7296 / 14630 (49.9%)\nE       Greatest absolute difference: nan at index (0, 0) (up to 0.025 allowed)\nE       Greatest relative difference: nan at index (0, 0) (up to 0.025 allowed)\n\naudit/general_workloads.py:114: AssertionError\n=========================== short test summary info ============================\nFAILED tests/test_general_acceptance.py::test_public_and_sample_inputs_obey_the_same_numerical_contract\n1 failed, 120 passed in 42.78s\n"
+  },
+  "controller_error": {
+    "type": "AssertionError",
+    "message": "GPU tests failed"
+  },
+  "resource": {
+    "job_id": "e1bd4c70e1714f1d9dabdbd950240d20",
+    "phase": "Failed",
+    "pods": 0,
+    "restart_count": 1,
+    "gpu_count": 1,
+    "started_at": "2026-11-10T05:07:33Z",
+    "ended_at": "2026-11-10T05:08:42Z",
+    "observed_at": 1794287402.0667388
+  },
+  "interpretation": "New factory consistency test accidentally required CPU BF16 noncontiguous matmul baseline on this x86 image. Its NaN failure stopped the GPU contract controls before they started; not a CUDA failure verdict. Preserve failure; retarget factory consistency to the oracle and test actual CUDA baseline separately."
+}
