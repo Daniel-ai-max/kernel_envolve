@@ -631,6 +631,18 @@ def test_learning_packet_is_bounded_without_dropping_pending_evidence(rsi, monke
     assert rsi.db.execute("SELECT COUNT(*) FROM evidence").fetchone()[0] == 48
 
 
+@pytest.mark.parametrize("changed", ["research.py", "episodes.py"])
+def test_validator_identity_binds_owned_research_dependencies(monkeypatch, changed):
+    from kernel_envolve.rsi import trials
+
+    original = trials.validator_identity()
+    original_hash = trials.file_hash
+    monkeypatch.setattr(
+        trials, "file_hash", lambda path: "0" * 64 if path.name == changed else original_hash(path)
+    )
+    assert trials.validator_identity() != original
+
+
 def test_numeric_evidence_is_bounded_and_does_not_invent_missing_metrics():
     from kernel_envolve.rsi.learning import numeric_metrics
 

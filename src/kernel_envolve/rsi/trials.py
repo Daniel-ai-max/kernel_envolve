@@ -27,7 +27,7 @@ def validator_identity():
     return digest(
         {
             name: file_hash(Path(__file__).with_name(name))
-            for name in ("trials.py", "model.py", "process.py")
+            for name in ("trials.py", "model.py", "process.py", "research.py", "episodes.py")
         }
     )
 

@@ -110,8 +110,18 @@ def routing(tmp_path):
 
 
 def test_validation_and_publication_use_identical_routing(routing, monkeypatch):
+    from kernel_envolve.rsi import trials
+
     store, proposal, _, _ = routing
     seen = []
+    original_trial = trials.trial
+
+    def routing_trial(*args, **kwargs):
+        # Exercise actual adapters and full evaluators, but route equality must
+        # not depend on sub-second process scheduling. Cost gates have separate
+        # numeric counterexample tests; GPU experiment timings are never replaced.
+        result = original_trial(*args, **kwargs)
+        return {**result, "seconds": 0.2}
 
     def measured(*args, **kwargs):
         elapsed = invoke(*args, **kwargs)
@@ -121,6 +131,7 @@ def test_validation_and_publication_use_identical_routing(routing, monkeypatch):
         return elapsed
 
     monkeypatch.setattr("kernel_envolve.rsi.trials.invoke", measured)
+    monkeypatch.setattr("kernel_envolve.rsi.trials.trial", routing_trial)
     identity = stage(store, proposal)
     result = validate(store, identity)
     assert result["accepted"], result

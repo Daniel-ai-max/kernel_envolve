@@ -302,3 +302,212 @@ def test_stop_reports_do_not_attribute_final_source_to_an_experiment(research):
     record = report_records(packet["task"], trace, out)[0]
     assert record["action"] == "stop"
     assert "tested_source_excerpt" not in record and "evaluator_run" not in record
+
+
+@pytest.fixture
+def measured_episode(research):
+    packet, out, initial = research
+    correct = "def run(x): return x+1\n" + "# complete source, beyond old excerpt\n" * 40
+    answers = iter(
+        [
+            {
+                "action": "propose",
+                "source": "def run(x): return x-1\n",
+                "mode": "full",
+                "hypothesis": "Deliberate CPU failure",
+            },
+            {
+                "action": "propose",
+                "source": correct,
+                "mode": "full",
+                "hypothesis": "Test independent correction",
+            },
+        ]
+    )
+    trace = run(packet, out, lambda *args: next(answers), max_actions=2)
+    return packet, out, trace, correct
+
+
+def test_episode_preserves_failed_and_complete_successful_code(measured_episode, tmp_path):
+    from kernel_envolve.rsi.episodes import build, load, save
+
+    packet, out, trace, correct = measured_episode
+    episode = build(packet["task"], out, {"tags": ["cpu-fixture"]})
+    assert len(episode["observations"]) == 3
+    assert episode["observations"][1]["correctness"] == "fail"
+    assert episode["observations"][1]["failed_checks"]["count"] > 0
+    assert episode["sources"][trace["selected"]] == correct
+    assert len(correct) > 1000
+    assert episode["observations"][2]["quality"] > 0.8
+    assert episode["actions"][0]["untrusted_hypothesis"] == "Deliberate CPU failure"
+    directory = tmp_path / "episodes"
+    identity = save(directory, episode)
+    assert save(directory, episode) == identity
+    assert load(directory, identity) == episode
+    changed = dict(episode, selected="0" * 64)
+    write_json(directory / f"{identity}.json", changed)
+    with pytest.raises(ValueError, match="content changed"):
+        load(directory, identity)
+    with pytest.raises(ValueError, match="content changed"):
+        save(directory, episode)
+    assert json.loads((directory / f"{identity}.json").read_text()) == changed
+
+
+def test_episode_recomputes_scores_and_rejects_forged_selection(measured_episode):
+    from kernel_envolve.rsi.episodes import build
+
+    packet, out, trace, _ = measured_episode
+    trace["steps"][0]["observation"]["quality"] = 999
+    trace["steps"][0]["observation"]["correctness"] = "pass"
+    write_json(out / "search-trace.json", trace)
+    episode = build(packet["task"], out, {})
+    assert episode["observations"][1]["quality"] == -1
+    assert episode["observations"][1]["correctness"] == "fail"
+    trace["selected"] = trace["steps"][0]["observation"]["candidate"]
+    write_json(out / "search-trace.json", trace)
+    with pytest.raises(ValueError, match="best observed full"):
+        build(packet["task"], out, {})
+
+
+def test_episode_rejects_tampered_artifact_and_incomplete_trace(measured_episode):
+    from kernel_envolve.rsi.episodes import build
+
+    packet, out, trace, correct = measured_episode
+    source = out / f"candidate-{trace['selected']}.py"
+    source.write_text("def run(x): return x-1\n")
+    with pytest.raises(ValueError, match="identity mismatch"):
+        build(packet["task"], out, {})
+    source.write_text(correct)
+    trace["error"] = {"type": "TimeoutError", "message": "Synthetic adapter failure"}
+    write_json(out / "search-trace.json", trace)
+    with pytest.raises(ValueError, match="Incomplete research trace"):
+        build(packet["task"], out, {})
+
+
+def test_episode_import_maps_only_one_task_and_checks_original_identity(measured_episode, tmp_path):
+    import shutil
+
+    from kernel_envolve.rsi.episodes import build
+
+    packet, out, trace, _ = measured_episode
+    imported = tmp_path / "imported-task"
+    shutil.copytree(packet["task"], imported)
+    original = build(packet["task"], out, {})
+    assert build(imported, out, {}, origin_task=packet["task"]) == original
+    with pytest.raises(ValueError):
+        build(imported, out, {})
+    trace["steps"][0]["observation"]["run"] = str(tmp_path / "outside")
+    write_json(out / "search-trace.json", trace)
+    with pytest.raises(ValueError):
+        build(imported, out, {}, origin_task=packet["task"])
+
+
+def test_episode_archive_bounds_and_symlinks_fail_closed(tmp_path):
+    from kernel_envolve.rsi.episodes import MAX_EPISODE_BYTES, load, save
+    from kernel_envolve.storage import digest
+
+    with pytest.raises(ValueError, match="archive limit"):
+        save(tmp_path / "large", {"payload": "x" * MAX_EPISODE_BYTES})
+    assert not (tmp_path / "large").exists()
+    value = {"payload": "data"}
+    identity = digest(value)
+    target = tmp_path / "external.json"
+    write_json(target, value)
+    (tmp_path / f"{identity}.json").symlink_to(target)
+    with pytest.raises(OSError):
+        load(tmp_path, identity)
+    with pytest.raises(ValueError, match="identity"):
+        load(tmp_path, "../external")
+
+
+def test_episode_confirmation_is_a_separate_verified_selected_source(measured_episode):
+    from kernel_envolve.cli import evaluate
+    from kernel_envolve.rsi.episodes import build
+
+    packet, out, trace, _ = measured_episode
+    assert build(packet["task"], out, {})["final_confirmation"] is None
+    with pytest.raises(ValueError, match="separate evaluation"):
+        build(packet["task"], out, {}, confirmation_run=trace["steps"][-1]["observation"]["run"])
+    run_path, _ = evaluate(Path(packet["task"]), "full", timeout=10)
+    value = build(packet["task"], out, {}, confirmation_run=run_path)
+    observed = value["observations"][value["final_confirmation"]]
+    assert observed["source"] == trace["selected"]
+    assert observed["mode"] == "full" and observed["correctness"] == "pass"
+
+
+def test_episode_view_keeps_every_source_and_case_or_rejects(
+    measured_episode, tmp_path, monkeypatch
+):
+    from kernel_envolve.rsi.episodes import build, save, view
+
+    packet, out, _, _ = measured_episode
+    episode = build(packet["task"], out, {})
+    identity = save(tmp_path / "library", episode)
+    projected = view(tmp_path / "library", identity)
+    assert projected["sources"] == episode["sources"]
+    assert len(projected["observations"]) == len(episode["observations"])
+    for actual, original in zip(projected["observations"], episode["observations"]):
+        assert len(actual["cases"]) == len(original["decision"].get("cases", []))
+    monkeypatch.setattr("kernel_envolve.rsi.episodes.MAX_VIEW_BYTES", 100)
+    with pytest.raises(ValueError, match="model input limit"):
+        view(tmp_path / "library", identity)
+
+
+def test_episode_import_preserves_producer_path_spelling(measured_episode, tmp_path):
+    from kernel_envolve.rsi.episodes import build
+
+    packet, out, trace, _ = measured_episode
+    task = Path(packet["task"])
+    alias = tmp_path / "alias-parent"
+    alias.symlink_to(task.parent, target_is_directory=True)
+    origin = alias / task.name
+    observations = [trace["initial_observation"]] + [step["observation"] for step in trace["steps"]]
+    for observed in observations:
+        observed["run"] = str(origin / Path(observed["run"]).relative_to(task))
+    write_json(out / "search-trace.json", trace)
+    episode = build(task, out, {}, origin_task=origin)
+    assert episode["origin_task"] == str(origin)
+    assert len(episode["observations"]) == 3
+
+
+def test_historical_experience_is_data_not_an_automatic_candidate(research):
+    from kernel_envolve.storage import digest
+
+    packet, out, initial = research
+    experience = {"source": "def run(x): raise AssertionError('must not execute')"}
+
+    def decide(request, timeout):
+        assert request["historical_experience"] == experience
+        assert request["selected"] == source_id(initial)
+        assert len(request["candidates"]) == 1
+        return {"action": "stop", "hypothesis": "No candidate requested"}
+
+    trace = run(packet, out, decide, experience=experience)
+    assert trace["selected"] == source_id(initial)
+    assert trace["experience_hash"] == digest(experience)
+    assert json.loads((out / "experience.json").read_text()) == experience
+    assert Path(packet["editable_files"][0]).read_text() == initial
+
+
+def test_changed_experience_is_rejected_without_changing_candidate(research):
+    packet, out, initial = research
+
+    def decide(request, timeout):
+        write_json(out / "experience.json", {"fabricated": "changed"})
+        return {"action": "stop", "hypothesis": "Tampering fixture"}
+
+    with pytest.raises(ValueError, match="experience snapshot"):
+        run(packet, out, decide, experience={"facts": "original"})
+    assert Path(packet["editable_files"][0]).read_text() == initial
+
+
+def test_oversized_experience_fails_before_evaluation(research):
+    packet, out, _ = research
+    with pytest.raises(ValueError, match="Experience exceeds"):
+        run(
+            packet,
+            out,
+            lambda *args: pytest.fail("Unexpected model call"),
+            experience={"facts": "x" * 32768},
+        )
+    assert not (Path(packet["task"]) / ".kernel_envolve/runs").exists()
