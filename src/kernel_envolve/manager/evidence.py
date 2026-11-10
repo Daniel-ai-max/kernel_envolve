@@ -13,6 +13,10 @@ from .process import exclusive
 from .store import encode
 
 
+class ScanCancelled(Exception):
+    """Stop a scan without treating an unfinished verification as evidence."""
+
+
 def state_path(spec):
     return Path(spec["task_dir"]) / (
         ".kernel_native" if spec["kind"] == "native" else ".kernel_envolve"
@@ -27,7 +31,9 @@ def within(root, relative):
     return path
 
 
-def inspect_run(path, spec):
+def inspect_run(path, spec, checkpoint=None):
+    checkpoint = checkpoint or (lambda: None)
+    checkpoint()
     if path.is_symlink():
         raise ValueError("Run directory must not be a symlink")
     result = read_json(path / "result.json")
@@ -43,10 +49,11 @@ def inspect_run(path, spec):
         if receipt["config_hash"] != file_hash(path / "config.json"):
             raise ValueError("Native config receipt mismatch")
         for name, expected in receipt["evidence"].items():
+            checkpoint()
             if file_hash(within(path, name)) != expected:
                 raise ValueError(f"Native evidence changed: {name}")
         for role, value in result["identities"].items():
-            verify_roots(path, value, role)
+            verify_roots(path, value, role, checkpoint)
         if file_hash(path / "adapter.py") != result["adapter_hash"]:
             raise ValueError("Native adapter changed")
         decision = native_decision(result, cfg)
@@ -56,10 +63,11 @@ def inspect_run(path, spec):
         from ..cli import audit_result
 
         cfg = config(path / "source")
-        verify_source(path, result["identity"])
+        verify_source(path, result["identity"], checkpoint)
         decision = audit_result(result, read_json(path / "request.json"), cfg)
         contract = result["identity"]["contract"]
         source = result["identity"]["files"]
+    checkpoint()
     if contract != spec["baseline"]["contract"]:
         raise ValueError("Evidence contract differs from the task's frozen baseline contract")
     fixed = decision.get("fixed_baseline_gain_by_batch", [])
@@ -89,13 +97,15 @@ def inspect_run(path, spec):
     }
 
 
-def fingerprint(path):
+def fingerprint(path, checkpoint=None):
     """Invalidate cached verification with one metadata read per non-cache entry.
 
     Metadata only decides whether to repeat inspect_run's content hashes. ctime
     and inode identity also catch equal-sized writes/replacements that preserve
     mtime. Never follow links, including links named like an ignored cache.
     """
+    checkpoint = checkpoint or (lambda: None)
+    checkpoint()
     path = Path(path)
     root = path.lstat()
     if not stat.S_ISDIR(root.st_mode):
@@ -103,9 +113,11 @@ def fingerprint(path):
     pending = [(os.fspath(path), "")]
     files = []
     while pending:
+        checkpoint()
         directory, prefix = pending.pop()
         with os.scandir(directory) as entries:
             for entry in entries:
+                checkpoint()
                 info = entry.stat(follow_symlinks=False)
                 name = prefix + entry.name
                 if stat.S_ISLNK(info.st_mode):
@@ -128,10 +140,13 @@ def fingerprint(path):
                     )
                 else:
                     raise ValueError(f"Unsupported evidence file type: {name}")
+    checkpoint()
     return digest(sorted(files))
 
 
-def refresh_task(store, task, force=False):
+def refresh_task(store, task, force=False, checkpoint=None):
+    checkpoint = checkpoint or (lambda: None)
+    checkpoint()
     spec = task["spec"]
     state = state_path(spec)
     problems = []
@@ -143,11 +158,12 @@ def refresh_task(store, task, force=False):
     updates = {}
     chain = []
     for path in sorted((state / "runs").glob("*")):
+        checkpoint()
         old = indexed_runs.get(str(path))
         if not (path / "receipt.json").exists() and not old:
             continue  # New in-flight results are not final evidence; indexed ones must revalidate.
         try:
-            signature = fingerprint(path)
+            signature = fingerprint(path, checkpoint)
             if (
                 old
                 and not force
@@ -157,7 +173,7 @@ def refresh_task(store, task, force=False):
                 if old["error"]:
                     problems.append(f"{path.name}: {old['error']}")
                 continue
-            data = inspect_run(path, spec) | {"fingerprint": signature}
+            data = inspect_run(path, spec, checkpoint) | {"fingerprint": signature}
             error = None
         except (OSError, ValueError, KeyError, TypeError, OverflowError) as exc:
             error = str(exc)
@@ -173,6 +189,7 @@ def refresh_task(store, task, force=False):
         indexed_runs[str(path)] = updates[str(path)]
     # Removed evidence must invalidate the entire published best in the same commit.
     for path, row in indexed_runs.items():
+        checkpoint()
         if not Path(path).exists():
             updates[path] = {"data": row["data"], "error": "Evidence directory missing"}
             indexed_runs[path] = updates[path]
@@ -184,6 +201,7 @@ def refresh_task(store, task, force=False):
             visited = set()
             chain = []
             while pointer:
+                checkpoint()
                 run = within(state / "runs", str(Path(pointer["run"]).relative_to("runs")))
                 if str(run) in visited:
                     raise ValueError("Cycle in promotion history")
@@ -229,6 +247,7 @@ def refresh_task(store, task, force=False):
         problems.append(str(exc))
     latest = None
     for row in indexed_runs.values():
+        checkpoint()
         value = json.loads(row["data"])
         if latest is None or value.get("recorded_at", 0) > latest["recorded_at"]:
             latest = {
@@ -252,7 +271,9 @@ def refresh_task(store, task, force=False):
             }
     # File IO and verification above never hold SQLite's writer lock. Publish each task's
     # runs, best, history, errors and observation time atomically for dashboard readers.
+    checkpoint()
     with store.transaction():
+        checkpoint()  # Cancellation may arrive while waiting for the database writer lock.
         for path, row in updates.items():
             store.db.execute(
                 "INSERT INTO runs(path,task,imported,data,error) VALUES(?,?,?,?,?) "
@@ -292,12 +313,22 @@ def refresh_task(store, task, force=False):
         )
 
 
-def refresh(store, force=False):
+def refresh(store, force=False, stop=None):
+    def checkpoint():
+        if stop is not None and stop.is_set():
+            raise ScanCancelled
+
     # A manual reindex and the coordinator must not publish out of order.
     with exclusive(store.root / "evidence.lock") as handle:
         if handle is None:
             return False
-        scan = {"started_at": time.time(), "running": True, "task": None, "error": None}
+        scan = {
+            "started_at": time.time(),
+            "running": True,
+            "task": None,
+            "error": None,
+            "cancelled": False,
+        }
 
         def publish():
             scan["updated_at"] = time.time()
@@ -306,10 +337,15 @@ def refresh(store, force=False):
             )
 
         try:
+            checkpoint()
             for row in store.rows("SELECT id FROM tasks"):
+                checkpoint()
                 scan["task"] = row["id"]
                 publish()
-                refresh_task(store, store.task(row["id"]), force)
+                refresh_task(store, store.task(row["id"]), force, checkpoint)
+        except ScanCancelled:
+            scan["cancelled"] = True
+            return False
         except Exception as exc:
             scan["error"] = str(exc)
             raise

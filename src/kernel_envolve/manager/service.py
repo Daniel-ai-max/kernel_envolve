@@ -5,6 +5,7 @@ import os
 import signal
 import subprocess
 import sys
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 
@@ -85,29 +86,29 @@ def run(store, once=False):
     with exclusive(store.root / "coordinator.lock") as handle:
         if handle is None:
             raise ValueError("A coordinator already owns this state directory")
-        stopped = False
+        stopped = threading.Event()
 
         def on_signal(signum, frame):
-            nonlocal stopped
-            stopped = True
+            stopped.set()
 
         handlers = {s: signal.signal(s, on_signal) for s in (signal.SIGINT, signal.SIGTERM)}
         children = []
         pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="evidence")
         future, last_scan = None, 0
         evidence_error = None
+        completed_once = False
 
         def scan():
             from .evidence import refresh
 
             local = Store(store.root)
             try:
-                refresh(local)
+                refresh(local, stop=stopped)
             finally:
                 local.close()
 
         try:
-            while not stopped:
+            while not stopped.is_set():
                 health = {
                     "pid": os.getpid(),
                     "identity": identity(os.getpid()),
@@ -122,8 +123,10 @@ def run(store, once=False):
                     )
                     if once:
                         raise
-                    time.sleep(1)
+                    stopped.wait(1)
                     continue
+                if stopped.is_set():
+                    break
                 if future is not None and future.done():
                     try:
                         future.result()
@@ -138,6 +141,8 @@ def run(store, once=False):
                 store.db.execute(
                     "INSERT OR REPLACE INTO metadata VALUES('coordinator',?)", (encode(health),)
                 )
+                if stopped.is_set():
+                    break
                 for key in store.schedule():
                     directory = store.root / "jobs" / key
                     directory.mkdir(parents=True, exist_ok=True)
@@ -163,10 +168,14 @@ def run(store, once=False):
                         store.finish(key, "failed", str(exc))
                 children = [p for p in children if p.poll() is None]
                 if once:
+                    completed_once = True
                     break
-                time.sleep(1)
+                stopped.wait(1)
         finally:
-            pool.shutdown(wait=True)
+            # Keep both locks owned until the evidence thread reaches a safe boundary.
+            if not completed_once:
+                stopped.set()
+            pool.shutdown(wait=True, cancel_futures=not completed_once)
             for sig, handler in handlers.items():
                 signal.signal(sig, handler)
         # Round supervisors intentionally survive a coordinator restart. Pause tasks to stop them.

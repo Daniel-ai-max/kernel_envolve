@@ -195,10 +195,13 @@ def candidate_identity(identity, cfg):
     return digest({name: identity["files"][name] for name in cfg["candidate_files"]})
 
 
-def verify_source(run, identity):
+def verify_source(run, identity, checkpoint=None):
+    checkpoint = checkpoint or (lambda: None)
+    checkpoint()
     source = run / "source"
     actual = set()
     for p in source.rglob("*"):
+        checkpoint()
         if "__pycache__" in p.relative_to(source).parts:
             continue
         if p.is_symlink():
@@ -208,8 +211,10 @@ def verify_source(run, identity):
     if actual != set(identity["files"]):
         raise ValueError("Source inventory changed (added or missing files)")
     for name, expected in identity["files"].items():
+        checkpoint()
         if file_hash(safe_file(run / "source", name)) != expected:
             raise ValueError(f"Source changed: {name}")
+    checkpoint()
     if contract(run / "source", config(run / "source")) != identity["contract"]:
         raise ValueError("Task contract changed")
 

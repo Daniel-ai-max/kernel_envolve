@@ -67,15 +67,19 @@ def snapshot(root, dest, artifacts=()):
     return {"git_head": head, "files": files}
 
 
-def verify_roots(run, identities, role):
+def verify_roots(run, identities, role, checkpoint=None):
+    checkpoint = checkpoint or (lambda: None)
+    checkpoint()
     for root, identity in identities.items():
         base = run / "sources" / role / root
         for name, expected in identity["files"].items():
+            checkpoint()
             path = base / name
             if not path.is_file() or path.is_symlink() or file_hash(path) != expected:
                 raise ValueError(f"Frozen source changed: {role}/{root}/{name}")
         # Report outputs and Python caches are permitted; newly injected executable sources are not.
         for path in base.rglob("*"):
+            checkpoint()
             if path.is_symlink():
                 raise ValueError("Symlink introduced in snapshot")
             if path.is_file() and path.suffix in {
