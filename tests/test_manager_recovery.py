@@ -34,7 +34,7 @@ def recovery(store):
     return overview(store)["tasks"][0]["recovery"]
 
 
-def test_three_failures_deliver_evidence_to_real_repair_round(managed):
+def test_three_failures_deliver_evidence_to_real_repair_round(managed, monkeypatch):
     store, _, work = managed
     (work / "candidate.py").write_text(
         "def run(x): raise RuntimeError('missing diagnostic dependency sentinel')\n"
@@ -67,7 +67,16 @@ pathlib.Path(os.environ['KERNEL_ENVOLVE_REPORT']).write_text(json.dumps({'outcom
     assert recovery(store)["state"] == "checkpoint_received"
     assert store.task("toy")["failures"] == 0
     assert consumed[0] < consumed[1] < consumed[2] < store.task("toy")["wall_seconds"]
-    assert not store.schedule()  # Normal configured cooldown still applies.
+    task = store.task("toy")
+    assert recovery(store)["retry_after_seconds"] == task["spec"]["cooldown_seconds"]
+    assert task["next_at"] >= store.job(repaired)["ended"] + task["spec"]["cooldown_seconds"]
+    # Slow CI can spend the entire one-second cooldown projecting recovery views.
+    # Test admission at its recorded boundary, not the speed of these assertions;
+    # preceding subprocesses and accumulated resource usage remain real.
+    monkeypatch.setattr(time, "time", lambda: task["next_at"] - 0.001)
+    assert not store.schedule()
+    monkeypatch.setattr(time, "time", lambda: task["next_at"] + 0.001)
+    assert len(store.schedule()) == 1
 
 
 def test_empty_bridge_like_rounds_back_off_without_claiming_model_activity(managed):
