@@ -40,6 +40,27 @@ description: 优化 apodex-core 与 Megatron-LM 中的训练算子，复用原�
 
 ## Apodex 内部项目评测
 
+### 原生评测是否足够
+
+原生测试是验收组件，不能把「数值 gate PASS」或「CI 性能门通过」直接当成优化成功。每项任务在 `notes.md` 列出「生产要求 → 具体测试/benchmark → 缺失项 → 本轮结果」，补齐缺口后再冻结验收集合。
+
+| 验收项 | 已有能力 | 任务必须核对或补充 |
+|---|---|---|
+| 数值与梯度 | core 的 candidate/reference/FP64 golden、偏差与误差幅度 gate | 所有受影响输出和梯度、实际 dtype、原有 bitwise 要求；统计 PASS 不等于逐位一致或训练轨迹保证 |
+| 接口与执行语义 | 各算子的专项 pytest，部分已覆盖布局、设备、Graph、重算和累加 | shape/dtype/device、输入修改、alias、动态换值和所用执行模式；不是每个算子都有同等覆盖 |
+| 输入泛化 | 注册的固定 fixture 与测试参数集合 | 生产尺寸/布局/数值分布、阈值邻域、fallback 和未参与调参的组合；增加 seed 不增加尺寸覆盖 |
+| 性能收益 | core 微基准、Megatron 配对计时与性能回归门 | 原始实现及当前 best 的配对测量、噪声判断、逐场景退化、F+B 和显存；防止明显退化的 CI 门不能判定优化收益 |
+| 训练接入 | 模块三路对照、专项并行/重算测试、训练指标与恢复检查 | 候选路径确实执行、受影响的训练配置及状态；DP 分摊采样不是 TP/EP 测试，loss/grad-norm 相等不是全部梯度相等 |
+
+源码与复现依据：
+
+- core 的 `_draw_on` 按 candidate → reference → golden 顺序传入同一输入，数值计算允许广播并转换到 FP64，不统一检查 API 契约。对约定保持输入/shape/dtype 的恒等算子，实际调用 `gate.run`（原配置 R_min=4096）时，错误 shape、错误 dtype、非法输入清零均 PASS；正确实现 PASS，明显数值错误和 NaN FAIL。这是**数值方法单独使用时的覆盖缺口**，不代表专项 pytest 或完整 CI 也放行。见[故障复现脚本](../../audit/probe_native_gate_contract.py)与[实际结果](../../audit/native_gate_contract_probe.json)。
+- `shift_input` 会对浮点输入加偏移；本次行 padding 样例的 stride 从 `(11, 1)` 变成 `(4, 1)`。布局覆盖要在真正调用候选时确认，不能只看 `gen_input` 返回的布局。原生 gate 的尾部统计使用分布模型，拟合不足时会记录 empirical fallback；结果说明不得扩大为任意真实训练分布的误差保证。
+- `test_fused_swiglu.py` 已有生产尺寸、BF16 位模式、FP16/FP32、特殊值、反向布局及 batch invariance；`test_embedding_wgrad.py` 已有累加、dtype、padding 和未出现 token 行检查；`test_router_gather.py` 已有真实 Graph 换值回放、checkpoint 和 stream 检查。先复用这些，不重新写一套相同测试。
+- Megatron `test_deepgemm_perf_gate.py` 的 `MODULE_SPEEDUP_FLOOR=0.85` 用于防严重退化，不证明更快；其模块基准分别生成两份输入，`mod.zero_grad()` 也不清空闭包中输入 `x.grad`。可复用计时方法，正式优化对比需对齐输入/初始状态，并明确梯度累加或重置语义。
+
+当前内部流程由 skill 调用原生命令，尚无自动完成这些覆盖核对、契约隔离和性能晋升判定的内部 runner。任务定制应落在少量 pytest/benchmark harness：补断言、补输入集合、补配对比较；无需重写 core 数值方法或搭建另一套训练平台。
+
 ### 确定任务与环境
 
 先阅读两仓当前的 `DEVELOPMENT_GUIDELINES.md`，从 Megatron 的调用点反查 core 公共入口。kernel 实现在 core，Megatron 只做接线；不在本工具仓库复制生产 kernel 或参考公式。
@@ -66,7 +87,7 @@ description: 优化 apodex-core 与 Megatron-LM 中的训练算子，复用原�
 ### 正确性 evaluate
 
 - **core 数值验证**：复用 `apodex_core/verification/operations/local_ops.py` 的 `Case(candidate, reference, golden, gen_input)`。检查前向、输入梯度、权重/偏置梯度等实际输出；沿用原生偏差与误差幅度判据、精度配置和已批准的 WARN 规则，不用通用 allclose 替代。reference 与 golden 必须独立于候选；手写反向不能仅升为 FP64 就充当独立 golden。
-- **接口与覆盖**：结合 `tests/` 检查既有 bitwise、确定性、batch invariance、输入修改、alias、布局、设备/stream 等承诺。数值 gate 的固定 fixture 不代表全部生产尺寸/dtype；缺失覆盖补到算子测试或原生 case builder，不通过缩减支持范围取得加速。新增/调整验证器需用已知错误实现确认能检出目标错误。
+- **接口与覆盖**：结合 `tests/` 检查既有 bitwise、确定性、batch invariance、输入修改、alias、布局、设备/stream 等承诺。正确性 harness 在候选执行前保存原始输入，给对照提供独立但等值的输入/状态；保留每条执行内部应有的 alias/stride。数值转换前检查输出结构、shape/dtype/device，并断言只发生允许的原地更新；随机性任务还要对齐 RNG 状态。数值 gate 的固定 fixture 不代表全部生产尺寸/dtype；缺失覆盖补到算子测试或原生 case builder，不通过缩减支持范围取得加速。新增/调整验证器需用已知错误实现确认能检出目标错误。
 - **Megatron 集成**：复用 `tests/unit_tests/apodex/operations/local_modules.py` 与相关模块测试，检查真实模块的 forward、dgrad、wgrad。用调用计数或定向断言确认候选后端确实执行，不能静默 fallback。涉及 microbatch 切分、padding、分片或归约时，核对相同有效 token 的归一化与梯度，防止引入系统性缩放或偏差。
 - **新后端**：按 core 规范保留旧后端的执行路径和默认选择，验证旧路径不触达新 helper；性能对照使用改动前源码，不能只与当前代码中「关闭新开关」的路径比较。
 
@@ -78,13 +99,13 @@ python -m apodex_core.verification.method.gate --source operations \
   --only local_fused_swiglu_fwd,local_fused_swiglu_dx
 ```
 
-这是完整确认的入口示例；日常迭代按改动选择具体 pytest node。当前 gate CLI 以 BF16 和默认模型 fixture 构建 case，其他生产 dtype/shape 的覆盖需另外核对。Megatron 的 `test_local_modules.py` 默认 `APODEX_GATE_RMIN=512` 用于开发，正式验证使用当前 CI 配置（本次检查为 4096）。缩小抽样的结果仅作探索，不覆盖正式结果。
+这两条命令分别覆盖已有单卡算子测试与数值 gate，是验收的一部分；是否足够由上面的覆盖对应关系决定。日常迭代按改动选择具体 pytest node。当前 gate CLI 以 BF16 和默认模型 fixture 构建 case，其他生产 dtype/shape 的覆盖需另外核对。Megatron 的 `test_local_modules.py` 默认 `APODEX_GATE_RMIN=512` 用于开发，正式验证使用当前 CI 配置（本次检查为 4096）。缩小抽样的结果仅作探索，不覆盖正式结果。
 
 ### 性能 evaluate
 
 优先复用 core `benchmarks/` 和 Megatron 的模块 benchmark，检查其计时范围后再使用。训练目标以同一实际配置下的完整 forward+backward 为主，单独 fwd/bwd 用于定位；优化器还要覆盖状态更新。保留逐尺寸耗时、原始样本、峰值显存，以及启动/编译与稳态测量的耗时。
 
-1. 对照固定原始实现和当前已验证版本；保持相同输入、权重、上游梯度、精度设置和执行模式。每轮恢复 `.grad`、`main_grad`、优化器状态及可变缓冲；重置成本是否计入，按实际训练调用事先约定，两边一致。
+1. 对照固定原始实现和当前已验证版本；保持相同输入、权重、上游梯度、精度设置和执行模式。每组对照从等值的 `.grad`、`main_grad`、优化器状态及可变缓冲开始；按生产语义执行累加/更新，在相同边界重置，避免暖机状态泄漏。重置成本是否计入，按实际训练调用事先约定，两边一致。
 2. GPU 独占，完成预热后交替 A/B 顺序，保存配对样本。Megatron `_paired_benchmark.py` 可复用其交替顺序逻辑，但还需检查调用者的输入和状态重置。core 某些 benchmark 按后端顺序报告均值，仅适合初筛；正式比较补配对测量，收益小于波动时记为未确认。
 3. 计入实际调用中的 dispatch、布局转换、临时分配和必要同步。Graph 与 eager 分开评测，Graph 要覆盖重放时输入换值；不能把 CUDA event 一概解释为纯 kernel 时间。import 时读取的后端环境开关用新进程做对照，不能在导入后修改变量冒充 A/B。
 4. 同轮确认候选与对照；需要不同源码进程时交替启动并保留各自版本证据，不在一个解释器里混载两份 `apodex_core`。通信/overlap 的收益在实际模块或 step 上测，局部同步微基准只用于诊断。

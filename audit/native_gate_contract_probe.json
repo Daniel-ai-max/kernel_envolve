@@ -1,0 +1,97 @@
+{
+  "scope": "CPU execution of native numerical gate with synthetic identity operators; not GPU or production-operator validation",
+  "core_sha": "0b8b9b8da1624f8f994e4e54c9126f22c3b00361",
+  "torch_version": "2.15.0",
+  "r_min": 4096,
+  "results": [
+    {
+      "probe": "correct_identity",
+      "native_numerical_verdict": "PASS",
+      "bias_verdict": "PASS",
+      "magnitude_verdict": "PASS",
+      "replicates": 4096,
+      "identity_contract_checks": {
+        "shape": true,
+        "dtype": true,
+        "input_unchanged": true,
+        "identity_values": true
+      }
+    },
+    {
+      "probe": "wrong_output_shape",
+      "native_numerical_verdict": "PASS",
+      "bias_verdict": "PASS",
+      "magnitude_verdict": "PASS",
+      "replicates": 4096,
+      "identity_contract_checks": {
+        "shape": false,
+        "dtype": true,
+        "input_unchanged": true,
+        "identity_values": false
+      }
+    },
+    {
+      "probe": "wrong_output_dtype",
+      "native_numerical_verdict": "PASS",
+      "bias_verdict": "PASS",
+      "magnitude_verdict": "PASS",
+      "replicates": 4096,
+      "identity_contract_checks": {
+        "shape": true,
+        "dtype": false,
+        "input_unchanged": true,
+        "identity_values": true
+      }
+    },
+    {
+      "probe": "forbidden_input_mutation",
+      "native_numerical_verdict": "PASS",
+      "bias_verdict": "PASS",
+      "magnitude_verdict": "PASS",
+      "replicates": 4096,
+      "identity_contract_checks": {
+        "shape": true,
+        "dtype": true,
+        "input_unchanged": false,
+        "identity_values": false
+      }
+    },
+    {
+      "probe": "wrong_values",
+      "native_numerical_verdict": "FAIL",
+      "bias_verdict": "FAIL",
+      "magnitude_verdict": "FAIL",
+      "replicates": 512,
+      "identity_contract_checks": {
+        "shape": true,
+        "dtype": true,
+        "input_unchanged": true,
+        "identity_values": false
+      }
+    },
+    {
+      "probe": "nonfinite_values",
+      "native_numerical_verdict": "FAIL",
+      "bias_verdict": "FAIL",
+      "magnitude_verdict": "FAIL",
+      "replicates": 512,
+      "identity_contract_checks": {
+        "shape": true,
+        "dtype": true,
+        "input_unchanged": true,
+        "identity_values": false
+      }
+    }
+  ],
+  "shift_input_layout_probe": {
+    "generator_stride": [
+      11,
+      1
+    ],
+    "gate_input_stride": [
+      4,
+      1
+    ],
+    "row_padding_preserved": false
+  }
+}
