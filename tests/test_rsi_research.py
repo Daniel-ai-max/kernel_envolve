@@ -1108,3 +1108,163 @@ def test_compact_decisions_keep_raw_trace_and_observed_failures(research):
     assert trace["steps"][0]["observation"]["failed_checks"]["count"] > 0
     assert trace["steps"][1]["observation"]["status"] == "duplicate_skipped"
     assert json.loads((out / "search-trace.json").read_text())["steps"] == trace["steps"]
+
+
+def test_verified_artifact_snapshot_uses_existing_initial_full_only(research, monkeypatch):
+    import ast
+
+    from kernel_envolve.cli import evaluate
+    from kernel_envolve.rsi import artifact_snapshot as snapshot_module
+    from kernel_envolve.rsi import research as research_module
+    from kernel_envolve.storage import digest, read_json
+
+    packet, out, initial = research
+    task = Path(packet["task"])
+    source = "def run(x): return x+1\n"
+    training = run(
+        packet,
+        out,
+        lambda *a: {
+            "action": "propose",
+            "source": source,
+            "mode": "full",
+            "hypothesis": "Remove synthetic sleep; CPU lifecycle fixture",
+        },
+        max_actions=1,
+    )
+    final, _ = evaluate(task, "full", timeout=10)
+    view = snapshot_module.materialize(
+        task, out, {"tags": ["fixture"]}, out.parent / "views", confirmation_run=final
+    )
+    assert (
+        snapshot_module.materialize(
+            task, out, {"tags": ["fixture"]}, out.parent / "views", confirmation_run=final
+        )
+        == view
+    )
+    stored = read_json(Path(view["path"]))
+    assert digest(stored) == view["identity"]
+    assert stored["proposal"]["source_hash"] == training["selected"]
+    archived = read_json(
+        Path(view["path"]).parent / "episodes" / (stored["proposal"]["episode_id"] + ".json")
+    )
+    assert digest(archived) == stored["proposal"]["episode_id"]
+    assert archived["final_confirmation"] is not None
+    (task / "candidate.py").write_text(initial)
+    actual_read, actual_evaluate = snapshot_module.read, research_module.evaluate
+    reads, evaluations = [], []
+
+    def read_once(*args):
+        reads.append(args)
+        return actual_read(*args)
+
+    def measured(*args, **kwargs):
+        result = actual_evaluate(*args, **kwargs)
+        evaluations.append(result[0])
+        return result
+
+    monkeypatch.setattr(snapshot_module, "read", read_once)
+    monkeypatch.setattr(research_module, "evaluate", measured)
+    monkeypatch.setattr(
+        snapshot_module, "build", lambda *a, **kw: pytest.fail("No foreground archive verification")
+    )
+
+    def decide(request, timeout):
+        assert request["remaining_actions"] == 1
+        # Round already froze the candidate. No hot reload after this mutation.
+        Path(view["path"]).write_text("corrupt for next round")
+        return {
+            "action": "evaluate",
+            "candidate": request["selected"],
+            "mode": "full",
+            "hypothesis": "Duplicate, no extra full",
+        }
+
+    trace = run(
+        packet,
+        out.parent / "next",
+        decide,
+        max_actions=4,
+        adaptive_artifact_budget=True,
+        artifact_snapshot=view | {"profile": {"tags": ["fixture"]}},
+        source_validator=ast.parse,
+    )
+    assert trace["selected"] == source_id(source)
+    assert trace["artifact_snapshot"]["reason"] == "compatible_proposal"
+    assert trace["artifact_snapshot"]["initial_run"] == str(evaluations[0])
+    assert trace["artifact_snapshot"]["initial_result_hash"] == digest(
+        read_json(evaluations[0] / "result.json")
+    )
+    assert len(reads) == 1 and len(evaluations) == 2
+    assert trace["effective_actions"] == 2
+    independent, _ = evaluate(task, "full", timeout=10)
+    assert independent not in evaluations
+    assert not (task / ".kernel_envolve/best.json").exists()
+    (task / "candidate.py").write_text(initial)
+    fallback = run(
+        packet,
+        out.parent / "fallback",
+        lambda request, timeout: {
+            "action": "stop",
+            "hypothesis": "Invalid snapshot falls back to original search",
+        },
+        max_actions=4,
+        adaptive_artifact_budget=True,
+        artifact_snapshot=view | {"profile": {"tags": ["fixture"]}},
+        source_validator=ast.parse,
+    )
+    assert fallback["selected"] == source_id(initial) and fallback["effective_actions"] == 4
+    assert fallback["artifact_proposal_hash"] is None
+    assert fallback["artifact_snapshot"]["reason"] == "snapshot_unavailable"
+    assert len(reads) == 2 and len(evaluations) == 3
+
+
+def test_artifact_snapshot_materialization_requires_verified_independent_full(measured_episode):
+    from kernel_envolve.cli import evaluate
+    from kernel_envolve.rsi.artifact_snapshot import materialize
+
+    packet, out, trace, _ = measured_episode
+    task = Path(packet["task"])
+    with pytest.raises(ValueError, match="independent final"):
+        materialize(task, out, {}, out.parent / "views", confirmation_run=None)
+    with pytest.raises(ValueError, match="separate evaluation"):
+        materialize(
+            task,
+            out,
+            {},
+            out.parent / "views",
+            confirmation_run=trace["steps"][-1]["observation"]["run"],
+        )
+    final, _ = evaluate(task, "full", timeout=10)
+    (final / "source/candidate.py").write_text("def run(x): return x-1\n")
+    with pytest.raises(ValueError):
+        materialize(task, out, {}, out.parent / "views", confirmation_run=final)
+    assert not (out.parent / "views").exists()
+
+
+def test_artifact_snapshot_configuration_rejects_before_gpu_work(research):
+    import ast
+
+    packet, out, _ = research
+    view = {"path": str(out / "view.json"), "identity": "a" * 64, "profile": {}}
+    with pytest.raises(ValueError, match="explicit source validator"):
+        run(packet, out, lambda *a: None, artifact_snapshot=view)
+    with pytest.raises(ValueError, match="not both"):
+        run(
+            packet,
+            out,
+            lambda *a: None,
+            artifact_snapshot=view,
+            artifact_proposal=artifact(packet, "def run(x): return x+1\n"),
+            source_validator=ast.parse,
+        )
+    for path in ("relative.json", str(Path(packet["task"]) / "view.json")):
+        with pytest.raises(ValueError, match="absolute path outside"):
+            run(
+                packet,
+                out,
+                lambda *a: None,
+                artifact_snapshot=view | {"path": path},
+                source_validator=ast.parse,
+            )
+    assert not (Path(packet["task"]) / ".kernel_envolve/runs").exists()

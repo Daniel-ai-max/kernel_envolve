@@ -36,6 +36,7 @@ def validator_identity():
                 "reuse.py",
                 "managed.py",
                 "allocation.py",
+                "artifact_snapshot.py",
             )
         }
     )

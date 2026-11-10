@@ -30,11 +30,50 @@ def active(managed, monkeypatch):
     store.finish(parent, "succeeded")
 
 
-@pytest.mark.parametrize("adaptive", [False, True])
-def test_search_releases_device_for_decisions_and_requires_separate_final(managed, adaptive):
+@pytest.mark.parametrize("adaptive,snapshot_enabled", [(False, False), (True, False), (True, True)])
+def test_search_releases_device_for_decisions_and_requires_separate_final(
+    managed, adaptive, snapshot_enabled
+):
     store, _, work = managed
     (work / "candidate.py").write_text("import time\ndef run(x):\n time.sleep(.001)\n return x+1\n")
     out = work.parent / "research"
+    view = None
+    if snapshot_enabled:
+        import shutil
+
+        from kernel_envolve.cli import evaluate as direct
+        from kernel_envolve.rsi.artifact_snapshot import materialize
+        from kernel_envolve.rsi.research import run
+
+        history = work.parent / "historical-task"
+        history.mkdir()
+        for name in ("task.py", "candidate.py", "task.json"):
+            shutil.copy2(work / name, history / name)
+        evidence = work.parent / "historical-evidence"
+        packet = dict(
+            task=str(history),
+            kind="generic",
+            editable_files=[str(history / "candidate.py")],
+            model="no-model",
+            seed=0,
+            strategy="",
+            seconds=15,
+        )
+        run(
+            packet,
+            evidence,
+            lambda *a: dict(
+                action="propose",
+                source="def run(x): return x+1\n",
+                mode="full",
+                hypothesis="CPU historical fixture",
+            ),
+            max_actions=1,
+        )
+        confirmation, _ = direct(history, "full", timeout=5)
+        view = materialize(
+            history, evidence, {}, work.parent / "views", confirmation_run=confirmation
+        ) | {"profile": {}}
     script = work / "agent.py"
     script.write_text(
         "import os,json,ast\nfrom pathlib import Path\n"
@@ -55,7 +94,7 @@ def test_search_releases_device_for_decisions_and_requires_separate_final(manage
         "packet=dict(task=str(task),kind='generic',editable_files=[str(task/'candidate.py')],model='no-model',seed=0,strategy='',seconds=25)\n"
         "source='def run(x): return x+1\\n'\n"
         "proposal=dict(episode_id='a'*64,source_hash=source_id(source),task_source_hash=source_id((task/'task.py').read_text()),source=source)\n"
-        f"trace=run(packet,out,decide,max_actions={4 if adaptive else 1},evaluation_seconds=5,managed_evaluations=True,adaptive_artifact_budget={adaptive!r},artifact_proposal=proposal if {adaptive!r} else None,source_validator=ast.parse)\n"
+        f"trace=run(packet,out,decide,max_actions={4 if adaptive else 1},evaluation_seconds=5,managed_evaluations=True,adaptive_artifact_budget={adaptive!r},artifact_proposal=proposal if {bool(adaptive and not snapshot_enabled)!r} else None,artifact_snapshot={view!r},source_validator=ast.parse)\n"
         "final,result=evaluate(task,'full',5,out/'final')\n"
         "assert result['correctness']=='pass'\n"
         "assert str(final) != trace['steps'][0]['observation']['run']\n"
@@ -73,6 +112,8 @@ def test_search_releases_device_for_decisions_and_requires_separate_final(manage
     assert store.task("toy")["gpu_seconds"] > 0
     trace = json.loads((out / "search-trace.json").read_text())
     assert trace["managed_evaluations"] is True
+    if snapshot_enabled:
+        assert trace["artifact_snapshot"]["reason"] == "compatible_proposal"
     if adaptive:
         assert trace["effective_actions"] == 2
         assert trace["allocation"]["reason"] == "within_margin"

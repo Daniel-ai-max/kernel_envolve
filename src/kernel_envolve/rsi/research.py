@@ -178,6 +178,7 @@ def run(
     compact_history=False,
     managed_evaluations=False,
     adaptive_artifact_budget=False,
+    artifact_snapshot=None,
 ):
     """Call decide(request, timeout) for operator-fixed actions; return a saved trace.
 
@@ -215,6 +216,11 @@ def run(
     margin may it shorten the allowance to two. It does not add measurements,
     relax a gate, extend a deadline or reuse a historical score. The decision
     input states the effective remaining allowance. No artifact retains four.
+
+    artifact_snapshot optionally supplies an operator-pinned path/identity/profile.
+    After the existing initial full, read one bounded view and compare its runtime
+    and task compatibility. Missing or incompatible views use the ordinary loop.
+    This does not publish or revoke snapshots, probe a GPU, or scan an archive.
     """
     if packet["kind"] != "generic":
         raise ValueError("The experimental research loop supports generic tasks only")
@@ -271,11 +277,30 @@ def run(
     proposal_hash, proposal = None, None
     if source_validator is not None and not callable(source_validator):
         raise ValueError("Source validator must be callable")
-    if artifact_proposal is not None:
+    snapshot = None
+    if artifact_snapshot is not None:
+        if artifact_proposal is not None:
+            raise ValueError("Choose an artifact proposal or snapshot, not both")
+        if source_validator is None:
+            raise ValueError("Artifact snapshot requires an explicit source validator")
+        keys(artifact_snapshot, {"path", "identity", "profile"})
+        from .episodes import _identity
+        from .model import profile
+
+        snapshot = json.loads(json.dumps(artifact_snapshot, allow_nan=False))
+        _identity(snapshot["identity"])
+        profile(snapshot["profile"])
+        if not isinstance(snapshot["path"], str):
+            raise ValueError("Artifact snapshot path must be absolute")
+        path = Path(snapshot["path"])
+        if not path.is_absolute() or path.resolve().is_relative_to(task):
+            raise ValueError("Artifact snapshot must be an absolute path outside the task")
+
+    def prepare_artifact(offered):
         if source_validator is None:
             raise ValueError("Artifact proposal requires an explicit source validator")
-        keys(artifact_proposal, {"episode_id", "source_hash", "task_source_hash", "source"})
-        proposal = json.loads(json.dumps(artifact_proposal, allow_nan=False))
+        keys(offered, {"episode_id", "source_hash", "task_source_hash", "source"})
+        proposal = json.loads(json.dumps(offered, allow_nan=False))
         for name in ("episode_id", "source_hash", "task_source_hash"):
             value = proposal[name]
             if (
@@ -299,6 +324,10 @@ def run(
             raise ValueError("Artifact proposal exceeds 32768 UTF-8 bytes")
         proposal_hash = digest(proposal)
         write_json(output / "artifact-proposal.json", proposal)
+        return proposal_hash, proposal
+
+    if artifact_proposal is not None:
+        proposal_hash, proposal = prepare_artifact(artifact_proposal)
     initial_files = files(task)
     initial = candidate.read_text()
     if len(initial.encode()) > 24000:
@@ -378,7 +407,7 @@ def run(
         else:
             directory, result = evaluate(task, mode, timeout=timeout)
         protected()
-        if adaptive_artifact_budget:
+        if adaptive_artifact_budget or snapshot is not None:
             latest_measurement = result
         value = observation(directory, result)
         measured[(identity, mode)] = value
@@ -393,6 +422,25 @@ def run(
         for sig in (signal.SIGTERM, signal.SIGINT):
             previous[sig] = signal.signal(sig, interrupted)
         trace["initial_observation"] = measure(initial_id, "full")
+        if snapshot is not None:
+            from .artifact_snapshot import proposal as snapshot_proposal
+
+            started = time.monotonic()
+            offered, reason = snapshot_proposal(
+                snapshot["path"], snapshot["identity"], snapshot["profile"], cfg, latest_measurement
+            )
+            trace["artifact_snapshot"] = {
+                "identity": snapshot["identity"],
+                "reason": reason,
+                "seconds": time.monotonic() - started,
+                "initial_run": trace["initial_observation"]["run"],
+                "initial_result_hash": digest(latest_measurement),
+            }
+            if offered is not None:
+                proposal_hash, proposal = prepare_artifact(offered)
+                trace["artifact_proposal_hash"] = proposal_hash
+                if adaptive_artifact_budget:
+                    trace["allocation"]["reason"] = "awaiting_artifact"
         save()
         for index in range(max_actions):
             if index >= action_limit:
