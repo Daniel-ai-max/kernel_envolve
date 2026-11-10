@@ -75,6 +75,7 @@ def create(case, seed, device, oracle):
         "device": os.environ.get("KERNEL_ENVOLVE_NATIVE_DEVICE", "cpu"),
         "sources": {"candidate": {"core": str(candidate)}, "baseline": {"core": str(baseline)}},
         "imports": {"toyop": "core"},
+        "implementation_paths": {"core": ["toyop.py"]},
         "cases": [{"id": "padded", "args": {}, "weight": 1}],
         "quick_trials": 1,
         "full_trials": 3,
@@ -97,6 +98,19 @@ def test_native_full_autograd_frozen_best(native_task):
     assert result["correctness"] == "pass", result.get("error")
     assert result["decision"]["eligible_for_best"], result["decision"]
     assert len(result["native_checks"]) == 3
+    assert set(result["phase_wall_seconds"]) == {
+        "snapshot",
+        "setup",
+        "correctness",
+        "native_checks",
+        "measurement",
+        "postcheck",
+        "integrity",
+        "cleanup",
+    }
+    assert all(value >= 0 for value in result["phase_wall_seconds"].values())
+    assert sum(result["phase_wall_seconds"].values()) == pytest.approx(result["seconds"])
+    assert "failed_phase" not in result
     promote_native(run)
     subprocess.run(
         [
@@ -118,6 +132,7 @@ def test_native_full_autograd_frozen_best(native_task):
     assert unchanged["correctness"] == "pass", unchanged.get("error")
     assert unchanged["same_candidate_as_best"]
     assert not unchanged["decision"]["eligible_for_best"]
+    assert "native_checks" not in unchanged["phase_wall_seconds"]
     # Changing the live package cannot alter the frozen best worker.
     (candidate / "toyop.py").write_text("def run(x): return x*2 + 0\n")
     _, again = evaluate_native(task, "quick", timeout=60)
@@ -167,6 +182,33 @@ def test_native_timeout_and_no_cuda_fallback(native_task):
     (candidate / "toyop.py").write_text("import time\ndef run(x):\n time.sleep(60)\n return x*2\n")
     _, result = evaluate_native(task, "quick", timeout=4)
     assert result["execution"] == "error"
+    assert not result["decision"]["eligible_for_best"]
+    assert result["failed_phase"] == "correctness"
+    assert "cleanup" in result["phase_wall_seconds"]
+    assert "measurement" not in result["phase_wall_seconds"]
+    assert sum(result["phase_wall_seconds"].values()) == pytest.approx(result["seconds"])
+
+
+@pytest.mark.parametrize("stage", ["snapshot", "native_checks"])
+def test_native_failure_keeps_phase_costs_without_inventing_later_work(
+    native_task, monkeypatch, stage
+):
+    from kernel_envolve import native
+
+    task, _ = native_task
+
+    def fail(*args, **kwargs):
+        raise RuntimeError("injected stage failure")
+
+    monkeypatch.setattr(native, stage, fail)
+    run, result = evaluate_native(task, "full", timeout=90)
+    assert result["execution"] == "error"
+    assert result["failed_phase"] == stage
+    assert stage in result["phase_wall_seconds"]
+    assert "cleanup" in result["phase_wall_seconds"]
+    assert "measurement" not in result["phase_wall_seconds"]
+    assert sum(result["phase_wall_seconds"].values()) == pytest.approx(result["seconds"])
+    assert json.loads((run / "result.json").read_text())["failed_phase"] == stage
     assert not result["decision"]["eligible_for_best"]
 
 
@@ -391,3 +433,185 @@ def test_native_identical_baseline_cannot_be_promoted(native_task):
     assert result["correctness"] == "pass", result.get("error")
     assert not result["decision"]["eligible_for_best"]
     assert "Candidate source is identical to fixed baseline" in result["decision"]["reasons"]
+
+
+def test_candidate_cannot_replace_failed_native_test_with_constant_pass(native_task):
+    task, candidate = native_task
+    baseline = candidate.parent / "baseline"
+    (baseline / "test_native_contract.py").write_text(
+        'def test_contract():\n assert False, "fixed native contract fails"\n'
+    )
+    (candidate / "test_native_contract.py").write_text("def test_contract():\n pass\n")
+    run, result = evaluate_native(task, "full", timeout=60)
+    assert result["execution"] == "error"
+    assert "protected harness/source" in result["error"]["message"]
+    assert not result["decision"]["eligible_for_best"]
+    assert not (run / "workers").exists()
+
+
+def test_trusted_harness_pytest_conftest_and_gate_import_candidate(native_task):
+    task, candidate = native_task
+    baseline = candidate.parent / "baseline"
+    for root, label in ((baseline, "baseline"), (candidate, "candidate")):
+        with (root / "toyop.py").open("a") as stream:
+            stream.write(f"\nLABEL = {label!r}\n")
+        # Common conftest behavior: insert its own project root before PYTHONPATH.
+        # In the merged validation tree this must still load the candidate implementation.
+        (root / "conftest.py").write_text(
+            "import sys\nfrom pathlib import Path\nimport pytest\n"
+            "sys.path.insert(0,str(Path(__file__).parent))\n"
+            "@pytest.fixture\ndef production():\n import toyop\n return toyop\n"
+        )
+        (root / "test_native_contract.py").write_text(
+            "from pathlib import Path\nimport torch\n"
+            "def test_contract(production):\n"
+            " assert 'validation' in Path(__file__).parts\n"
+            " assert 'validation' in Path(production.__file__).parts\n"
+            " assert production.LABEL == 'candidate'\n"
+            " assert torch.equal(production.run(torch.ones(2)), torch.ones(2)*2)\n"
+        )
+        method = root / "apodex_core/verification/method"
+        method.mkdir(parents=True)
+        for folder in (method, method.parent, method.parent.parent):
+            (folder / "__init__.py").touch()
+        (method.parent / "thresholds.json").write_text('{"R": 4096}')
+        (method / "gate.py").write_text(
+            "import json\nfrom pathlib import Path\nimport toyop\n"
+            "assert 'validation' in Path(__file__).parts\n"
+            "assert toyop.LABEL == 'candidate'\n"
+            "r=json.loads(Path('apodex_core/verification/thresholds.json').read_text())['R']\n"
+            "p=Path('apodex_core/verification/results/gate_history.json')\n"
+            "p.parent.mkdir(exist_ok=True)\n"
+            "p.write_text(json.dumps({'op': {'overall':'PASS','R':r}}))\n"
+            "print('GATE RESULT: PASS (no blocking verdicts)')\n"
+        )
+    cfg = json.loads((task / "native.json").read_text())
+    cfg["checks"][1] = {
+        "id": "numerical",
+        "kind": "gate",
+        "scope": "numerical",
+        "root": "core",
+        "operators": ["op"],
+    }
+    (task / "native.json").write_text(json.dumps(cfg))
+    run, result = evaluate_native(task, "full", timeout=90)
+    assert result["correctness"] == "pass", result.get("error")
+    assert result["decision"]["eligible_for_best"], result["decision"]
+    view = run / "sources/validation/core"
+    assert (view / "conftest.py").read_bytes() == (baseline / "conftest.py").read_bytes()
+    assert (view / "toyop.py").read_bytes() == (candidate / "toyop.py").read_bytes()
+    assert result["harness_seconds"] >= 0
+    assert result["identities"]["validation"]["core"]["implementation_paths"] == ["toyop.py"]
+    (view / "conftest.py").write_text("# changed after validation\n")
+    with pytest.raises(ValueError, match="Frozen source changed: validation"):
+        promote_native(run)
+
+
+@pytest.mark.parametrize("name", ["conftest.py", "pyproject.toml", "verification/thresholds.json"])
+def test_candidate_harness_configuration_drift_rejected(native_task, name):
+    task, candidate = native_task
+    target = candidate / name
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text("{}\n")
+    _, result = evaluate_native(task, "quick", timeout=30)
+    assert "protected harness/source" in result["error"]["message"]
+    assert not result["decision"]["eligible_for_best"]
+
+
+@pytest.mark.parametrize(
+    "paths",
+    [
+        None,
+        {},
+        {"core": ["../toyop.py"]},
+        {"core": ["/tmp/toyop.py"]},
+        {"core": ["."]},
+        {"core": ["test_native_contract.py"]},
+        {"core": ["conftest.py"]},
+        {"core": ["toyop.py", "toyop.py"]},
+    ],
+)
+def test_native_implementation_paths_require_reviewed_relative_scope(native_task, paths):
+    from kernel_envolve.native_config import load_config
+
+    task, _ = native_task
+    cfg = json.loads((task / "native.json").read_text())
+    cfg["implementation_paths"] = paths
+    (task / "native.json").write_text(json.dumps(cfg))
+    with pytest.raises(ValueError):
+        load_config(task)
+
+
+def test_native_harness_scope_cannot_cover_custom_check_filename(native_task):
+    task, candidate = native_task
+    for root in (candidate, candidate.parent / "baseline"):
+        (root / "validate.py").write_bytes((root / "test_native_contract.py").read_bytes())
+    cfg = json.loads((task / "native.json").read_text())
+    cfg["implementation_paths"]["core"].append("validate.py")
+    cfg["checks"][0]["argv"][3] = "validate.py::test_contract"
+    (task / "native.json").write_text(json.dumps(cfg))
+    _, result = evaluate_native(task, "full", timeout=30)
+    assert "overlaps declared check" in result["error"]["message"]
+
+
+def test_native_harness_scope_cannot_include_reference_subtree(native_task):
+    task, candidate = native_task
+    for root in (candidate, candidate.parent / "baseline"):
+        target = root / "production/reference/math.py"
+        target.parent.mkdir(parents=True)
+        target.write_text("def reference(x): return x * 2\n")
+    cfg = json.loads((task / "native.json").read_text())
+    cfg["implementation_paths"]["core"].append("production")
+    (task / "native.json").write_text(json.dumps(cfg))
+    _, result = evaluate_native(task, "full", timeout=30)
+    assert "overlaps harness/configuration" in result["error"]["message"]
+
+
+def test_native_harness_scope_rejects_symlinks(native_task):
+    from kernel_envolve.native_config import load_config
+
+    task, candidate = native_task
+    (candidate / "linked.py").symlink_to(candidate / "toyop.py")
+    cfg = json.loads((task / "native.json").read_text())
+    cfg["implementation_paths"]["core"] = ["linked.py"]
+    (task / "native.json").write_text(json.dumps(cfg))
+    with pytest.raises(ValueError, match="symlink"):
+        load_config(task)
+
+
+def test_validation_view_modification_during_checks_is_rejected(native_task):
+    task, candidate = native_task
+    for root in (candidate, candidate.parent / "baseline"):
+        (root / "test_native_contract.py").write_text(
+            "from pathlib import Path\ndef test_contract():\n"
+            " p=Path(__file__); p.write_text(p.read_text()+'# changed\\n')\n"
+        )
+    _, result = evaluate_native(task, "full", timeout=60)
+    assert "Frozen source changed: validation" in result["error"]["message"]
+    assert not result["decision"]["eligible_for_best"]
+
+
+@pytest.mark.parametrize("entry", ["script", "module", "package"])
+def test_explicit_gate_entry_cannot_be_overlaid_to_fake_pass(native_task, entry):
+    task, candidate = native_task
+    filename = "gate_runner/__main__.py" if entry == "package" else "gate_runner.py"
+    for root in (candidate, candidate.parent / "baseline"):
+        path = root / filename
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text('raise AssertionError("fixed gate rejects this candidate")\n')
+        if entry == "package":
+            (root / "gate_runner/__init__.py").touch()
+    # A selected runner could otherwise emit a perfectly valid success report.
+    (candidate / filename).write_text(
+        "import sys\nfrom pathlib import Path\n"
+        'Path(sys.argv[1]).write_text(\'<testsuite><testcase classname="gate" name="test_contract"/></testsuite>\')\n'
+    )
+    cfg = json.loads((task / "native.json").read_text())
+    cfg["implementation_paths"]["core"].append(filename)
+    command = ["-m", "gate_runner"] if entry != "script" else ["./gate_runner.py"]
+    cfg["checks"][0]["argv"] = ["{python}", *command, "{reports}/junit.xml"]
+    (task / "native.json").write_text(json.dumps(cfg))
+    run, result = evaluate_native(task, "full", timeout=30)
+    assert "overlaps declared check" in result["error"]["message"]
+    assert not (run / "workers").exists()
+    assert not result["decision"]["eligible_for_best"]

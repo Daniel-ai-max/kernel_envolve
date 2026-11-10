@@ -130,5 +130,10 @@
     "CUBLAS_WORKSPACE_CONFIG": ":4096:8",
     "EP_SUPPRESS_NCCL_CHECK": "1",
     "EP_DISABLE_GIN": "1"
+  },
+  "implementation_paths": {
+    "core": [
+      "apodex_core/ops/candidate/triton_probs_scale.py"
+    ]
   }
 }

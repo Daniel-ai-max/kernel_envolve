@@ -122,6 +122,10 @@ class Store:
         if not row:
             raise ValueError(f"Unknown task: {key}")
         row["spec"], row["report"] = json.loads(row["spec"]), json.loads(row["report"])
+        replacement = self.one("SELECT data FROM metadata WHERE key=?", (f"superseded:{key}",))
+        row["superseded_by"] = (
+            json.loads(replacement["data"])["superseded_by"] if replacement else None
+        )
         return row
 
     def resource(self, key):
@@ -166,6 +170,10 @@ class Store:
     def control(self, key, action, changes=None):
         with self.transaction():
             task = self.task(key)
+            if task["superseded_by"] or task["desired"] == "superseded":
+                if action == "pause":
+                    return  # Allocation cleanup may pause every task, including history.
+                raise ValueError("Superseded tasks cannot be resumed or reconfigured")
             if action in ("pause", "resume"):
                 desired = "paused" if action == "pause" else "active"
                 self.db.execute(
@@ -201,6 +209,81 @@ class Store:
                 raise ValueError("Unknown action")
             self.event(key, action, changes or {})
 
+    def supersede(self, key, replacement):
+        """Retire an existing identity without transferring usage or allocating new budget."""
+        with self.transaction():
+            old, new = self.task(key), self.task(replacement)
+            if key == replacement:
+                raise ValueError("A task cannot supersede itself")
+            previous = self.one("SELECT data FROM metadata WHERE key=?", (f"superseded:{key}",))
+            if previous:
+                receipt = json.loads(previous["data"])
+                if receipt["superseded_by"] == replacement:
+                    return receipt
+                raise ValueError("Task already has a different replacement")
+            if old["desired"] == "superseded":
+                raise ValueError("Superseded task is missing its migration receipt")
+            if new["superseded_by"] or new["desired"] == "superseded":
+                raise ValueError("Replacement must be a current task; cycles are not allowed")
+            for row in self.rows("SELECT data FROM metadata WHERE key LIKE 'superseded:%'"):
+                if json.loads(row["data"])["superseded_by"] == replacement:
+                    raise ValueError("Replacement already has a predecessor")
+            if self.one(
+                "SELECT id FROM jobs WHERE task=? AND status IN ('queued','running')", (key,)
+            ):
+                raise ValueError("Wait for all predecessor jobs to finish before superseding")
+            a, b = old["spec"], new["spec"]
+            if a["resource"] != b["resource"] or a["kind"] != b["kind"]:
+                raise ValueError("Replacement must use the same resource and evaluator kind")
+            self.resource(a["resource"])
+            if any(
+                a["baseline"][field] != b["baseline"][field]
+                for field in ("repository", "revision", "entrypoint", "hardware")
+            ):
+                raise ValueError("Replacement must preserve the fixed source baseline and target")
+            workspaces = []
+            for spec in (a, b):
+                workspace, task_dir = (Path(spec[f]).resolve() for f in ("workspace", "task_dir"))
+                if (
+                    not workspace.is_dir()
+                    or not task_dir.is_dir()
+                    or not task_dir.is_relative_to(workspace)
+                    or self.root.is_relative_to(workspace)
+                ):
+                    raise ValueError("Replacement requires valid dedicated workspaces")
+                workspaces.append(workspace)
+            if any(workspaces[i].is_relative_to(workspaces[1 - i]) for i in (0, 1)):
+                raise ValueError("Predecessor and replacement workspaces must not overlap")
+            for kind in ("wall", "gpu"):
+                limit, next_limit = a[f"{kind}_budget_seconds"], b[f"{kind}_budget_seconds"]
+                if limit is not None and (
+                    next_limit is None or next_limit > limit - old[f"{kind}_seconds"]
+                ):
+                    raise ValueError(
+                        f"Replacement {kind} budget exceeds predecessor's unused budget"
+                    )
+            receipt = {
+                "task": key,
+                "superseded_by": replacement,
+                "at": time.time(),
+                "predecessor": {
+                    field: old[field] for field in ("spec", "wall_seconds", "gpu_seconds")
+                },
+                "replacement": {
+                    field: new[field] for field in ("spec", "wall_seconds", "gpu_seconds")
+                },
+            }
+            self.db.execute(
+                "INSERT INTO metadata(key,data) VALUES(?,?)", (f"superseded:{key}", encode(receipt))
+            )
+            self.db.execute(
+                "UPDATE tasks SET desired='superseded',reason=? WHERE id=?",
+                (f"Replaced by {replacement}", key),
+            )
+            self.event(key, "superseded", {"superseded_by": replacement})
+            self.event(replacement, "supersedes", {"task": key})
+            return receipt
+
     def budget_reason(self, task):
         for kind in ("wall", "gpu"):
             limit = task["spec"][f"{kind}_budget_seconds"]
@@ -219,17 +302,21 @@ class Store:
 
     def schedule(self):
         """Reserve session capacity and commit launch intents before spawning workers."""
+        from .recovery import migrate_legacy
+
         scheduled = []
         with self.transaction():
             for row in self.rows("SELECT id FROM tasks ORDER BY next_at,created"):
-                task = self.task(row["id"])
-                if task["desired"] != "active" or task["next_at"] > time.time():
+                task = migrate_legacy(self, self.task(row["id"]))
+                if task["desired"] != "active":
                     continue
                 if self.budget_reason(task):
                     self.db.execute(
                         "UPDATE tasks SET desired='budget',reason=? WHERE id=?",
                         (self.budget_reason(task), task["id"]),
                     )
+                    continue
+                if task["next_at"] > time.time():
                     continue
                 if self.one(
                     "SELECT id FROM jobs WHERE task=? AND status IN ('queued','running')",
@@ -300,6 +387,13 @@ class Store:
     def finish(self, key, status, error=None, exit_code=None):
         if status not in ("succeeded", "failed", "interrupted", "cancelled"):
             raise ValueError("Invalid terminal status")
+        from .recovery import assess, implementation
+
+        job = self.job(key)
+        if job["status"] not in ("queued", "running"):
+            return
+        # FSx/source reads must never hold the shared manager write transaction.
+        current = implementation(self.task(job["task"])) if job["kind"] == "agent" else None
         with self.transaction():
             job = self.job(key)
             if job["status"] not in ("queued", "running"):
@@ -310,7 +404,8 @@ class Store:
             )
             if job["kind"] == "agent":
                 task = self.task(job["task"])
-                failures = task["failures"] + 1 if status in ("failed", "interrupted") else 0
+                recovery = assess(self, task, job, status, current)
+                failures = 0 if recovery["observable_progress"] else task["failures"] + 1
                 delay = (
                     min(300, 5 * 2 ** min(failures, 6))
                     if failures
@@ -320,11 +415,23 @@ class Store:
                 reason = self.budget_reason(task)
                 if desired == "active" and reason:
                     desired = "budget"
-                elif desired == "active" and failures >= 3:
-                    desired, reason = (
-                        "blocked",
-                        "Three consecutive failed rounds; inspect and resume",
+                elif desired == "active" and failures:
+                    reason = (
+                        error
+                        or "Recovery needs new action evidence with a changed outcome checkpoint"
                     )
+                recovery.update(reason=reason, retry_after_seconds=delay, attempts=failures)
+                self.db.execute(
+                    "INSERT OR REPLACE INTO metadata VALUES(?,?)",
+                    ("recovery:" + task["id"], encode(recovery)),
+                )
+                self.event(
+                    task["id"],
+                    "recovery_checkpoint"
+                    if recovery["observable_progress"]
+                    else "recovery_requested",
+                    {k: v for k, v in recovery.items() if k != "execution_signatures"},
+                )
                 self.db.execute(
                     "UPDATE tasks SET failures=?,next_at=?,desired=?,reason=? WHERE id=?",
                     (failures, time.time() + delay, desired, reason, task["id"]),
@@ -364,5 +471,21 @@ class Store:
             if job["task"] != task_id or job["kind"] != "agent" or job["status"] != "running":
                 raise ValueError("Only the current agent round may report")
             old = self.task(task_id)["report"]
+            progress_key = f"report_progress:{task_id}"
+            progress = self.one("SELECT data FROM metadata WHERE key=?", (progress_key,))
+            if old | report != old:
+                at = time.time()
+            elif progress is None:
+                # Preserve the last legacy report time on upgrade. Repeating an unchanged
+                # checkpoint or finishing/restarting a round is not new research activity.
+                previous = self.one(
+                    "SELECT MAX(at) AS at FROM events WHERE task=? AND kind='report'", (task_id,)
+                )
+                at = previous["at"] if previous else None
+            else:
+                at = json.loads(progress["data"])
+            self.db.execute(
+                "INSERT OR REPLACE INTO metadata VALUES(?,?)", (progress_key, encode(at))
+            )
             self.db.execute("UPDATE tasks SET report=? WHERE id=?", (encode(old | report), task_id))
             self.event(task_id, "report", report)

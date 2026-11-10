@@ -1,0 +1,33 @@
+{
+  "created_at": 1794329096.141551,
+  "feature": "635f7b1b5a70ddb13acb800a404eb5444bcd841a",
+  "main": "40e4020edb933ecce45a23fdbfac717168a48ed7",
+  "merge_tree": "815a638938fbbe705a58bf5b08c32ae16395dd9e",
+  "scope": "Temporary offline integration preview. No Git branch or ref changed. Resolve disjoint added evidence fields and checkpoint contexts by retaining both. Running GPU bundle remains635f7b1.",
+  "first_validation": {
+    "log": "/tmp/rsi-main-preview-tests-20261111.log",
+    "result": "8 failed,478passed,10skipped",
+    "diagnosis": "Relative PYTHONPATH=src ceases to identify preview source when evaluator/manager subprocess changes cwd, causing mixed imports from installed older package. Unrecognized new --expected-seconds flag and old invalid-lock message show this. Rerun with absolute preview src; do not change shared installation or production code to mask failures."
+  },
+  "retest_started_at": 1794329333.7362099,
+  "final_validation": {
+    "result": "486 passed,10skipped",
+    "log": "/tmp/rsi-main-preview-absolute-path-tests-20261111.log",
+    "seconds": 150.35,
+    "pythonpath": "/private/tmp/rsi-main-integration-preview-20261111/src",
+    "ruff_check": true,
+    "ruff_format_check": true
+  },
+  "actual_main": "8faa939adb7930e00190628b6d67652b10fb9fc9",
+  "integration_update": "Shared remote-tracking origin/main advanced after preview. Actual merge includes8faa939 cancellation changes. Failed source-identity assertion prevented commit. Re-resolved evidence from exact main stage3 plus RSI failed_checks, preserving all cancellation checkpoints; full absolute-path regression required on actual merge.",
+  "updated_at": 1794330264.6685922,
+  "actual_validation": {
+    "result": "496 passed,10skipped",
+    "seconds": 154.81,
+    "log": "/tmp/rsi-main-actual-tests-20261111.log",
+    "pythonpath": "/Users/daniel/Documents/ChatGPT/\u7b97\u5b50\u4f18\u5316/kernel_envolve-rsi/src",
+    "ruff_check": true,
+    "ruff_format_check": true,
+    "diff_vs_merge_head_check": true
+  }
+}

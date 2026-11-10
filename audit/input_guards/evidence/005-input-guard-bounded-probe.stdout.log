@@ -1,0 +1,15 @@
+Traceback (most recent call last):
+  File "/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-dsa-six-20261110/student_v2/diagnostics/input-guard/probe.py", line 223, in <module>
+    main()
+  File "/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-dsa-six-20261110/student_v2/diagnostics/input-guard/probe.py", line 194, in main
+    assert worker.serve(request_path) == 0
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-dsa-six-20261110/student_v2/diagnostics/input-guard/candidate/native_worker.py", line 33, in serve
+    spec.loader.exec_module(adapter)
+  File "<frozen importlib._bootstrap_external>", line 991, in exec_module
+  File "<frozen importlib._bootstrap_external>", line 1129, in get_code
+  File "<frozen importlib._bootstrap_external>", line 1059, in source_to_code
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/tmp/tmpqiz1kusk/adapter.py", line 2
+    import probeop
+IndentationError: unexpected indent

@@ -7,13 +7,29 @@ import signal
 import subprocess
 
 
-def spawn(*args, **kwargs):
-    """Register managed evaluator children so supervisor recovery can reap separate groups."""
-    if os.environ.get("KERNEL_ENVOLVE_GPU_JOB") and os.environ.get("KERNEL_ENVOLVE_LOCK_FD"):
-        # All evaluator process groups retain the device lock through supervisor crashes,
-        # even while importing/compiling before they have a visible CUDA context.
+def managed_lock_fd():
+    """Validate inherited ownership without acquiring or replacing the device lock."""
+    if not os.environ.get("KERNEL_ENVOLVE_GPU_JOB"):
+        return None
+    try:
         descriptor = int(os.environ["KERNEL_ENVOLVE_LOCK_FD"])
         os.fstat(descriptor)
+    except (KeyError, ValueError, OverflowError, OSError) as exc:
+        raise ValueError(
+            "Managed GPU lock descriptor KERNEL_ENVOLVE_LOCK_FD is missing or invalid. "
+            "Launch the evaluator directly, transfer control with os.execvpe, or preserve "
+            "this descriptor with pass_fds in intermediary subprocesses. Do not remove "
+            "the manager environment or acquire a replacement lock."
+        ) from exc
+    return descriptor
+
+
+def spawn(*args, **kwargs):
+    """Register managed evaluator children so supervisor recovery can reap separate groups."""
+    descriptor = managed_lock_fd()
+    if descriptor is not None:
+        # All evaluator process groups retain the device lock through supervisor crashes,
+        # even while importing/compiling before they have a visible CUDA context.
         kwargs["pass_fds"] = tuple(set(kwargs.get("pass_fds", ())) | {descriptor})
     process = subprocess.Popen(*args, **kwargs)
     if os.environ.get("KERNEL_ENVOLVE_GPU_JOB"):

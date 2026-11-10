@@ -85,7 +85,15 @@ kernel-envolve native-evaluate --task examples/apodex_probs_scale --mode full --
 kernel-envolve native-promote /path/to/run
 ```
 
+若优化目标是底层 kernel，可将完整 API 声明为计时保护用例，保留正确性和退化检查，同时单独计算目标 kernel 的收益，见[目标用例与保护用例](docs/generic-evaluator.md#目标用例与保护用例)。
+
+`implementation_paths` 明确列出允许变更的实现文件或目录，并纳入冻结契约。原生检查使用固定 baseline 的测试、参考实现、阈值和项目配置，仅覆盖这些候选实现；候选修改检查代码会被拒绝。旧任务需要建立新契约，不能沿用原收据。详见[受信原生检查](docs/native-harness.md)。
+
+CUDA 原生评测在计时外缓存只读输入的精确字节副本，减少反复传回 CPU 的成本；每个 worker 最多使用 2 GiB，且不超过当时空闲显存的八分之一。超出预算或缓存分配不足时沿用原 CPU 逐位检查，验证函数执行前后的检查均保留。worker 日志记录缓存、回退与检查耗时；显存结果只扣除这些私有副本的实际 allocator 分配量，同时保存未扣除的峰值。
+
 `native-promote` 的路径取自合格的 full 结果。数值 gate 或 CI 通过仅说明相应检查通过，性能收益仍需测量确认。配置与适配接口见 [内部项目评测](skills/kernel-envolve/SKILL.md#apodex-内部项目评测)及[内部 evaluator](skills/kernel-envolve/SKILL.md#使用内部-evaluator)。
+
+原生评测的 CLI 与 `result.json` 提供 `phase_wall_seconds`：源码快照、设置、正确性、原生门禁、测量、后置检查、完整性校验和清理。执行阶段失败保留已耗时间及 `failed_phase`，未执行阶段不填零。各阶段是主控进程的连续墙钟耗时，总和等于 `seconds`（至 worker 清理完成，不含评分和收据写入）；首次导入/编译可能计入首个正确性请求，测量阶段还含参考计算、传输和结果核验，不能作为纯 GPU kernel 时间。
 
 ## 持续优化
 
@@ -189,6 +197,8 @@ pytest -q
 ```
 
 PyTorch 路径需要安装兼容的 PyTorch；CUDA 测试需在空闲 GPU 上设置 `KERNEL_ENVOLVE_TEST_CUDA=1`。浏览器轮询逻辑的测试使用 Node.js，缺少时跳过对应测试。
+
+提交 PR 时使用[中文模板](.github/PULL_REQUEST_TEMPLATE.md)，说明修改前后、影响范围、实际验证结果和回滚方式。不适用项注明原因；性能收益附版本、硬件、覆盖范围和评测证据。发布前可运行 `python3 tools/check_pr_body.py --body-file /path/to/pr.md`。`Validate PR template` CI 会在创建、编辑正文和推送后检查；校验器只从默认分支加载，不执行 PR 分支代码。
 
 更多资料：
 

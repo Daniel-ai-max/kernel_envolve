@@ -16,6 +16,7 @@ import uuid
 from pathlib import Path
 
 from . import __version__
+from .protocol import objective_cases, performance_role
 
 
 def digest(value):
@@ -98,8 +99,9 @@ def config(root):
         for flag in ("quick", "measure"):
             if flag in c and type(c[flag]) is not bool:
                 raise ValueError(f"case.{flag} must be a boolean")
-        if set(c) - {"id", "args", "weight", "quick", "max_us", "measure"}:
+        if set(c) - {"id", "args", "weight", "quick", "max_us", "measure", "performance_role"}:
             raise ValueError(f"Unknown case settings: {c['id']}")
+        role = performance_role(c)
         if not c.get("measure", True) and ({"weight", "max_us"} & set(c)):
             raise ValueError("Unmeasured cases cannot have weight or max_us")
         for key in ("weight", "max_us"):
@@ -107,10 +109,14 @@ def config(root):
                 type(c[key]) not in (int, float) or not math.isfinite(c[key]) or c[key] <= 0
             ):
                 raise ValueError(f"{key} must be finite and positive")
-        if c.get("measure", True) and "weight" not in c:
+        if c.get("measure", True) and role == "objective" and "weight" not in c:
             raise ValueError("Explicit case weights are required")
-    if not any(c.get("quick", True) and c.get("measure", True) for c in cases):
-        raise ValueError("At least one measured quick case is required")
+    for mode in ("quick", "full"):
+        selected = [c for c in cases if mode == "full" or c.get("quick", True)]
+        if not objective_cases(selected):
+            raise ValueError(
+                f"At least one measured {mode} case with performance_role=objective is required"
+            )
     for key in (
         "rtol",
         "atol",
@@ -189,10 +195,13 @@ def candidate_identity(identity, cfg):
     return digest({name: identity["files"][name] for name in cfg["candidate_files"]})
 
 
-def verify_source(run, identity):
+def verify_source(run, identity, checkpoint=None):
+    checkpoint = checkpoint or (lambda: None)
+    checkpoint()
     source = run / "source"
     actual = set()
     for p in source.rglob("*"):
+        checkpoint()
         if "__pycache__" in p.relative_to(source).parts:
             continue
         if p.is_symlink():
@@ -202,8 +211,10 @@ def verify_source(run, identity):
     if actual != set(identity["files"]):
         raise ValueError("Source inventory changed (added or missing files)")
     for name, expected in identity["files"].items():
+        checkpoint()
         if file_hash(safe_file(run / "source", name)) != expected:
             raise ValueError(f"Source changed: {name}")
+    checkpoint()
     if contract(run / "source", config(run / "source")) != identity["contract"]:
         raise ValueError("Task contract changed")
 
