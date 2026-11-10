@@ -2,16 +2,19 @@
 
 import json
 import secrets
+import sqlite3
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from importlib.resources import files
-from urllib.parse import unquote, urlsplit
+from urllib.parse import parse_qs, unquote, urlsplit
 
 from .service import clear_resource, resource_sessions
 from .store import Store
-from .views import detail, overview
+from .views import detail, snapshot
 
 
 def server(root, port=8787):
+    initial = Store(root)
+    initial.close()
     token = secrets.token_urlsafe(32)
 
     class Handler(BaseHTTPRequestHandler):
@@ -55,6 +58,7 @@ def server(root, port=8787):
             assets = {
                 "/": ("index.html", "text/html; charset=utf-8"),
                 "/app.js": ("app.js", "text/javascript; charset=utf-8"),
+                "/sync.js": ("sync.js", "text/javascript; charset=utf-8"),
                 "/style.css": ("style.css", "text/css; charset=utf-8"),
             }
             if path in assets:
@@ -63,15 +67,18 @@ def server(root, port=8787):
                     200, files("kernel_envolve.manager").joinpath("static", name).read_bytes(), kind
                 )
                 return
-            store = Store(root)
+            store = Store(root, readonly=True)
             try:
                 if path == "/api/state":
-                    self.send(200, overview(store) | {"token": token})
+                    selected = parse_qs(urlsplit(self.path).query).get("task", [None])[0]
+                    self.send(200, snapshot(store, selected) | {"token": token})
                 elif path.startswith("/api/tasks/"):
-                    self.send(200, detail(store, path.removeprefix("/api/tasks/")))
+                    with store.transaction(readonly=True):
+                        data = detail(store, path.removeprefix("/api/tasks/"))
+                    self.send(200, data)
                 else:
                     self.send(404, {"error": "Not found"})
-            except (ValueError, KeyError, OSError, TypeError) as exc:
+            except (ValueError, KeyError, OSError, TypeError, sqlite3.Error) as exc:
                 self.send(400, {"error": str(exc)})
             finally:
                 store.close()
@@ -104,7 +111,7 @@ def server(root, port=8787):
                     self.send(404, {"error": "Not found"})
                     return
                 self.send(200, {"ok": True})
-            except (ValueError, KeyError, OSError, TypeError) as exc:
+            except (ValueError, KeyError, OSError, TypeError, sqlite3.Error) as exc:
                 self.send(400, {"error": str(exc)})
             finally:
                 store.close()

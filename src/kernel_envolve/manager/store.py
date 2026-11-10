@@ -16,8 +16,15 @@ def encode(value):
 
 
 class Store:
-    def __init__(self, root):
+    def __init__(self, root, *, readonly=False):
         self.root = Path(root).resolve()
+        if readonly:
+            path = self.root / "manager.sqlite"
+            self.db = sqlite3.connect(
+                path.as_uri() + "?mode=ro", uri=True, timeout=5, isolation_level=None
+            )
+            self.db.row_factory = sqlite3.Row
+            return
         self.root.mkdir(parents=True, exist_ok=True, mode=0o700)
         path = self.root / "manager.sqlite"
         self.db = sqlite3.connect(path, timeout=15, isolation_level=None)
@@ -88,8 +95,8 @@ class Store:
         self.db.close()
 
     @contextlib.contextmanager
-    def transaction(self):
-        self.db.execute("BEGIN IMMEDIATE")
+    def transaction(self, *, readonly=False):
+        self.db.execute("BEGIN" if readonly else "BEGIN IMMEDIATE")
         try:
             yield
             self.db.execute("COMMIT")

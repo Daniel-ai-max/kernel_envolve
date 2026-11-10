@@ -7,6 +7,7 @@ import time
 from pathlib import Path
 
 from ..storage import config, digest, file_hash, read_json, verify_source
+from .process import exclusive
 from .store import encode
 
 
@@ -100,8 +101,14 @@ def refresh_task(store, task, force=False):
     state = state_path(spec)
     problems = []
     best_projection = None
+    started = time.time()
+    indexed_runs = {
+        r["path"]: r for r in store.rows("SELECT * FROM runs WHERE task=?", (task["id"],))
+    }
+    updates = {}
+    chain = []
     for path in sorted((state / "runs").glob("*")):
-        old = store.one("SELECT * FROM runs WHERE path=?", (str(path),))
+        old = indexed_runs.get(str(path))
         if not (path / "receipt.json").exists() and not old:
             continue  # New in-flight results are not final evidence; indexed ones must revalidate.
         try:
@@ -116,19 +123,14 @@ def refresh_task(store, task, force=False):
             error = str(exc)
             data = {"run": str(path)}
             problems.append(f"{path.name}: {error}")
-        with store.transaction():
-            store.db.execute(
-                "INSERT INTO runs(path,task,imported,data,error) VALUES(?,?,?,?,?) "
-                "ON CONFLICT(path) DO UPDATE SET data=excluded.data,error=excluded.error",
-                (str(path), task["id"], time.time(), encode(data), error),
-            )
-    # A removed indexed run is an explicit evidence problem, not a silently retained speedup.
-    for row in store.rows("SELECT path FROM runs WHERE task=?", (task["id"],)):
-        if not Path(row["path"]).exists():
-            store.db.execute(
-                "UPDATE runs SET error='Evidence directory missing' WHERE path=?", (row["path"],)
-            )
-            problems.append(f"{row['path']}: missing")
+        updates[str(path)] = {"data": encode(data), "error": error}
+        indexed_runs[str(path)] = updates[str(path)]
+    # Removed evidence must invalidate the entire published best in the same commit.
+    for path, row in indexed_runs.items():
+        if not Path(path).exists():
+            updates[path] = {"data": row["data"], "error": "Evidence directory missing"}
+            indexed_runs[path] = updates[path]
+            problems.append(f"{path}: missing")
     try:
         if (state / "best.json").exists():
             pointer = read_json(state / "best.json")
@@ -140,9 +142,7 @@ def refresh_task(store, task, force=False):
                 if str(run) in visited:
                     raise ValueError("Cycle in promotion history")
                 visited.add(str(run))
-                indexed = store.one(
-                    "SELECT * FROM runs WHERE path=? AND task=?", (str(run), task["id"])
-                )
+                indexed = indexed_runs.get(str(run))
                 if not indexed or indexed["error"]:
                     raise ValueError(f"Best has missing or invalid evidence: {run.name}")
                 data = json.loads(indexed["data"])
@@ -177,42 +177,53 @@ def refresh_task(store, task, force=False):
                 "run": chain[0]["run"],
                 "verified_at": time.time(),
             }
-            with store.transaction():
-                for data in reversed(chain):
-                    store.db.execute(
-                        "INSERT OR IGNORE INTO promotions(task,run,at,gpu_seconds,data) "
-                        "VALUES(?,?,?,?,?)",
-                        (
-                            task["id"],
-                            data["run"],
-                            data["promoted_at"] or time.time(),
-                            task["gpu_seconds"],
-                            encode(data),
-                        ),
-                    )
-                # Current best is a projection; historical promotion records remain immutable.
-                store.db.execute(
-                    "UPDATE tasks SET evidence_error=? WHERE id=?",
-                    ("; ".join(problems) or None, task["id"]),
-                )
-        else:
-            if store.one("SELECT run FROM promotions WHERE task=?", (task["id"],)):
-                problems.append("Previously observed best pointer is missing")
-            store.db.execute(
-                "UPDATE tasks SET evidence_error=? WHERE id=?",
-                ("; ".join(problems) or None, task["id"]),
-            )
+        elif store.one("SELECT run FROM promotions WHERE task=?", (task["id"],)):
+            problems.append("Previously observed best pointer is missing")
     except (OSError, ValueError, KeyError, TypeError) as exc:
         problems.append(str(exc))
+    # File IO and verification above never hold SQLite's writer lock. Publish each task's
+    # runs, best, history, errors and observation time atomically for dashboard readers.
+    with store.transaction():
+        for path, row in updates.items():
+            store.db.execute(
+                "INSERT INTO runs(path,task,imported,data,error) VALUES(?,?,?,?,?) "
+                "ON CONFLICT(path) DO UPDATE SET data=excluded.data,error=excluded.error",
+                (path, task["id"], time.time(), row["data"], row["error"]),
+            )
+        if best_projection:
+            for data in reversed(chain):
+                store.db.execute(
+                    "INSERT OR IGNORE INTO promotions(task,run,at,gpu_seconds,data) VALUES(?,?,?,?,?)",
+                    (
+                        task["id"],
+                        data["run"],
+                        data["promoted_at"] or time.time(),
+                        task["gpu_seconds"],
+                        encode(data),
+                    ),
+                )
         store.db.execute(
-            "UPDATE tasks SET evidence_error=? WHERE id=?", ("; ".join(problems), task["id"])
+            "UPDATE tasks SET evidence_error=? WHERE id=?",
+            ("; ".join(problems) or None, task["id"]),
         )
-    store.db.execute(
-        "INSERT OR REPLACE INTO metadata VALUES(?,?)",
-        (f"best:{task['id']}", encode(best_projection)),
-    )
+        store.db.execute(
+            "INSERT OR REPLACE INTO metadata VALUES(?,?)",
+            (f"best:{task['id']}", encode(best_projection)),
+        )
+        store.db.execute(
+            "INSERT OR REPLACE INTO metadata VALUES(?,?)",
+            (
+                f"evidence:{task['id']}",
+                encode({"observed_at": started, "published_at": time.time()}),
+            ),
+        )
 
 
 def refresh(store, force=False):
-    for row in store.rows("SELECT id FROM tasks"):
-        refresh_task(store, store.task(row["id"]), force)
+    # A manual reindex and the coordinator must not publish out of order.
+    with exclusive(store.root / "evidence.lock") as handle:
+        if handle is None:
+            return False
+        for row in store.rows("SELECT id FROM tasks"):
+            refresh_task(store, store.task(row["id"]), force)
+    return True

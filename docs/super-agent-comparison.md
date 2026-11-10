@@ -56,10 +56,10 @@ profiler 都必须经过 `manage gpu-run`。GPU 作业结束、拥有者进程�
 
 | 项目 | 结果 |
 |---|---|
-| 全仓测试 | `180 passed, 8 skipped in 66.14s`；8 项为 opt-in CUDA 测试 |
-| 管理层测试 | 32 项；包括实际子进程、两个 GPU wrapper 在 CPU 资源上的互斥、主管 SIGKILL、独立进程组清理、暂停/快速恢复、预算、checkpoint、历史链、native autograd/gate 收据、收据删除及恢复 |
+| 全仓测试 | `185 passed, 8 skipped in 68.10s`；8 项为 opt-in CUDA 测试 |
+| 管理层测试 | 37 项；包括实际子进程、两个 GPU wrapper 在 CPU 资源上的互斥、主管 SIGKILL、独立进程组清理、暂停/快速恢复、预算、checkpoint、历史链、native autograd/gate 收据、收据删除及恢复 |
 | 静态检查 | Ruff lint/format、`git diff --check` 通过 |
-| 包构建 | wheel 和 sdist 构建通过，三份本地 UI 静态资源包含在 wheel 中 |
+| 包构建 | wheel 和 sdist 构建通过，四份本地 UI 静态资源包含在 wheel 中 |
 | 独立安装 | 全新 Python 3.11 venv 安装 wheel；确认从 site-packages 导入，已安装 CLI help/status、HTTP 页面/JS/CSS/状态及未授权控制拒绝通过 |
 | 浏览器 | 总览、详情、搜索及空结果、暂停/恢复、资源会话数 2→1→2；窄屏单列/表格滚动；观测无控制台错误 |
 | 演示 | 3 个显式标识的 CPU demo，使用真实 evaluator 收据与合成等待；不是实际算子性能数据 |
@@ -81,3 +81,8 @@ profiler 都必须经过 `manage gpu-run`。GPU 作业结束、拥有者进程�
   区间按经过时间保守计账。没有无限自动重试或丢弃预算来恢复任务的路径。
 
 这些边界保留在文档和实际错误状态中，不作为面板的常驻说明。
+
+自动更新进一步采用后台单扫描、逐任务原子发布、同一 WAL 快照返回总览与详情，
+以及保留交互状态的 DOM 更新。浏览器隐藏时停更，断线保留旧数据并退避，控制操作
+完成后重新读取。连接、协调器心跳与证据观测时间分别呈现；完整规则见
+[自动更新契约](optimization-manager.md#自动更新契约)。

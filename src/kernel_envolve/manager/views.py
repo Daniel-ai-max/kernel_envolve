@@ -4,33 +4,18 @@ import json
 import time
 from pathlib import Path
 
-from ..storage import digest, read_json
-from .evidence import state_path
-
 
 def best(store, task):
-    state = state_path(task["spec"])
-    try:
-        pointer = read_json(state / "best.json")
-        projection = store.one("SELECT data FROM metadata WHERE key=?", (f"best:{task['id']}",))
-        projection = json.loads(projection["data"]) if projection else None
-        if not projection or projection["pointer_hash"] != digest(pointer):
-            return None
-        path = (state / pointer["run"]).resolve()
-        row = store.one("SELECT * FROM runs WHERE path=? AND task=?", (str(path), task["id"]))
-        if row and not row["error"]:
-            data = json.loads(row["data"])
-            if (
-                data["result_hash"] == pointer["result_hash"]
-                and data["decision"]["eligible_for_best"]
-            ):
-                return data
-    except (OSError, ValueError, KeyError, TypeError):
-        pass
-    return None
+    projection = store.one("SELECT data FROM metadata WHERE key=?", (f"best:{task['id']}",))
+    projection = json.loads(projection["data"]) if projection else None
+    if not projection:
+        return None
+    row = store.one("SELECT * FROM runs WHERE path=? AND task=?", (projection["run"], task["id"]))
+    return json.loads(row["data"]) if row and not row["error"] else None
 
 
-def task_view(store, key):
+def task_view(store, key, now=None):
+    now = time.time() if now is None else now
     task = store.task(key)
     jobs = store.rows(
         "SELECT * FROM jobs WHERE task=? AND status IN ('queued','running') ORDER BY created",
@@ -38,6 +23,9 @@ def task_view(store, key):
     )
     task["jobs"] = jobs
     task["best"] = best(store, task)
+    evidence = store.one("SELECT data FROM metadata WHERE key=?", (f"evidence:{key}",))
+    task["evidence_as_of"] = json.loads(evidence["data"])["observed_at"] if evidence else None
+    task["evidence_stale"] = task["evidence_as_of"] is None or now - task["evidence_as_of"] > 15
     task["phase"] = task["desired"]
     if task["desired"] == "active":
         gpu = next((j for j in jobs if j["kind"] == "gpu" and j["status"] == "running"), None)
@@ -51,12 +39,12 @@ def task_view(store, key):
         else:
             if store.resource(task["spec"]["resource"])["problem"]:
                 task["phase"] = "resource_blocked"
-            elif task["next_at"] > time.time():
+            elif task["next_at"] > now:
                 task["phase"] = "backoff" if task["failures"] else "cooldown"
             else:
                 task["phase"] = "waiting_session"
     task["heartbeat"] = max((j["heartbeat"] or j["created"] for j in jobs), default=None)
-    task["stale"] = bool(jobs and time.time() - task["heartbeat"] > 10)
+    task["stale"] = bool(jobs and now - task["heartbeat"] > 10)
     task["last_promotion"] = store.one(
         "SELECT at,data FROM promotions WHERE task=? ORDER BY at DESC LIMIT 1", (key,)
     )
@@ -68,12 +56,23 @@ def task_view(store, key):
     return task
 
 
-def overview(store):
+def overview(store, *, compact=False, now=None):
+    now = time.time() if now is None else now
     coordinator = store.one("SELECT data FROM metadata WHERE key='coordinator'")
     coordinator = json.loads(coordinator["data"]) if coordinator else None
     tasks = [
-        task_view(store, r["id"]) for r in store.rows("SELECT id FROM tasks ORDER BY created,id")
+        task_view(store, r["id"], now)
+        for r in store.rows("SELECT id FROM tasks ORDER BY created,id")
     ]
+    if compact:
+        for task in tasks:
+            if task["best"]:
+                data = task["best"]
+                task["best"] = {
+                    k: data.get(k)
+                    for k in ("run", "baseline_speedup", "incremental_speedup", "native_checks")
+                }
+                task["best"]["decision"] = {"coverage": data["decision"].get("coverage")}
     resources = []
     for row in store.rows("SELECT id FROM resources ORDER BY id"):
         resource = store.resource(row["id"])
@@ -89,15 +88,15 @@ def overview(store):
         resources.append(resource)
     return {
         "coordinator": coordinator,
-        "as_of": time.time(),
+        "as_of": now,
         "tasks": tasks,
         "resources": resources,
         "measurement": "Speedup = 1 / (1 − median full-batch fixed-baseline latency reduction). No framework-wide speedup is inferred.",
     }
 
 
-def detail(store, key):
-    task = task_view(store, key)
+def detail(store, key, now=None):
+    task = task_view(store, key, now)
     task["history"] = []
     for row in store.rows("SELECT * FROM promotions WHERE task=? ORDER BY at", (key,)):
         data = json.loads(row["data"])
@@ -121,5 +120,17 @@ def detail(store, key):
         "SELECT * FROM jobs WHERE task=? ORDER BY created DESC LIMIT 100", (key,)
     )
     notes = Path(task["spec"]["task_dir"]) / "notes.md"
-    task["notes"] = notes.read_text(errors="replace")[:32000] if notes.is_file() else ""
+    task["notes"] = ""
+    if notes.is_file():
+        with notes.open(errors="replace") as stream:
+            task["notes"] = stream.read(32000)
     return task
+
+
+def snapshot(store, selected=None):
+    """One WAL read snapshot, shared by the summary and the visible task detail."""
+    with store.transaction(readonly=True):
+        now = time.time()
+        data = overview(store, compact=True, now=now)
+        data["detail"] = detail(store, selected, now) if selected else None
+    return data

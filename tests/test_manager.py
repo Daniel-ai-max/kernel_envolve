@@ -4,13 +4,16 @@ import concurrent.futures
 import copy
 import json
 import os
+import shutil
 import signal
+import sqlite3
 import subprocess
 import sys
 import threading
 import time
 import urllib.error
 import urllib.request
+from pathlib import Path
 
 import pytest
 
@@ -332,7 +335,7 @@ def test_http_origin_controls_and_packaged_assets(managed):
     try:
         data = json.load(urllib.request.urlopen(base + "/api/state"))
         assert data["tasks"][0]["spec"]["baseline"]["revision"] == "fixture-v1"
-        for asset in ("/", "/app.js", "/style.css"):
+        for asset in ("/", "/app.js", "/sync.js", "/style.css"):
             assert urllib.request.urlopen(base + asset).status == 200
         for headers in ({}, {"X-Manager-Token": data["token"], "Origin": "https://evil.test"}):
             req = urllib.request.Request(
@@ -503,8 +506,8 @@ def test_multiple_promotions_between_refreshes_and_uncommitted_receipt(managed):
     assert len(detail(store, "toy")["history"]) == 2
     pointer = json.loads((second / "promotion.json").read_text())
     (work / ".kernel_envolve/best.json").write_text(json.dumps(pointer["previous_pointer"]))
-    # A promotion receipt alone must not project an uncommitted best.
-    assert overview(store)["tasks"][0]["best"] is None
+    # The dashboard keeps the last atomically indexed snapshot until the next scan.
+    assert overview(store)["tasks"][0]["best"]["run"] == str(second)
     refresh(store)
     assert overview(store)["tasks"][0]["best"]["run"] == str(first)
     pointer["previous_pointer"]["result_hash"] = "broken"
@@ -617,3 +620,114 @@ def test_native_task_cannot_accidentally_override_managed_device(monkeypatch):
     monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "GPU-123")
     with pytest.raises(ValueError, match="cannot be overridden"):
         environment({"env": {"CUDA_VISIBLE_DEVICES": "GPU-456"}}, {})
+
+
+def test_dashboard_snapshot_is_consistent_and_does_not_block_writer(managed, monkeypatch):
+    from kernel_envolve.manager import views
+
+    store, _, _ = managed
+    reader = Store(store.root, readonly=True)
+    original = views.overview
+
+    def change_after_overview(*args, **kwargs):
+        data = original(*args, **kwargs)
+        store.control("toy", "pause")  # A separate connection commits while the WAL reader is open.
+        return data
+
+    monkeypatch.setattr(views, "overview", change_after_overview)
+    try:
+        data = views.snapshot(reader, "toy")
+        assert data["tasks"][0]["desired"] == data["detail"]["desired"] == "active"
+        assert store.task("toy")["desired"] == "paused"
+        with pytest.raises(sqlite3.OperationalError, match="readonly"):
+            reader.db.execute("DELETE FROM tasks")
+    finally:
+        reader.close()
+
+
+def test_evidence_publication_is_atomic_and_file_scan_has_no_writer_lock(managed, monkeypatch):
+    from kernel_envolve.manager import evidence
+
+    store, _, work = managed
+    run, _ = evaluate(work, "full")
+    promote(run)
+    original = evidence.inspect_run
+
+    def inspect(*args):
+        writer = Store(store.root)
+        try:
+            writer.control("toy", "pause")  # Verification must not own a database writer lock.
+        finally:
+            writer.close()
+        return original(*args)
+
+    monkeypatch.setattr(evidence, "inspect_run", inspect)
+    refresh(store)
+    before = detail(store, "toy")
+    (run / "receipt.json").unlink()
+    store.db.execute(
+        "CREATE TRIGGER abort_projection BEFORE UPDATE ON tasks BEGIN SELECT RAISE(ABORT, 'publish failed'); END"
+    )
+    with pytest.raises(sqlite3.IntegrityError, match="publish failed"):
+        refresh(store)
+    after = detail(store, "toy")
+    assert after["best"] == before["best"]
+    assert after["evidence_as_of"] == before["evidence_as_of"]
+    assert not after["runs"][0]["error"]
+    store.db.execute("DROP TRIGGER abort_projection")
+    refresh(store)
+    after = detail(store, "toy")
+    assert after["best"] is None and after["evidence_error"]
+    assert after["history"][0]["evidence_error"]
+
+
+def test_evidence_freshness_is_independent_of_http_snapshot_time(managed):
+    from kernel_envolve.manager.views import snapshot
+
+    store, _, _ = managed
+    refresh(store)
+    original = snapshot(store, "toy")
+    observed = original["detail"]["evidence_as_of"]
+    assert not original["detail"]["evidence_stale"]
+    with exclusive(store.root / "evidence.lock"):
+        assert refresh(store) is False  # Concurrent scans cannot overwrite newer publications.
+    later = snapshot(store, "toy")
+    assert later["as_of"] >= original["as_of"]
+    assert later["detail"]["evidence_as_of"] == observed
+    store.db.execute(
+        "UPDATE metadata SET data=? WHERE key='evidence:toy'",
+        (json.dumps({"observed_at": observed - 60}),),
+    )
+    assert snapshot(store, "toy")["detail"]["evidence_stale"]
+
+
+def test_http_selected_detail_and_compact_summary(managed):
+    store, _, work = managed
+    run, _ = evaluate(work, "full")
+    promote(run)
+    refresh(store)
+    http = server(store.root, 0)
+    thread = threading.Thread(target=http.serve_forever, daemon=True)
+    thread.start()
+    try:
+        data = json.load(
+            urllib.request.urlopen(f"http://127.0.0.1:{http.server_port}/api/state?task=toy")
+        )
+        assert data["detail"]["id"] == "toy"
+        assert data["detail"]["best"]["decision"]["cases"]
+        assert "cases" not in data["tasks"][0]["best"]["decision"]
+        assert "source" not in data["tasks"][0]["best"]
+        assert data["detail"]["evidence_as_of"] == data["tasks"][0]["evidence_as_of"]
+    finally:
+        http.shutdown()
+        http.server_close()
+        thread.join()
+
+
+def test_dashboard_polling_races_backoff_and_visibility():
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("Node is required for browser-independent polling tests")
+    subprocess.run(
+        [node, "--test", str(Path(__file__).with_name("manager_sync.mjs"))], check=True, timeout=15
+    )

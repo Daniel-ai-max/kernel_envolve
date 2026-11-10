@@ -146,7 +146,8 @@ def main(argv=None):
         elif args.action == "refresh":
             from .evidence import refresh
 
-            refresh(store, args.force)
+            if not refresh(store, args.force):
+                raise ValueError("Evidence scan already running; retry after it finishes")
         elif args.action == "serve":
             from .web import serve
 
