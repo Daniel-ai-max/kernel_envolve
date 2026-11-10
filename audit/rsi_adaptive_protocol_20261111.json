@@ -1,0 +1,284 @@
+{
+  "registered_at": 1794346053.639443,
+  "status": "source_pinned_offline_verification_pending",
+  "phase": "development",
+  "source_commit": "6e97cddbfcc1e19bfda8a8f84d1ba8a9306f4fa6",
+  "activation": "Separate adaptive mechanism after fixed2 failure and released Manager engineering validation;closed k/l is never reopened.",
+  "arms": [
+    "control-4",
+    "reuse-2",
+    "reuse-4",
+    "adaptive-reuse"
+  ],
+  "max_actions_by_arm": {
+    "control-4": 4,
+    "reuse-2": 2,
+    "reuse-4": 4,
+    "adaptive-reuse": 4
+  },
+  "max_model_calls_by_arm": {
+    "control-4": 4,
+    "reuse-2": 1,
+    "reuse-4": 3,
+    "adaptive-reuse": 3
+  },
+  "trials": 64,
+  "repeats": 2,
+  "operator_clusters": 4,
+  "tasks": 8,
+  "max_model_requests": 176,
+  "model": "gpt-6-astra",
+  "reasoning": "medium",
+  "max_output_tokens": 4096,
+  "platform_seconds": 7200,
+  "worker_seconds": 7050,
+  "validation_total_seconds": 6600,
+  "solver_seconds": 600,
+  "decision_seconds": 125,
+  "local_model_process_seconds": 115,
+  "evaluation_seconds": 90,
+  "catalog": {
+    "data": {
+      "cases": {
+        "m": {
+          "pointwise": [
+            [
+              196637
+            ],
+            [
+              9437209
+            ]
+          ],
+          "row-reduction": [
+            [
+              463,
+              3077
+            ],
+            [
+              877,
+              6151
+            ]
+          ],
+          "strides": [
+            1,
+            5
+          ],
+          "seeds": [
+            601,
+            607
+          ]
+        },
+        "n": {
+          "pointwise": [
+            [
+              327701
+            ],
+            [
+              7340053
+            ]
+          ],
+          "row-reduction": [
+            [
+              389,
+              2051
+            ],
+            [
+              719,
+              8197
+            ]
+          ],
+          "strides": [
+            1,
+            7
+          ],
+          "seeds": [
+            613,
+            617
+          ]
+        }
+      },
+      "episodes": [
+        {
+          "id": "f4d08a34c9dc48c2b919fc470129cb556b3e259d21dc644399e7ecf2321d482b",
+          "task": "value-train-swish-gate"
+        },
+        {
+          "id": "8e7f3e6f024917bcb6a2cc01fca05b1fb5892111bfe3efdbec50dbf85867befd",
+          "task": "value-train-smooth-l1"
+        },
+        {
+          "id": "575207e89a57d44fe9ba07704ed6d5c700abf3b05862617154949fc959caa51b",
+          "task": "value-train-rms-normalize"
+        },
+        {
+          "id": "30328cf08106c3390296659a93dd2c324a571260f554ef4712b98f3802a8a557",
+          "task": "value-train-central-variance"
+        }
+      ],
+      "scope": "Same exact task/reference/input-generator source; new case configuration only."
+    },
+    "sha256": "c69221910ba19377460ee8872ea39767499b7b62f99f6e749ec438dfdf281ed0"
+  },
+  "validation_tasks": [
+    "artifact-retune-swish-gate-m",
+    "artifact-retune-swish-gate-n",
+    "artifact-retune-smooth-l1-m",
+    "artifact-retune-smooth-l1-n",
+    "artifact-retune-rms-normalize-m",
+    "artifact-retune-rms-normalize-n",
+    "artifact-retune-central-variance-m",
+    "artifact-retune-central-variance-n"
+  ],
+  "training_manifest_sha256": "dbb5fced15ed50cfa39204dad97b0d51212b2e540b7fc00f3de36cbd6e7b4d25",
+  "order": [
+    [
+      "control-4",
+      "reuse-2",
+      "adaptive-reuse",
+      "reuse-4"
+    ],
+    [
+      "reuse-2",
+      "reuse-4",
+      "control-4",
+      "adaptive-reuse"
+    ],
+    [
+      "reuse-4",
+      "adaptive-reuse",
+      "reuse-2",
+      "control-4"
+    ],
+    [
+      "adaptive-reuse",
+      "control-4",
+      "reuse-4",
+      "reuse-2"
+    ],
+    [
+      "control-4",
+      "reuse-2",
+      "adaptive-reuse",
+      "reuse-4"
+    ],
+    [
+      "reuse-2",
+      "reuse-4",
+      "control-4",
+      "adaptive-reuse"
+    ],
+    [
+      "reuse-4",
+      "adaptive-reuse",
+      "reuse-2",
+      "control-4"
+    ],
+    [
+      "adaptive-reuse",
+      "control-4",
+      "reuse-4",
+      "reuse-2"
+    ],
+    [
+      "reuse-4",
+      "adaptive-reuse",
+      "reuse-2",
+      "control-4"
+    ],
+    [
+      "adaptive-reuse",
+      "control-4",
+      "reuse-4",
+      "reuse-2"
+    ],
+    [
+      "control-4",
+      "reuse-2",
+      "adaptive-reuse",
+      "reuse-4"
+    ],
+    [
+      "reuse-2",
+      "reuse-4",
+      "control-4",
+      "adaptive-reuse"
+    ],
+    [
+      "reuse-4",
+      "adaptive-reuse",
+      "reuse-2",
+      "control-4"
+    ],
+    [
+      "adaptive-reuse",
+      "control-4",
+      "reuse-4",
+      "reuse-2"
+    ],
+    [
+      "control-4",
+      "reuse-2",
+      "adaptive-reuse",
+      "reuse-4"
+    ],
+    [
+      "reuse-2",
+      "reuse-4",
+      "control-4",
+      "adaptive-reuse"
+    ]
+  ],
+  "comparisons": [
+    [
+      "control-4",
+      "adaptive-reuse"
+    ],
+    [
+      "reuse-2",
+      "adaptive-reuse"
+    ],
+    [
+      "reuse-4",
+      "adaptive-reuse"
+    ],
+    [
+      "control-4",
+      "reuse-4"
+    ]
+  ],
+  "acceptance_comparisons": [
+    "adaptive-reuse-vs-control-4"
+  ],
+  "primary_criteria": {
+    "screen": "Existing .02 per-task quality allowance, nondecreasing aggregate quality in each repeat, <=5% solver/trial overhead and original .01 quality or .1 cost benefit conditions. All attempts and independent full outcomes required.",
+    "practical": "For preregistered adaptive-vs-control4 only:>=10percent relative quality gain at<=5percentwall overhead OR >=10percentwall saving at nondecreasingquality;<=5percenttokenoverhead;original per-task/per-repeat screen must also pass. Unknownusage forbids acceptance.",
+    "uncertainty": "Four operator-cluster exhaustive bootstrap,256draws,alpha.05/8 across four comparisonsxtwometrics. Development exploratory;independent confirmation requires positive lowerbound for accepted primary benefit. No onlineFER/globalstatisticalguarantee.",
+    "cost": "Keep all prior acquisition, development failure, infrastructure and validation resources; missing cost is unknown, not zero. No observed full-campaign ROI without actual recovery of costs."
+  },
+  "selection": "Only adaptive-reuse may qualify vs original control4. Fixed2/4 reuse are tradeoff ablations,not alternate winners. No claim that adaptive must dominate every cost-quality tradeoff. All current evaluator,per-task/per-repeat quality and practical cost protections retained.",
+  "stopping": "After ordinary current artifact full,half original fixedbaseline AND incumbent allowances for all measured objective+guard cases permit2actions;otherwise4. Unknown/unsupported/absolute caps retain4. Actual remaining_actions exposed, noextraGPUprobe/reflection,retries or altered final gate.",
+  "manager_scope": "Per-measurement Manager path separately GPU verified;this efficacy study remains standalone in ALLarms. Not production throughput or two-generation efficacy.",
+  "limitations": [
+    "Four known formulas with fresh shapes/strides/seeds only, not eight independent operators or native production training.",
+    "Reduced search may lose worthwhile refinements; fixed reuse2/4 ablations and separate final full are retained.",
+    "Content identity and approved manifests are not an OS sandbox or universal compatibility proof.",
+    "This is a separate explicit budget-allocation mechanism, not a repeat of closed advice/memory/retuning studies.",
+    "Adaptive margin is an engineering heuristic,not a confidence interval. Cases called stride3 in old studies now receive labels matching actual args;reference/source/correctness unchanged.",
+    "No correctness-failure memory is added:current fixed2 had no wrong candidates and its issue was performance.",
+    "Each operator experiences all four arm positions across2configsx2repeats;no interim arm outcomes used."
+  ],
+  "prior_diagnostic": {
+    "closed_job": "d8a9d1bae69346e9b58b8544e4abf2c8",
+    "summary_sha256": "574d2a27f2ef71dc8987685bdda7c1643345c856ac68469bfc74bfce1fda7faf",
+    "route_probe_sha256": "77a340d57570fe48cb8dadcd5850d3da05d88ea72281d230a8fb97608a83283f",
+    "scope": "Posthoc route coverage only;no counterfactual outcomes or savings."
+  },
+  "authorization": {
+    "absolute_expires_at": 1794407502.345601,
+    "total_gpu_seconds": 86400,
+    "single_gpu_serial": true,
+    "priority": 80,
+    "space": "flexible",
+    "execution_budget_receipt": "Must bind fresh prior released total and request hash before any submission; no reserved GPU now."
+  }
+}
