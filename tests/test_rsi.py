@@ -631,7 +631,7 @@ def test_learning_packet_is_bounded_without_dropping_pending_evidence(rsi, monke
     assert rsi.db.execute("SELECT COUNT(*) FROM evidence").fetchone()[0] == 48
 
 
-@pytest.mark.parametrize("changed", ["research.py", "episodes.py", "reuse.py"])
+@pytest.mark.parametrize("changed", ["research.py", "episodes.py", "reuse.py", "allocation.py"])
 def test_validator_identity_binds_owned_research_dependencies(monkeypatch, changed):
     from kernel_envolve.rsi import trials
 

@@ -35,6 +35,7 @@ def validator_identity():
                 "episodes.py",
                 "reuse.py",
                 "managed.py",
+                "allocation.py",
             )
         }
     )

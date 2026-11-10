@@ -522,6 +522,122 @@ def artifact(packet, source):
     }
 
 
+@pytest.mark.parametrize("correct", [True, False])
+def test_adaptive_artifact_uses_current_full_and_enforces_effective_cap(research, correct):
+    import ast
+
+    from kernel_envolve.storage import digest, read_json
+
+    packet, out, initial = research
+    source = "def run(x): return x+1\n" if correct else "def run(x): return x-1\n"
+    allowances = []
+
+    def decide(request, timeout):
+        allowances.append(request["remaining_actions"])
+        return {
+            "action": "evaluate",
+            "candidate": request["selected"],
+            "mode": "full",
+            "hypothesis": "Duplicate fixture consumes an action, never a free retry",
+        }
+
+    trace = run(
+        packet,
+        out,
+        decide,
+        max_actions=4,
+        adaptive_artifact_budget=True,
+        artifact_proposal=artifact(packet, source),
+        source_validator=ast.parse,
+    )
+    assert allowances == ([1] if correct else [3, 2, 1])
+    assert len(trace["steps"]) == trace["effective_actions"] == (2 if correct else 4)
+    assert trace["max_actions"] == 4
+    assert trace["budget_seconds"] == packet["seconds"]
+    allocation = trace["allocation"]
+    assert allocation["result_hash"] == digest(read_json(Path(allocation["run"]) / "result.json"))
+    assert allocation["source_hash"] == source_id(source)
+    assert trace["selected"] == source_id(source if correct else initial)
+    assert len(list((Path(packet["task"]) / ".kernel_envolve/runs").iterdir())) == 2
+    assert not (Path(packet["task"]) / ".kernel_envolve/best.json").exists()
+
+
+@pytest.mark.parametrize("same_as_initial", [True, False])
+def test_adaptive_without_new_artifact_measurement_retains_four(research, same_as_initial):
+    import ast
+
+    packet, out, initial = research
+    allowances = []
+
+    def decide(request, timeout):
+        allowances.append(request["remaining_actions"])
+        return {
+            "action": "evaluate",
+            "candidate": source_id(initial),
+            "mode": "full",
+            "hypothesis": "No new evidence in this fixture",
+        }
+
+    trace = run(
+        packet,
+        out,
+        decide,
+        max_actions=4,
+        adaptive_artifact_budget=True,
+        artifact_proposal=artifact(packet, initial) if same_as_initial else None,
+        source_validator=ast.parse,
+    )
+    assert allowances == ([3, 2, 1] if same_as_initial else [4, 3, 2, 1])
+    assert trace["effective_actions"] == 4
+    assert trace["allocation"]["reason"] == (
+        "no_new_artifact_full" if same_as_initial else "no_artifact"
+    )
+    assert len(list((Path(packet["task"]) / ".kernel_envolve/runs").iterdir())) == 1
+
+
+def test_adaptive_options_reject_before_evaluation(research):
+    packet, out, _ = research
+    with pytest.raises(ValueError, match="boolean"):
+        run(packet, out, lambda *a: None, adaptive_artifact_budget="yes")
+    with pytest.raises(ValueError, match="four maximum"):
+        run(packet, out, lambda *a: None, adaptive_artifact_budget=True)
+    assert not (Path(packet["task"]) / ".kernel_envolve/runs").exists()
+
+
+@pytest.mark.parametrize("field", ["contract", "candidate.py"])
+def test_adaptive_rejects_result_bound_to_other_task_or_source(research, monkeypatch, field):
+    import ast
+
+    from kernel_envolve.rsi import research as module
+
+    packet, out, _ = research
+    source = "def run(x): return x+1\n"
+    actual = module.evaluate
+    calls = []
+
+    def corrupted(*args, **kwargs):
+        path, result = actual(*args, **kwargs)
+        calls.append(path)
+        if len(calls) == 2:
+            target = result["identity"] if field == "contract" else result["identity"]["files"]
+            target[field] = "0" * 64
+        return path, result
+
+    monkeypatch.setattr(module, "evaluate", corrupted)
+    with pytest.raises(ValueError, match="another source/task"):
+        run(
+            packet,
+            out,
+            lambda *a: pytest.fail("No decision may consume misbound evidence"),
+            max_actions=4,
+            adaptive_artifact_budget=True,
+            artifact_proposal=artifact(packet, source),
+            source_validator=ast.parse,
+        )
+    assert len(calls) == 2
+    assert not (Path(packet["task"]) / ".kernel_envolve/best.json").exists()
+
+
 def test_artifact_spends_one_action_and_requires_current_full_success(research):
     import ast
 

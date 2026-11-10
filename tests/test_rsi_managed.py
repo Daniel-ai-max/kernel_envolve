@@ -30,14 +30,15 @@ def active(managed, monkeypatch):
     store.finish(parent, "succeeded")
 
 
-def test_search_releases_device_for_decisions_and_requires_separate_final(managed):
+@pytest.mark.parametrize("adaptive", [False, True])
+def test_search_releases_device_for_decisions_and_requires_separate_final(managed, adaptive):
     store, _, work = managed
     (work / "candidate.py").write_text("import time\ndef run(x):\n time.sleep(.001)\n return x+1\n")
     out = work.parent / "research"
     script = work / "agent.py"
     script.write_text(
-        "import os,json\nfrom pathlib import Path\n"
-        "from kernel_envolve.rsi.research import run\n"
+        "import os,json,ast\nfrom pathlib import Path\n"
+        "from kernel_envolve.rsi.research import run,source_id\n"
         "from kernel_envolve.rsi.managed import evaluate\n"
         "from kernel_envolve.manager.process import exclusive,lock_path\n"
         "from kernel_envolve.manager.store import Store\n"
@@ -52,7 +53,9 @@ def test_search_releases_device_for_decisions_and_requires_separate_final(manage
         " return dict(action='propose',source='def run(x): return x+1\\n',mode='full',hypothesis='Remove fixture sleep')\n"
         f"task=Path({str(work)!r}); out=Path({str(out)!r})\n"
         "packet=dict(task=str(task),kind='generic',editable_files=[str(task/'candidate.py')],model='no-model',seed=0,strategy='',seconds=25)\n"
-        "trace=run(packet,out,decide,max_actions=1,evaluation_seconds=5,managed_evaluations=True)\n"
+        "source='def run(x): return x+1\\n'\n"
+        "proposal=dict(episode_id='a'*64,source_hash=source_id(source),task_source_hash=source_id((task/'task.py').read_text()),source=source)\n"
+        f"trace=run(packet,out,decide,max_actions={4 if adaptive else 1},evaluation_seconds=5,managed_evaluations=True,adaptive_artifact_budget={adaptive!r},artifact_proposal=proposal if {adaptive!r} else None,source_validator=ast.parse)\n"
         "final,result=evaluate(task,'full',5,out/'final')\n"
         "assert result['correctness']=='pass'\n"
         "assert str(final) != trace['steps'][0]['observation']['run']\n"
@@ -70,6 +73,10 @@ def test_search_releases_device_for_decisions_and_requires_separate_final(manage
     assert store.task("toy")["gpu_seconds"] > 0
     trace = json.loads((out / "search-trace.json").read_text())
     assert trace["managed_evaluations"] is True
+    if adaptive:
+        assert trace["effective_actions"] == 2
+        assert trace["allocation"]["reason"] == "within_margin"
+        assert len(trace["steps"]) == 2
     assert trace["selected_quality"] > 0.8
     assert len(list((out / "managed-evaluations").glob("*/cost.json"))) == 2
 

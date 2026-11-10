@@ -177,6 +177,7 @@ def run(
     stop_on_decision_timeout=False,
     compact_history=False,
     managed_evaluations=False,
+    adaptive_artifact_budget=False,
 ):
     """Call decide(request, timeout) for operator-fixed actions; return a saved trace.
 
@@ -208,6 +209,12 @@ def run(
     Manager round. The decision callback runs without the GPU lock. The entire
     search must never run inside gpu-run; final independent evaluation is still
     the caller's responsibility. Standalone experiments keep the direct path.
+
+    adaptive_artifact_budget is an experimental four-action policy. Only after a
+    newly measured historical artifact's full result has sufficient per-case
+    margin may it shorten the allowance to two. It does not add measurements,
+    relax a gate, extend a deadline or reuse a historical score. The decision
+    input states the effective remaining allowance. No artifact retains four.
     """
     if packet["kind"] != "generic":
         raise ValueError("The experimental research loop supports generic tasks only")
@@ -219,6 +226,10 @@ def run(
         raise ValueError("compact_history must be boolean")
     if type(managed_evaluations) is not bool:
         raise ValueError("managed_evaluations must be boolean")
+    if type(adaptive_artifact_budget) is not bool:
+        raise ValueError("adaptive_artifact_budget must be boolean")
+    if adaptive_artifact_budget and max_actions != 4:
+        raise ValueError("Adaptive artifact allocation requires exactly four maximum actions")
     if os.environ.get("KERNEL_ENVOLVE_GPU_JOB"):
         raise ValueError("Research decisions must run outside the Manager GPU job")
     if os.environ.get("KERNEL_ENVOLVE_ROUND") and not managed_evaluations:
@@ -312,6 +323,16 @@ def run(
         "managed_evaluations": managed_evaluations,
     }
     previous = {}
+    action_limit = max_actions
+    latest_measurement = None
+    if adaptive_artifact_budget:
+        trace["adaptive_artifact_budget"] = True
+        trace["effective_actions"] = action_limit
+        trace["allocation"] = {
+            "policy": "artifact-margin-v1",
+            "actions": 4,
+            "reason": "awaiting_artifact" if proposal else "no_artifact",
+        }
 
     def save():
         trace["seconds"] = time.monotonic() - began
@@ -340,7 +361,7 @@ def run(
             raise ValueError("Research adapter changed protected task files")
 
     def measure(identity, mode):
-        nonlocal best_id, best_quality
+        nonlocal best_id, best_quality, latest_measurement
         if (identity, mode) in measured:
             return {"status": "duplicate_skipped", "candidate": identity, "mode": mode}
         if remaining() <= 1:
@@ -357,6 +378,8 @@ def run(
         else:
             directory, result = evaluate(task, mode, timeout=timeout)
         protected()
+        if adaptive_artifact_budget:
+            latest_measurement = result
         value = observation(directory, result)
         measured[(identity, mode)] = value
         if mode == "full" and value["quality"] > best_quality:
@@ -372,6 +395,9 @@ def run(
         trace["initial_observation"] = measure(initial_id, "full")
         save()
         for index in range(max_actions):
+            if index >= action_limit:
+                trace["stop_reason"] = "action_budget_exhausted"
+                break
             if remaining() <= 1:
                 trace["stop_reason"] = "budget_exhausted"
                 break
@@ -381,7 +407,7 @@ def run(
                 "model": packet["model"],
                 "repeat_identity": packet["seed"],
                 "strategy": packet["strategy"],
-                "remaining_actions": max_actions - index,
+                "remaining_actions": action_limit - index,
                 "remaining_seconds": remaining(),
                 "selected": best_id,
                 "candidates": [
@@ -493,6 +519,27 @@ def run(
             if action["mode"] not in {"quick", "full"}:
                 raise ValueError("Research evaluation must be quick or full")
             row["observation"] = measure(identity, action["mode"])
+            if adaptive_artifact_budget and reused:
+                from .allocation import POLICY, artifact_action_budget
+
+                observed = row["observation"]
+                allocation = {"policy": POLICY, "actions": 4, "reason": "no_new_artifact_full"}
+                if observed["status"] == "evaluated":
+                    evidence = latest_measurement
+                    if evidence["identity"]["files"]["candidate.py"] != identity or evidence[
+                        "identity"
+                    ]["contract"] != contract(task, cfg):
+                        raise ValueError(
+                            "Adaptive allocation result belongs to another source/task"
+                        )
+                    allocation = artifact_action_budget(evidence, cfg) | {
+                        "run": observed["run"],
+                        "source_hash": identity,
+                        "result_hash": digest(evidence),
+                    }
+                action_limit = allocation["actions"]
+                trace["effective_actions"] = action_limit
+                trace["allocation"] = allocation
             trace["selected"] = best_id
             save()
         else:
