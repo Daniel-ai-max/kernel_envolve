@@ -1,0 +1,88 @@
+{
+  "date": "2026-11-10",
+  "base_commit": "a21c4dae4f61ef91faa579297bb93495d7fe4971",
+  "change": "Operator-owned task profiles and deterministic conditional advice selection with matching validation coverage",
+  "motivation_evidence": "audit/rsi_multistep_gpu_20261110.json; identical scope advice was broadcast and learner had no declared tool capabilities",
+  "reference": {
+    "repo": "google-research/dream-rsi",
+    "sha": "8ec35bd2538220517ce1bfca4282db21b8c518db",
+    "commit_date": "2026-10-08",
+    "file": "dream_rsi/policy/api.py",
+    "mechanism": "Explicit environment facts, fallback and hard limits in GridPlanningContext; not algorithm reproduction"
+  },
+  "requirements": {
+    "no_model_authority_to_change_profiles": true,
+    "unknown_required_tags_or_capabilities_do_not_match": true,
+    "production_and_validation_share_selector": true,
+    "at_least_two_templates_per_deployed_nonempty_combination": true,
+    "validation_profiles_not_exposed_to_learner": true,
+    "unsupported_candidates_rejected_without_resource_reservation": true,
+    "rejected_candidates_preserved_without_automatic_retry": true,
+    "no_new_foreground_history_search_or_model_call": true
+  },
+  "tests": {
+    "full": {
+      "passed": 280,
+      "skipped": 8,
+      "seconds": 120.2,
+      "scope": "Full suite before final preflight rejection status change"
+    },
+    "final_routing_tests": {
+      "passed": 15,
+      "seconds": 7.95,
+      "scope": "Includes final persisted rejection and no-retry behavior"
+    },
+    "initial_failures": [
+      "New selector API absent before implementation",
+      "Untouched CPU sleep fixture sometimes changed quality due timing noise; corrected fixture to remain unpromotable in both arms, with real evaluations unchanged"
+    ],
+    "fixture_limits": "Synthetic CPU demonstration only; actual evaluator executes. Solver elapsed value fixed only in lifecycle test to avoid process polling noise. No real GPU metrics altered.",
+    "static_checks": [
+      "ruff check .",
+      "ruff format --check .",
+      "git diff --check",
+      "Documentation JSON parses"
+    ]
+  },
+  "foreground_read": {
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "python": "3.12.14",
+    "scope": "Warm local filesystem, one advice read per agent round; not end-to-end iteration latency",
+    "unconfigured": {
+      "samples": 2000,
+      "median_ms": 0.00825,
+      "p95_ms": 0.01225,
+      "max_ms": 0.10775
+    },
+    "enabled_max_text": {
+      "samples": 2000,
+      "median_ms": 0.030125,
+      "p95_ms": 0.041209,
+      "max_ms": 0.182333
+    },
+    "disabled": {
+      "samples": 2000,
+      "median_ms": 0.004667,
+      "p95_ms": 0.004834,
+      "max_ms": 0.06725
+    }
+  },
+  "new_gpu_allocations": 0,
+  "new_model_calls": 0,
+  "limitations": [
+    "No new GPU benefit comparison",
+    "Natural-language advice may misdeclare prerequisites; routing is not a permission boundary",
+    "Operator labels require correct configuration",
+    "Matching combinations are not proof of semantic generalization",
+    "Six rules / 2400-byte candidate limit retained; no large memory retrieval or Pareto search",
+    "No proof of superiority over reference methods"
+  ],
+  "source_sha256": {
+    "src/kernel_envolve/rsi/config.py": "6a34a0b652e5638b440159ad94e25431624eed30c5d4f6f6008c00e2fc77a22e",
+    "src/kernel_envolve/rsi/model.py": "eed83f297899134fcc81a3f7afb80bee3a5e3d0e4d7991474a748dfd10a1a4b6",
+    "src/kernel_envolve/rsi/learning.py": "e859de017f685c3cd5841e2bfb022c8b5299c07f5840ae26bea31d7d6b73a37c",
+    "src/kernel_envolve/rsi/store.py": "6d2687043e3242d41fa3625143fd851daf58e8a2b1b86a4a033d9c0d981350ce",
+    "src/kernel_envolve/rsi/trials.py": "9902b1b3b2aab4d99ef30b411a0a2c34f8486245badc4e60236ffb3a3240f405",
+    "tests/test_rsi_routing.py": "a4048a6e3ab0761f020fb97446c10f9326004241cd222f4c4c321bb0b7085688"
+  }
+}

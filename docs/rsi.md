@@ -44,6 +44,16 @@ RSI 收集两类数据并标注来源：
 
 新规则包含 `when`、`action`、`unless`，按任务 ID 显式确定推广范围。未提及的旧规则保留；删除必须给理由。候选只有通过验证才影响生产提示。相同父版本下，相同建议内容即使更换说明、证据或条目 ID，也不会得到新的验证机会。
 
+### 条件筛选与可用能力
+
+可选的 `profiles` 为生产任务声明操作者确认的 `tags`（工作负载标签）和 `capabilities`（适配器已有能力）。验证模板各自声明 `profile`。标签不是从任务名、模型解释或成绩猜测出来的；更新它们需要新配置，学习器不能修改。没有 profile 时视为事实未知，不视为拥有所有能力。
+
+在声明了 profile 的 scope 内，每条新增/更新规则必须显式给出 `applies_to` 和 `requires`：前者的全部标签、后者的全部能力必须同时存在于当前任务的 profile 才会选中。空列表表示不要求该条件。例：`applies_to: ["row-reduction"]`、`requires: ["full-evaluate"]`；需要 `host-device-profiler` 的建议不能发给只声明了 full evaluator 的任务。规则至少要匹配一个声明的生产 profile，否则提案拒绝。旧配置和不带条件的历史规则保持原来的 scope 行为；若希望全面采用条件筛选，应初始化明确声明 profile 的新实验。
+
+筛选在后台生成每任务快照时完成；生产依然只读一次文件。验证 solver 使用完全相同的筛选函数，收据所绑定的 suite 包含 profile。每一种实际发布的非空规则组合必须在至少两项冻结验证模板中出现；分别测过规则 A 与 B 不足以授权同时发布 A+B。组合覆盖不代表任务语义、设备和输入分布已泛化，仍需要独立审计。
+
+这些声明限制建议的发送范围，不授予执行权限，也不能证明自然语言建议如实声明了全部依赖。建议文本仍不可信，工具约束、进程隔离和独立 evaluator 继续负责执行边界。六条规则和 2400 字节的整体候选上限保持不变；本版不是无限记忆库或语义检索器。
+
 ## 安装和接入
 
 在已准备好依赖的环境中使用本分支：
@@ -61,6 +71,10 @@ python -m pip install --no-deps -e /path/to/kernel_envolve-rsi
 {
   "manager": "/work/manager-state",
   "scopes": {"reduction-b300": ["reduce-a", "reduce-b"]},
+  "profiles": {
+    "reduce-a": {"tags": ["row-reduction"], "capabilities": ["full-evaluate"]},
+    "reduce-b": {"tags": ["row-reduction"], "capabilities": ["full-evaluate"]}
+  },
   "learner_command": ["/opt/adapters/learn"],
   "learn_timeout_seconds": 120,
   "learn_budget_seconds": 1200,
@@ -83,8 +97,8 @@ python -m pip install --no-deps -e /path/to/kernel_envolve-rsi
       "min_cost_gain": 0.1,
       "max_cost_regression": 0.05,
       "tasks": [
-        {"path": "/work/validation/reduce-a", "kind": "generic"},
-        {"path": "/work/validation/reduce-b", "kind": "generic"}
+        {"path": "/work/validation/reduce-a", "kind": "generic", "profile": {"tags": ["row-reduction"], "capabilities": ["full-evaluate"]}},
+        {"path": "/work/validation/reduce-b", "kind": "generic", "profile": {"tags": ["row-reduction"], "capabilities": ["full-evaluate"]}}
       ]
     }
   }
@@ -130,7 +144,9 @@ kernel-envolve rsi --state /work/rsi-state run --interval 60
     "when": "明确满足的输入和硬件条件",
     "action": "建议的诊断或实验安排",
     "unless": "不适用条件；不能替代强制验证",
-    "evidence": ["输入 evidence 中的完整 ID"]
+    "evidence": ["输入 evidence 中的完整 ID"],
+    "applies_to": ["row-reduction"],
+    "requires": ["full-evaluate"]
   }],
   "remove": []
 }

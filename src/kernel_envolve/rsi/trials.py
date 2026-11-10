@@ -12,13 +12,14 @@ import shutil
 import statistics
 import subprocess
 import time
+from collections import Counter
 from pathlib import Path
 
 from ..manager.evidence import inspect_run
 from ..manager.process import exclusive, gpu_idle, lock_path
 from ..storage import config, digest, evaluator_hash, file_hash, write_json
 from .learning import verify_evidence
-from .model import context, read
+from .model import context, read, select_rules
 from .process import invoke
 
 
@@ -151,7 +152,7 @@ def trial(directory, task, suite, rules, seed, timeout, device):
         "model": suite["model"],
         "seed": seed,
         "seconds": min(remaining, suite["solver_seconds"]),
-        "strategy": context(rules),
+        "strategy": context(select_rules(rules, task.get("profile", {}))),
         "instructions": "Optimize only editable_files. Preserve task, oracle, tests, baseline and environment. Do not promote. The controller runs independent full evaluation after you exit. Return within the supplied time budget; use the configured model and seed where supported.",
     }
     solver_seconds = invoke(suite["command"], directory, packet, packet["seconds"], device=device)
@@ -299,6 +300,20 @@ def validate(store, identity):
     if scope not in store.config["suites"]:
         raise ValueError("No operator-configured validation suite")
     suite = store.config["suites"][scope]
+    try:
+        routing_coverage(store, candidate["rules"], scope)
+        routing_coverage(store, store.candidate(candidate["parent"])["rules"], scope)
+    except ValueError as exc:
+        rejected = {
+            "status": "rejected",
+            "accepted": False,
+            "reasons": [str(exc)],
+            "preflight": True,
+        }
+        with store.transaction():
+            store.db.execute("UPDATE candidates SET status='rejected' WHERE id=?", (identity,))
+            store.set(f"preflight_rejection:{identity}", rejected)
+        return rejected
     adapter_hash = adapter_identity(suite)
     verify_evidence(store, [e for r in candidate["rules"] for e in r["evidence"]], scope)
     device = store.config["validation_device"]
@@ -397,6 +412,7 @@ def checked_receipt(store, receipt):
     candidate = store.candidate(report["candidate"])
     scope = candidate["scope"]
     suite = store.config["suites"][scope]
+    routing_coverage(store, candidate["rules"], scope)
     if report.get("adapter_hash") != adapter_identity(suite):
         raise ValueError("Adapter changed; create a new validation experiment")
     if candidate["status"] != "validated" or digest(suite) != report["suite_hash"]:
@@ -419,6 +435,25 @@ def checked_receipt(store, receipt):
         raise ValueError("Validation did not pass")
     verify_evidence(store, [e for r in candidate["rules"] for e in r["evidence"]], scope)
     return candidate
+
+
+def routing_coverage(store, rules, scope):
+    """Every deployed combination needs two distinct frozen validation templates.
+
+    Matching rule IDs guarantees selection coverage, not semantic generalization.
+    Empty combinations preserve the original solver and require no new advice.
+    """
+
+    def signature(facts):
+        return tuple(sorted(r["id"] for r in select_rules(rules, facts)))
+
+    covered = Counter(
+        signature(task.get("profile", {})) for task in store.config["suites"][scope]["tasks"]
+    )
+    profiles = store.config.get("profiles", {})
+    needed = {signature(profiles.get(t, {})) for t in store.config["scopes"][scope]}
+    if any(combination and covered[combination] < 2 for combination in needed):
+        raise ValueError("Validation coverage needs two templates per deployed rule combination")
 
 
 def adopt(store, receipt):

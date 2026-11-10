@@ -65,7 +65,7 @@ def read(path, limit=1024 * 1024):
 
 
 def rule(value):
-    keys(value, {"id", "when", "action", "unless", "evidence"})
+    keys(value, {"id", "when", "action", "unless", "evidence"}, {"applies_to", "requires"})
     identifier(value["id"])
     for field in ("when", "action", "unless"):
         text(value[field], field, 400)
@@ -74,7 +74,37 @@ def rule(value):
         raise ValueError("Rules need 1–8 evidence references")
     if any(not isinstance(ref, str) or not re.fullmatch(r"[a-f0-9]{64}", ref) for ref in refs):
         raise ValueError("Invalid evidence reference")
+    for name in ("applies_to", "requires"):
+        labels(value.get(name, []), name)
     return value
+
+
+def labels(value, name):
+    if not isinstance(value, list) or len(value) > 32:
+        raise ValueError(f"{name} must be a list of at most 32 identifiers")
+    for item in value:
+        identifier(item)
+    if len(set(value)) != len(value):
+        raise ValueError(f"Duplicate {name}")
+    return sorted(value)
+
+
+def profile(value):
+    """Operator-owned facts, never inferred from advice or result prose."""
+    keys(value, set(), {"tags", "capabilities"})
+    return {name: labels(value.get(name, []), name) for name in ("tags", "capabilities")}
+
+
+def select_rules(rules, task_profile):
+    facts = profile(task_profile)
+    selected = []
+    for item in rules:
+        rule(item)
+        if set(item.get("applies_to", [])) <= set(facts["tags"]) and set(
+            item.get("requires", [])
+        ) <= set(facts["capabilities"]):
+            selected.append(item)
+    return selected
 
 
 def context(rules):

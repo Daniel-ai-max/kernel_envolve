@@ -3,7 +3,7 @@
 from pathlib import Path
 
 from ..manager.store import Store as Manager
-from .model import argv, identifier, keys, number, read, text
+from .model import argv, identifier, keys, number, profile, read, text
 
 
 def validate(raw, base):
@@ -20,6 +20,7 @@ def validate(raw, base):
             "suites",
             "auto_validate",
             "validation_device",
+            "profiles",
         },
     )
     cfg = {
@@ -77,6 +78,10 @@ def validate(raw, base):
         production_paths = [manager.task(t)["spec"]["workspace"] for t in assigned]
     finally:
         manager.close()
+    profiles = cfg.get("profiles", {})
+    if not isinstance(profiles, dict) or set(profiles) - assigned:
+        raise ValueError("Task profiles must name registered scope tasks")
+    cfg["profiles"] = {task: profile(value) for task, value in profiles.items()}
     if not isinstance(cfg["suites"], dict) or set(cfg["suites"]) - set(cfg["scopes"]):
         raise ValueError("Unknown validation scope")
     if cfg["auto_validate"] and set(cfg["suites"]) != set(cfg["scopes"]):
@@ -138,7 +143,8 @@ def validate(raw, base):
             raise ValueError("A suite needs 2–16 distinct held-out task templates")
         paths = []
         for item in suite["tasks"]:
-            keys(item, {"path", "kind"}, {"editable"})
+            keys(item, {"path", "kind"}, {"editable", "profile"})
+            item["profile"] = profile(item.get("profile", {}))
             path = (Path(base) / item["path"]).resolve()
             if not path.is_dir() or item["kind"] not in ("generic", "native"):
                 raise ValueError("Invalid validation task")

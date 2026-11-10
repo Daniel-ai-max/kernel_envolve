@@ -8,7 +8,7 @@ import uuid
 from pathlib import Path
 
 from ..storage import digest, write_json
-from .model import context, number, read
+from .model import context, number, read, select_rules
 
 
 class Store:
@@ -154,15 +154,18 @@ class Store:
             for scope, tasks in self.config["scopes"].items():
                 identity = self.active(scope)
                 rules = self.candidate(identity)["rules"]
-                rendered = context(rules) if self.get("enabled", True) else ""
                 for task_id in tasks:
                     task = manager.task(task_id)
+                    facts = self.config.get("profiles", {}).get(task_id, {})
+                    selected = select_rules(rules, facts)
+                    rendered = context(selected) if self.get("enabled", True) else ""
                     payload = {
                         "schema": 1,
                         "scope": scope,
                         "version": identity,
                         "task_identity": task["spec"]["identity"],
                         "text": rendered,
+                        "selected_rules": [r["id"] for r in selected],
                     }
                     payload["hash"] = digest(payload)
                     directory = Path(self.config["manager"]) / "rsi-context"
