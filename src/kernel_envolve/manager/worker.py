@@ -23,7 +23,9 @@ work, running jobs and evaluator evidence before repeating an experiment. Retain
 verified best; failed directions do not complete this ongoing task. Do not change
 oracle, tolerance or coverage to get a pass. Keep changes in this task's workspace.
 All GPU commands, including correctness tests, benchmarks and profilers, MUST use:
-  kernel-envolve manage gpu-run -- <command> <arguments...>
+  kernel-envolve manage gpu-run --expected-seconds <duration> -- <command> <arguments...>
+Declare a conservative duration so admission can reject work that no longer fits
+the current round or cumulative budgets, including time spent in the GPU queue.
 The wrapper supplies CUDA_VISIBLE_DEVICES. Never launch GPU work outside it or leave
 detached jobs. CPU analysis can proceed while another task owns the GPU.
 Use the existing evaluate/native-evaluate and promote/native-promote commands. A

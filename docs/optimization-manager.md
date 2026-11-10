@@ -83,11 +83,18 @@ session wall 时间包含该轮的等待；GPU 时间是作业占用设备的时
 
 ```sh
 # GPU 上运行的所有命令均经该入口，包括局部正确性检查和 profiler。
-kernel-envolve manage gpu-run -- kernel-envolve native-evaluate --task ./task --mode quick
-kernel-envolve manage gpu-run -- kernel-envolve native-evaluate --task ./task --mode full
+kernel-envolve manage gpu-run --expected-seconds 300 -- kernel-envolve native-evaluate --task ./task --mode quick
+kernel-envolve manage gpu-run --expected-seconds 1200 -- kernel-envolve native-evaluate --task ./task --mode full
 kernel-envolve native-promote ./task/.kernel_native/runs/<run>
 kernel-envolve manage report --file progress.json
 ```
+
+`--expected-seconds` 声明本次命令的预计执行时长，建议使用命令超时作为保守上界。
+管理器在入队前和获得设备锁后分别检查父轮次、累计 wall/GPU 剩余额度，排队时间也会扣除。
+不足时返回退出码 `2` 和 `error_type: gpu_duration_admission`，不启动子命令、不自动重试或延长预算。
+Agent 应保存检查点并重新规划；剩余累计预算不会因换轮恢复。额度按实际经过时间记账，
+声明时长不预扣额度，也不替代命令自身超时。此参数可选，旧调用未声明时保留原行为，
+不会提前判断作业是否来得及完成。
 
 GPU wrapper 会转发命令输出的最后 64 KiB，完整日志在管理状态目录的 `jobs/<id>/`。
 Agent 主进程默认看不到 CUDA 设备；GPU wrapper 给子进程设置目标 UUID。不能再嵌套
