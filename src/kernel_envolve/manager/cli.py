@@ -72,6 +72,11 @@ def parser():
         "--clear", action="store_true", help="Clear a quarantine after lock/device checks"
     )
     gpu = commands.add_parser("gpu-run", help="Queue a GPU command under the current agent round")
+    gpu.add_argument(
+        "--expected-seconds",
+        type=float,
+        help="Declared command duration; reject if round or cumulative budgets cannot fit it",
+    )
     gpu.add_argument("command", nargs=argparse.REMAINDER)
     report = commands.add_parser("report", help="Update the current round's research checkpoint")
     report.add_argument("--file", type=Path, required=True)
@@ -84,15 +89,20 @@ def main(argv=None):
         print(task_contract(args.task, args.kind))
         return 0
     if args.action == "gpu-run":
-        from .gpu import run
+        from .gpu import DurationAdmissionError, run
 
         command = args.command[1:] if args.command[:1] == ["--"] else args.command
-        return run(
-            args.state,
-            os.environ["KERNEL_ENVOLVE_TASK"],
-            os.environ["KERNEL_ENVOLVE_ROUND"],
-            command,
-        )
+        try:
+            return run(
+                args.state,
+                os.environ["KERNEL_ENVOLVE_TASK"],
+                os.environ["KERNEL_ENVOLVE_ROUND"],
+                command,
+                expected_seconds=args.expected_seconds,
+            )
+        except DurationAdmissionError as exc:
+            print(json.dumps({"error_type": "gpu_duration_admission", "error": str(exc)}))
+            return 2
     store = Store(args.state)
     try:
         if args.action == "init":
