@@ -98,6 +98,19 @@ def test_native_full_autograd_frozen_best(native_task):
     assert result["correctness"] == "pass", result.get("error")
     assert result["decision"]["eligible_for_best"], result["decision"]
     assert len(result["native_checks"]) == 3
+    assert set(result["phase_wall_seconds"]) == {
+        "snapshot",
+        "setup",
+        "correctness",
+        "native_checks",
+        "measurement",
+        "postcheck",
+        "integrity",
+        "cleanup",
+    }
+    assert all(value >= 0 for value in result["phase_wall_seconds"].values())
+    assert sum(result["phase_wall_seconds"].values()) == pytest.approx(result["seconds"])
+    assert "failed_phase" not in result
     promote_native(run)
     subprocess.run(
         [
@@ -119,6 +132,7 @@ def test_native_full_autograd_frozen_best(native_task):
     assert unchanged["correctness"] == "pass", unchanged.get("error")
     assert unchanged["same_candidate_as_best"]
     assert not unchanged["decision"]["eligible_for_best"]
+    assert "native_checks" not in unchanged["phase_wall_seconds"]
     # Changing the live package cannot alter the frozen best worker.
     (candidate / "toyop.py").write_text("def run(x): return x*2 + 0\n")
     _, again = evaluate_native(task, "quick", timeout=60)
@@ -168,6 +182,33 @@ def test_native_timeout_and_no_cuda_fallback(native_task):
     (candidate / "toyop.py").write_text("import time\ndef run(x):\n time.sleep(60)\n return x*2\n")
     _, result = evaluate_native(task, "quick", timeout=4)
     assert result["execution"] == "error"
+    assert not result["decision"]["eligible_for_best"]
+    assert result["failed_phase"] == "correctness"
+    assert "cleanup" in result["phase_wall_seconds"]
+    assert "measurement" not in result["phase_wall_seconds"]
+    assert sum(result["phase_wall_seconds"].values()) == pytest.approx(result["seconds"])
+
+
+@pytest.mark.parametrize("stage", ["snapshot", "native_checks"])
+def test_native_failure_keeps_phase_costs_without_inventing_later_work(
+    native_task, monkeypatch, stage
+):
+    from kernel_envolve import native
+
+    task, _ = native_task
+
+    def fail(*args, **kwargs):
+        raise RuntimeError("injected stage failure")
+
+    monkeypatch.setattr(native, stage, fail)
+    run, result = evaluate_native(task, "full", timeout=90)
+    assert result["execution"] == "error"
+    assert result["failed_phase"] == stage
+    assert stage in result["phase_wall_seconds"]
+    assert "cleanup" in result["phase_wall_seconds"]
+    assert "measurement" not in result["phase_wall_seconds"]
+    assert sum(result["phase_wall_seconds"].values()) == pytest.approx(result["seconds"])
+    assert json.loads((run / "result.json").read_text())["failed_phase"] == stage
     assert not result["decision"]["eligible_for_best"]
 
 

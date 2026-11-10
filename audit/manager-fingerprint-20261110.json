@@ -1,0 +1,53 @@
+{
+  "run": "teacher_stats/task/.kernel_native/runs/c7764de3717e4507922748956e1d1521",
+  "file_count": 9444,
+  "directory_count": 986,
+  "samples": [
+    {
+      "pair": 0,
+      "order": [
+        "old",
+        "new"
+      ],
+      "seconds": {
+        "old": 5.4329709720332175,
+        "new": 3.294855044106953
+      }
+    },
+    {
+      "pair": 1,
+      "order": [
+        "new",
+        "old"
+      ],
+      "seconds": {
+        "new": 3.306671386002563,
+        "old": 5.555621703038923
+      }
+    },
+    {
+      "pair": 2,
+      "order": [
+        "old",
+        "new"
+      ],
+      "seconds": {
+        "old": 5.762413386022672,
+        "new": 3.463797526084818
+      }
+    }
+  ],
+  "fingerprints": {
+    "old": "ff2a0cfd516849d7314f093f9b2100b2a02693acaa2145fde0eac148668147ac",
+    "new": "1b1ff11265ddfacc578a812dd05f91f31e7c1556202f7db369bf05d67a13f1e2"
+  },
+  "receipt_unchanged": true,
+  "host": "Linux-6.12.94-123.192.amzn2023.x86_64-x86_64-with-glibc2.39",
+  "storage": "FSx shared path; metadata caches/background IO uncontrolled; warm discovery and stability checks preceded timing",
+  "old_code_sha256": "89a4a1de2b9fe213d29ef0f11af8def174223ed6332b01cde052af65e91ed305",
+  "new_code_sha256": "4bc7dad1553401a5c0ac2d354489ecd5db7bc2f81c5d992f1099c4b90003eff0",
+  "scope": "fingerprint only; strong content hash verification is unchanged",
+  "finished_at": 1794314816.3746293,
+  "baseline_revision": "392a758146bf858428dd5fcf2044cdd8c4170c6f",
+  "candidate_branch": "codex/manager-progress-health"
+}

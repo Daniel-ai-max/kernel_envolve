@@ -99,6 +99,111 @@ def wait_for(check, timeout=10):
     raise AssertionError("Timed out waiting for a verified process/state transition")
 
 
+def test_live_but_unproductive_rounds_are_visible(managed, monkeypatch):
+    store, _, _ = managed
+    clock = [time.time()]
+    monkeypatch.setattr("kernel_envolve.manager.store.time.time", lambda: clock[0])
+    job = store.schedule()[0]
+    assert store.claim(job, os.getpid(), identity(os.getpid()))
+    clock[0] += 301
+    store.heartbeat(job, 301)
+    view = overview(store)["tasks"][0]
+    assert not view["stale"]  # Supervisor is healthy; research progress is a separate clock.
+    assert view["progress_stale"] and view["phase"] == "awaiting_progress"
+    original_progress = view["progress_as_of"]
+    store.finish(job, "succeeded")
+    clock[0] += 1
+    next_job = store.schedule()[0]
+    assert store.claim(next_job, os.getpid(), identity(os.getpid()))
+    view = overview(store)["tasks"][0]
+    assert view["progress_stale"] and view["progress_as_of"] == original_progress
+
+
+def test_detail_reads_workspace_notes_when_task_directory_is_separate(managed):
+    store, _, work = managed
+    task_dir = work / "task"
+    task_dir.mkdir()
+    spec = store.task("toy")["spec"]
+    spec["task_dir"] = str(task_dir)
+    store.db.execute("UPDATE tasks SET spec=? WHERE id='toy'", (json.dumps(spec),))
+    assert detail(store, "toy")["notes"] == ""
+    (work / "notes.md").write_text("workspace research checkpoint")
+    assert detail(store, "toy")["notes"] == "workspace research checkpoint"
+    (task_dir / "notes.md").write_text("task-specific checkpoint")
+    assert detail(store, "toy")["notes"] == "task-specific checkpoint"
+    (task_dir / "notes.md").write_text("x" * 40000)
+    assert len(detail(store, "toy")["notes"]) == 32000
+
+
+def test_first_session_has_grace_after_waiting_for_capacity(managed, monkeypatch):
+    store, _, _ = managed
+    clock = [time.time() + 600]
+    monkeypatch.setattr("kernel_envolve.manager.store.time.time", lambda: clock[0])
+    job = store.schedule()[0]
+    assert store.claim(job, os.getpid(), identity(os.getpid()))
+    assert not overview(store)["tasks"][0]["progress_stale"]
+    clock[0] += 301
+    assert overview(store)["tasks"][0]["progress_stale"]
+
+
+def test_only_changed_reports_refresh_research_progress(managed, monkeypatch):
+    store, _, _ = managed
+    clock = [time.time()]
+    monkeypatch.setattr("kernel_envolve.manager.store.time.time", lambda: clock[0])
+    job = store.schedule()[0]
+    assert store.claim(job, os.getpid(), identity(os.getpid()))
+    report = {"phase": "inspect precision", "next_action": "run fixed seed diagnosis"}
+    store.report("toy", job, report)
+    reported_at = overview(store)["tasks"][0]["progress_as_of"]
+    clock[0] += 301
+    store.report("toy", job, report)
+    store.report("toy", job, {})
+    view = overview(store)["tasks"][0]
+    assert view["progress_stale"] and view["progress_as_of"] == reported_at
+    store.report("toy", job, {"outcome": "identified an FP32 reduction discrepancy"})
+    view = overview(store)["tasks"][0]
+    assert not view["progress_stale"] and view["phase"] == "agent_running"
+    assert view["progress_as_of"] == clock[0]
+
+
+def test_gpu_work_and_pause_do_not_report_stalled_agent(managed, monkeypatch):
+    store, _, _ = managed
+    clock = [time.time()]
+    monkeypatch.setattr("kernel_envolve.manager.store.time.time", lambda: clock[0])
+    parent = store.schedule()[0]
+    assert store.claim(parent, os.getpid(), identity(os.getpid()))
+    gpu = store.enqueue(store.task("toy"), "gpu", ["unused"], parent)
+    clock[0] += 600
+    assert overview(store)["tasks"][0]["phase"] == "waiting_gpu"
+    assert not overview(store)["tasks"][0]["progress_stale"]
+    assert store.claim(gpu, os.getpid(), identity(os.getpid()))
+    clock[0] += 600
+    assert overview(store)["tasks"][0]["phase"] == "gpu_running"
+    assert not overview(store)["tasks"][0]["progress_stale"]
+    store.finish(gpu, "succeeded")
+    assert overview(store)["tasks"][0]["progress_as_of"] == clock[0]
+    clock[0] += 301
+    store.control("toy", "pause")
+    assert not overview(store)["tasks"][0]["progress_stale"]
+
+
+def test_legacy_report_clock_survives_upgrade_and_repeated_report(managed, monkeypatch):
+    store, _, _ = managed
+    clock = [time.time()]
+    monkeypatch.setattr("kernel_envolve.manager.store.time.time", lambda: clock[0])
+    job = store.schedule()[0]
+    assert store.claim(job, os.getpid(), identity(os.getpid()))
+    report = {"phase": "baseline preparation"}
+    store.report("toy", job, report)
+    store.db.execute("DELETE FROM metadata WHERE key='report_progress:toy'")
+    reported_at = clock[0]
+    clock[0] += 301
+    assert overview(store)["tasks"][0]["progress_as_of"] == reported_at
+    store.report("toy", job, report)
+    assert overview(store)["tasks"][0]["progress_as_of"] == reported_at
+    assert overview(store)["tasks"][0]["progress_stale"]
+
+
 def launch(store, key):
     return subprocess.Popen(
         [sys.executable, "-m", "kernel_envolve.manager.worker", str(store.root), key],
@@ -701,6 +806,93 @@ def test_evidence_freshness_is_independent_of_http_snapshot_time(managed):
     assert snapshot(store, "toy")["detail"]["evidence_stale"]
 
 
+def test_scan_progress_distinguishes_queue_age_from_scan_failure(managed, monkeypatch):
+    from kernel_envolve.manager import evidence
+    from kernel_envolve.manager.views import task_view
+
+    store, _, _ = managed
+    refresh(store)
+    observed = task_view(store, "toy")["evidence_as_of"]
+    now = observed + 60
+    assert task_view(store, "toy", now)["evidence_status"] == "pending"
+
+    def scan_task(*args):
+        scan = json.loads(store.one("SELECT data FROM metadata WHERE key='evidence_scan'")["data"])
+        assert scan["running"] and scan["task"] == "toy"
+        view = task_view(store, "toy", now)
+        assert view["evidence_stale"]  # Observation age alone is not a failure.
+        assert view["evidence_status"] == "verifying"
+        scan["task"] = "another-task"
+        store.db.execute(
+            "UPDATE metadata SET data=? WHERE key='evidence_scan'", (json.dumps(scan),)
+        )
+        assert task_view(store, "toy", now)["evidence_status"] == "queued"
+        assert task_view(store, "toy", scan["updated_at"] + 301)["evidence_status"] == "slow"
+        raise OSError("filesystem unavailable")
+
+    monkeypatch.setattr(evidence, "refresh_task", scan_task)
+    with pytest.raises(OSError, match="filesystem unavailable"):
+        refresh(store)
+    view = task_view(store, "toy")
+    assert view["evidence_status"] == "error"
+    assert view["evidence_scan_error"] == "filesystem unavailable"
+    scan = json.loads(store.one("SELECT data FROM metadata WHERE key='evidence_scan'")["data"])
+    assert not scan["running"] and scan["finished_at"] >= scan["started_at"]
+    monkeypatch.undo()
+    refresh(store)
+    assert task_view(store, "toy")["evidence_status"] == "current"
+
+
+def test_latest_evaluation_visible_without_promotion_and_invalidated_on_tamper(managed):
+    store, _, work = managed
+    run, result = evaluate(work, "quick")
+    refresh(store)
+    task = detail(store, "toy")
+    assert task["best"] is None
+    latest = task["latest_evaluation"]
+    assert latest["run"] == str(run)
+    assert latest["correctness"] == "pass"
+    assert latest["passed_checks"] == len(result["checks"])
+    assert "source" not in latest and "decision" not in latest
+
+    # A later failed candidate must replace the summary, not leave the older PASS visible.
+    (work / "candidate.py").write_text("def run(x): return x\n")
+    failed, _ = evaluate(work, "quick")
+    refresh(store)
+    latest = detail(store, "toy")["latest_evaluation"]
+    assert latest["run"] == str(failed) and latest["correctness"] == "fail"
+    assert not latest["evidence_error"]  # A verified failure is valid evidence.
+    (failed / "source" / "candidate.py").write_text("def run(x): return x+1\n")
+    refresh(store)
+    latest = detail(store, "toy")["latest_evaluation"]
+    assert latest["run"] == str(failed)
+    assert latest["evidence_error"] and latest["correctness"] is None
+
+
+def test_old_cached_results_receive_latest_projection_once(managed, monkeypatch):
+    from kernel_envolve.manager import evidence
+
+    store, _, work = managed
+    run, _ = evaluate(work, "quick")
+    refresh(store)
+    row = store.one("SELECT data FROM runs WHERE path=?", (str(run),))
+    legacy = json.loads(row["data"])
+    legacy.pop("recorded_at")
+    store.db.execute("UPDATE runs SET data=? WHERE path=?", (json.dumps(legacy), str(run)))
+    original = evidence.inspect_run
+    calls = []
+
+    def inspect(*args):
+        calls.append(args[0])
+        return original(*args)
+
+    monkeypatch.setattr(evidence, "inspect_run", inspect)
+    refresh(store)
+    refresh(store)
+    assert calls == [run]
+    assert detail(store, "toy")["latest_evaluation"]["recorded_at"] > 0
+
+
 def test_http_selected_detail_and_compact_summary(managed):
     store, _, work = managed
     run, _ = evaluate(work, "full")
@@ -734,3 +926,101 @@ def test_dashboard_polling_races_backoff_and_visibility():
     subprocess.run(
         [node, "--test", str(Path(__file__).with_name("manager_sync.mjs"))], check=True, timeout=15
     )
+
+
+@pytest.mark.parametrize("command", ["evaluate", "native-evaluate"])
+@pytest.mark.parametrize("descriptor", [None, "invalid", "-1"])
+def test_managed_lock_rejection_precedes_source_snapshot(
+    tmp_path, monkeypatch, capsys, command, descriptor
+):
+    from kernel_envolve.cli import main
+
+    monkeypatch.setenv("KERNEL_ENVOLVE_GPU_JOB", "managed-fixture")
+    if descriptor is None:
+        monkeypatch.delenv("KERNEL_ENVOLVE_LOCK_FD", raising=False)
+    else:
+        monkeypatch.setenv("KERNEL_ENVOLVE_LOCK_FD", descriptor)
+    # An absent task must not be read or created before diagnosing the broken adapter.
+    task = tmp_path / "not-created"
+    assert main([command, "--task", str(task)]) == 2
+    error = capsys.readouterr().err
+    assert "KERNEL_ENVOLVE_LOCK_FD is missing or invalid" in error
+    assert "os.execvpe" in error and "pass_fds" in error
+    assert not task.exists()
+
+
+def test_worker_spawn_rejects_closed_managed_lock(monkeypatch, tmp_path):
+    from kernel_envolve.execution import spawn
+
+    monkeypatch.setenv("KERNEL_ENVOLVE_GPU_JOB", "managed-fixture")
+    monkeypatch.setenv("KERNEL_ENVOLVE_LOCK_FD", "-1")
+    marker = tmp_path / "worker-started"
+    with pytest.raises(ValueError, match="pass_fds"):
+        spawn([sys.executable, "-c", f"from pathlib import Path; Path({str(marker)!r}).touch()"])
+    assert not marker.exists()
+
+
+@pytest.mark.parametrize("strategy", ["default_subprocess", "exec", "pass_fds"])
+def test_real_manager_evaluator_lock_inheritance(managed, strategy):
+    store, _, work = managed
+    evaluator = [
+        sys.executable,
+        "-m",
+        "kernel_envolve.cli",
+        "evaluate",
+        "--task",
+        str(work),
+        "--mode",
+        "quick",
+    ]
+    guard = f"import os,subprocess,sys; argv={evaluator!r}; "
+    if strategy == "exec":
+        guard += "os.execvpe(argv[0],argv,os.environ)"
+    elif strategy == "pass_fds":
+        guard += (
+            "sys.exit(subprocess.run(argv,pass_fds="
+            "(int(os.environ['KERNEL_ENVOLVE_LOCK_FD']),)).returncode)"
+        )
+    else:
+        guard += "sys.exit(subprocess.run(argv).returncode)"
+    gpu = [
+        sys.executable,
+        "-m",
+        "kernel_envolve.cli",
+        "manage",
+        "gpu-run",
+        "--",
+        sys.executable,
+        "-c",
+        guard,
+    ]
+    agent = (
+        "import json,os,pathlib,subprocess; "
+        f"reply=subprocess.run({gpu!r},capture_output=True,text=True); "
+        "pathlib.Path('reply.json').write_text(json.dumps("
+        "{'code':reply.returncode,'stdout':reply.stdout,'stderr':reply.stderr})); "
+        "pathlib.Path(os.environ['KERNEL_ENVOLVE_REPORT']).write_text("
+        "json.dumps({'next_action':'Inspect managed adapter results'}))"
+    )
+    replace_command(store, [sys.executable, "-c", agent], round_timeout_seconds=30)
+    key = store.schedule()[0]
+    process = launch(store, key)
+    try:
+        out, err = process.communicate(timeout=30)
+        assert process.returncode == 0, (out, err)
+        reply = json.loads((work / "reply.json").read_text())
+        jobs = store.rows("SELECT * FROM jobs WHERE kind='gpu' AND parent=?", (key,))
+        assert len(jobs) == 1
+        if strategy == "default_subprocess":
+            assert reply["code"] != 0
+            assert "KERNEL_ENVOLVE_LOCK_FD is missing or invalid" in reply["stdout"]
+            assert "os.execvpe" in reply["stdout"] and "pass_fds" in reply["stdout"]
+            assert not (work / ".kernel_envolve").exists()
+            assert jobs[0]["status"] == "failed"
+        else:
+            assert reply["code"] == 0, reply
+            result = json.loads(reply["stdout"])
+            assert result["execution"] == "completed" and result["correctness"] == "pass"
+            assert jobs[0]["status"] == "succeeded"
+    finally:
+        terminate(process)

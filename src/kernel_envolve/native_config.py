@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 
 from .native_harness import validate_paths
-from .protocol import plan
+from .protocol import objective_cases, performance_role, plan
 from .storage import read_json
 
 
@@ -101,11 +101,21 @@ def load_config(task):
     if not ids or any(not isinstance(s, str) or not s for s in ids) or len(set(ids)) != len(ids):
         raise ValueError("Unique nonempty string case ids required")
     for case in cfg["cases"]:
-        if set(case) - {"id", "args", "weight", "quick", "measure", "max_us", "max_peak_bytes"}:
+        if set(case) - {
+            "id",
+            "args",
+            "weight",
+            "quick",
+            "measure",
+            "max_us",
+            "max_peak_bytes",
+            "performance_role",
+        }:
             raise ValueError("Unknown case field")
         for flag in ("quick", "measure"):
             if flag in case and type(case[flag]) is not bool:
                 raise ValueError(f"Invalid case flag: {flag}")
+        role = performance_role(case)
         if not case.get("measure", True) and {"weight", "max_us", "max_peak_bytes"} & case.keys():
             raise ValueError("Unmeasured cases cannot have weights or performance caps")
         if "max_us" in case and (
@@ -116,7 +126,7 @@ def load_config(task):
             raise ValueError("max_us must be finite and positive")
         if "max_peak_bytes" in case and cfg["device"] == "cpu":
             raise ValueError("CUDA peak-memory limits require CUDA")
-        if case.get("measure", True):
+        if case.get("measure", True) and role == "objective":
             if (
                 type(case.get("weight")) not in (float, int)
                 or not math.isfinite(case["weight"])
@@ -129,8 +139,10 @@ def load_config(task):
             raise ValueError("max_peak_bytes must be positive")
     for mode in ("quick", "full"):
         selected, _, _, _ = plan(cfg, mode)
-        if not any(c.get("measure", True) for c in selected):
-            raise ValueError("Each mode needs measured cases")
+        if not objective_cases(selected):
+            raise ValueError(
+                f"Each mode needs measured cases with performance_role=objective: {mode}"
+            )
     if not set(cfg["quick_seeds"]).issubset(cfg["full_seeds"]):
         raise ValueError("quick seeds must be included in full seeds")
     if not cfg["required_scopes"] or set(cfg["required_scopes"]) - {
