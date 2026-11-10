@@ -178,9 +178,7 @@ class Session:
             except torch.cuda.OutOfMemoryError:
                 self._guard_fallback("allocation_oom")
                 break  # Keep the original exact CPU path for all uncached inputs.
-            allocated = (
-                torch.cuda.memory_allocated(self.device) - before if cuda else 0
-            )
+            allocated = torch.cuda.memory_allocated(self.device) - before if cuda else 0
             cost = allocated if cuda else size
             if cost > budget or (cuda and allocated < size):
                 # Account for allocator rounding; ambiguous deltas are not deducted.
@@ -198,7 +196,9 @@ class Session:
         return {
             "device_inputs": sorted(self._device_values),
             "host_inputs": sorted(
-                self.workload.tensors.keys() - self._device_values.keys() - set(self.workload.mutable)
+                self.workload.tensors.keys()
+                - self._device_values.keys()
+                - set(self.workload.mutable)
             ),
             "private_allocated_bytes": self.private_allocated_bytes,
             "snapshot_seconds": self.input_snapshot_seconds,

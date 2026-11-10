@@ -142,13 +142,25 @@ def test_worker_failure_reply_retains_guard_statistics(tmp_path, monkeypatch):
         " x=torch.ones(4)\n return Workload({'x':x}, lambda: x.add_(1))\n"
     )
     request = tmp_path / "request.json"
-    request.write_text(json.dumps({
-        "config": {"device": "cpu", "env": {}, "imports": {}, "deterministic": True},
-        "roots": {}, "role": "candidate", "adapter": str(adapter),
-    }))
+    request.write_text(
+        json.dumps(
+            {
+                "config": {"device": "cpu", "env": {}, "imports": {}, "deterministic": True},
+                "roots": {},
+                "role": "candidate",
+                "adapter": str(adapter),
+            }
+        )
+    )
     reply = tmp_path / "reply.json"
-    command = {"id": 1, "kind": "check", "case": {}, "seed": 0,
-               "reply": str(reply), "output": str(tmp_path / "output.pt")}
+    command = {
+        "id": 1,
+        "kind": "check",
+        "case": {},
+        "seed": 0,
+        "reply": str(reply),
+        "output": str(tmp_path / "output.pt"),
+    }
     monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(command) + "\n"))
     threads, deterministic = torch.get_num_threads(), torch.are_deterministic_algorithms_enabled()
     try:

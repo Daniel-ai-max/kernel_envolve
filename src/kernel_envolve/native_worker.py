@@ -65,7 +65,8 @@ def serve(request_path):
         session = None
         try:
             session = Session(
-                build(command["case"], command["seed"]), device,
+                build(command["case"], command["seed"]),
+                device,
                 device_guard_limit=2 * 1024**3 if device.startswith("cuda") else 0,
             )
             if command["kind"] == "check":
@@ -112,7 +113,9 @@ def serve(request_path):
                     del output
                 torch.save([observation], command["output"])
                 result = {
-                    "status": "pass", "samples_us": samples, "peak_bytes": peak,
+                    "status": "pass",
+                    "samples_us": samples,
+                    "peak_bytes": peak,
                     "peak_bytes_including_input_guards": raw_peak,
                     "private_input_guard_bytes_by_iteration": private_guard_bytes,
                 }

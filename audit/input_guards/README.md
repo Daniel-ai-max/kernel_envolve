@@ -35,3 +35,5 @@
 - 主任务独立全套回归：392 passed、10 skipped，116.16 秒；使用绝对 `PYTHONPATH`，运行前后 src/tests 哈希一致。
 
 运行 pytest 时应将 `PYTHONPATH` 设置为 checkout 的绝对 `src` 路径，避免测试子进程切换目录后加载机器已有的旧版安装。初次全套本机测试使用相对路径，出现 8 项旧版本 CLI 污染失败（383 passed、8 skipped）；该次结果不作为本修改回归通过证据。
+
+PR CI 要求的格式修正仅涉及四份 Python 文件；原 GPU 源码 SHA 保持不变，格式前后 AST 完全相同，校验证据见 [format-equivalence.json](format-equivalence.json)。未重复 GPU 诊断。
