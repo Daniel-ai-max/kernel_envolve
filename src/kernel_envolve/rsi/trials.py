@@ -6,6 +6,7 @@ Use an externally sandboxed adapter when the underlying coding agent is untruste
 
 import contextlib
 import json
+import math
 import os
 import shutil
 import statistics
@@ -189,34 +190,77 @@ def trial(directory, task, suite, rules, seed, timeout, device):
 
 
 def verdict(pairs, suite):
-    """Per-task preservation plus an explicit quality OR cost benefit, repeated consistently."""
-    reasons, improvements = [], []
+    """Preserve tasks and require a whole-suite benefit within a declared cost ceiling."""
+    reasons, repeats = [], []
+    result = {
+        "accepted": False,
+        "reasons": reasons,
+        "repeats": repeats,
+        "scope": "Equal-weight declared tasks only; wall time is not token cost or a significance test",
+    }
+    expected = {(r, t) for r in range(suite["repeats"]) for t in range(len(suite["tasks"]))}
+    try:
+        complete = (
+            bool(expected)
+            and len(pairs) == len(expected)
+            and {(p["repeat"], p["task"]) for p in pairs} == expected
+        )
+        metrics_valid = all(
+            type(p[role]["passed"]) is bool
+            and all(
+                type(p[role][field]) in (int, float) and math.isfinite(p[role][field])
+                for field in ("quality", "solver_seconds", "seconds")
+            )
+            and p[role]["solver_seconds"] > 0
+            and p[role]["seconds"] > 0
+            and (p[role]["quality"] >= 0 if p[role]["passed"] else p[role]["quality"] == -1)
+            for p in pairs
+            for role in ("control", "candidate")
+        )
+    except (KeyError, TypeError, ValueError, OverflowError):
+        complete = metrics_valid = False
+    if not complete or not metrics_valid:
+        reasons.append("Incomplete matched validation or invalid trial metrics")
+        return result
+
     for pair in pairs:
         old, new = pair["control"], pair["candidate"]
         if not new["passed"]:
             reasons.append("Candidate did not pass full correctness")
         if old["passed"] and new["quality"] < old["quality"] - suite["max_quality_regression"]:
             reasons.append("Per-task quality regression")
-        quality_win = (new["passed"] and not old["passed"]) or new["quality"] - old[
-            "quality"
-        ] > suite["min_quality_gain"]
-        cost_win = (
-            old["passed"]
-            and old["quality"] > 0
-            and new["passed"]
-            and new["quality"] >= old["quality"]
-            and new["solver_seconds"] < old["solver_seconds"] * (1 - suite["min_cost_gain"])
-        )
-        improvements.append(quality_win or cost_win)
-    # Each repeat must show benefit on at least one task; all tasks must preserve correctness.
+    # Failures are a separate correctness outcome, not fictitious negative speedups.
+    # Never pool repeats: one lucky run must not cancel another run's regression.
     for repeat in range(suite["repeats"]):
-        if not any(win for pair, win in zip(pairs, improvements) if pair["repeat"] == repeat):
-            reasons.append("No reproducible quality or solver-wall-time benefit")
-    return {
-        "accepted": not reasons,
-        "reasons": sorted(set(reasons)),
-        "scope": "Declared suite only; wall time is not model-token cost or a significance test",
-    }
+        group = [p for p in pairs if p["repeat"] == repeat]
+        totals = {"repeat": repeat}
+        for role in ("control", "candidate"):
+            totals[f"{role}_quality"] = statistics.mean(max(0.0, p[role]["quality"]) for p in group)
+            totals[f"{role}_passed"] = sum(p[role]["passed"] for p in group)
+            for field in ("solver_seconds", "seconds"):
+                totals[f"{role}_{field}"] = math.fsum(p[role][field] for p in group)
+        gain = totals["candidate_quality"] - totals["control_quality"]
+        totals["quality_gain"] = gain
+        if gain < -1e-12:
+            reasons.append("Aggregate quality regression")
+        for field in ("solver_seconds", "seconds"):
+            if totals[f"candidate_{field}"] > totals[f"control_{field}"] * (
+                1 + suite.get("max_cost_regression", 0.05)
+            ):
+                reasons.append(f"Aggregate {field} regression")
+        quality_win = gain > suite["min_quality_gain"]
+        coverage_win = totals["candidate_passed"] > totals["control_passed"]
+        cost_win = (
+            totals["control_quality"] > 0
+            and gain >= -1e-12
+            and totals["candidate_solver_seconds"]
+            < totals["control_solver_seconds"] * (1 - suite["min_cost_gain"])
+        )
+        if not (quality_win or coverage_win or cost_win):
+            reasons.append("No reproducible whole-suite quality, correctness or cost benefit")
+        repeats.append(totals)
+    result.update(accepted=not reasons, reasons=sorted(set(reasons)))
+    return result
 
 
 def validate(store, identity):

@@ -255,11 +255,14 @@ def test_gate_preservation_and_repeated_benefit():
         "min_quality_gain": 0.02,
         "max_quality_regression": 0.01,
         "min_cost_gain": 0.1,
+        "max_cost_regression": 0.05,
+        "tasks": [{}, {}],
     }
-    base = {"passed": True, "quality": 0.2, "solver_seconds": 10}
+    base = {"passed": True, "quality": 0.2, "solver_seconds": 10, "seconds": 12}
     pairs = [
-        {"repeat": r, "task": 0, "control": dict(base), "candidate": {**base, "quality": 0.3}}
+        {"repeat": r, "task": t, "control": dict(base), "candidate": {**base, "quality": 0.3}}
         for r in range(2)
+        for t in range(2)
     ]
     assert verdict(pairs, suite)["accepted"]
     pairs[1]["candidate"]["passed"] = False
@@ -267,6 +270,92 @@ def test_gate_preservation_and_repeated_benefit():
     pairs[1]["candidate"] = {**base, "quality": 0.1, "solver_seconds": 1}
     assert not verdict(pairs, suite)["accepted"]
     pairs[1]["candidate"] = dict(base)
+    pairs[0]["candidate"] = dict(base)
+    assert not verdict(pairs, suite)["accepted"]
+
+
+def gate_fixture(tasks=2):
+    suite = {
+        "repeats": 2,
+        "tasks": [{} for _ in range(tasks)],
+        "min_quality_gain": 0.01,
+        "max_quality_regression": 0.02,
+        "min_cost_gain": 0.1,
+        "max_cost_regression": 0.05,
+    }
+    base = {"passed": True, "quality": 0.4, "solver_seconds": 10, "seconds": 12}
+    pairs = [
+        {"repeat": r, "task": t, "control": dict(base), "candidate": dict(base)}
+        for r in range(2)
+        for t in range(tasks)
+    ]
+    return suite, pairs
+
+
+def test_gate_rejects_local_win_hiding_aggregate_quality_loss():
+    suite, pairs = gate_fixture(16)
+    for pair in pairs:
+        pair["candidate"]["quality"] = 0.411 if pair["task"] == 0 else 0.381
+    result = verdict(pairs, suite)
+    assert not result["accepted"]
+    assert "Aggregate quality regression" in result["reasons"]
+
+
+@pytest.mark.parametrize("field", ["solver_seconds", "seconds"])
+def test_gate_rejects_cost_explosion_despite_quality_and_local_cost_win(field):
+    suite, pairs = gate_fixture(16)
+    for pair in pairs:
+        pair["candidate"]["quality"] = 0.5
+        pair["candidate"][field] = 5 if pair["task"] == 0 else 100
+    assert not verdict(pairs, suite)["accepted"]
+
+
+def test_gate_accepts_whole_suite_cost_saving_and_reports_aggregates():
+    suite, pairs = gate_fixture()
+    for pair in pairs:
+        pair["candidate"]["solver_seconds"] = 8
+        pair["candidate"]["seconds"] = 10
+    result = verdict(pairs, suite)
+    assert result["accepted"]
+    assert result["repeats"][0]["candidate_solver_seconds"] == 16
+    assert result["repeats"][0]["quality_gain"] == 0
+
+
+def test_gate_does_not_reward_fast_zero_yield_or_failure_score_arithmetic():
+    suite, pairs = gate_fixture()
+    for pair in pairs:
+        pair["control"]["quality"] = 0
+        pair["candidate"].update(quality=0, solver_seconds=1, seconds=3)
+    assert not verdict(pairs, suite)["accepted"]
+    # Fixing correctness is useful, but cannot mask losing valid speedups elsewhere.
+    for pair in pairs:
+        if pair["task"] == 0:
+            pair["control"].update(passed=False, quality=-1)
+        else:
+            pair["control"]["quality"] = 0.02
+            pair["candidate"]["quality"] = 0.001
+    assert not verdict(pairs, suite)["accepted"]
+    for pair in pairs:
+        if pair["task"] == 1:
+            pair["candidate"]["quality"] = 0.02
+    assert verdict(pairs, suite)["accepted"]
+
+
+@pytest.mark.parametrize("defect", ["missing", "duplicate", "nan", "infinity", "negative"])
+def test_gate_fails_closed_on_invalid_trial_metrics(defect):
+    suite, pairs = gate_fixture()
+    for pair in pairs:
+        pair["candidate"]["quality"] = 0.5
+    if defect == "missing":
+        pairs.pop()
+    elif defect == "duplicate":
+        pairs[1] = pairs[0]
+    elif defect == "nan":
+        pairs[0]["candidate"]["quality"] = float("nan")
+    elif defect == "infinity":
+        pairs[0]["candidate"]["solver_seconds"] = float("inf")
+    else:
+        pairs[0]["candidate"]["seconds"] = -1
     assert not verdict(pairs, suite)["accepted"]
 
 

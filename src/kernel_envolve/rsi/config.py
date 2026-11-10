@@ -93,6 +93,7 @@ def validate(raw, base):
                 "min_quality_gain",
                 "max_quality_regression",
                 "min_cost_gain",
+                "max_cost_regression",
             },
         )
         suite = {
@@ -103,6 +104,7 @@ def validate(raw, base):
             "min_quality_gain": 0.01,
             "max_quality_regression": 0.02,
             "min_cost_gain": 0.1,
+            "max_cost_regression": 0.05,
             **suite,
         }
         argv(suite["command"])
@@ -111,7 +113,12 @@ def validate(raw, base):
             raise ValueError("Validation requires 2–10 matched repeats")
         for key in ("solver_seconds", "evaluation_seconds", "max_seconds"):
             number(suite[key], key)
-        for key in ("min_quality_gain", "max_quality_regression", "min_cost_gain"):
+        for key in (
+            "min_quality_gain",
+            "max_quality_regression",
+            "min_cost_gain",
+            "max_cost_regression",
+        ):
             number(suite[key], key, lower=-1e-12, upper=0.5)
             if suite[key] < 0:
                 raise ValueError("Negative gate threshold")

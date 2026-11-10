@@ -79,6 +79,7 @@ python -m pip install --no-deps -e /path/to/kernel_envolve-rsi
       "min_quality_gain": 0.01,
       "max_quality_regression": 0.02,
       "min_cost_gain": 0.1,
+      "max_cost_regression": 0.05,
       "tasks": [
         {"path": "/work/validation/reduce-a", "kind": "generic"},
         {"path": "/work/validation/reduce-b", "kind": "generic"}
@@ -147,11 +148,15 @@ solver 的 stdout 不是成绩来源。退出后控制器检查文件范围，�
 
 1. candidate 每次 full 都正确完成；失败不能由收益或成本补偿。
 2. 每个任务对的质量不低于 control 超过声明的退化额度。
-3. 每轮重复至少一项任务出现质量收益，或在不损失已有正收益时减少 solver wall time。
+3. 每轮重复分别计算任务等权平均质量，不能整体下降；正确性失败的 `-1` 标记按零收益计入平均，正确性修复单独计数，不能用负数差值制造性能收益。
+4. 每轮的 solver 总耗时和 trial 总耗时均不得超过 control 的 `1 + max_cost_regression` 倍，默认允许 5% 测量波动。trial 包含副本准备、solver 和独立 full evaluator；质量提升也不能绕过这个成本上限。
+5. 每轮还须满足至少一项：平均质量提升超过 `min_quality_gain`；修复 control 的正确性失败；或者保留已有整体正收益且 solver 总耗时降低超过 `min_cost_gain`。不能跨轮抵消退化，也不能用一项任务的改善掩盖整体退化。收据记录每轮汇总供审计。
 
 质量是 full evaluator 允许晋升的结果相对固定 baseline 的延迟下降；不合格候选不计正收益。未产出可晋升结果时用保留 baseline 的零收益计算，正确性失败另记失败。策略验证不会实际晋升这些实验 kernel。
 
-这是有限 suite 上的保守工程准入，不是统计显著性保证，也不是广泛泛化证明。成本只测 solver wall time，未测 token、实际 GPU 活跃时间和端到端训练吞吐。验证集反复使用仍可能产生适应性过拟合，需由操作者周期性更换独立审计任务；`min_*` 不是宣称通用最优阈值。
+这是有限 suite 上的保守工程准入，不是统计显著性保证，也不是广泛泛化证明。等权平均是声明的验证目标，不代表生产任务频率；各任务的耗时仍需逐项检查，整体成本约束不能保证每项都更快。5% 不是校准过的置信区间；应先测环境抖动再固定门槛。成本测 solver 和 trial wall time，未测 token、实际 GPU 活跃时间和端到端训练吞吐，也未将生成与验证策略的一次性成本计入收益。验证集反复使用仍可能产生适应性过拟合，需由操作者周期性更换独立审计任务；`min_*` 不是宣称通用最优阈值。
+
+验证器升级后，旧 receipt 的源码身份不再匹配，不能继续用于采用；后台 audit 会撤回使用旧验证器材料的活动策略。升级时先 disable，执行 audit 后再 enable。旧配置未声明 `max_cost_regression` 时采用 0.05；如需其他值，建立新配置，不修改已有配置或重试旧候选。
 
 候选只有一次验证机会。失败或中断记录为 rejected；重启后未完成的 validating 不会自动重跑。完整 receipt 与状态原子保存，采用前复查证据、模板、evaluator 与策略验证器源码身份及当前父版本。其他候选先被采用时，旧父版本候选变为 stale，不能沿用之前的比较。
 
@@ -202,4 +207,8 @@ pytest -q tests/test_rsi.py tests/test_rsi_native.py
 
 后续研究方向包括：基于实际轨迹校准筛选门槛、按问题簇检索经验、独立审计任务池、token 成本记录、受隔离的诊断工具进化。它们应在验证现有闭环的真实收益后逐项引入。
 
-本次工程验证记录见 [RSI 验证收据](../audit/rsi_20261110.json)：全仓 236 passed / 8 GPU-only skipped，33 项 RSI 专项测试，独立 wheel 安装闭环，以及每轮建议读取的本机微基准。该记录不包含真实模型学习收益或真实 GPU 策略实验。
+针对参考方法的逐项取舍、准入反例和实证比较方案见 [RSI 设计复核](rsi-design-review.md)。工程边界更明确不等于已证明方法优于所有参考工作。
+
+初版工程验证记录见 [RSI 验证收据](../audit/rsi_20261110.json)：全仓 236 passed / 8 GPU-only skipped，33 项 RSI 专项测试，独立 wheel 安装闭环，以及每轮建议读取的本机微基准。该记录不包含真实模型学习收益或真实 GPU 策略实验。
+
+准入复核后的验证见 [RSI 复核收据](../audit/rsi_review_20261110.json)：全仓 246 passed / 8 GPU-only skipped，43 项 RSI 专项测试；保留初次测试启动路径问题与复验说明。旧安装收据不代表新版验证器已复验。
