@@ -1,9 +1,11 @@
 """Real CPU subprocesses exercise diagnosis, unproductive retries and budget exhaustion."""
 
 import json
+import math
 import os
 import sys
 import time
+from unittest.mock import patch
 
 import pytest
 from test_manager import launch, replace_command
@@ -24,7 +26,13 @@ def run_round(store):
 
 
 def advance_retry(store):
-    assert not store.schedule()
+    task = store.task("toy")
+    next_at = task["next_at"]
+    assert math.isfinite(next_at) and next_at > task["created"]
+    # Process teardown can outlast the 0.1 s success cooldown on a busy runner.
+    # Test admission just before the recorded deadline, not at a racing wall time.
+    with patch("kernel_envolve.manager.store.time.time", return_value=next_at - 0.001):
+        assert not store.schedule()
     # Fast-forward only the test's admission timestamp; actual subprocesses and
     # accumulated wall/GPU usage are never mocked or reset.
     store.db.execute("UPDATE tasks SET next_at=0 WHERE id='toy'")

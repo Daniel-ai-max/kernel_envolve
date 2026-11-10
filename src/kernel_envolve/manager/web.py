@@ -59,6 +59,7 @@ def server(root, port=8787):
                 "/": ("index.html", "text/html; charset=utf-8"),
                 "/app.js": ("app.js", "text/javascript; charset=utf-8"),
                 "/sync.js": ("sync.js", "text/javascript; charset=utf-8"),
+                "/summary.js": ("summary.js", "text/javascript; charset=utf-8"),
                 "/style.css": ("style.css", "text/css; charset=utf-8"),
             }
             if path in assets:

@@ -443,7 +443,7 @@ def test_http_origin_controls_and_packaged_assets(managed):
     try:
         data = json.load(urllib.request.urlopen(base + "/api/state"))
         assert data["tasks"][0]["spec"]["baseline"]["revision"] == "fixture-v1"
-        for asset in ("/", "/app.js", "/sync.js", "/style.css"):
+        for asset in ("/", "/app.js", "/sync.js", "/summary.js", "/style.css"):
             assert urllib.request.urlopen(base + asset).status == 200
         for headers in ({}, {"X-Manager-Token": data["token"], "Origin": "https://evil.test"}):
             req = urllib.request.Request(
@@ -922,13 +922,12 @@ def test_http_selected_detail_and_compact_summary(managed):
         thread.join()
 
 
-def test_dashboard_polling_races_backoff_and_visibility():
+@pytest.mark.parametrize("script", ["manager_sync.mjs", "manager_summary.mjs"])
+def test_dashboard_polling_races_backoff_and_visibility(script):
     node = shutil.which("node")
     if not node:
         pytest.skip("Node is required for browser-independent polling tests")
-    subprocess.run(
-        [node, "--test", str(Path(__file__).with_name("manager_sync.mjs"))], check=True, timeout=15
-    )
+    subprocess.run([node, "--test", str(Path(__file__).with_name(script))], check=True, timeout=15)
 
 
 @pytest.mark.parametrize("command", ["evaluate", "native-evaluate"])
