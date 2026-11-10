@@ -7,6 +7,8 @@ description: 通过假设、代码实验、独立正确性验证和配对计时�
 
 使用普通文件、现有 coding agent 和任务 evaluator 完成迭代。自主选择实验路线；每次接受性能结论必须有可复现的验证和测量证据。
 
+默认在目标 GPU 机器上使用 agent 的文件/命令工具，直接调用本地 evaluator；模型服务可在远端。无需独立 CPU 实例或 CPU 准备阶段。第一次实际评测同时检查环境和编译链，失败时根据 CLI 的 error（阶段、编译输出、退出码）修复，不为每轮增加固定环境自检。
+
 ## 开始一项任务
 
 - 明确调用语义、输入取值域（如正数、合法索引）、shape/dtype/layout/alias、允许的误差与原地更新、实际调用入口、目标硬件、测量范围和资源预算。换值验证仍须遵守取值域，通过任务输入工厂生成，不统一替换成 randn。缺少真实 workload 权重时，明确声明 benchmark 目标。
@@ -23,7 +25,7 @@ description: 通过假设、代码实验、独立正确性验证和配对计时�
 4. **确认。** 有希望且可交付的候选做 full，与当前 best、固定 baseline 同轮实测。检查覆盖、逐 case 增量与累计回退、噪声、目标权重和计时范围；有疑问时查看原始样本，不自行改 PASS/分数。仅为解释瓶颈时才跑 profiler。
 5. **晋升或继续。** full 证据满足任务目标后 promote。更快但未确认的代码仍是 candidate；正确但更慢的实现可以留下供组合。记录本轮假设、改动、run 路径、结论与下一步，维护一个简短 `notes.md` 即可。
 
-根据 CLI 的 phase_wall_seconds 和 worker_process_wall_seconds 判断成本：setup 高时减少重复启动，correctness/measurement 高时用 --case/--seed 缩小探索范围。探索 trial 数在任务开始时约定；不因本轮结果修改契约或缩减正式 full 的固定覆盖。不要为省启动成本复用失败的 CUDA 进程，也不要跨候选复用正确性 PASS。
+根据 CLI 的 phase_wall_seconds 和 worker_process_wall_seconds 判断成本：setup 高时先区分导入与编译成本：减少无用启动，重复编译则优先使用工具链已有的、按源码和编译配置区分的缓存；correctness/measurement 高时用 --case/--seed 缩小探索范围。探索 trial 数在任务开始时约定；不因本轮结果修改契约或缩减正式 full 的固定覆盖。不要为省启动成本复用失败的 CUDA 进程，也不要跨候选复用正确性 PASS。
 
 噪声导致的 inconclusive 表示收益尚未确认，不等于候选更慢。保留有希望的候选并检查测量环境；连续 inconclusive 不能单独作为达到性能极限的证据。
 

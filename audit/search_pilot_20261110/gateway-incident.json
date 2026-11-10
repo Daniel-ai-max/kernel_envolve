@@ -1,0 +1,25 @@
+{
+  "recorded_at": 1794283474.689951,
+  "cause": "Gateway kept serial-model lock until upstream EOF after response.completed; next legitimate Codex request could receive409.",
+  "affected_trials": [
+    {
+      "index": 0,
+      "effect": "Aborted on gateway409 after baseline verification/profile; original baseline delivery preserved."
+    },
+    {
+      "index": 1,
+      "effect": "Controller interrupted active search upon diagnosing shared gateway defect; frozen delivery retained."
+    }
+  ],
+  "changes": "Close upstream on terminal SSE event; briefly queue a subsequent request while prior handler finishes cleanup.",
+  "remaining_authorized_indices": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "retries_of_model_searches": 0
+}

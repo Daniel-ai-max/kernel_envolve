@@ -1,0 +1,2531 @@
+{
+  "transport": "completed",
+  "returncode": 0,
+  "stdout": "{\"correct\": true, \"checks\": 48, \"samples\": 240, \"error\": null}\n",
+  "stderr": "",
+  "seconds": 4.046258503105491,
+  "payload": {
+    "task": "row_sum",
+    "device": "cuda:0",
+    "scope": "Independent frozen single-file submission acceptance; no development verdicts",
+    "timer": "synchronized_eager_wall",
+    "sources": {
+      "/home/sagemaker-user/ke_pilot_runtime/live/candidate.py": "36a34eb9719374ded274b059929e5ba9292c3fba3268c748dfa835325cfbaa5e",
+      "/home/sagemaker-user/ke_pilot_runtime/audit/search_tasks/row_sum/task.py": "45019d9b266c5cc88ae26fe6e6e15b98e8b85e9bfde02421c9bc3058596e2276",
+      "/home/sagemaker-user/ke_pilot_runtime/audit/search_tasks/row_sum/task.json": "72955a35e246eb8a3b4958df83b48dc90ce8bcd80c55f37275f9db13dd47bbd6"
+    },
+    "verifier_sha256": "dbc1adbf2bb8e9cf5d9a75f89219dbb5ab46ba0a501e414ee7fc98602ac2c701",
+    "seeds_sha256": "abd7a9cacc7f201145abd90f3e740c5cfe11889e0da6c4eff55c80b9dc2b26b2",
+    "seeds": [
+      1688244883,
+      1764174667,
+      658735468,
+      1126136598
+    ],
+    "torch": "2.12.1+cu130",
+    "numpy": "1.26.4",
+    "cuda_runtime": "13.0",
+    "gpu": "NVIDIA B300 SXM6 AC",
+    "checks": [
+      [
+        "small-tail",
+        1688244883,
+        "candidate",
+        "fresh"
+      ],
+      [
+        "small-tail",
+        1688244883,
+        "candidate",
+        "reuse"
+      ],
+      [
+        "small-tail",
+        1688244883,
+        "baseline",
+        "fresh"
+      ],
+      [
+        "small-tail",
+        1688244883,
+        "baseline",
+        "reuse"
+      ],
+      [
+        "small-tail",
+        1764174667,
+        "candidate",
+        "fresh"
+      ],
+      [
+        "small-tail",
+        1764174667,
+        "candidate",
+        "reuse"
+      ],
+      [
+        "small-tail",
+        1764174667,
+        "baseline",
+        "fresh"
+      ],
+      [
+        "small-tail",
+        1764174667,
+        "baseline",
+        "reuse"
+      ],
+      [
+        "small-tail",
+        658735468,
+        "candidate",
+        "fresh"
+      ],
+      [
+        "small-tail",
+        658735468,
+        "candidate",
+        "reuse"
+      ],
+      [
+        "small-tail",
+        658735468,
+        "baseline",
+        "fresh"
+      ],
+      [
+        "small-tail",
+        658735468,
+        "baseline",
+        "reuse"
+      ],
+      [
+        "small-tail",
+        1126136598,
+        "candidate",
+        "fresh"
+      ],
+      [
+        "small-tail",
+        1126136598,
+        "candidate",
+        "reuse"
+      ],
+      [
+        "small-tail",
+        1126136598,
+        "baseline",
+        "fresh"
+      ],
+      [
+        "small-tail",
+        1126136598,
+        "baseline",
+        "reuse"
+      ],
+      [
+        "wide",
+        1688244883,
+        "candidate",
+        "fresh"
+      ],
+      [
+        "wide",
+        1688244883,
+        "candidate",
+        "reuse"
+      ],
+      [
+        "wide",
+        1688244883,
+        "baseline",
+        "fresh"
+      ],
+      [
+        "wide",
+        1688244883,
+        "baseline",
+        "reuse"
+      ],
+      [
+        "wide",
+        1764174667,
+        "candidate",
+        "fresh"
+      ],
+      [
+        "wide",
+        1764174667,
+        "candidate",
+        "reuse"
+      ],
+      [
+        "wide",
+        1764174667,
+        "baseline",
+        "fresh"
+      ],
+      [
+        "wide",
+        1764174667,
+        "baseline",
+        "reuse"
+      ],
+      [
+        "wide",
+        658735468,
+        "candidate",
+        "fresh"
+      ],
+      [
+        "wide",
+        658735468,
+        "candidate",
+        "reuse"
+      ],
+      [
+        "wide",
+        658735468,
+        "baseline",
+        "fresh"
+      ],
+      [
+        "wide",
+        658735468,
+        "baseline",
+        "reuse"
+      ],
+      [
+        "wide",
+        1126136598,
+        "candidate",
+        "fresh"
+      ],
+      [
+        "wide",
+        1126136598,
+        "candidate",
+        "reuse"
+      ],
+      [
+        "wide",
+        1126136598,
+        "baseline",
+        "fresh"
+      ],
+      [
+        "wide",
+        1126136598,
+        "baseline",
+        "reuse"
+      ],
+      [
+        "strided-tail",
+        1688244883,
+        "candidate",
+        "fresh"
+      ],
+      [
+        "strided-tail",
+        1688244883,
+        "candidate",
+        "reuse"
+      ],
+      [
+        "strided-tail",
+        1688244883,
+        "baseline",
+        "fresh"
+      ],
+      [
+        "strided-tail",
+        1688244883,
+        "baseline",
+        "reuse"
+      ],
+      [
+        "strided-tail",
+        1764174667,
+        "candidate",
+        "fresh"
+      ],
+      [
+        "strided-tail",
+        1764174667,
+        "candidate",
+        "reuse"
+      ],
+      [
+        "strided-tail",
+        1764174667,
+        "baseline",
+        "fresh"
+      ],
+      [
+        "strided-tail",
+        1764174667,
+        "baseline",
+        "reuse"
+      ],
+      [
+        "strided-tail",
+        658735468,
+        "candidate",
+        "fresh"
+      ],
+      [
+        "strided-tail",
+        658735468,
+        "candidate",
+        "reuse"
+      ],
+      [
+        "strided-tail",
+        658735468,
+        "baseline",
+        "fresh"
+      ],
+      [
+        "strided-tail",
+        658735468,
+        "baseline",
+        "reuse"
+      ],
+      [
+        "strided-tail",
+        1126136598,
+        "candidate",
+        "fresh"
+      ],
+      [
+        "strided-tail",
+        1126136598,
+        "candidate",
+        "reuse"
+      ],
+      [
+        "strided-tail",
+        1126136598,
+        "baseline",
+        "fresh"
+      ],
+      [
+        "strided-tail",
+        1126136598,
+        "baseline",
+        "reuse"
+      ]
+    ],
+    "samples": [
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 0,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1688252802,
+        "us": 19.467
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 0,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1688252802,
+        "us": 20.054
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 0,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1688252803,
+        "us": 20.008
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 0,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1688252803,
+        "us": 20.002
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 1,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1764190505,
+        "us": 20.184
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 1,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1764190505,
+        "us": 19.477
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 1,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1764190506,
+        "us": 20.193
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 1,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1764190506,
+        "us": 20.446
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 2,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 658759225,
+        "us": 19.626
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 2,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 658759225,
+        "us": 20.33
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 2,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 658759226,
+        "us": 20.371
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 2,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 658759226,
+        "us": 19.169
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 3,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1126168274,
+        "us": 20.08
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 3,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1126168274,
+        "us": 19.762
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 3,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1126168275,
+        "us": 19.303
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 3,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1126168275,
+        "us": 22.433
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 4,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1688284478,
+        "us": 20.343
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 4,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1688284478,
+        "us": 20.523
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 4,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1688284479,
+        "us": 19.767
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 4,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1688284479,
+        "us": 19.221
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 5,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1764222181,
+        "us": 19.674
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 5,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1764222181,
+        "us": 20.105
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 5,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1764222182,
+        "us": 19.521
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 5,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1764222182,
+        "us": 20.21
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 6,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 658790901,
+        "us": 19.635
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 6,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 658790901,
+        "us": 19.687
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 6,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 658790902,
+        "us": 19.5
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 6,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 658790902,
+        "us": 19.098
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 7,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1126199950,
+        "us": 19.769
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 7,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1126199950,
+        "us": 20.474
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 7,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1126199951,
+        "us": 18.836
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 7,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1126199951,
+        "us": 20.078
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 8,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1688316154,
+        "us": 19.349
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 8,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1688316154,
+        "us": 24.091
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 8,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1688316155,
+        "us": 19.847
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 8,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1688316155,
+        "us": 19.436
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 9,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1764253857,
+        "us": 20.114
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 9,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1764253857,
+        "us": 19.655
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 9,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1764253858,
+        "us": 19.287
+      },
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "trial": 9,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1764253858,
+        "us": 20.124
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 0,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1688252802,
+        "us": 29.357
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 0,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1688252802,
+        "us": 30.81
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 0,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1688252803,
+        "us": 27.888
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 0,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1688252803,
+        "us": 31.972
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 1,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1764190505,
+        "us": 32.114
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 1,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1764190505,
+        "us": 28.309
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 1,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1764190506,
+        "us": 31.199
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 1,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1764190506,
+        "us": 27.854
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 2,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 658759225,
+        "us": 32.286
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 2,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 658759225,
+        "us": 28.662
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 2,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 658759226,
+        "us": 30.688
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 2,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 658759226,
+        "us": 30.598
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 3,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1126168274,
+        "us": 31.226
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 3,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1126168274,
+        "us": 30.64
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 3,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1126168275,
+        "us": 28.288
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 3,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1126168275,
+        "us": 30.085
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 4,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1688284478,
+        "us": 28.596
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 4,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1688284478,
+        "us": 30.866
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 4,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1688284479,
+        "us": 26.58
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 4,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1688284479,
+        "us": 31.551
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 5,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1764222181,
+        "us": 30.413
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 5,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1764222181,
+        "us": 29.764
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 5,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1764222182,
+        "us": 32.04
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 5,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1764222182,
+        "us": 27.552
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 6,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 658790901,
+        "us": 31.9
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 6,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 658790901,
+        "us": 27.54
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 6,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 658790902,
+        "us": 31.936
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 6,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 658790902,
+        "us": 29.248
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 7,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1126199950,
+        "us": 30.908
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 7,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1126199950,
+        "us": 36.64
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 7,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1126199951,
+        "us": 30.562
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 7,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1126199951,
+        "us": 30.889
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 8,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1688316154,
+        "us": 30.374
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 8,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1688316154,
+        "us": 30.837
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 8,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1688316155,
+        "us": 27.018
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 8,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1688316155,
+        "us": 31.838
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 9,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1764253857,
+        "us": 28.905
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 9,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1764253857,
+        "us": 30.994
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 9,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1764253858,
+        "us": 27.844
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "trial": 9,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1764253858,
+        "us": 30.3
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 0,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1688252802,
+        "us": 29.158
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 0,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1688252802,
+        "us": 26.236
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 0,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1688252803,
+        "us": 26.234
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 0,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1688252803,
+        "us": 26.953
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 1,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1764190505,
+        "us": 25.814
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 1,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1764190505,
+        "us": 25.7
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 1,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1764190506,
+        "us": 25.462
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 1,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1764190506,
+        "us": 25.553
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 2,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 658759225,
+        "us": 25.511
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 2,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 658759225,
+        "us": 28.428
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 2,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 658759226,
+        "us": 25.92
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 2,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 658759226,
+        "us": 26.234
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 3,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1126168274,
+        "us": 25.417
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 3,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1126168274,
+        "us": 26.266
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 3,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1126168275,
+        "us": 25.982
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 3,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1126168275,
+        "us": 26.442
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 4,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1688284478,
+        "us": 25.191
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 4,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1688284478,
+        "us": 26.843
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 4,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1688284479,
+        "us": 28.659
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 4,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1688284479,
+        "us": 30.828
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 5,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1764222181,
+        "us": 26.748
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 5,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1764222181,
+        "us": 26.213
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 5,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1764222182,
+        "us": 25.814
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 5,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1764222182,
+        "us": 26.72
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 6,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 658790901,
+        "us": 25.878
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 6,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 658790901,
+        "us": 25.728
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 6,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 658790902,
+        "us": 25.863
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 6,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 658790902,
+        "us": 29.452
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 7,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1126199950,
+        "us": 26.042
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 7,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1126199950,
+        "us": 25.222
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 7,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1126199951,
+        "us": 24.969
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 7,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1126199951,
+        "us": 24.577
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 8,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1688316154,
+        "us": 25.029
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 8,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1688316154,
+        "us": 25.904
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 8,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1688316155,
+        "us": 26.483
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 8,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1688316155,
+        "us": 27.634
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 9,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1764253857,
+        "us": 28.201
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 9,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1764253857,
+        "us": 26.201
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 9,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1764253858,
+        "us": 25.561
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "trial": 9,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1764253858,
+        "us": 26.017
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 0,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1688331992,
+        "us": 25.729
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 0,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1688331992,
+        "us": 26.491
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 0,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1688331993,
+        "us": 26.445
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 0,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1688331993,
+        "us": 25.359
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 1,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1764269695,
+        "us": 25.917
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 1,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1764269695,
+        "us": 25.795
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 1,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1764269696,
+        "us": 25.988
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 1,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1764269696,
+        "us": 26.194
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 2,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 658838415,
+        "us": 29.19
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 2,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 658838415,
+        "us": 27.26
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 2,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 658838416,
+        "us": 24.839
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 2,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 658838416,
+        "us": 25.709
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 3,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1126247464,
+        "us": 25.956
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 3,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1126247464,
+        "us": 26.037
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 3,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1126247465,
+        "us": 24.782
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 3,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1126247465,
+        "us": 25.133
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 4,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1688363668,
+        "us": 32.725
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 4,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1688363668,
+        "us": 30.45
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 4,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1688363669,
+        "us": 29.438
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 4,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1688363669,
+        "us": 26.717
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 5,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1764301371,
+        "us": 26.141
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 5,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1764301371,
+        "us": 26.449
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 5,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1764301372,
+        "us": 25.323
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 5,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1764301372,
+        "us": 25.758
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 6,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 658870091,
+        "us": 25.418
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 6,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 658870091,
+        "us": 26.744
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 6,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 658870092,
+        "us": 28.143
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 6,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 658870092,
+        "us": 26.067
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 7,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1126279140,
+        "us": 25.947
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 7,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1126279140,
+        "us": 26.475
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 7,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1126279141,
+        "us": 24.589
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 7,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1126279141,
+        "us": 25.205
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 8,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1688395344,
+        "us": 25.598
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 8,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1688395344,
+        "us": 26.272
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 8,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1688395345,
+        "us": 25.288
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 8,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1688395345,
+        "us": 28.323
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 9,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1764333047,
+        "us": 26.832
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 9,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1764333047,
+        "us": 26.002
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 9,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1764333048,
+        "us": 25.46
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "trial": 9,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1764333048,
+        "us": 26.685
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 0,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1688331992,
+        "us": 29.961
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 0,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1688331992,
+        "us": 28.489
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 0,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1688331993,
+        "us": 31.798
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 0,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1688331993,
+        "us": 32.052
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 1,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1764269695,
+        "us": 32.343
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 1,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1764269695,
+        "us": 27.744
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 1,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1764269696,
+        "us": 30.997
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 1,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1764269696,
+        "us": 29.174
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 2,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 658838415,
+        "us": 33.116
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 2,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 658838415,
+        "us": 28.93
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 2,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 658838416,
+        "us": 31.091
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 2,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 658838416,
+        "us": 27.635
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 3,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1126247464,
+        "us": 28.792
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 3,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1126247464,
+        "us": 32.838
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 3,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1126247465,
+        "us": 27.534
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 3,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1126247465,
+        "us": 31.698
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 4,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1688363668,
+        "us": 26.774
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 4,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1688363668,
+        "us": 31.848
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 4,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1688363669,
+        "us": 29.431
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 4,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1688363669,
+        "us": 30.817
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 5,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1764301371,
+        "us": 28.26
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 5,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1764301371,
+        "us": 30.361
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 5,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1764301372,
+        "us": 31.874
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 5,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1764301372,
+        "us": 31.862
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 6,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 658870091,
+        "us": 28.49
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 6,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 658870091,
+        "us": 31.415
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 6,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 658870092,
+        "us": 27.909
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 6,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 658870092,
+        "us": 32.195
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 7,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1126279140,
+        "us": 28.714
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 7,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1126279140,
+        "us": 29.435
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 7,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1126279141,
+        "us": 27.665
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 7,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1126279141,
+        "us": 30.346
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 8,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1688395344,
+        "us": 31.677
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 8,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1688395344,
+        "us": 31.318
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 8,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1688395345,
+        "us": 27.494
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 8,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1688395345,
+        "us": 30.623
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 9,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1764333047,
+        "us": 27.3
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 9,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1764333047,
+        "us": 31.545
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 9,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1764333048,
+        "us": 27.43
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "trial": 9,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1764333048,
+        "us": 32.118
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 0,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1688331992,
+        "us": 19.394
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 0,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1688331992,
+        "us": 20.106
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 0,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1688331993,
+        "us": 19.51
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 0,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1688331993,
+        "us": 20.111
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 1,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1764269695,
+        "us": 20.212
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 1,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1764269695,
+        "us": 22.897
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 1,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1764269696,
+        "us": 20.195
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 1,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1764269696,
+        "us": 19.61
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 2,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 658838415,
+        "us": 20.06
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 2,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 658838415,
+        "us": 20.017
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 2,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 658838416,
+        "us": 19.551
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 2,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 658838416,
+        "us": 19.945
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 3,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1126247464,
+        "us": 20.352
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 3,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1126247464,
+        "us": 18.421
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 3,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1126247465,
+        "us": 19.16
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 3,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1126247465,
+        "us": 18.507
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 4,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1688363668,
+        "us": 19.392
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 4,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1688363668,
+        "us": 19.798
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 4,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1688363669,
+        "us": 49.732
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 4,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1688363669,
+        "us": 21.645
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 5,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1764301371,
+        "us": 20.189
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 5,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1764301371,
+        "us": 19.203
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 5,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1764301372,
+        "us": 19.104
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 5,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1764301372,
+        "us": 19.471
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 6,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 658870091,
+        "us": 19.541
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 6,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 658870091,
+        "us": 19.462
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 6,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 658870092,
+        "us": 20.575
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 6,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 658870092,
+        "us": 20.265
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 7,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1126279140,
+        "us": 20.167
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 7,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1126279140,
+        "us": 19.311
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 7,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1126279141,
+        "us": 20.131
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 7,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1126279141,
+        "us": 19.439
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 8,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1688395344,
+        "us": 19.271
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 8,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1688395344,
+        "us": 19.566
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 8,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1688395345,
+        "us": 18.957
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 8,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1688395345,
+        "us": 19.838
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 9,
+        "role": "candidate",
+        "repeat": 0,
+        "seed": 1764333047,
+        "us": 19.432
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 9,
+        "role": "baseline",
+        "repeat": 0,
+        "seed": 1764333047,
+        "us": 19.162
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 9,
+        "role": "baseline",
+        "repeat": 1,
+        "seed": 1764333048,
+        "us": 19.709
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "trial": 9,
+        "role": "candidate",
+        "repeat": 1,
+        "seed": 1764333048,
+        "us": 19.328
+      }
+    ],
+    "correct": true,
+    "case_results": [
+      {
+        "case": "small-tail",
+        "batch": 0,
+        "candidate_us": 19.499000000000002,
+        "baseline_us": 20.097,
+        "regression_over_5_percent": false
+      },
+      {
+        "case": "wide",
+        "batch": 0,
+        "candidate_us": 30.619,
+        "baseline_us": 30.3565,
+        "regression_over_5_percent": false
+      },
+      {
+        "case": "strided-tail",
+        "batch": 0,
+        "candidate_us": 25.93,
+        "baseline_us": 26.138,
+        "regression_over_5_percent": false
+      },
+      {
+        "case": "small-tail",
+        "batch": 1,
+        "candidate_us": 19.588,
+        "baseline_us": 19.625,
+        "regression_over_5_percent": false
+      },
+      {
+        "case": "wide",
+        "batch": 1,
+        "candidate_us": 29.8885,
+        "baseline_us": 30.492,
+        "regression_over_5_percent": false
+      },
+      {
+        "case": "strided-tail",
+        "batch": 1,
+        "candidate_us": 26.232999999999997,
+        "baseline_us": 25.8915,
+        "regression_over_5_percent": false
+      }
+    ],
+    "gain_by_batch": [
+      0.007096087685970476,
+      0.00393377056513422
+    ]
+  }
+}

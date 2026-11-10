@@ -1,0 +1,41 @@
+{
+  "classification": "container_stdin_bootstrap_failure_before_any_model_request",
+  "attempts": [
+    {
+      "trial": "00-row_sum-ako4all_workflow_adaptation",
+      "model_requests": 0,
+      "stderr": "No prompt provided via stdin.\n"
+    },
+    {
+      "trial": "01-row_sum-kernel_envolve_skill",
+      "model_requests": 0,
+      "stderr": "No prompt provided via stdin.\n"
+    },
+    {
+      "trial": "02-row_sum-goal_only",
+      "model_requests": 0,
+      "stderr": "No prompt provided via stdin.\n"
+    },
+    {
+      "trial": "03-matmul-kernel_envolve_skill",
+      "model_requests": 0,
+      "stderr": "No prompt provided via stdin.\n"
+    },
+    {
+      "trial": "04-matmul-goal_only",
+      "model_requests": 0,
+      "stderr": "No prompt provided via stdin.\n"
+    },
+    {
+      "trial": "05-matmul-ako4all_workflow_adaptation",
+      "model_requests": 0,
+      "stderr": "No prompt provided via stdin.\n"
+    },
+    {
+      "trial": "06-fused_relu-goal_only",
+      "model_requests": 0,
+      "stderr": "Interrupted before container launch"
+    }
+  ],
+  "model_inference_calls": 0
+}

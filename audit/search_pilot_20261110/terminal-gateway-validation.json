@@ -1,0 +1,12 @@
+{
+  "completed_responses": 5,
+  "client_seconds": [
+    0.010049083000012615,
+    0.0009208340002260229,
+    0.0008802079996712564,
+    0.0008374170001843595,
+    0.0008698329997969267
+  ],
+  "upstream_kept_open_seconds": 5,
+  "actual_model_calls": 0
+}

@@ -1,0 +1,11 @@
+{
+  "nodes_checked": [
+    "hyperpod-i-000637e00fc0b22d0"
+  ],
+  "pods_remaining": [],
+  "stopped_at": 1794284267.418708,
+  "conservative_gpu_seconds": 1707.068114042282,
+  "instance_id": "d84618df-2335-478d-93ef-3d771dc2b97e",
+  "phase": "Stopped",
+  "desired_status": "Stopped"
+}

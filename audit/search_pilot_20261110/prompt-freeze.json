@@ -1,0 +1,13 @@
+{
+  "prompts": {
+    "adaptations.json": "c618cdf65fc6b177c41c85649bcdabf490dd9f33847316155d9354fa238b1d64",
+    "ako4all_workflow_adaptation.txt": "497f7b33d532f69e85fed4262c08863bcd7af54c9169ce0fa21fd5bcd8165703",
+    "common.txt": "480c315f354931aae8e0ae2cbb0c86376fb2132508a0b0395f9c52ac6d702876",
+    "goal_only.txt": "30929711bb8ef084ea67907424a8f3efae84e16e914d0c1481c4a1f87526117a",
+    "kernel_envolve_skill.txt": "437d1d1b71ef7b633d97c9758ab6ba5543e381b58f45bfbb129afc0b151dd75f"
+  },
+  "hidden_seed_sha256": "abd7a9cacc7f201145abd90f3e740c5cfe11889e0da6c4eff55c80b9dc2b26b2",
+  "model": "gpt-6-astra",
+  "reasoning": "medium",
+  "actual_search_started": false
+}

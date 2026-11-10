@@ -1,0 +1,13 @@
+{
+  "wall_seconds_including_transport": 1.857270332999633,
+  "remote": {
+    "id": "b9f29d998821465aa339991c4c246f35",
+    "returncode": -9,
+    "timeout": true,
+    "stdout": "",
+    "stderr": "",
+    "cleanup_confirmed": true,
+    "wall_seconds": 1.0539516240824014
+  },
+  "next_request": "bridge_reusable_after_timeout\n"
+}

@@ -1,0 +1,1 @@
+{"control": {"transport": "timeout", "stdout": "CUDA_ALLOCATED:1009\n", "stderr": "", "seconds": 6.253206240944564}, "gpu_pid": 1009, "gpu_process_removed": true}

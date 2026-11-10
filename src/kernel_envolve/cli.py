@@ -296,6 +296,7 @@ def main(argv=None):
                     "correctness": result["correctness"],
                     "worker_process_wall_seconds": result["worker_process_wall_seconds"],
                     "phase_wall_seconds": result.get("phase_wall_seconds", {}),
+                    **({"error": result["error"]} if result.get("error") else {}),
                     **result["decision"],
                 },
                 indent=2,

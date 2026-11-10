@@ -1,0 +1,10 @@
+{
+  "instance_id": "d84618df-2335-478d-93ef-3d771dc2b97e",
+  "gpu_count": 1,
+  "start_requested_at": 1794282560.350594,
+  "budget_seconds": 5400,
+  "stop_at": 1794287780.350594,
+  "hard_budget_at": 1794287960.350594,
+  "notes": "Original pre-create budget start retained, including stopped interval. Stop at87min reserves3min for resource release; user hard cap remains90min. Adjusted before any model inference.",
+  "previous_stop_at": 1794287540.350594
+}

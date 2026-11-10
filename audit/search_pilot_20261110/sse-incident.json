@@ -1,0 +1,18 @@
+{
+  "recorded_at": 1794283904.126306,
+  "cause": "Gateway closed after terminal JSON line but before SSE blank-line delimiter when TCP chunks split the delimiter. Codex rejected stream as incomplete.",
+  "affected_indices": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "controller_interrupted_index": 7,
+  "remaining_authorized_indices": [
+    8
+  ],
+  "synthetic_multiturn_validation": "multiturn-static-validation.json",
+  "searches_retried": 0
+}

@@ -1,0 +1,9 @@
+{
+  "correct": false,
+  "failure": "missing_submission",
+  "spec": {
+    "index": 7,
+    "task": "fused_relu",
+    "arm": "ako4all_workflow_adaptation"
+  }
+}

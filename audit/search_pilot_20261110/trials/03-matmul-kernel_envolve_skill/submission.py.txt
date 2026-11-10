@@ -1,0 +1,23 @@
+import torch
+import triton as tr
+import triton.language as tl
+
+@tr.jit
+def mm(A,B,C,M:tl.constexpr,N:tl.constexpr,K:tl.constexpr,S0:tl.constexpr,S1:tl.constexpr,BM:tl.constexpr,BN:tl.constexpr,BK:tl.constexpr):
+    m=tl.program_id(0)*BM+tl.arange(0,BM)
+    n=tl.program_id(1)*BN+tl.arange(0,BN)
+    k=tl.arange(0,BK)
+    acc=tl.full((BM,BN),0,tl.float32)
+    for start in range(tr.cdiv(K,BK)):
+        kk=start*BK+k
+        a=tl.load(A+m[:,None]*K+kk[None,:],(m[:,None]<M)&(kk[None,:]<K),0)
+        b=tl.load(B+kk[:,None]*S0+n[None,:]*S1,(kk[:,None]<K)&(n[None,:]<N),0)
+        acc=tl.dot(a,b,acc,input_precision='tf32x3')
+    tl.store(C+m[:,None]*N+n[None,:],acc,(m[:,None]<M)&(n[None,:]<N))
+
+def run(a,b):
+    m,k=a.shape
+    n=b.shape[1]
+    out=torch.empty((m,n),device=a.device,dtype=a.dtype)
+    mm[(tr.cdiv(m,16),tr.cdiv(n,32))](a,b,out,m,n,k,*b.stride(),16,32,32,num_warps=4)
+    return out

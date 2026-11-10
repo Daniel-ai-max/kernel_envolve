@@ -1,0 +1,9 @@
+{
+  "correct": false,
+  "failure": "missing_submission",
+  "spec": {
+    "index": 6,
+    "task": "fused_relu",
+    "arm": "goal_only"
+  }
+}

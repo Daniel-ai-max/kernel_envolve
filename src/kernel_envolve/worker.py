@@ -4,6 +4,7 @@ import importlib.metadata
 import math
 import os
 import platform
+import subprocess
 import sys
 import time
 import traceback
@@ -103,6 +104,22 @@ def environment(clock):
             "cuda_runtime": t.version.cuda,
         }
     return env
+
+
+def error_details(exc, phase):
+    details = {"type": type(exc).__name__, "message": str(exc), "phase": phase}
+    if isinstance(exc, (subprocess.CalledProcessError, subprocess.TimeoutExpired)):
+        if isinstance(exc, subprocess.CalledProcessError):
+            details["returncode"] = exc.returncode
+        for name in ("stdout", "stderr"):
+            value = getattr(exc, name, None)
+            if value is None:
+                continue
+            if isinstance(value, bytes):
+                value = value.decode("utf-8", errors="replace")
+            details[f"{name}_tail"] = value[-8192:]
+            details[f"{name}_truncated"] = len(value) > 8192
+    return details
 
 
 def execute(run):
@@ -354,7 +371,7 @@ def execute(run):
         result["decision"] = score(result, cfg)
     except Exception as exc:
         result["execution"] = "error"
-        result["error"] = {"type": type(exc).__name__, "message": str(exc)}
+        result["error"] = error_details(exc, phase)
         result["decision"] = {
             "eligible_for_best": False,
             "performance": "not_measured",

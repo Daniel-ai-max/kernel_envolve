@@ -6,34 +6,27 @@ Agent 负责读硬件文档、研究参考实现、提出假设、写代码和�
 
 ## 先跑通
 
-要求 Python 3.11+、Linux/macOS。默认运行依赖只有 NumPy；[独立安装验收](audit/core_package_validation.json)已验证 full → promote → load_best。
+默认直接在目标 NVIDIA GPU 机器上运行 agent 的文件/命令工具和 evaluator；模型推理仍由模型服务提供。代码、依赖和评测结果留在同一个工作目录，正常迭代直接调用 CLI。无需单独申请 CPU 实例，也没有先 CPU 后 GPU 的准备阶段。
+
+要求 Python 3.11+，GPU 环境安装与驱动匹配的 PyTorch 和 Triton：
 
 ```bash
 git clone git@github.com:Daniel-ai-max/kernel_envolve.git
 cd kernel_envolve
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -e .
+python -m pip install -e '.[cuda]'
 
-kernel-envolve evaluate --task examples/vector_add --mode quick
-# 修单个失败 case 时，只做定点正确性检查，无需改任务配置。
-kernel-envolve evaluate --task examples/vector_add --mode quick --case strided --seed 17 --check-only
-kernel-envolve evaluate --task examples/vector_add --mode full
-# 将 full 输出的 run 路径填入下行；只有 eligible_for_best=true 才能晋升。
+# 下面是不同反馈方式，按需要选择，不要求依次执行。
+kernel-envolve evaluate --task examples/cuda_vector_add --mode quick --timeout 600
+kernel-envolve evaluate --task examples/cuda_vector_add --mode full --timeout 600
+# 将合格 full 输出的 run 路径填入下行。
 kernel-envolve promote <run路径>
 ```
 
-CPU 示例从 Python 标量循环优化成 NumPy 加法，用于真实跑通验证、计时、晋升闭环；这个加速比不代表 GPU 优化能力。
+CUDA 示例包含尾部 mask、非连续输入和多个大小，比较 Triton 与 `torch.add`。第一次实际 evaluate 即可发现设备、依赖和编译问题；无需额外增加一套固定自检阶段。新增 evaluator 的正确/错误对照验证属于验证器开发，已有验证器无需每轮重跑。
 
-在 NVIDIA GPU 机器上安装与驱动匹配的 PyTorch 和 Triton，然后运行：
-
-```bash
-python -m pip install -e '.[cuda]'
-kernel-envolve evaluate --task examples/cuda_vector_add --mode quick --timeout 600
-kernel-envolve evaluate --task examples/cuda_vector_add --mode full --timeout 600
-```
-
-CUDA 示例包含尾部 mask、非连续输入和多个大小，比较 Triton 与 `torch.add`。它是可修改的起点，不预设 Triton 一定更快。
+CPU 算子也受支持：安装核心包 `pip install -e .`，评测 `examples/vector_add` 即可。这个 NumPy 示例用于无 GPU 时了解接口，不是 GPU 开发的前置步骤。[独立安装验收](audit/core_package_validation.json)已验证 full → promote → load_best。
 
 ## 交给 agent
 
@@ -165,6 +158,8 @@ noise_guard  = noise_multiplier × Σ weight(case) × dispersion(case) / T_compa
 
 `--case`、`--seed`、`--check-only` 仅限 quick，可定位 full 中才运行的 case，不修改固定任务契约，也不能产生晋升资格。`worker_process_wall_seconds` 记录子进程启动到退出的等待耗时；`worker_wall_seconds` 还包含父进程的结果核查。CLI 同时输出 `phase_wall_seconds`：setup（CUDA/模块初始化）、correctness、measurement（预热、输入生成、计时及后检查）、finalize（证据检查与评分）。阶段计时不进入算子计时区间，失败时保留已完成及当前阶段耗时；子进程耗时与阶段和的差值还包括 Python/NumPy 导入、退出及父进程唤醒，不能全部称为模型或 kernel 时间。兼容字段 `measurement_wall_seconds` 继续表示测量阶段总耗时。
 
+0.4.1 起，执行异常直接在 CLI 的 `error` 中返回失败阶段；捕获的编译/子进程错误保留 stdout/stderr 各末尾 8192 个字符、截断标记及退出码（若有）。agent 可直接据此修复，不必为获取编译错误重复执行。完整 worker 日志仍保存在 run 目录。
+
 `--signal-only` 仅限 quick：仍检查候选正确性，只测候选延迟，适合快速调参。不产生 speedup，也不能晋升。
 
 ### 结果与 best
@@ -279,7 +274,7 @@ full 已有 best 时 R 从 2 变为 3，因此计时调用数增加 50%；这是
 | 是否保持 skill + evaluator 的简单结构 | 独立 wheel 只包含八个运行模块，干净环境仅安装本包与 NumPy；完整晋升、正常入口加载通过 | 已验证。容器/模型对照脚本位于 audit，不随运行包安装 |
 | evaluate 是否更能识别具体错误 | AKO4ALL 原生 CLI、BackendBench 原生组件的同契约反例；本仓库回归测试与 B300 验收 | 在已测 alias、原地更新、输入域等场景有具体优势；不据此给整个系统排名 |
 | evaluate 是否提高反馈效率 | 同 B300 的版本耗时对照；0.4 的配对收益模拟和实机探针 | 相等大张量探针的验证开销下降；部分噪声下收益检出改善，暂停噪声仍有取舍；0.4 总评测耗时没有证明下降 |
-| skill 是否让同一 agent 更快找到更好的实现 | 共同任务、独立最终验收、静态隔离和截止时间探针已准备；尚无独立 agent 运行结果 | 尚未证明，不能从步骤更少推导搜索收益 |
+| skill 是否让同一 agent 更快找到更好的实现 | 九次预实验已执行；八次受接入故障影响，一次正常完成 | 本批不能做流程排名，不能从步骤更少推导搜索收益 |
 | 是否全面超过九个参考系统 | 仍缺完整系统对照；复杂精度、远端恢复、AMD/serving 等能力并不相同 | 尚未证明；当前方案按既定使用场景取舍，不追求包含所有框架功能 |
 
 下一项决定性实验是同模型、同任务、同预算的流程对照：先比较 **JustGoal 式目标提示、AKO4ALL 流程、本 skill**，统一最终验收，保留全部失败、逐 case/加权收益、模型成本、GPU 时间和恢复成本。当前三任务预实验只检验实验可行性；正式效果比较须重复独立运行。根据观察到的缺口改进流程，避免在没有证据时继续增加机制。
@@ -299,11 +294,11 @@ full 已有 best 时 R 从 2 变为 3，因此计时调用数增加 50%；这是
 
 上述对照的公开开发任务现已落地：[行归约](audit/search_tasks/row_sum)、[FP32 GEMM](audit/search_tasks/matmul)、[带非连续输入的融合 ReLU](audit/search_tasks/fused_relu)。每项包含三种 shape/layout、固定 FP64 oracle、原始实现和候选入口，统一测同步的 eager wall latency。CPU 与 B300 自检均确认三项正确实现通过、六项错误数值/输入篡改探针被拒绝；B300 还分别跑通完整评测，每项 48 条正确性记录、240 个计时样本，未将相同原始实现晋升。三项完整评测单次总耗时分别约 2.17/2.47/2.63 秒，包含初始化；这不是 quick/full 成本对照或搜索效果排名。[原始记录与复现入口](audit/search_workload_preflight.json)已保存，任务已结束并释放 GPU。
 
-[九次预实验方案](audit/search_pilot_plan.json)已获授权：三种流程、三项任务，每次最多八分钟，统一 GPT-6 Astra／medium，串行使用一张 B300，总 GPU 预算不超过九十分钟。[完整提示词](audit/search_pilot_prompts/)和隐藏最终种子的哈希已在搜索前固定。模型流式接口及远端执行入口已通过静态接入检查；独立 agent 尚未启动，待实际 GPU 自检后运行。CPU 准备仅用于这次实验接入调试，不属于产品流程；正常使用直接在目标 GPU 环境做一次自检后开始迭代。正式比较仍按上表进行多次独立运行，不用一次预实验宣布胜出。
+[九次预实验方案](audit/search_pilot_plan.json)已执行：三种流程、三项任务，每次最多八分钟，统一 GPT-6 Astra／medium，串行使用一张 B300。[完整提示词](audit/search_pilot_prompts/)和隐藏最终种子的哈希在搜索前固定；实验使用冻结的 **0.4.0**，未混入后续 0.4.1 改动。结果见下节。正式比较仍需多次独立运行。
 
-独立的[最终验收脚本](audit/search_final_acceptance.py)现已实现：不导入 kernel_envolve evaluator/scoring，以 NumPy FP64 计算期望值，检查数值、shape、dtype、设备、输入状态及同地址换值；独立生成交错计时，每个实际计时输出都在计时区间外校验，保留原始样本，不读取开发阶段的晋升状态。为控制预实验的适配成本，三组都只提交单个 candidate.py。CPU 和 B300 各通过三个正确对照、拒绝十五个错误数值/输入篡改/缓存/dtype/shape 探针；B300 额外完成三项完整计时，每项 36 条初始检查、240 个逐项验证的计时样本。[自检记录](audit/search_final_validation.json)保留实际结果；correct 只表示功能正确，不表示性能胜出。实际模型接入后的隐藏种子隔离和远端评测终止，仍需在启动搜索前验证。
+独立的[最终验收脚本](audit/search_final_acceptance.py)现已实现：不导入 kernel_envolve evaluator/scoring，以 NumPy FP64 计算期望值，检查数值、shape、dtype、设备、输入状态及同地址换值；独立生成交错计时，每个实际计时输出都在计时区间外校验，保留原始样本，不读取开发阶段的晋升状态。为控制预实验的适配成本，三组都只提交单个 candidate.py。CPU 和 B300 各通过三个正确对照、拒绝十五个错误数值/输入篡改/缓存/dtype/shape 探针；B300 额外完成三项完整计时，每项 36 条初始检查、240 个逐项验证的计时样本。[自检记录](audit/search_final_validation.json)保留实际结果；correct 只表示功能正确，不表示性能胜出。本次启动前另外完成了真实 GPU 超时清理和后续请求复用检查，见[本批证据](audit/search_pilot_20261110/)。
 
-预实验另有一个审计用[单次容器执行器](audit/run_bounded_trial.py)，不进入产品运行时。静态探针验证：容器读不到 host 上的隐藏种子文件（含指向它的符号链接）；超时会删除本次容器、停止脱离父进程的子进程；随后冻结预先约定的 submission.py，工作目录再改动也不影响交付快照；未交付文件明确记失败，不自动选历史最佳。[记录与复现脚本](audit/bounded_trial_validation.json)保留了三项结果，三秒超时样本包含清理共约 3.10 秒。该检查使用无网络 Python 容器，尚未调用模型，也未验证模型凭证与远端 GPU 交互的完整接线。
+预实验另有一个审计用[单次容器执行器](audit/run_bounded_trial.py)，不进入产品运行时。静态探针验证：容器读不到 host 上的隐藏种子文件（含指向它的符号链接）；超时会删除本次容器、停止脱离父进程的子进程；随后冻结预先约定的 submission.py，工作目录再改动也不影响交付快照；未交付文件明确记失败，不自动选历史最佳。[记录与复现脚本](audit/bounded_trial_validation.json)保留了三项结果，三秒超时样本包含清理共约 3.10 秒。该项静态检查使用无网络 Python 容器；真实模型接入结果另见下节。
 
 最终验收代码不调用任何实验组的晋升结论；对接现成外部 harness 时，先确认语义、计时范围和精度规则一致。若编写任务专用验收器，必须明确它是独立实现而非现成第三方认证，先用正确/错误实现自检。运行期间遇到 GPU 抢占或硬件故障，依据事先规定的环境判据判废并保留原记录；不能因为候选慢或失败而重跑。
 
@@ -325,6 +320,30 @@ full 已有 best 时 R 从 2 变为 3，因此计时调用数增加 50%；这是
 [justgoal]: https://github.com/OpenBMB/JustGoal/blob/b0a2b582e39daf3344faac1414ec7c26660633e3/README.md#L26
 [kernelagent]: https://github.com/meta-pytorch/KernelAgent/blob/e0647170da36ef9b059ac0bd3d60103aa4ed378b/triton_kernel_agent/opt_worker_component/orchestrator/optimization_orchestrator.py#L311
 [geak]: https://github.com/AMD-AGI/GEAK/blob/f189eff7c4036d9e9bd1d4fe99ec5c25ab6b8b20/kernel_workflow/README.md#L1
+
+### 九次预实验的实际结果与 0.4.1 修正
+
+**这批不能判断哪种流程更优。** 实验接入先出现容器未传入 stdin 的启动错误（零模型请求），修复后才开始九次搜索。实际搜索 0–1 受代理串行锁问题影响，2–7 受流式结束分隔符被截断影响；其中 1、7 由控制器中止。只修复公共接入后继续剩余次数，没有重试这些搜索。第 8 次正常结束。两类故障、全部交付源码和独立验收原始样本均保存在[实验记录](audit/search_pilot_20261110/summary.json)中。
+
+| 序号 / 任务 | 提示流程 | 搜索秒数 | 独立最终验收 | 两批加权延迟降低 |
+|---|---|---:|---|---:|
+| 0 / 行归约 | AKO4ALL 改编 | 35.3 | 正确，原始实现 | −0.7% / −3.6% |
+| 1 / 行归约 | 本 skill | 94.3 | 正确，原始实现 | 0.7% / 0.4% |
+| 2 / 行归约 | 目标提示 | 84.2 | 编译失败，缺少 CUDA 头文件 | — |
+| 3 / GEMM | 本 skill | 26.8 | 正确 | 34.8% / 35.7% |
+| 4 / GEMM | 目标提示 | 28.8 | 正确 | 35.3% / 34.4% |
+| 5 / GEMM | AKO4ALL 改编 | 34.2 | 正确，原始实现 | −1.4% / −1.3% |
+| 6 / 融合 ReLU | 目标提示 | 4.5 | 未交付 | — |
+| 7 / 融合 ReLU | AKO4ALL 改编 | 9.3 | 未交付 | — |
+| 8 / 融合 ReLU | 本 skill | 224.3 | 正确，正常完成搜索 | 65.2% / 65.5% |
+
+表中 0–7 均属于受基础设施影响的部分结果；原始实现相对自身的正负变化是测量波动。第 8 次三个 case 的候选延迟约 15.8 / 23.2–23.6 / 18.9–19.1 微秒，baseline 约 45.3–45.4 / 64.5–64.8 / 57.8–58.1 微秒。这只证明该次交付在指定任务上有效，不能将其与未正常完成的另外两组作流程排名。
+
+全部九次搜索共发起 61 个模型请求，收到 59 个完整回复；完整回复报告输入 1,045,635 tokens、输出 16,003 tokens，`cost` 合计 3.283895（提供方返回值）。两次中止请求可能有未返回的用量。GPU 从首次申请到最终确认释放共 **1707.1 秒 / 28.5 分钟**，包含重启和停机间隔，未重置预算；[释放凭据](audit/search_pilot_20261110/resource-release.json)确认已停止且原节点无本任务 Pod。
+
+这批对迭代效率最有用的发现是：第 8 次的 6 次 evaluate 全为 full，worker 累计 78.8 秒，其中 setup 69.6 秒、正确性 4.59 秒、测量 0.31 秒；GPU 工具调用累计 95.3 秒，还包含远程转发及结果收集。主要成本来自编译与初始化，单纯缩小计时样本并不能解决它。运行中发现 Ninja 缺失，以及多次 nvcc 编译失败，而 0.4.0 丢失了捕获的 stderr，迫使 agent 猜测并重试。
+
+因此 **0.4.1 只做有证据支持的小改动**：CLI 直接给出失败阶段和编译输出；skill 默认在 GPU 机器上直接调用本地 evaluator，按实际阶段耗时选择反馈范围，重复编译优先用工具链已有缓存。没有新增 CPU 阶段、模型代理或调度服务。实验代理的[源码快照](audit/search_pilot_20261110/experimental-runner-sources.json.gz)仅供审计；产品仍是 skill + evaluate。本地验证 99 项通过、8 项 CUDA 测试跳过，新增测试覆盖真实子进程编译错误反馈、截断、非 UTF-8 输出、失败不可晋升及超时部分输出；本批 GPU 结果仍只对应 0.4.0。
 
 ## Evaluate 深度审查：0.3 补齐的缺口
 

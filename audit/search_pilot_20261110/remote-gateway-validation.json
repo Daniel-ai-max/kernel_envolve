@@ -1,0 +1,12 @@
+{
+  "wall_seconds": 1.4944416250000359,
+  "response": {
+    "transport": "completed",
+    "payload": {
+      "available": false,
+      "reason": "ncu executable is not installed; use analytical reasoning and timing feedback."
+    }
+  },
+  "model_calls": 0,
+  "gpu_count": 0
+}

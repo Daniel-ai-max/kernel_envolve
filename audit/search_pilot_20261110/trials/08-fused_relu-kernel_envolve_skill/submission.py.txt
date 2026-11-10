@@ -1,0 +1,70 @@
+import torch
+import pathlib
+import tempfile
+import subprocess
+import sysconfig
+import importlib.util
+from torch.utils.cpp_extension import include_paths, library_paths
+from cuda.bindings import nvrtc
+
+_src = r'''
+extern "C" __global__ void fused(const float* x, const float* s, const float* b,
+                                const float* r, float* y, int n, int c, int stride) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < n) y[i] = fmaxf(fmaf(x[i*stride], s[i%c], b[i%c]), 0.0f) + r[i*stride];
+}
+'''
+def _check(result):
+    if int(result[0]) != 0:
+        raise RuntimeError(str(result))
+    return result[1:]
+_prog, = _check(nvrtc.nvrtcCreateProgram(_src.encode(), b'fused.cu', 0, [], []))
+_opts = [b'--gpu-architecture=compute_100', b'--std=c++17']
+_check(nvrtc.nvrtcCompileProgram(_prog, len(_opts), _opts))
+_size, = _check(nvrtc.nvrtcGetPTXSize(_prog))
+_ptx = b' ' * _size
+_check(nvrtc.nvrtcGetPTX(_prog, _ptx))
+_check(nvrtc.nvrtcDestroyProgram(_prog))
+
+_cpp = r'''
+#include <torch/extension.h>
+#include <dlfcn.h>
+#include <string>
+static std::string ptx;
+static void* function = nullptr;
+static int (*launch)(void*, unsigned, unsigned, unsigned, unsigned, unsigned, unsigned, unsigned, void*, void**, void**);
+void init(std::string code) { ptx = std::move(code); }
+at::Tensor run(const at::Tensor& x, const at::Tensor& s, const at::Tensor& b, const at::Tensor& r, uint64_t stream) {
+    if (!function) {
+        void* lib = dlopen("libcuda.so.1", RTLD_NOW | RTLD_LOCAL);
+        TORCH_CHECK(lib, "Unable to load CUDA driver");
+        auto load = (int(*)(void**, const void*))dlsym(lib,"cuModuleLoadData");
+        auto get = (int(*)(void**, void*, const char*))dlsym(lib,"cuModuleGetFunction");
+        launch = (decltype(launch))dlsym(lib,"cuLaunchKernel");
+        void* module;
+        TORCH_CHECK(load(&module, ptx.c_str()) == 0, "CUDA module load failed");
+        TORCH_CHECK(get(&function, module, "fused") == 0, "CUDA function lookup failed");
+    }
+    auto y = at::empty(x.sizes(), x.options());
+    const float *xp=x.data_ptr<float>(), *sp=s.data_ptr<float>(), *bp=b.data_ptr<float>(), *rp=r.data_ptr<float>();
+    float* yp=y.data_ptr<float>();
+    int n=x.numel(), c=x.size(1), stride=x.stride(1);
+    void* args[] = {&xp, &sp, &bp, &rp, &yp, &n, &c, &stride};
+    TORCH_CHECK(launch(function, (n+255)/256, 1, 1, 256, 1, 1, 0, (void*)stream, args, nullptr)==0, "CUDA launch failed");
+    return y;
+}
+PYBIND11_MODULE(fused_relu_b300, m) { m.def("run", &run); m.def("init", &init); }
+'''
+_build = pathlib.Path(tempfile.mkdtemp(prefix='fused_relu_b300_'))
+(_build / 'binding.cpp').write_text(_cpp)
+_inc = ['-I' + p for p in include_paths()] + ['-I' + sysconfig.get_paths()['include']]
+_libs = library_paths()
+_so = str(_build / 'fused_relu_b300.so')
+subprocess.run(['c++', '-O3', '-std=c++17', '-shared', '-fPIC', '-D_GLIBCXX_USE_CXX11_ABI=' + str(int(torch._C._GLIBCXX_USE_CXX11_ABI)), *_inc, str(_build / 'binding.cpp'), *['-L' + p for p in _libs], *['-Wl,-rpath,' + p for p in _libs], '-ltorch_python', '-ltorch', '-ltorch_cpu', '-lc10', '-ldl', '-o', _so], check=True)
+_spec = importlib.util.spec_from_file_location('fused_relu_b300', _so)
+_module = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_module)
+_module.init(_ptx.decode())
+
+def run(x, scale, bias, residual):
+    return _module.run(x, scale, bias, residual, torch._C._cuda_getCurrentRawStream(0))
