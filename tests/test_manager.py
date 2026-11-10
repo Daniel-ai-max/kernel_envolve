@@ -1027,3 +1027,220 @@ def test_real_manager_evaluator_lock_inheritance(managed, strategy):
             assert jobs[0]["status"] == "succeeded"
     finally:
         terminate(process)
+
+
+def test_cancelled_scan_preserves_entire_task_projection(managed, monkeypatch):
+    from kernel_envolve.manager import evidence
+
+    store, _, work = managed
+    run, _ = evaluate(work, "full")
+    promote(run)
+    refresh(store)
+    evaluate(work, "quick")
+    before = detail(store, "toy")
+    rows = store.rows("SELECT * FROM runs")
+    stop = threading.Event()
+    inspect = evidence.inspect_run
+    inspected = []
+
+    def cancel_after_verified_run(*args):
+        result = inspect(*args)
+        inspected.append(args[0])
+        stop.set()
+        return result
+
+    monkeypatch.setattr(evidence, "inspect_run", cancel_after_verified_run)
+    assert refresh(store, force=True, stop=stop) is False
+    assert len(inspected) == 1
+    after = detail(store, "toy")
+    for key in ("best", "history", "latest_evaluation", "evidence_as_of", "evidence_error"):
+        assert after[key] == before[key]
+    assert store.rows("SELECT * FROM runs") == rows
+    scan = json.loads(store.one("SELECT data FROM metadata WHERE key='evidence_scan'")["data"])
+    assert scan["cancelled"] and not scan["running"] and scan["error"] is None
+    monkeypatch.undo()
+    assert refresh(store)
+    assert len(store.rows("SELECT * FROM runs")) == 2
+
+
+def test_cancellation_during_fingerprint_is_not_bad_evidence(managed, monkeypatch):
+    from kernel_envolve.manager import evidence
+
+    store, _, work = managed
+    evaluate(work, "quick")
+    fingerprint = evidence.fingerprint
+    stop = threading.Event()
+    checkpoints = []
+
+    def cancel_in_directory(path, checkpoint):
+        def check():
+            checkpoints.append(True)
+            if len(checkpoints) == 4:
+                stop.set()
+            checkpoint()
+
+        return fingerprint(path, check)
+
+    monkeypatch.setattr(evidence, "fingerprint", cancel_in_directory)
+    assert refresh(store, stop=stop) is False
+    assert len(checkpoints) == 4
+    assert not store.rows("SELECT * FROM runs")
+    assert store.task("toy")["evidence_error"] is None
+    assert detail(store, "toy")["evidence_as_of"] is None
+
+
+def test_cancellation_preserves_already_completed_tasks(managed, monkeypatch):
+    from kernel_envolve.manager import evidence
+
+    store, deployment, work = managed
+    second = copy.deepcopy(deployment)
+    other = work.parent / "other"
+    shutil.copytree(work, other)
+    second["tasks"][0].update(id="other", workspace=str(other), task_dir=str(other))
+    store.register(second)
+    stop = threading.Event()
+    refresh_task = evidence.refresh_task
+    completed = []
+
+    def cancel_after_task(*args):
+        refresh_task(*args)
+        completed.append(args[1]["id"])
+        stop.set()
+
+    monkeypatch.setattr(evidence, "refresh_task", cancel_after_task)
+    assert refresh(store, stop=stop) is False
+    assert len(completed) == 1
+    for key in ("toy", "other"):
+        assert (detail(store, key)["evidence_as_of"] is not None) == (key in completed)
+
+
+@pytest.mark.parametrize("stop_signal", [signal.SIGTERM, signal.SIGINT])
+def test_coordinator_signal_cancels_scan_before_unlock(managed, stop_signal):
+    store, _, work = managed
+    evaluate(work, "quick")
+    store.control("toy", "pause")
+    ready = work.parent / "scan-started"
+    code = """
+import sys,time
+from pathlib import Path
+from kernel_envolve.manager import evidence,service
+from kernel_envolve.manager.store import Store
+original=evidence.fingerprint
+def slow(path,checkpoint=None):
+    Path(sys.argv[2]).touch()
+    for _ in range(1000):
+        time.sleep(.01)
+        if checkpoint is not None:
+            checkpoint()
+    return original(path,checkpoint)
+evidence.fingerprint=slow
+store=Store(sys.argv[1])
+try:
+    service.run(store)
+finally:
+    store.close()
+"""
+    child = subprocess.Popen([sys.executable, "-c", code, str(store.root), str(ready)])
+    try:
+        deadline = time.monotonic() + 5
+        while not ready.exists() and time.monotonic() < deadline:
+            assert child.poll() is None
+            time.sleep(0.01)
+        assert ready.exists()
+        child.send_signal(stop_signal)
+        assert child.wait(timeout=3) == 0
+        for name in ("coordinator.lock", "evidence.lock"):
+            with exclusive(store.root / name) as handle:
+                assert handle is not None
+        scan = json.loads(store.one("SELECT data FROM metadata WHERE key='evidence_scan'")["data"])
+        assert scan["cancelled"] and not scan["running"] and scan["error"] is None
+        assert not store.rows("SELECT * FROM runs")
+    finally:
+        if child.poll() is None:
+            child.kill()  # Only this disposable test child, never a managed job or host process.
+            child.wait(timeout=3)
+
+
+def test_coordinator_once_waits_for_complete_scan(managed, monkeypatch):
+    from kernel_envolve.manager import evidence, service
+
+    store, _, work = managed
+    evaluate(work, "quick")
+    store.control("toy", "pause")
+    original = evidence.refresh
+
+    def delayed(*args, **kwargs):
+        time.sleep(0.02)
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(evidence, "refresh", delayed)
+    service.run(store, once=True)
+    assert len(store.rows("SELECT * FROM runs")) == 1
+    scan = json.loads(store.one("SELECT data FROM metadata WHERE key='evidence_scan'")["data"])
+    assert not scan["cancelled"] and not scan["running"]
+
+
+def test_cancel_after_acquiring_writer_lock_rolls_back_projection(managed, monkeypatch):
+    from contextlib import contextmanager
+
+    store, _, work = managed
+    run, _ = evaluate(work, "full")
+    promote(run)
+    refresh(store)
+    before = detail(store, "toy")
+    rows = store.rows("SELECT * FROM runs")
+    stop = threading.Event()
+    transaction = store.transaction
+
+    @contextmanager
+    def cancel_after_begin():
+        with transaction():
+            stop.set()
+            yield
+
+    monkeypatch.setattr(store, "transaction", cancel_after_begin)
+    assert refresh(store, stop=stop) is False
+    after = detail(store, "toy")
+    for key in ("best", "history", "latest_evaluation", "evidence_as_of", "evidence_error"):
+        assert after[key] == before[key]
+    assert store.rows("SELECT * FROM runs") == rows
+
+
+def test_coordinator_signal_handler_does_not_acquire_event_lock(managed, monkeypatch):
+    from kernel_envolve.manager import service
+
+    store, _, _ = managed
+    in_handler = False
+    set_event = threading.Event.set
+    set_signal = signal.signal
+
+    def guarded_event_set(event):
+        assert not in_handler, "Signal handlers must not acquire Event's internal lock"
+        set_event(event)
+
+    def guarded_signal(signum, handler):
+        if callable(handler):
+
+            def wrapped(*args):
+                nonlocal in_handler
+                in_handler = True
+                try:
+                    handler(*args)
+                finally:
+                    in_handler = False
+
+            return set_signal(signum, wrapped)
+        return set_signal(signum, handler)
+
+    def request_stop(_):
+        signal.getsignal(signal.SIGTERM)(signal.SIGTERM, None)
+
+    monkeypatch.setattr(threading.Event, "set", guarded_event_set)
+    monkeypatch.setattr(signal, "signal", guarded_signal)
+    monkeypatch.setattr(service, "reconcile", request_stop)
+    previous = {sig: signal.getsignal(sig) for sig in (signal.SIGTERM, signal.SIGINT)}
+    try:
+        service.run(store)
+    finally:
+        for sig, handler in previous.items():
+            set_signal(sig, handler)

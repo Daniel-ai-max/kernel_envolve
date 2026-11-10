@@ -195,9 +195,9 @@ def test_cached_verified_best_rechecks_real_changes(managed, monkeypatch, change
     inspect = evidence.inspect_run
     calls = []
 
-    def counted_inspect(path, spec):
+    def counted_inspect(path, spec, checkpoint=None):
         calls.append(path)
-        return inspect(path, spec)
+        return inspect(path, spec, checkpoint)
 
     monkeypatch.setattr(evidence, "inspect_run", counted_inspect)
     evidence.refresh(store)
