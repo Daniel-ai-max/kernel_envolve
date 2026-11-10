@@ -94,6 +94,7 @@ def validate(raw, base):
                 "max_quality_regression",
                 "min_cost_gain",
                 "max_cost_regression",
+                "adapter_files",
             },
         )
         suite = {
@@ -108,6 +109,17 @@ def validate(raw, base):
             **suite,
         }
         argv(suite["command"])
+        dependencies = suite.get("adapter_files", [])
+        if not isinstance(dependencies, list) or len(dependencies) > 128:
+            raise ValueError("adapter_files must list at most 128 local files")
+        resolved = []
+        for value in dependencies:
+            text(value, "adapter file")
+            path = (Path(base) / value).resolve()
+            if not path.is_file():
+                raise ValueError("Adapter dependency must be an existing file")
+            resolved.append(str(path))
+        suite["adapter_files"] = sorted(set(resolved))
         text(suite["model"], "fixed model identity")
         if type(suite["repeats"]) is not int or not 2 <= suite["repeats"] <= 10:
             raise ValueError("Validation requires 2–10 matched repeats")

@@ -31,6 +31,30 @@ def validator_identity():
     )
 
 
+def adapter_identity(suite):
+    """Bind local command files and explicitly declared adapter dependencies.
+
+    Imported packages, remote services and environment variables still require an
+    operator-managed immutable environment; this is not a sandbox attestation.
+    """
+    command = suite["command"]
+    executable = shutil.which(command[0])
+    if not executable:
+        raise ValueError("Adapter executable is unavailable")
+    paths = {Path(executable).absolute()}
+    paths.update(Path(p) for p in suite.get("adapter_files", []))
+    paths.update(Path(arg) for arg in command[1:] if Path(arg).is_absolute())
+    try:
+        identities = {
+            str(path): {"resolved": str(path.resolve(strict=True)), "sha256": file_hash(path)}
+            for path in sorted(paths)
+            if path.is_file() or str(path) in suite.get("adapter_files", [])
+        }
+    except OSError as exc:
+        raise ValueError("Adapter file is unavailable") from exc
+    return digest({"command": command, "files": identities})
+
+
 def files(root):
     result = {}
     for path in sorted(Path(root).rglob("*")):
@@ -275,6 +299,7 @@ def validate(store, identity):
     if scope not in store.config["suites"]:
         raise ValueError("No operator-configured validation suite")
     suite = store.config["suites"][scope]
+    adapter_hash = adapter_identity(suite)
     verify_evidence(store, [e for r in candidate["rules"] for e in r["evidence"]], scope)
     device = store.config["validation_device"]
     lock = exclusive(lock_path("gpu", device)) if device != "cpu" else contextlib.nullcontext(True)
@@ -299,6 +324,8 @@ def validate(store, identity):
                         else ("candidate", "control")
                     )
                     for role in order:
+                        if adapter_identity(suite) != adapter_hash:
+                            raise ValueError("Adapter changed during validation")
                         remaining = suite["max_seconds"] - (time.monotonic() - began)
                         if remaining <= 1:
                             raise TimeoutError("Validation budget exhausted")
@@ -314,6 +341,8 @@ def validate(store, identity):
                             device,
                         )
                     pairs.append(pair)
+            if adapter_identity(suite) != adapter_hash:
+                raise ValueError("Adapter changed during validation")
             report = {
                 "candidate": identity,
                 "parent": candidate["parent"],
@@ -321,6 +350,7 @@ def validate(store, identity):
                 "suite_hash": digest(suite),
                 "evaluator_hash": evaluator_hash(),
                 "validator_hash": validator_identity(),
+                "adapter_hash": adapter_hash,
                 "pairs": pairs,
                 "decision": verdict(pairs, suite),
                 "model": suite["model"],
@@ -367,6 +397,8 @@ def checked_receipt(store, receipt):
     candidate = store.candidate(report["candidate"])
     scope = candidate["scope"]
     suite = store.config["suites"][scope]
+    if report.get("adapter_hash") != adapter_identity(suite):
+        raise ValueError("Adapter changed; create a new validation experiment")
     if candidate["status"] != "validated" or digest(suite) != report["suite_hash"]:
         raise ValueError("Candidate is not validated against the current suite")
     expected_pairs = {(r, i) for r in range(suite["repeats"]) for i in range(len(suite["tasks"]))}

@@ -638,3 +638,56 @@ def test_case_latency_summary_retains_comparator_identity_and_bounds():
     assert metrics["case_count"] == 20 and metrics["cases_truncated"]
     # This comparator can be current best; do not relabel it as fixed baseline.
     assert "baseline_us" not in metrics["cases"][0]
+
+
+@pytest.mark.parametrize("already_active", [False, True])
+def test_adapter_source_change_invalidates_successful_receipt(rsi, monkeypatch, already_active):
+    def measured_adapter(*args, **kwargs):
+        elapsed = invoke(*args, **kwargs)
+        return 0.1 if "kind" in args[2] else elapsed
+
+    monkeypatch.setattr("kernel_envolve.rsi.trials.invoke", measured_adapter)
+    identity = stage(rsi, proposal(rsi))
+    result = validate(rsi, identity)
+    assert result["accepted"], result
+    if already_active:
+        adopt(rsi, result["receipt"])
+    adapter = Path(rsi.config["suites"]["demo"]["command"][1])
+    adapter.write_text("raise SystemExit('Changed solver version')\n")
+    with pytest.raises(ValueError, match="[Aa]dapter"):
+        adopt(rsi, result["receipt"])
+    if already_active:
+        audit(rsi)
+    assert rsi.active("demo") == "base"
+
+
+def test_adapter_change_during_validation_rejects_candidate(rsi, monkeypatch):
+    adapter = Path(rsi.config["suites"]["demo"]["command"][1])
+
+    def changing_adapter(*args, **kwargs):
+        elapsed = invoke(*args, **kwargs)
+        if "kind" in args[2]:
+            adapter.write_text(adapter.read_text() + "\n# Changed during the experiment\n")
+        return elapsed
+
+    monkeypatch.setattr("kernel_envolve.rsi.trials.invoke", changing_adapter)
+    identity = stage(rsi, proposal(rsi))
+    with pytest.raises(ValueError, match="Adapter changed during validation"):
+        validate(rsi, identity)
+    assert rsi.candidate(identity)["status"] == "rejected"
+    assert rsi.active("demo") == "base"
+    assert not rsi.db.execute("SELECT * FROM validations").fetchall()
+
+
+def test_explicit_adapter_dependency_identity(tmp_path):
+    from kernel_envolve.rsi.trials import adapter_identity
+
+    dependency = tmp_path / "prompt.txt"
+    dependency.write_text("initial prompt")
+    suite = {"command": [sys.executable, "-m", "package"], "adapter_files": [str(dependency)]}
+    before = adapter_identity(suite)
+    dependency.write_text("modified prompt")
+    assert before != adapter_identity(suite)
+    dependency.unlink()
+    with pytest.raises(ValueError, match="Adapter file"):
+        adapter_identity(suite)
