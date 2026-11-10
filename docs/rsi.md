@@ -263,3 +263,32 @@ python /checkout/examples/rsi/research_solver.py --actions 2 --model-seconds 55 
 这是对 GEPA 等轨迹反馈机制的局部借鉴，同时为后续检验搜索记录能否用于回放建立可追溯数据；目前没有实现 GEPA 搜索或 Dream-RSI 的反事实回放。它能观察停止、无效重复、quick/full 安排，但仅两次动作不足以代表长期自主研究能力。与单次生成相比，它增加了测量成本，必须让所有对照使用相同工具与预算，不能把执行器本身的改进归因于 RSI。
 
 多步适配器额外生成 `research-reports.json`：每条假设从对应 evaluator 的冻结源码取样，校验结果收据、任务契约、源码哈希与归档候选的一致性，分别记录 `attempted_candidate_id` 和 `final_selected_candidate_id`。停止动作不伪造评测或源码归属。不要把工作目录中已经恢复的最佳候选内容，作为某次失败尝试的源码上传；这会产生不真实的诊断线索。收集器保留 evaluator 来源的 `source_digest`，以区分同一源码的重复结果与真正不同的尝试。
+
+## 实验性：把历史成功实现作为一次候选实验
+
+完整成功代码提示和完整历史提示的真实 GPU 对照均未通过质量/成本验收，不能自动启用。后续原型优先检验直接成果复用：`rsi.reuse.select` 只从操作者固定的已批准内容 ID 中，按完整 `task.py` 字节（包含参考实现和输入生成器）、精度/可变输入配置、任务 profile 与当前实测运行环境匹配。仅支持 `reference_files=["task.py"]`、`candidate_files=["candidate.py"]`。不做模糊语义匹配，不用历史成绩给不同任务排序，也不保证新 shape/stride/seed 会通过。环境应来自当前运行环境观察，不能直接复制历史记录；物理 GPU UUID 和逻辑 stream/device 编号不作为兼容性判断。
+
+返回值只是待测源码。受信任的研究适配器需要显式传入同一候选源码检查器，才可使用：
+
+```python
+from kernel_envolve.rsi.reuse import select
+from kernel_envolve.rsi.research import run
+
+proposal = select(library, approved_ids, task, task_profile, observed_environment)
+trace = run(
+    packet,
+    output,
+    decide,
+    max_actions=4,
+    artifact_proposal=proposal,
+    source_validator=validate_candidate_source,
+)
+```
+
+`validate_candidate_source` 是操作者提供的候选权限/语法检查器，同时检查历史候选和模型提出的候选；这不是内置 OS 沙箱。批准的库 manifest 和适配器依赖必须绑定进 `adapter_files`。内容哈希证明内容身份，不证明发布者可信。默认不提供 proposal，不扫描历史、不执行历史源码，生产 Manager 与既有策略发布器均不自动使用此原型。
+
+有 proposal 时，执行器先完整评测原候选，再把历史实现作为第一个普通 `propose/full` 动作。它消耗四个动作中的一个，剩下最多三个模型决策，不额外赠送实验预算。旧成绩不进入当前选优；只有本次 full 正确且严格改善的结果才能替换原候选。历史实现失败、变慢或不具备晋升收益时，保留原来已经完整验证的候选。末尾控制器仍另做独立 full 评测，未增加自动 promote 路径。
+
+proposal 记录源码、参考源码和来源 ID，保存有界快照并检测篡改；同一动作在 trace 中标记为 `artifact_proposal`，与适配器决策分开记录。此步没有调用 `decide`，模型决策耗时记录为零；实际 API 成本仍需外部调用账本，不能据此推断整个任务零 tokens。没有匹配返回 None；损坏或不完整的已批准记录明确报错，不能悄悄换一个来源继续冒用旧验证。已有收据因研究执行器/选择器身份改变不能直接沿用。
+
+这是候选级复用的工程原型，尚无该机制的 GPU 收益结论；没有训练权重、开放自改系统代码或降低评测门槛。测试可证明动作计账、失败保留、输入身份、运行环境约束及独立最终评测，不证明实际节省成本。

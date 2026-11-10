@@ -136,6 +136,12 @@ def build(task, artifacts, task_profile, *, origin_task=None, confirmation_run=N
     for step in steps:
         text(step["hypothesis"], "untrusted hypothesis", 1200)
         action = {"action": step["action"], "untrusted_hypothesis": step["hypothesis"]}
+        if "decision_kind" in step:
+            if step["decision_kind"] not in {"adapter", "artifact_proposal"}:
+                raise ValueError("Unsupported reported decision kind")
+            action["reported_decision_kind"] = step["decision_kind"]
+            if step.get("artifact_episode_id") is not None:
+                action["reported_artifact_episode_id"] = _identity(step["artifact_episode_id"])
         if step["action"] not in {"propose", "evaluate", "stop"}:
             raise ValueError("Unsupported episode action")
         observed = step.get("observation")

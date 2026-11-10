@@ -71,6 +71,9 @@ def report_records(task, trace, artifacts):
             "hypothesis": step.get("hypothesis"),
             "final_selected_candidate_id": trace["selected"],
         }
+        if "decision_kind" in step:
+            record["reported_decision_kind"] = step["decision_kind"]
+            record["reported_artifact_episode_id"] = step.get("artifact_episode_id")
         observed = step.get("observation")
         if observed and observed["status"] == "evaluated":
             path = Path(observed["run"])
@@ -113,6 +116,8 @@ def run(
     model_seconds=55,
     evaluation_seconds=30,
     experience=None,
+    artifact_proposal=None,
+    source_validator=None,
 ):
     """Call decide(request, timeout) for operator-fixed actions; return a saved trace.
 
@@ -124,6 +129,11 @@ def run(
     experience is optional operator-supplied historical data for retrieval
     experiments, not a proposed starting implementation or a new tool permission.
     The default path does not load or search any archive.
+
+    artifact_proposal explicitly spends the first ordinary action on a saved
+    implementation. It requires the trusted adapter's source validator, always
+    uses full evaluation, and never imports an old score or replaces the initial
+    candidate before measurement. This is not an automatic archive execution path.
     """
     if packet["kind"] != "generic":
         raise ValueError("The experimental research loop supports generic tasks only")
@@ -159,6 +169,37 @@ def run(
             raise ValueError("Experience snapshots are immutable")
         experience_hash = digest(experience)
         write_json(output / "experience.json", experience)
+    proposal_hash, proposal = None, None
+    if source_validator is not None and not callable(source_validator):
+        raise ValueError("Source validator must be callable")
+    if artifact_proposal is not None:
+        if source_validator is None:
+            raise ValueError("Artifact proposal requires an explicit source validator")
+        keys(artifact_proposal, {"episode_id", "source_hash", "task_source_hash", "source"})
+        proposal = json.loads(json.dumps(artifact_proposal, allow_nan=False))
+        for name in ("episode_id", "source_hash", "task_source_hash"):
+            value = proposal[name]
+            if (
+                not isinstance(value, str)
+                or len(value) != 64
+                or any(c not in "0123456789abcdef" for c in value)
+            ):
+                raise ValueError("Invalid artifact identity")
+        source = proposal["source"]
+        if not isinstance(source, str) or not source.strip() or len(source.encode()) > 24000:
+            raise ValueError("Artifact source must be nonempty and at most 24000 bytes")
+        if (
+            cfg["reference_files"] != ["task.py"]
+            or source_id(source) != proposal["source_hash"]
+            or source_id((task / "task.py").read_text()) != proposal["task_source_hash"]
+        ):
+            raise ValueError("Artifact source or task identity mismatch")
+        if (output / "artifact-proposal.json").exists():
+            raise ValueError("Artifact proposals are immutable")
+        if len(json.dumps(proposal, allow_nan=False).encode()) > 32768:
+            raise ValueError("Artifact proposal exceeds 32768 UTF-8 bytes")
+        proposal_hash = digest(proposal)
+        write_json(output / "artifact-proposal.json", proposal)
     initial_files = files(task)
     initial = candidate.read_text()
     if len(initial.encode()) > 24000:
@@ -177,6 +218,7 @@ def run(
         "budget_seconds": packet["seconds"],
         "scope": "Bounded research; full RSI acceptance remains independent",
         "experience_hash": experience_hash,
+        "artifact_proposal_hash": proposal_hash,
     }
     previous = {}
 
@@ -188,6 +230,11 @@ def run(
         return packet["seconds"] - (time.monotonic() - began) - 3
 
     def protected():
+        if (
+            proposal_hash is not None
+            and digest(read(output / "artifact-proposal.json", 32768)) != proposal_hash
+        ):
+            raise ValueError("Research adapter changed the frozen artifact proposal")
         if (
             experience_hash is not None
             and digest(read(output / "experience.json", 131072)) != experience_hash
@@ -270,9 +317,26 @@ def run(
                 trace["stop_reason"] = "decision_input_limit"
                 break
             started = time.monotonic()
-            action = decide(request, min(model_seconds, remaining()))
+            reused = proposal is not None and index == 0
+            if reused:
+                action = {
+                    "action": "propose",
+                    "source": proposal["source"],
+                    "mode": "full",
+                    "hypothesis": "Test the explicitly supplied historical implementation on this task; its old result does not establish current correctness or performance.",
+                }
+            else:
+                action = decide(request, min(model_seconds, remaining()))
             protected()
-            row = {"index": index, "model_seconds": time.monotonic() - started}
+            elapsed = time.monotonic() - started
+            row = {
+                "index": index,
+                "decision_kind": "artifact_proposal" if reused else "adapter",
+                "decision_seconds": elapsed,
+                "model_seconds": 0.0 if reused else elapsed,
+            }
+            if reused:
+                row["artifact_episode_id"] = proposal["episode_id"]
             trace["steps"].append(row)
             keys(action, {"action", "hypothesis"}, {"source", "candidate", "mode"})
             text(action["hypothesis"], "hypothesis", 1200)
@@ -291,6 +355,9 @@ def run(
                 ):
                     raise ValueError("Proposed source must be nonempty and at most 24000 bytes")
                 identity = source_id(source)
+                if source_validator is not None:
+                    source_validator(source)
+                    protected()
                 sources[identity] = source
                 (output / f"candidate-{identity}.py").write_text(source)
             elif action["action"] == "evaluate":

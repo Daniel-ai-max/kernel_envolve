@@ -511,3 +511,222 @@ def test_oversized_experience_fails_before_evaluation(research):
             experience={"facts": "x" * 32768},
         )
     assert not (Path(packet["task"]) / ".kernel_envolve/runs").exists()
+
+
+def artifact(packet, source):
+    return {
+        "episode_id": "a" * 64,
+        "source_hash": source_id(source),
+        "task_source_hash": source_id((Path(packet["task"]) / "task.py").read_text()),
+        "source": source,
+    }
+
+
+def test_artifact_spends_one_action_and_requires_current_full_success(research):
+    import ast
+
+    packet, out, _ = research
+    source = "def run(x): return x+1\n"
+    calls = []
+
+    def decide(request, timeout):
+        calls.append(request)
+        assert request["remaining_actions"] == 1
+        assert request["selected"] == source_id(source)
+        prior = request["history"][0]
+        assert prior["decision_kind"] == "artifact_proposal"
+        assert prior["model_seconds"] == 0
+        assert prior["observation"]["mode"] == "full"
+        return {"action": "stop", "hypothesis": "Stop deterministic CPU fixture"}
+
+    trace = run(
+        packet,
+        out,
+        decide,
+        max_actions=2,
+        artifact_proposal=artifact(packet, source),
+        source_validator=ast.parse,
+    )
+    assert len(calls) == 1 and len(trace["steps"]) == 2
+    assert trace["selected_quality"] > 0.8
+    assert Path(packet["editable_files"][0]).read_text() == source
+    assert not (Path(packet["task"]) / ".kernel_envolve/best.json").exists()
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "def run(x): return x-1\n",
+        "import time\ndef run(x):\n time.sleep(.009)\n return x+1\n",
+    ],
+)
+def test_bad_or_slower_artifact_keeps_measured_incumbent(research, source):
+    import ast
+
+    packet, out, initial = research
+    trace = run(
+        packet,
+        out,
+        lambda *a: pytest.fail("The single action belongs to the artifact"),
+        max_actions=1,
+        artifact_proposal=artifact(packet, source),
+        source_validator=ast.parse,
+    )
+    assert len(trace["steps"]) == 1
+    assert trace["selected"] == source_id(initial)
+    assert Path(packet["editable_files"][0]).read_text() == initial
+    assert len(list((Path(packet["task"]) / ".kernel_envolve/runs").iterdir())) == 2
+
+
+def test_artifact_needs_explicit_validator_and_matching_identity(research):
+    import ast
+
+    packet, out, initial = research
+    proposal = artifact(packet, "def run(x): return x+1\n")
+    with pytest.raises(ValueError, match="explicit source validator"):
+        run(packet, out, lambda *a: None, artifact_proposal=proposal)
+    with pytest.raises(ValueError, match="identity mismatch"):
+        run(
+            packet,
+            out,
+            lambda *a: None,
+            artifact_proposal=proposal | {"source_hash": "0" * 64},
+            source_validator=ast.parse,
+        )
+    with pytest.raises(ValueError, match="identity mismatch"):
+        run(
+            packet,
+            out,
+            lambda *a: None,
+            artifact_proposal=proposal | {"task_source_hash": "0" * 64},
+            source_validator=ast.parse,
+        )
+    assert not (Path(packet["task"]) / ".kernel_envolve/runs").exists()
+    assert Path(packet["editable_files"][0]).read_text() == initial
+
+
+def test_validator_rejects_artifact_before_execution(research):
+    packet, out, initial = research
+
+    def reject(source):
+        raise ValueError("adapter rejects this artifact")
+
+    with pytest.raises(ValueError, match="adapter rejects"):
+        run(
+            packet,
+            out,
+            lambda *a: pytest.fail("Unexpected model call"),
+            artifact_proposal=artifact(packet, "raise AssertionError('must not execute')\n"),
+            source_validator=reject,
+        )
+    assert Path(packet["editable_files"][0]).read_text() == initial
+    assert len(list((Path(packet["task"]) / ".kernel_envolve/runs").iterdir())) == 1
+
+
+def test_frozen_artifact_cannot_be_replaced_after_measurement(research):
+    import ast
+
+    packet, out, _ = research
+    source = "def run(x): return x+1\n"
+
+    def tamper(request, timeout):
+        write_json(out / "artifact-proposal.json", artifact(packet, "def run(x): return x-1\n"))
+        return {"action": "stop", "hypothesis": "tampering fixture"}
+
+    with pytest.raises(ValueError, match="frozen artifact"):
+        run(
+            packet,
+            out,
+            tamper,
+            artifact_proposal=artifact(packet, source),
+            source_validator=ast.parse,
+        )
+    assert Path(packet["editable_files"][0]).read_text() == source
+
+
+def test_artifact_selector_requires_exact_task_runtime_and_confirmed_source(
+    measured_episode, tmp_path
+):
+    import copy
+
+    from kernel_envolve.cli import evaluate
+    from kernel_envolve.rsi.episodes import build, save
+    from kernel_envolve.rsi.reuse import select
+
+    packet, out, _, correct = measured_episode
+    task = Path(packet["task"])
+    confirmation, _ = evaluate(task, "full", timeout=10)
+    episode = build(task, out, {"tags": ["fixture"]}, confirmation_run=confirmation)
+    identity = save(tmp_path / "library", episode)
+    environment = episode["observations"][-1]["environment"]
+    facts = {"tags": ["fixture"]}
+    proposal = select(tmp_path / "library", [identity], task, facts, environment)
+    assert proposal["source"] == correct
+    assert proposal["source_hash"] == source_id(correct)
+    assert proposal["episode_id"] == identity
+    assert select(tmp_path / "library", [identity], task, {}, environment) is None
+    changed = copy.deepcopy(environment)
+    changed["packages"]["numpy"] = "different-version"
+    assert select(tmp_path / "library", [identity], task, facts, changed) is None
+    cfg = json.loads((task / "task.json").read_text())
+    cfg["cases"][0]["args"] = {"new_case_configuration": True}
+    write_json(task / "task.json", cfg)
+    assert select(tmp_path / "library", [identity], task, facts, environment) == proposal
+    cfg["atol"] = 1.0
+    write_json(task / "task.json", cfg)
+    assert select(tmp_path / "library", [identity], task, facts, environment) is None
+    cfg.pop("atol")
+    write_json(task / "task.json", cfg)
+    (task / "task.py").write_text((task / "task.py").read_text() + "# changed oracle module\n")
+    assert select(tmp_path / "library", [identity], task, facts, environment) is None
+
+
+def test_unconfirmed_episode_does_not_supply_an_artifact(measured_episode, tmp_path):
+    from kernel_envolve.rsi.episodes import build, save
+    from kernel_envolve.rsi.reuse import select
+
+    packet, out, _, _ = measured_episode
+    episode = build(packet["task"], out, {})
+    identity = save(tmp_path / "library", episode)
+    env = episode["observations"][-1]["environment"]
+    assert select(tmp_path / "library", [identity], packet["task"], {}, env) is None
+    for ids in ([], [identity, identity]):
+        with pytest.raises(ValueError, match="unique approved"):
+            select(tmp_path / "library", ids, packet["task"], {}, env)
+
+
+def test_artifact_trial_still_requires_independent_final_evaluation(research):
+    import sys
+
+    from kernel_envolve.rsi.trials import freeze_template, trial
+
+    packet, out, _ = research
+    root = out.parent
+    source = "def run(x): return x+1\n"
+    proposal_file = root / "approved-artifact.json"
+    write_json(proposal_file, artifact(packet, source))
+    adapter = root / "reuse-adapter.py"
+    adapter.write_text(
+        "import ast,json,sys\nfrom pathlib import Path\n"
+        "from kernel_envolve.rsi.research import run\n"
+        f"proposal=json.loads(Path({str(proposal_file)!r}).read_text())\n"
+        "run(json.load(sys.stdin),Path.cwd(),lambda *a: (_ for _ in ()).throw(AssertionError('no model decision allowed')),max_actions=1,artifact_proposal=proposal,source_validator=ast.parse)\n"
+    )
+    template = freeze_template({"path": packet["task"], "kind": "generic"}, root / "template")
+    template["kind"] = "generic"
+    suite = {
+        "model": "deterministic-no-model",
+        "solver_seconds": 15,
+        "evaluation_seconds": 15,
+        "command": [sys.executable, str(adapter)],
+        "adapter_files": [str(proposal_file)],
+    }
+    destination = root / "artifact-trial"
+    destination.mkdir()
+    result = trial(destination, template, suite, [], 0, 30, "cpu")
+    trace = json.loads((destination / "search-trace.json").read_text())
+    assert result["passed"] and result["quality"] > 0.8
+    assert trace["selected"] == source_id(source)
+    assert result["run"] != trace["initial_observation"]["run"]
+    assert result["run"] != trace["steps"][0]["observation"]["run"]
+    assert (Path(result["run"]) / "source/candidate.py").read_text() == source
