@@ -93,6 +93,13 @@ GPU wrapper 会转发命令输出的最后 64 KiB，完整日志在管理状态�
 Agent 主进程默认看不到 CUDA 设备；GPU wrapper 给子进程设置目标 UUID。不能再嵌套
 gpu-run。运行需要其他 GPU 的分布式验证不在单卡队列契约内，应单独安排并保存证据。
 
+GPU 命令优先直接执行 evaluator。若适配脚本需要先检查条件，再转交 CLI，使用
+`os.execvpe(argv[0], argv, os.environ)`；另起子进程时须传
+`pass_fds=(int(os.environ["KERNEL_ENVOLVE_LOCK_FD"]),)` 并等待退出。
+默认 `subprocess.run` 会关闭这个继承的设备锁描述符。CLI 会在复制源码前拒绝
+缺失或失效的描述符，并给出上述修复方式；创建 worker 时也再次检查。
+检查不会重新获取锁，也不能通过删除 manager 环境变量来恢复执行。
+
 报告示例：
 
 ```json
