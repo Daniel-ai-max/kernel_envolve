@@ -1,0 +1,2518 @@
+{
+  "scope": "Descriptive only; repeated observed failure conditions are not proof of avoidable mistakes or a causal effect. Seed repetitions within the same source are deduplicated; different sources with the same role/kind/frozen case args are counted. Unreported cases remain unknown. Does not modify primary acceptance or turn related task formulas into independent families.",
+  "trials": [
+    {
+      "repeat": 0,
+      "task": 0,
+      "arm": "control",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "54bd65ec325b714b4db15ebb9784a9a8f18cc36e883cefbb16ab4589995821fd",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": 0.0001967506337668401,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "3388e67eeb5586c1e184d4ca9aa6cd742940eec50e366c3e3bfb579e7c625a9a",
+          "mode": "full",
+          "correctness": "fail",
+          "eligible": false,
+          "median_fixed_gain": null,
+          "failed_checks": {
+            "checks": [
+              {
+                "case": "size-0-bfloat16-stride-1",
+                "case_id_truncated": false,
+                "role": "candidate",
+                "kind": "reuse",
+                "seed": 263,
+                "args": {
+                  "shape": [
+                    131113
+                  ],
+                  "dtype": "bfloat16",
+                  "stride": 1,
+                  "pattern": "normal"
+                },
+                "args_truncated": false
+              }
+            ],
+            "count": 1,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 2,
+          "candidate": "e9f7ce06107dca53b736402228bf006b879ffd932a1cee52579f26aeccf3eeac",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.2872490773706538,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "e9f7ce06107dca53b736402228bf006b879ffd932a1cee52579f26aeccf3eeac"
+    },
+    {
+      "repeat": 0,
+      "task": 0,
+      "arm": "success-memory",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "54bd65ec325b714b4db15ebb9784a9a8f18cc36e883cefbb16ab4589995821fd",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": 0.0003866274179312734,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "88ee54df45f7d47eca7286c2946b345b2d58ae475d10fc7cab73f107a338eebc",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.2787818642039105,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "88ee54df45f7d47eca7286c2946b345b2d58ae475d10fc7cab73f107a338eebc"
+    },
+    {
+      "repeat": 0,
+      "task": 0,
+      "arm": "episode-memory",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "54bd65ec325b714b4db15ebb9784a9a8f18cc36e883cefbb16ab4589995821fd",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": -0.001558410266583099,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "88ee54df45f7d47eca7286c2946b345b2d58ae475d10fc7cab73f107a338eebc",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.27349683774216027,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "88ee54df45f7d47eca7286c2946b345b2d58ae475d10fc7cab73f107a338eebc"
+    },
+    {
+      "repeat": 0,
+      "task": 1,
+      "arm": "episode-memory",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "d59cdd40a6c7cf0e6d080b1f750c9b3af44ec4678beba3894be952ecf6cd95df",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": -0.0021119759371426294,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "24d223c974f07f7aeb8b32a5f8b726891d038bb3cc7837d84dcf8cf0d85ac586",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.2947367939784608,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "24d223c974f07f7aeb8b32a5f8b726891d038bb3cc7837d84dcf8cf0d85ac586"
+    },
+    {
+      "repeat": 0,
+      "task": 1,
+      "arm": "success-memory",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "d59cdd40a6c7cf0e6d080b1f750c9b3af44ec4678beba3894be952ecf6cd95df",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": 0.0006757713105449703,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "24d223c974f07f7aeb8b32a5f8b726891d038bb3cc7837d84dcf8cf0d85ac586",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.29104076383517646,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "24d223c974f07f7aeb8b32a5f8b726891d038bb3cc7837d84dcf8cf0d85ac586"
+    },
+    {
+      "repeat": 0,
+      "task": 1,
+      "arm": "control",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "d59cdd40a6c7cf0e6d080b1f750c9b3af44ec4678beba3894be952ecf6cd95df",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": -0.001678200926998663,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "920403e67a76d5b470dd42d5de9d21ce55e74c62147e278e98b0829f6bd8074e",
+          "mode": "full",
+          "correctness": "fail",
+          "eligible": false,
+          "median_fixed_gain": null,
+          "failed_checks": {
+            "checks": [
+              {
+                "case": "size-0-bfloat16-stride-1",
+                "case_id_truncated": false,
+                "role": "candidate",
+                "kind": "fresh",
+                "seed": 269,
+                "args": {
+                  "shape": [
+                    131113
+                  ],
+                  "dtype": "bfloat16",
+                  "stride": 1,
+                  "pattern": "normal"
+                },
+                "args_truncated": false
+              }
+            ],
+            "count": 1,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 2,
+          "candidate": "b5e820581b22a3e3d362dcc06fe1e99648a03c0ee3573cf13d4fd0e587bac8cf",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.29487701088879764,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "b5e820581b22a3e3d362dcc06fe1e99648a03c0ee3573cf13d4fd0e587bac8cf"
+    },
+    {
+      "repeat": 0,
+      "task": 2,
+      "arm": "episode-memory",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "7c0f8c6e41fb29f5476bfe5236fd28ba2ab85fb6190bfaaf62a8efc4bab5c821",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": -0.0034314930710563907,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "23eeb5c4fcb03d60c1cd69d5d7a88df58fe5b87ad2c546f56b02e7aab6315777",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.4995504205621625,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "23eeb5c4fcb03d60c1cd69d5d7a88df58fe5b87ad2c546f56b02e7aab6315777"
+    },
+    {
+      "repeat": 0,
+      "task": 2,
+      "arm": "control",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "7c0f8c6e41fb29f5476bfe5236fd28ba2ab85fb6190bfaaf62a8efc4bab5c821",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": -0.0016033652970716128,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "c933e11d441178ac2b2ff2e6766dfeed79abd84006ba2725f739865774d463bd",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.49010077791046813,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "c933e11d441178ac2b2ff2e6766dfeed79abd84006ba2725f739865774d463bd"
+    },
+    {
+      "repeat": 0,
+      "task": 2,
+      "arm": "success-memory",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "7c0f8c6e41fb29f5476bfe5236fd28ba2ab85fb6190bfaaf62a8efc4bab5c821",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": 0.0003227891956220086,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "d3b804725cdd747703d61806368d10a487d4c96357d18bab42aff20a85757f56",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.5070432101969092,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "d3b804725cdd747703d61806368d10a487d4c96357d18bab42aff20a85757f56"
+    },
+    {
+      "repeat": 0,
+      "task": 3,
+      "arm": "success-memory",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "af5c962711aae6a6e009a4897a5b41161b73bddd93500e793f273cb12b1ce501",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": -0.00018442047572819753,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "d577ca3663e530c3339608d60c60e51c0c466e60de4591b9e3ba27d733d02a9a",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.612968561247656,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "d577ca3663e530c3339608d60c60e51c0c466e60de4591b9e3ba27d733d02a9a"
+    },
+    {
+      "repeat": 0,
+      "task": 3,
+      "arm": "episode-memory",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "af5c962711aae6a6e009a4897a5b41161b73bddd93500e793f273cb12b1ce501",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": -0.0013259367450272341,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "d577ca3663e530c3339608d60c60e51c0c466e60de4591b9e3ba27d733d02a9a",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.6237825146434276,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "d577ca3663e530c3339608d60c60e51c0c466e60de4591b9e3ba27d733d02a9a"
+    },
+    {
+      "repeat": 0,
+      "task": 3,
+      "arm": "control",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "af5c962711aae6a6e009a4897a5b41161b73bddd93500e793f273cb12b1ce501",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": -0.0036195496973645547,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "ef727885a53157b66da4dab5a7d954fc5d19b235ecd57d760249a4552de75cac",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.6161446717736727,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "ef727885a53157b66da4dab5a7d954fc5d19b235ecd57d760249a4552de75cac"
+    },
+    {
+      "repeat": 0,
+      "task": 4,
+      "arm": "success-memory",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "d4fd1007c817b4e89fe6aa2af03cd477132b2ac831ac85392b30cfbfc321df23",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": -0.001434948554181581,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "09d41143b6e8a806bf9c6375bcb9d62c765c48cfaa066d9dd06584530402edb6",
+          "mode": "full",
+          "correctness": "fail",
+          "eligible": false,
+          "median_fixed_gain": null,
+          "failed_checks": {
+            "checks": [
+              {
+                "case": "size-0-bfloat16-stride-3",
+                "case_id_truncated": false,
+                "role": "candidate",
+                "kind": "reuse",
+                "seed": 269,
+                "args": {
+                  "shape": [
+                    211,
+                    321
+                  ],
+                  "dtype": "bfloat16",
+                  "stride": 3,
+                  "pattern": "normal"
+                },
+                "args_truncated": false
+              }
+            ],
+            "count": 1,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 2,
+          "candidate": "d203bcd774ab463bd4b6f2932333b9309bc6f73e671e2caa2db7338b867600d6",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.3491457821586838,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 3,
+          "candidate": "ba5cf40089996f2d9e994ad706aa8c4c40371ec83b3b1571ba3195c3a055fc91",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.39757115421684763,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "ba5cf40089996f2d9e994ad706aa8c4c40371ec83b3b1571ba3195c3a055fc91"
+    },
+    {
+      "repeat": 0,
+      "task": 4,
+      "arm": "control",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "d4fd1007c817b4e89fe6aa2af03cd477132b2ac831ac85392b30cfbfc321df23",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": 0.0005235306858328848,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "c411950da93fd1160f9ff36f5b15d651586dd25d40395f1f75dcb324cc2ac83f",
+          "mode": "full",
+          "correctness": "fail",
+          "eligible": false,
+          "median_fixed_gain": null,
+          "failed_checks": {
+            "checks": [
+              {
+                "case": "size-0-bfloat16-stride-3",
+                "case_id_truncated": false,
+                "role": "candidate",
+                "kind": "reuse",
+                "seed": 269,
+                "args": {
+                  "shape": [
+                    211,
+                    321
+                  ],
+                  "dtype": "bfloat16",
+                  "stride": 3,
+                  "pattern": "normal"
+                },
+                "args_truncated": false
+              }
+            ],
+            "count": 1,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 2,
+          "candidate": "dd4aff8d6c53f0604a9527d31ba8cc76528dd17e114297ad81aa1a931e17c61a",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.38193857598069525,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "dd4aff8d6c53f0604a9527d31ba8cc76528dd17e114297ad81aa1a931e17c61a"
+    },
+    {
+      "repeat": 0,
+      "task": 4,
+      "arm": "episode-memory",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "d4fd1007c817b4e89fe6aa2af03cd477132b2ac831ac85392b30cfbfc321df23",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": -0.00018295090095771238,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "aa4c4689192dc9ed0a27b944c7b4a9bf6c334c9aa5e0e60e1b526d1b1ef799a8",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.3700079546065735,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 2,
+          "candidate": "ffd52ed834cb8687d91daeab0def62fd4d276fe78530158759308fd717c5a10b",
+          "mode": "full",
+          "correctness": "fail",
+          "eligible": false,
+          "median_fixed_gain": null,
+          "failed_checks": {
+            "checks": [
+              {
+                "case": "size-0-bfloat16-stride-3",
+                "case_id_truncated": false,
+                "role": "candidate",
+                "kind": "reuse",
+                "seed": 269,
+                "args": {
+                  "shape": [
+                    211,
+                    321
+                  ],
+                  "dtype": "bfloat16",
+                  "stride": 3,
+                  "pattern": "normal"
+                },
+                "args_truncated": false
+              }
+            ],
+            "count": 1,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "aa4c4689192dc9ed0a27b944c7b4a9bf6c334c9aa5e0e60e1b526d1b1ef799a8"
+    },
+    {
+      "repeat": 0,
+      "task": 5,
+      "arm": "control",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "adf1ba43ac0924da0b619c8774114c050fb6be46990ae117352785f2833c35bb",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": -0.001772305475811975,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "e53e0aa0c77506837610113117ad905c81eb72165a1992dbe5eacf1e91121edc",
+          "mode": "full",
+          "correctness": "fail",
+          "eligible": false,
+          "median_fixed_gain": null,
+          "failed_checks": {
+            "checks": [
+              {
+                "case": "size-0-bfloat16-stride-1",
+                "case_id_truncated": false,
+                "role": "candidate",
+                "kind": "fresh",
+                "seed": 263,
+                "args": {
+                  "shape": [
+                    211,
+                    321
+                  ],
+                  "dtype": "bfloat16",
+                  "stride": 1,
+                  "pattern": "normal"
+                },
+                "args_truncated": false
+              }
+            ],
+            "count": 1,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 2,
+          "candidate": "586840af100bc91c8abd144211251077e6e85afcb42a88cd562a63456acc0bdb",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.4910864134511212,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 3,
+          "candidate": "d63d57899a1470f9cc203c3393975a9a1bb55d2ddb8a5015e594d160af2156f6",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.5251791261635701,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "d63d57899a1470f9cc203c3393975a9a1bb55d2ddb8a5015e594d160af2156f6"
+    },
+    {
+      "repeat": 0,
+      "task": 5,
+      "arm": "episode-memory",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "adf1ba43ac0924da0b619c8774114c050fb6be46990ae117352785f2833c35bb",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": -0.0011862026639490875,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "3709550f1651329527b287dcd7a48a84d65b69613ab9eb87dc68cbe900604558",
+          "mode": "full",
+          "correctness": "fail",
+          "eligible": false,
+          "median_fixed_gain": null,
+          "failed_checks": {
+            "checks": [
+              {
+                "case": "size-0-bfloat16-stride-1",
+                "case_id_truncated": false,
+                "role": "candidate",
+                "kind": "fresh",
+                "seed": 263,
+                "args": {
+                  "shape": [
+                    211,
+                    321
+                  ],
+                  "dtype": "bfloat16",
+                  "stride": 1,
+                  "pattern": "normal"
+                },
+                "args_truncated": false
+              }
+            ],
+            "count": 1,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 2,
+          "candidate": "4d72532d69fb39a9103f9d2948051d7bac579b688523200e1559dc0abf728e41",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.4845275230247877,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 3,
+          "candidate": "eced70e75c9918d99f62e2c9054fc1fdebf9a053dc75ee2371f56f07dc9b3401",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.5374002269895638,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "eced70e75c9918d99f62e2c9054fc1fdebf9a053dc75ee2371f56f07dc9b3401"
+    },
+    {
+      "repeat": 0,
+      "task": 5,
+      "arm": "success-memory",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "adf1ba43ac0924da0b619c8774114c050fb6be46990ae117352785f2833c35bb",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": -0.0021218347954373717,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "3f753e5d589de3f5e23612a2c857e9190919c700216be9fa333050e85bd5ec00",
+          "mode": "full",
+          "correctness": "fail",
+          "eligible": false,
+          "median_fixed_gain": null,
+          "failed_checks": {
+            "checks": [
+              {
+                "case": "size-0-bfloat16-stride-1",
+                "case_id_truncated": false,
+                "role": "candidate",
+                "kind": "fresh",
+                "seed": 263,
+                "args": {
+                  "shape": [
+                    211,
+                    321
+                  ],
+                  "dtype": "bfloat16",
+                  "stride": 1,
+                  "pattern": "normal"
+                },
+                "args_truncated": false
+              }
+            ],
+            "count": 1,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 2,
+          "candidate": "fc05b924ef75efe1fcb19e3e29ae121d84fef9f418c9ccb372c07cbcc34018c0",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.48628000426970946,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 3,
+          "candidate": "88a43617ada8c9721983768e2de94c1c5e2500389192689e2463e7109478edea",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.5126862323965861,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "88a43617ada8c9721983768e2de94c1c5e2500389192689e2463e7109478edea"
+    },
+    {
+      "repeat": 0,
+      "task": 6,
+      "arm": "control",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "dba44485a9f994b29127395cff6c564b0916a9232b009a0d1a52a7b07a5e1cb5",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": -0.0005866708482511473,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "79fa6369b0bca4edf5440e83fe1d78a074b6846b65f42d36bdd535f48cff966a",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.36959290698154285,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "79fa6369b0bca4edf5440e83fe1d78a074b6846b65f42d36bdd535f48cff966a"
+    },
+    {
+      "repeat": 0,
+      "task": 6,
+      "arm": "success-memory",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "dba44485a9f994b29127395cff6c564b0916a9232b009a0d1a52a7b07a5e1cb5",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": 0.0005673731749399336,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "271cb13d13eb747f808e185631e7ee50c2ed395fcc5651e0e833a657016ea123",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.35472883622816975,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "271cb13d13eb747f808e185631e7ee50c2ed395fcc5651e0e833a657016ea123"
+    },
+    {
+      "repeat": 0,
+      "task": 6,
+      "arm": "episode-memory",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "dba44485a9f994b29127395cff6c564b0916a9232b009a0d1a52a7b07a5e1cb5",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": 0.00090858114946335,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "9c99ee799b5815a2e7c85abb120ea48fc63b8937aefc95d1c379898f2513079c",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.36251573341015464,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "9c99ee799b5815a2e7c85abb120ea48fc63b8937aefc95d1c379898f2513079c"
+    },
+    {
+      "repeat": 0,
+      "task": 7,
+      "arm": "episode-memory",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "b2ed45e9963c296b63438754b59d4094481919ef7a05d48f46e35dff7560d602",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": -0.00010802644143431683,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "9f701ede8caa62b74fe93a30f79c93ea97a56e277ead34ffb2781b58cd1c72d0",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.2422039020368561,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "9f701ede8caa62b74fe93a30f79c93ea97a56e277ead34ffb2781b58cd1c72d0"
+    },
+    {
+      "repeat": 0,
+      "task": 7,
+      "arm": "success-memory",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "b2ed45e9963c296b63438754b59d4094481919ef7a05d48f46e35dff7560d602",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": 0.002090940083027737,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "6ee97d3b29a8017772c2d690e09ab319fd912c3632582dc9a48cc30de5a4798f",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": 0.22625988965804184,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 2,
+          "candidate": "eda3e08d9b0fdf3d99eb8f2cb2ad600e04800ccafb7822ac538a16cad802625d",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.23741195949527305,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "eda3e08d9b0fdf3d99eb8f2cb2ad600e04800ccafb7822ac538a16cad802625d"
+    },
+    {
+      "repeat": 0,
+      "task": 7,
+      "arm": "control",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "b2ed45e9963c296b63438754b59d4094481919ef7a05d48f46e35dff7560d602",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": -0.00033322756832243616,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "ad0832408b31178c0349708ef729a9b2a8e3b8b0a2d2280a5d9a7f9573162657",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.24446406838004292,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "ad0832408b31178c0349708ef729a9b2a8e3b8b0a2d2280a5d9a7f9573162657"
+    },
+    {
+      "repeat": 1,
+      "task": 0,
+      "arm": "episode-memory",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "54bd65ec325b714b4db15ebb9784a9a8f18cc36e883cefbb16ab4589995821fd",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": 0.0032434308077108343,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "527f1d78dfbae56de6cd7b3870ab40c35b46a5d8fb37caa3e9a4fd4dbb4bd365",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.2823998414475935,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "527f1d78dfbae56de6cd7b3870ab40c35b46a5d8fb37caa3e9a4fd4dbb4bd365"
+    },
+    {
+      "repeat": 1,
+      "task": 0,
+      "arm": "control",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "54bd65ec325b714b4db15ebb9784a9a8f18cc36e883cefbb16ab4589995821fd",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": -0.0033154864491981018,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "319fce76c01c8bfccd74032cf67f8c26dc2f1238a67dc283b6e32db62567e5bd",
+          "mode": "full",
+          "correctness": "fail",
+          "eligible": false,
+          "median_fixed_gain": null,
+          "failed_checks": {
+            "checks": [
+              {
+                "case": "size-0-bfloat16-stride-1",
+                "case_id_truncated": false,
+                "role": "candidate",
+                "kind": "reuse",
+                "seed": 263,
+                "args": {
+                  "shape": [
+                    131113
+                  ],
+                  "dtype": "bfloat16",
+                  "stride": 1,
+                  "pattern": "normal"
+                },
+                "args_truncated": false
+              }
+            ],
+            "count": 1,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 2,
+          "candidate": "e3bc081d84c6e5787b4736f57cbc2256cc70478e6206c1a879b4f322e1d2357b",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.28343594018382584,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "e3bc081d84c6e5787b4736f57cbc2256cc70478e6206c1a879b4f322e1d2357b"
+    },
+    {
+      "repeat": 1,
+      "task": 0,
+      "arm": "success-memory",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "54bd65ec325b714b4db15ebb9784a9a8f18cc36e883cefbb16ab4589995821fd",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": 0.002905529669662954,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "88ee54df45f7d47eca7286c2946b345b2d58ae475d10fc7cab73f107a338eebc",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.28161977370137836,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "88ee54df45f7d47eca7286c2946b345b2d58ae475d10fc7cab73f107a338eebc"
+    },
+    {
+      "repeat": 1,
+      "task": 1,
+      "arm": "success-memory",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "d59cdd40a6c7cf0e6d080b1f750c9b3af44ec4678beba3894be952ecf6cd95df",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": -0.0009983122502156827,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "24d223c974f07f7aeb8b32a5f8b726891d038bb3cc7837d84dcf8cf0d85ac586",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.2868678572466969,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "24d223c974f07f7aeb8b32a5f8b726891d038bb3cc7837d84dcf8cf0d85ac586"
+    },
+    {
+      "repeat": 1,
+      "task": 1,
+      "arm": "episode-memory",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "d59cdd40a6c7cf0e6d080b1f750c9b3af44ec4678beba3894be952ecf6cd95df",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": -0.0008606877983007299,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "24d223c974f07f7aeb8b32a5f8b726891d038bb3cc7837d84dcf8cf0d85ac586",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.28726416739957084,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "24d223c974f07f7aeb8b32a5f8b726891d038bb3cc7837d84dcf8cf0d85ac586"
+    },
+    {
+      "repeat": 1,
+      "task": 1,
+      "arm": "control",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "d59cdd40a6c7cf0e6d080b1f750c9b3af44ec4678beba3894be952ecf6cd95df",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": 0.00024331406043853754,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "9d8674be60502904a1570c56a9dc634fe3950660fb2e33ab6a28dd1974e91256",
+          "mode": "full",
+          "correctness": "fail",
+          "eligible": false,
+          "median_fixed_gain": null,
+          "failed_checks": {
+            "checks": [
+              {
+                "case": "size-0-bfloat16-stride-1",
+                "case_id_truncated": false,
+                "role": "candidate",
+                "kind": "fresh",
+                "seed": 269,
+                "args": {
+                  "shape": [
+                    131113
+                  ],
+                  "dtype": "bfloat16",
+                  "stride": 1,
+                  "pattern": "normal"
+                },
+                "args_truncated": false
+              }
+            ],
+            "count": 1,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 2,
+          "candidate": "9730ed52da753bfed281db41b2038daa035d496352aee51a2a1307776c641dd9",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.29343416053007,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "9730ed52da753bfed281db41b2038daa035d496352aee51a2a1307776c641dd9"
+    },
+    {
+      "repeat": 1,
+      "task": 2,
+      "arm": "success-memory",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "7c0f8c6e41fb29f5476bfe5236fd28ba2ab85fb6190bfaaf62a8efc4bab5c821",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": -0.004428436544825276,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "c5b28aae1fb69362efd3319638f65b441b2c80de5c2d0e9551da51f734bd577d",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.49672265775780083,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "c5b28aae1fb69362efd3319638f65b441b2c80de5c2d0e9551da51f734bd577d"
+    },
+    {
+      "repeat": 1,
+      "task": 2,
+      "arm": "control",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "7c0f8c6e41fb29f5476bfe5236fd28ba2ab85fb6190bfaaf62a8efc4bab5c821",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": 9.047085473462557e-05,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "da72fe45eae226315da5c00b8022d440a182a7ddd677217bfb38c43143b3ca64",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.5039548912382701,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "da72fe45eae226315da5c00b8022d440a182a7ddd677217bfb38c43143b3ca64"
+    },
+    {
+      "repeat": 1,
+      "task": 2,
+      "arm": "episode-memory",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "7c0f8c6e41fb29f5476bfe5236fd28ba2ab85fb6190bfaaf62a8efc4bab5c821",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": 0.0007033549086929436,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "23eeb5c4fcb03d60c1cd69d5d7a88df58fe5b87ad2c546f56b02e7aab6315777",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.5046271704951126,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "23eeb5c4fcb03d60c1cd69d5d7a88df58fe5b87ad2c546f56b02e7aab6315777"
+    },
+    {
+      "repeat": 1,
+      "task": 3,
+      "arm": "control",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "af5c962711aae6a6e009a4897a5b41161b73bddd93500e793f273cb12b1ce501",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": -0.003745068464541812,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "5e86cc2101ad5e54dd622054a0a13072079f91dd9b5113dee5ad0f115b8ba4fe",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.6108953684733797,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "5e86cc2101ad5e54dd622054a0a13072079f91dd9b5113dee5ad0f115b8ba4fe"
+    },
+    {
+      "repeat": 1,
+      "task": 3,
+      "arm": "episode-memory",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "af5c962711aae6a6e009a4897a5b41161b73bddd93500e793f273cb12b1ce501",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": 0.0004494372847901329,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "d577ca3663e530c3339608d60c60e51c0c466e60de4591b9e3ba27d733d02a9a",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.6098836016063856,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "d577ca3663e530c3339608d60c60e51c0c466e60de4591b9e3ba27d733d02a9a"
+    },
+    {
+      "repeat": 1,
+      "task": 3,
+      "arm": "success-memory",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "af5c962711aae6a6e009a4897a5b41161b73bddd93500e793f273cb12b1ce501",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": 0.0007990039156533513,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "d577ca3663e530c3339608d60c60e51c0c466e60de4591b9e3ba27d733d02a9a",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.6152388248723828,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "d577ca3663e530c3339608d60c60e51c0c466e60de4591b9e3ba27d733d02a9a"
+    },
+    {
+      "repeat": 1,
+      "task": 4,
+      "arm": "control",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "d4fd1007c817b4e89fe6aa2af03cd477132b2ac831ac85392b30cfbfc321df23",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": 0.0009113356586099575,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "66b3b815358e1c98d5cc1cdcfbf940b45b1553ca70ad4f572a87c5364b346826",
+          "mode": "full",
+          "correctness": "fail",
+          "eligible": false,
+          "median_fixed_gain": null,
+          "failed_checks": {
+            "checks": [
+              {
+                "case": "size-0-bfloat16-stride-3",
+                "case_id_truncated": false,
+                "role": "candidate",
+                "kind": "reuse",
+                "seed": 269,
+                "args": {
+                  "shape": [
+                    211,
+                    321
+                  ],
+                  "dtype": "bfloat16",
+                  "stride": 3,
+                  "pattern": "normal"
+                },
+                "args_truncated": false
+              }
+            ],
+            "count": 1,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 2,
+          "candidate": "a90516b9c52c5f0f870bdfb80a4ce9e78829d3e17786932025958a41452bedfb",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.37359513572530423,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "a90516b9c52c5f0f870bdfb80a4ce9e78829d3e17786932025958a41452bedfb"
+    },
+    {
+      "repeat": 1,
+      "task": 4,
+      "arm": "success-memory",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "d4fd1007c817b4e89fe6aa2af03cd477132b2ac831ac85392b30cfbfc321df23",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": 0.001444089858275266,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "d415c9a04adbab83c63882a2b880ba4453cb1fee2f0381a1474414a8da0e416b",
+          "mode": "full",
+          "correctness": "fail",
+          "eligible": false,
+          "median_fixed_gain": null,
+          "failed_checks": {
+            "checks": [
+              {
+                "case": "size-0-bfloat16-stride-3",
+                "case_id_truncated": false,
+                "role": "candidate",
+                "kind": "reuse",
+                "seed": 269,
+                "args": {
+                  "shape": [
+                    211,
+                    321
+                  ],
+                  "dtype": "bfloat16",
+                  "stride": 3,
+                  "pattern": "normal"
+                },
+                "args_truncated": false
+              }
+            ],
+            "count": 1,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 2,
+          "candidate": "887450b0425b8f1325fa0e0d52191931fa6356acd49e1cfd4d5c5662bf585e5c",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.39207965055625943,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "887450b0425b8f1325fa0e0d52191931fa6356acd49e1cfd4d5c5662bf585e5c"
+    },
+    {
+      "repeat": 1,
+      "task": 4,
+      "arm": "episode-memory",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "d4fd1007c817b4e89fe6aa2af03cd477132b2ac831ac85392b30cfbfc321df23",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": -0.0018723601609501594,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "6f3d795bd138694ca9e12bdc1e2c8d6d650a83580fac32cb74bcbebb5417100a",
+          "mode": "full",
+          "correctness": "fail",
+          "eligible": false,
+          "median_fixed_gain": null,
+          "failed_checks": {
+            "checks": [
+              {
+                "case": "size-0-bfloat16-stride-3",
+                "case_id_truncated": false,
+                "role": "candidate",
+                "kind": "reuse",
+                "seed": 269,
+                "args": {
+                  "shape": [
+                    211,
+                    321
+                  ],
+                  "dtype": "bfloat16",
+                  "stride": 3,
+                  "pattern": "normal"
+                },
+                "args_truncated": false
+              }
+            ],
+            "count": 1,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 2,
+          "candidate": "7a0453dcf50a6891f98b2faecaa4f2b93df1eaa0b2d0447ca49376df8cf97910",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.35824171428220514,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 3,
+          "candidate": "d1e6f6c6cc97c04d91f0b01acbd8896a15ba73ecb0ef42b978d53d0ef21e182f",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.36824712526376757,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "d1e6f6c6cc97c04d91f0b01acbd8896a15ba73ecb0ef42b978d53d0ef21e182f"
+    },
+    {
+      "repeat": 1,
+      "task": 5,
+      "arm": "episode-memory",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "adf1ba43ac0924da0b619c8774114c050fb6be46990ae117352785f2833c35bb",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": -0.0011754957019626255,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "98814c8fbfd133f39eab46ac067c9b25526a7b71c7f6cb26c6b5077cb50ed4d9",
+          "mode": "full",
+          "correctness": "fail",
+          "eligible": false,
+          "median_fixed_gain": null,
+          "failed_checks": {
+            "checks": [
+              {
+                "case": "size-0-bfloat16-stride-1",
+                "case_id_truncated": false,
+                "role": "candidate",
+                "kind": "fresh",
+                "seed": 263,
+                "args": {
+                  "shape": [
+                    211,
+                    321
+                  ],
+                  "dtype": "bfloat16",
+                  "stride": 1,
+                  "pattern": "normal"
+                },
+                "args_truncated": false
+              }
+            ],
+            "count": 1,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 2,
+          "candidate": "abf5d6120c4ce5ca5aa65f0fe22592c0af5918103a2652660addeb1b81284f91",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.48907805677749033,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 3,
+          "candidate": "99c6b386570d092f024f14bc405a7725cfc15591a723db3154a127edafc63ac0",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.5134844971038564,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "99c6b386570d092f024f14bc405a7725cfc15591a723db3154a127edafc63ac0"
+    },
+    {
+      "repeat": 1,
+      "task": 5,
+      "arm": "success-memory",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "adf1ba43ac0924da0b619c8774114c050fb6be46990ae117352785f2833c35bb",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": -0.00047214452642346805,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "f3ad5a19209759d75de7bcd8677fbe9bc79e39777a74817d77c0f9080584d5da",
+          "mode": "full",
+          "correctness": "fail",
+          "eligible": false,
+          "median_fixed_gain": null,
+          "failed_checks": {
+            "checks": [
+              {
+                "case": "size-0-bfloat16-stride-1",
+                "case_id_truncated": false,
+                "role": "candidate",
+                "kind": "fresh",
+                "seed": 263,
+                "args": {
+                  "shape": [
+                    211,
+                    321
+                  ],
+                  "dtype": "bfloat16",
+                  "stride": 1,
+                  "pattern": "normal"
+                },
+                "args_truncated": false
+              }
+            ],
+            "count": 1,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 2,
+          "candidate": "84fbf989f3fc72df5754ea5c02550c457e94044a809286e395467d01e44a96cc",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.47916283469044846,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 3,
+          "candidate": "86f78a3b8d7770267654bc371f8e4b898d77a83b7803e168028bb2385a572f66",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.49726052904748863,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 4,
+          "candidate": "59be00293dcf0070b6372a340bf1940ae366a3c03346c02846d82383362697b7",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.5225662640003422,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "action_budget_exhausted",
+      "selected": "59be00293dcf0070b6372a340bf1940ae366a3c03346c02846d82383362697b7"
+    },
+    {
+      "repeat": 1,
+      "task": 5,
+      "arm": "control",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "adf1ba43ac0924da0b619c8774114c050fb6be46990ae117352785f2833c35bb",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": -0.0010075561391081345,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "2c89571dde31ffeca4db0277e2bf4807143ba41c2c90d3cbc590810b72364e99",
+          "mode": "full",
+          "correctness": "fail",
+          "eligible": false,
+          "median_fixed_gain": null,
+          "failed_checks": {
+            "checks": [
+              {
+                "case": "size-0-bfloat16-stride-1",
+                "case_id_truncated": false,
+                "role": "candidate",
+                "kind": "fresh",
+                "seed": 263,
+                "args": {
+                  "shape": [
+                    211,
+                    321
+                  ],
+                  "dtype": "bfloat16",
+                  "stride": 1,
+                  "pattern": "normal"
+                },
+                "args_truncated": false
+              }
+            ],
+            "count": 1,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 2,
+          "candidate": "27a40480c71e36269698e3c311e570d88dd3aa1f7ab6fdee6976b8a70552c718",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.4833716456751293,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 3,
+          "candidate": "bd8a4c700eee6f378619dc3c66830bddf4520d1107eabf894521b3c575001ef7",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.513571159048839,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "bd8a4c700eee6f378619dc3c66830bddf4520d1107eabf894521b3c575001ef7"
+    },
+    {
+      "repeat": 1,
+      "task": 6,
+      "arm": "episode-memory",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "dba44485a9f994b29127395cff6c564b0916a9232b009a0d1a52a7b07a5e1cb5",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": 0.00249946238435933,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "9815a3746ac12819933780bf8ab2a5922dcc91941c8732ee179ab709a02bb4f6",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.3610778872040837,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "9815a3746ac12819933780bf8ab2a5922dcc91941c8732ee179ab709a02bb4f6"
+    },
+    {
+      "repeat": 1,
+      "task": 6,
+      "arm": "control",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "dba44485a9f994b29127395cff6c564b0916a9232b009a0d1a52a7b07a5e1cb5",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": -0.0019715237367081695,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "bfce9ffdd26a36ba142172545e180fb794f0766381be85ae4a447c2436863930",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.36247979929202057,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "bfce9ffdd26a36ba142172545e180fb794f0766381be85ae4a447c2436863930"
+    },
+    {
+      "repeat": 1,
+      "task": 6,
+      "arm": "success-memory",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "dba44485a9f994b29127395cff6c564b0916a9232b009a0d1a52a7b07a5e1cb5",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": 0.0011717879142902898,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "271cb13d13eb747f808e185631e7ee50c2ed395fcc5651e0e833a657016ea123",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.3611772094814026,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "271cb13d13eb747f808e185631e7ee50c2ed395fcc5651e0e833a657016ea123"
+    },
+    {
+      "repeat": 1,
+      "task": 7,
+      "arm": "success-memory",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "b2ed45e9963c296b63438754b59d4094481919ef7a05d48f46e35dff7560d602",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": 0.001471396154482607,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "5dd4675335f5a948a8b915ca34d348cc303ca58c5568853d84ba6b9bb1249729",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.22745639833375464,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "5dd4675335f5a948a8b915ca34d348cc303ca58c5568853d84ba6b9bb1249729"
+    },
+    {
+      "repeat": 1,
+      "task": 7,
+      "arm": "episode-memory",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "b2ed45e9963c296b63438754b59d4094481919ef7a05d48f46e35dff7560d602",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": -0.0004523146067981765,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "206e3968e439ae25e17e48c897ff64df9e66c7c9024e468b7b19d24d4e26e645",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.2385472271437994,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "206e3968e439ae25e17e48c897ff64df9e66c7c9024e468b7b19d24d4e26e645"
+    },
+    {
+      "repeat": 1,
+      "task": 7,
+      "arm": "control",
+      "observations": [
+        {
+          "index": 0,
+          "candidate": "b2ed45e9963c296b63438754b59d4094481919ef7a05d48f46e35dff7560d602",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": 0.00032660830297653876,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 1,
+          "candidate": "61e1ecf6707adc246e03bcaa859d9ae03c2aaf49c888b6d12779f3eb1a775778",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": false,
+          "median_fixed_gain": 0.2128725645755552,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        },
+        {
+          "index": 2,
+          "candidate": "72507cbd5f57409fcc67de7de4327eeea9bcec6ff9c873eeb55ef90bd329bb82",
+          "mode": "full",
+          "correctness": "pass",
+          "eligible": true,
+          "median_fixed_gain": 0.25899648454656826,
+          "failed_checks": {
+            "checks": [],
+            "count": 0,
+            "truncated": false,
+            "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+          }
+        }
+      ],
+      "recurring_conditions": [],
+      "stop_reason": "model_stopped",
+      "selected": "72507cbd5f57409fcc67de7de4327eeea9bcec6ff9c873eeb55ef90bd329bb82"
+    }
+  ],
+  "aggregates": {
+    "control": {
+      "trials": 16,
+      "trials_with_recurring_failure_condition": 0,
+      "extra_distinct_source_failures_under_same_condition": 0,
+      "stop_reasons": {
+        "model_stopped": 16
+      }
+    },
+    "success-memory": {
+      "trials": 16,
+      "trials_with_recurring_failure_condition": 0,
+      "extra_distinct_source_failures_under_same_condition": 0,
+      "stop_reasons": {
+        "model_stopped": 15,
+        "action_budget_exhausted": 1
+      }
+    },
+    "episode-memory": {
+      "trials": 16,
+      "trials_with_recurring_failure_condition": 0,
+      "extra_distinct_source_failures_under_same_condition": 0,
+      "stop_reasons": {
+        "model_stopped": 16
+      }
+    }
+  }
+}
