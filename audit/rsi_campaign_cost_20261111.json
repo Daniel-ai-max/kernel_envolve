@@ -1,5 +1,5 @@
 {
-  "scope": "Closed jobs only, through Manager GPU engineering; active adaptive study excluded.",
+  "scope": "Closed jobs only, including the rejected adaptive development study; no active GPU job.",
   "entries": [
     {
       "folder": "rsi-batch-pilot-20261110",
@@ -5314,13 +5314,943 @@
       "known_tokens": 0,
       "unknown_usage_attempts": 0,
       "calls": []
+    },
+    {
+      "folder": "rsi-adaptive-budget-study-20261111/development",
+      "job": "8774e952b4ff4276a213a8fb2f9ff0f8",
+      "created_at": 1794346598.5400262,
+      "released_at": 1794350543.950041,
+      "conservative_gpu_seconds": 3945.4100148677826,
+      "cumulative_gpu_seconds": 21899.7949924469,
+      "receipt_sha256": {
+        "released.json": "73017a6c2c3a2eed0d8c6f392209f3c1117adeaa8426f79aedbf4b5b186406b5",
+        "create-attempt.json": "a8a69faf61f2018dd1dbfd836fc08d1f686398607ee3cd65c28626b61ffe237c",
+        "approved-budget.json": "caf97de445d1e26d8c42b14c6c90241512965e3074c1136ae7298b42fd80ed88"
+      },
+      "model_attempts": 152,
+      "known_tokens": 1728392,
+      "unknown_usage_attempts": 0,
+      "calls": [
+        {
+          "file": "01-solve-b27c0191.json",
+          "sha256": "10a8bd22b49e2bda86cc4247b4774630db47d3f9b3a6b84aa37d11239a2f4094",
+          "status": "completed",
+          "known_total_tokens": 5791
+        },
+        {
+          "file": "02-solve-525e01f7.json",
+          "sha256": "d82c48672daae14cb912b18332c949e43a6e670f1c3a7f5cfc57e12292acf0e4",
+          "status": "completed",
+          "known_total_tokens": 6987
+        },
+        {
+          "file": "03-solve-1f62034c.json",
+          "sha256": "75fbe067ddf21d402e42b79f663571eb54be34b5dcb3577f012f7dfd39f76846",
+          "status": "completed",
+          "known_total_tokens": 11324
+        },
+        {
+          "file": "04-solve-4df251c7.json",
+          "sha256": "6ca264409e60506cdd9e625f26d39a88b2d07acaa80868b49012f62e747949cb",
+          "status": "completed",
+          "known_total_tokens": 15090
+        },
+        {
+          "file": "05-solve-2c98b625.json",
+          "sha256": "0e52ad775e87e173200e0e8a9412d021df7c1bd1bc3ac100701f8d39c4df4ce4",
+          "status": "completed",
+          "known_total_tokens": 10378
+        },
+        {
+          "file": "06-solve-f9caa25c.json",
+          "sha256": "bc123a7a67b64859b9dbad531da175567c29640c27ad0d54f814ff590faaf420",
+          "status": "completed",
+          "known_total_tokens": 10207
+        },
+        {
+          "file": "07-solve-18cc515b.json",
+          "sha256": "1753923a5f0f5ccfbe1af07e8d86bd2f5aef02cf1c85806d5dbd2fbca9eaf13e",
+          "status": "completed",
+          "known_total_tokens": 10322
+        },
+        {
+          "file": "08-solve-275f4223.json",
+          "sha256": "dfe0b2264c297a545b3c8c60f58b66cc0758e0c043ae21faf096225c5f18a8ac",
+          "status": "completed",
+          "known_total_tokens": 14354
+        },
+        {
+          "file": "09-solve-b4928989.json",
+          "sha256": "9c82ee8a4cee57b266bb6e72c2f439ad2b184418b649cf8f0627a0eda54664e3",
+          "status": "completed",
+          "known_total_tokens": 18171
+        },
+        {
+          "file": "10-solve-24865f5d.json",
+          "sha256": "b888e79652de7494c2824945b9de5a94e069a70903af046884e90135163eb2d3",
+          "status": "completed",
+          "known_total_tokens": 10479
+        },
+        {
+          "file": "100-solve-805ed292.json",
+          "sha256": "d98c8d305f3c831fdf90d72bc285d0d7e86a690e15c1e8e11fc9c08574e5a825",
+          "status": "completed",
+          "known_total_tokens": 9969
+        },
+        {
+          "file": "101-solve-ee3df5d1.json",
+          "sha256": "beae77f1f6fb27d9d308e796011ffb720a729ffa374576528404878b27f8c94e",
+          "status": "completed",
+          "known_total_tokens": 14182
+        },
+        {
+          "file": "102-solve-de960fcf.json",
+          "sha256": "9f38c8a3c9e4bba5c579d772b9d0b807ce4deca9d1f4f00a4ffdd6a05f028414",
+          "status": "completed",
+          "known_total_tokens": 17847
+        },
+        {
+          "file": "103-solve-90e3fd60.json",
+          "sha256": "44530d7dce0ad143112780be2676597682b2caef674e3108c2959d8aa9da3bc0",
+          "status": "completed",
+          "known_total_tokens": 9723
+        },
+        {
+          "file": "104-solve-33646dd2.json",
+          "sha256": "bd20b72526446f59f5424fdaa85a9b15677d25672982f273c86b2ed6abf5b2cf",
+          "status": "completed",
+          "known_total_tokens": 10227
+        },
+        {
+          "file": "105-solve-9c19c88f.json",
+          "sha256": "f76ec987eb79109614b1a895659075ae1c3ed3e18a8ce27a98734368eee4f745",
+          "status": "completed",
+          "known_total_tokens": 14372
+        },
+        {
+          "file": "106-solve-aaa9f322.json",
+          "sha256": "7f16eb15fcac8ba8c01d05e1a83e5c4bf0a1bdf905fdbe83c6ec908524d6d57e",
+          "status": "completed",
+          "known_total_tokens": 17985
+        },
+        {
+          "file": "107-solve-7946a3df.json",
+          "sha256": "cd9af6d3ddfc9837380e452a119565bbbf8448011c6c65859600fd37b5cc9a56",
+          "status": "completed",
+          "known_total_tokens": 5808
+        },
+        {
+          "file": "108-solve-2c512564.json",
+          "sha256": "8ede7a6969fde8aaba0d1f4395b8fbf3e37e432f13b0cd8ac3cd8cd82681b3a1",
+          "status": "completed",
+          "known_total_tokens": 10045
+        },
+        {
+          "file": "109-solve-34c4add9.json",
+          "sha256": "b20013a11168b2ce27674846d4d0c13e50fd6c9e5166dddd76e50ee650aeea57",
+          "status": "completed",
+          "known_total_tokens": 14149
+        },
+        {
+          "file": "11-solve-14276039.json",
+          "sha256": "110a2e6b777bcba33155f461476749575f3fe977d051b4c4fc3f17f564f53d4e",
+          "status": "completed",
+          "known_total_tokens": 10208
+        },
+        {
+          "file": "110-solve-b99f7e1b.json",
+          "sha256": "aba0a4172d04fe89308677101f0eacab7cdc76a68eb9fd66179fbca16dcbc440",
+          "status": "completed",
+          "known_total_tokens": 17907
+        },
+        {
+          "file": "111-solve-993c2930.json",
+          "sha256": "ef135f1d01de33543e6074a3b5741e24d7f92ee145a2aff168784aad94ad7bf3",
+          "status": "completed",
+          "known_total_tokens": 9720
+        },
+        {
+          "file": "112-solve-6041dadf.json",
+          "sha256": "fab60f95eea13c42a7e85fafefe96c5cde710ca880a218ee17152629dc298143",
+          "status": "completed",
+          "known_total_tokens": 10399
+        },
+        {
+          "file": "113-solve-4da46e90.json",
+          "sha256": "093181e2bcaae7053097e6101a5b6596d70c96046a846b2525f5ac6622461342",
+          "status": "completed",
+          "known_total_tokens": 12020
+        },
+        {
+          "file": "114-solve-15a617e5.json",
+          "sha256": "06a37ce70b5916798d46a14c88f7f4c3c3930bf67197ca5c7f419e4b00bbd609",
+          "status": "completed",
+          "known_total_tokens": 15643
+        },
+        {
+          "file": "115-solve-397cfeb7.json",
+          "sha256": "261bd66b04a130d3a16f736d42ac83184eb99be3c2cdd354b4d81fc4fcd4a0ed",
+          "status": "completed",
+          "known_total_tokens": 10973
+        },
+        {
+          "file": "116-solve-c19cefea.json",
+          "sha256": "cfa0e00a6423a5b7ab14037265e7b62f243604875cc40931cdd54a1c6ff40368",
+          "status": "completed",
+          "known_total_tokens": 10778
+        },
+        {
+          "file": "117-solve-84b71bd3.json",
+          "sha256": "5a810663e628fc8e94cbb02b8f73ca672ef901080ecd125f0d50979a15eb0bf4",
+          "status": "completed",
+          "known_total_tokens": 5817
+        },
+        {
+          "file": "118-solve-5bcfb593.json",
+          "sha256": "34f7bf4b49807e65d08c0cf548a89cc59c8ddbf87fdc4654b4cac6a5813bc362",
+          "status": "completed",
+          "known_total_tokens": 7856
+        },
+        {
+          "file": "119-solve-907e1056.json",
+          "sha256": "983c0cc26f5792a0de9ce5379bc8568e79827baf127762ba7748bf6f8d0f9b69",
+          "status": "completed",
+          "known_total_tokens": 11904
+        },
+        {
+          "file": "12-solve-2e977ef2.json",
+          "sha256": "0db05f0a6533338a2d52ceec315215dd8b313c47cf8a937320d2a8df01685d58",
+          "status": "completed",
+          "known_total_tokens": 14507
+        },
+        {
+          "file": "120-solve-f54b5e3b.json",
+          "sha256": "986016b1b6c5912b02ed76f1ca3e6b2d6db572b9d7bd75ac1ca5abd4be804d22",
+          "status": "completed",
+          "known_total_tokens": 15708
+        },
+        {
+          "file": "121-solve-4e66bcce.json",
+          "sha256": "cff61656399efcd5f237a9a6b8e55b233a26091bfe09e51949fcb696280b4405",
+          "status": "completed",
+          "known_total_tokens": 10853
+        },
+        {
+          "file": "122-solve-8968839e.json",
+          "sha256": "d54e46319470d8b4a11a097bc34fa28e43f3b1672d506bc691b5c897d0b7b5a2",
+          "status": "completed",
+          "known_total_tokens": 14794
+        },
+        {
+          "file": "123-solve-239b198b.json",
+          "sha256": "86dcf3c6dc2972b3886f73f7e60474bbb5754f673119590e9a915eafd60a6fe4",
+          "status": "completed",
+          "known_total_tokens": 15683
+        },
+        {
+          "file": "124-solve-0b86a655.json",
+          "sha256": "98458c6bc60c884e8743744f2001b2fe7ee15b1c87a19a91e318f9d3dbbede7b",
+          "status": "completed",
+          "known_total_tokens": 5871
+        },
+        {
+          "file": "125-solve-89aa39b7.json",
+          "sha256": "0b4033dd38d7f0b93364cfa7eb3d7fc8f2568efc3b5375e492684df225ea6eb9",
+          "status": "completed",
+          "known_total_tokens": 7581
+        },
+        {
+          "file": "126-solve-fff31c8b.json",
+          "sha256": "4cff9cbc8e837ee70b7be9d27e10936dfccbfd61fd3a5e7e78b306424b484f0c",
+          "status": "completed",
+          "known_total_tokens": 11667
+        },
+        {
+          "file": "127-solve-7dd6295a.json",
+          "sha256": "3076338c77211fe5c5142e73fbfbfa654fa40a0fddb64d283a947e898b9d36d0",
+          "status": "completed",
+          "known_total_tokens": 16162
+        },
+        {
+          "file": "128-solve-02f14510.json",
+          "sha256": "4277ea26b60982438213cb1971fe2d12dabcd494b6526e87c8e4d20dd6351a95",
+          "status": "completed",
+          "known_total_tokens": 10337
+        },
+        {
+          "file": "129-solve-90206c1a.json",
+          "sha256": "c4486b6de5831cbc9878d0f8075f7b7fb59e78384d5b7d0ae6638b06465aa4f9",
+          "status": "completed",
+          "known_total_tokens": 14994
+        },
+        {
+          "file": "13-solve-9c8a0145.json",
+          "sha256": "47f2805fabb9aff96f5a47d45092c485278bfeccfaf682a0d896a745bb257171",
+          "status": "completed",
+          "known_total_tokens": 18063
+        },
+        {
+          "file": "130-solve-ef8eae41.json",
+          "sha256": "9effbbdb13a0601f796c6c3c68190968bf95b9cebe68db062fb7f07bdc23338c",
+          "status": "completed",
+          "known_total_tokens": 18754
+        },
+        {
+          "file": "131-solve-73a1c885.json",
+          "sha256": "ba51135af5b08a890ae5460c1808c3870c3a436f1338685f04be0b577268a3ed",
+          "status": "completed",
+          "known_total_tokens": 10316
+        },
+        {
+          "file": "132-solve-829839f2.json",
+          "sha256": "ab1720b4f945acde156c3770d339859896f67f04b688079615b1dfbae46c1447",
+          "status": "completed",
+          "known_total_tokens": 5794
+        },
+        {
+          "file": "133-solve-72a30035.json",
+          "sha256": "3d78720540211cf209f5647ae3e1516c6f2c68a6b023fd556a81dc1003fa7e9a",
+          "status": "completed",
+          "known_total_tokens": 7617
+        },
+        {
+          "file": "134-solve-c63ad818.json",
+          "sha256": "331e1e001a6ed16961fadf0325999a7ee4299aa7c1725ed092c3b1466abbe9c2",
+          "status": "completed",
+          "known_total_tokens": 11611
+        },
+        {
+          "file": "135-solve-91d94e67.json",
+          "sha256": "d94a8d84973d60854cf59091ca06db4cef0fccf56d961439e58ec8314a59b365",
+          "status": "completed",
+          "known_total_tokens": 15349
+        },
+        {
+          "file": "136-solve-f3580d49.json",
+          "sha256": "b630c61b5f399f1b69118bdbf6eca304a5d6832e7704e7d24ca745b813e505f1",
+          "status": "completed",
+          "known_total_tokens": 7901
+        },
+        {
+          "file": "137-solve-34a917c4.json",
+          "sha256": "dff78169764b62e4ccfa1a781bae401a03b8223a7bc643f0ee237b1b9cea4b94",
+          "status": "completed",
+          "known_total_tokens": 7578
+        },
+        {
+          "file": "138-solve-a2092188.json",
+          "sha256": "ecb4134b7dc4787350c4cbd0789995e2d0d070e08a36e8107b226b05abed054d",
+          "status": "completed",
+          "known_total_tokens": 11574
+        },
+        {
+          "file": "139-solve-e62fc47c.json",
+          "sha256": "2d8a7a422604920e8d81ba258b2fae2c67ddf266b54aec8177350461873a77b7",
+          "status": "completed",
+          "known_total_tokens": 15346
+        },
+        {
+          "file": "14-solve-d34172bd.json",
+          "sha256": "ed129e6c65fb7231d75b65898f79a14e3b56bf4de65a1e9b505aebe2c4188637",
+          "status": "completed",
+          "known_total_tokens": 5739
+        },
+        {
+          "file": "140-solve-d68c72d7.json",
+          "sha256": "58644655a8684a07fff1cbb251941328562dd0f7582a164d2f47e02d83d3c131",
+          "status": "completed",
+          "known_total_tokens": 7284
+        },
+        {
+          "file": "141-solve-08f8bd36.json",
+          "sha256": "949dac7ca4ad92faf6e4e29f41b65162371f811a89d4d567e40afb9d292e16a6",
+          "status": "completed",
+          "known_total_tokens": 11331
+        },
+        {
+          "file": "142-solve-95bf16cb.json",
+          "sha256": "38230e87516a067c0fdc0d5f96e258b6986e24e9e322b8fec537bfe5a5e09c8c",
+          "status": "completed",
+          "known_total_tokens": 7696
+        },
+        {
+          "file": "143-solve-35e5c798.json",
+          "sha256": "b0e2be8c9837bcf261def6710e8cf2feabe1cb2c817761bb1ccc61074f004b2b",
+          "status": "completed",
+          "known_total_tokens": 7523
+        },
+        {
+          "file": "144-solve-55f83dc3.json",
+          "sha256": "ec5d64033235042eb68f6f8b1cc727806031327ac22d29ef99d5afc55f644fe7",
+          "status": "completed",
+          "known_total_tokens": 11512
+        },
+        {
+          "file": "145-solve-b58703e7.json",
+          "sha256": "cbfd7fd1f15a470aa630a88712648b839c48e433fd51adb475a7de9bc301631c",
+          "status": "completed",
+          "known_total_tokens": 15327
+        },
+        {
+          "file": "146-solve-9023590a.json",
+          "sha256": "e0d932f8103453ebec3461a918c17d09ea715c19c95aca439c66f73986a930f2",
+          "status": "completed",
+          "known_total_tokens": 5853
+        },
+        {
+          "file": "147-solve-8d3512a7.json",
+          "sha256": "bdd9baf5bb46019f6692ac7ab29a7af3490ef80e2eeca3106ef74a6591bf8c3a",
+          "status": "completed",
+          "known_total_tokens": 7827
+        },
+        {
+          "file": "148-solve-ac4fb31e.json",
+          "sha256": "f32e2a15b650a74f7f8276c0b0bdc5a492b930c78d674161a86dae91628920bc",
+          "status": "completed",
+          "known_total_tokens": 11727
+        },
+        {
+          "file": "149-solve-be375a19.json",
+          "sha256": "484d5bd2672e49697027f0aaf4439d150a305e8e24194ab294274f94e0133e62",
+          "status": "completed",
+          "known_total_tokens": 15575
+        },
+        {
+          "file": "15-solve-eb73d9a7.json",
+          "sha256": "1053509a9d062ebf11fbf1f54cda3007b594ac086be723d5ecf97640067ffbbd",
+          "status": "completed",
+          "known_total_tokens": 6983
+        },
+        {
+          "file": "150-solve-18926490.json",
+          "sha256": "d32685a16592a4ac7e635811498994f490dffab6496a15231df7603772a117c6",
+          "status": "completed",
+          "known_total_tokens": 7495
+        },
+        {
+          "file": "151-solve-703656c4.json",
+          "sha256": "63f29836d3269ddf399ce3117eb1dedd0bccde53fd75d97a5f0707a47fc8258f",
+          "status": "completed",
+          "known_total_tokens": 11546
+        },
+        {
+          "file": "152-solve-71b00d98.json",
+          "sha256": "eee6c2d840469b63de3b82fb3566e646ba1e71db59e231ea0bb35f27d78739e7",
+          "status": "completed",
+          "known_total_tokens": 15311
+        },
+        {
+          "file": "16-solve-63a44ea3.json",
+          "sha256": "236cf2ccd8358db8ae32caa2fc85ff96d89b99db1cf9f08a79c914ebfb72890e",
+          "status": "completed",
+          "known_total_tokens": 11309
+        },
+        {
+          "file": "17-solve-23ee6bf6.json",
+          "sha256": "c92b513b0264720740cf3af194ce6527e0b0d8719ff2319def00c403b2ae3dee",
+          "status": "completed",
+          "known_total_tokens": 15084
+        },
+        {
+          "file": "18-solve-47baa374.json",
+          "sha256": "0d76779071fdb4b73ea19ba652bd8a2b8cd6cf35bf821f952ce8c8a1ce49e3c9",
+          "status": "completed",
+          "known_total_tokens": 10459
+        },
+        {
+          "file": "19-solve-3e481de7.json",
+          "sha256": "cd86982d897bfc9106f099866c2fac85eb8734b2de3c2d6827b4587a058edc7a",
+          "status": "completed",
+          "known_total_tokens": 10098
+        },
+        {
+          "file": "20-solve-3af03795.json",
+          "sha256": "7944ca4676af32258ab286705e3c0171e2c884ddb73e4ec1220869ee7c0ae34f",
+          "status": "completed",
+          "known_total_tokens": 14144
+        },
+        {
+          "file": "21-solve-4e477704.json",
+          "sha256": "08ded6d2313fa71a2d37fcca2a74529ae693952be8eea35fdadeff6c0abab90a",
+          "status": "completed",
+          "known_total_tokens": 17874
+        },
+        {
+          "file": "22-solve-13082fa6.json",
+          "sha256": "625cbbdc85403b0a892cc8caecb4dd32a05429283941a58b6e1346f5f8670f97",
+          "status": "completed",
+          "known_total_tokens": 10020
+        },
+        {
+          "file": "23-solve-e075d474.json",
+          "sha256": "c8e9bb63b3e79f1984e58fe7e16688e23e4b7cba0fb132f2a52dc0cbca4e5c47",
+          "status": "completed",
+          "known_total_tokens": 10132
+        },
+        {
+          "file": "24-solve-7c18ea62.json",
+          "sha256": "ada822b46c00a0ca70b5e8e1ee680e2591910c1183da38715e2d08b6908b060a",
+          "status": "completed",
+          "known_total_tokens": 5774
+        },
+        {
+          "file": "25-solve-4f377370.json",
+          "sha256": "17bdc22e6bf8a78f475321f501a575804c831fdaaa88924c46ac6704168883d7",
+          "status": "completed",
+          "known_total_tokens": 9928
+        },
+        {
+          "file": "26-solve-f2ba3afb.json",
+          "sha256": "7f5f6836127782663757e618f2c3bdf6c0935f6d134f49674c10b6bf92eec529",
+          "status": "completed",
+          "known_total_tokens": 13761
+        },
+        {
+          "file": "27-solve-a4b51913.json",
+          "sha256": "19f27f1ac63b4e46a7263cb03b338dd900a68a3a085a4851a8faad58960e5ae2",
+          "status": "completed",
+          "known_total_tokens": 9725
+        },
+        {
+          "file": "28-solve-aa171823.json",
+          "sha256": "4e1b82fbeb3f3afb87c9187938ca587d39e0996c8d33f35787f7dd0c9138e143",
+          "status": "completed",
+          "known_total_tokens": 5808
+        },
+        {
+          "file": "29-solve-646578e3.json",
+          "sha256": "60490ddcf09efeb9a4de7e651903858703c59cd543c021b1a22ae80819747f1a",
+          "status": "completed",
+          "known_total_tokens": 10168
+        },
+        {
+          "file": "30-solve-28bb9d44.json",
+          "sha256": "97d51a54587576e23aeb1660bd385971f8304bdf8bc6c7ff7e4ba8f6017a47a9",
+          "status": "completed",
+          "known_total_tokens": 13884
+        },
+        {
+          "file": "31-solve-201d38c2.json",
+          "sha256": "87dc7361fd1acb0f56b15b137d1478b94bfee313796f19542e03d12c236a33f4",
+          "status": "completed",
+          "known_total_tokens": 10069
+        },
+        {
+          "file": "32-solve-459750f0.json",
+          "sha256": "744799db08eb6640a84160d97b25b856dac2410480599f4fbdbe45c2dd21764d",
+          "status": "completed",
+          "known_total_tokens": 14227
+        },
+        {
+          "file": "33-solve-7928e63e.json",
+          "sha256": "b2b525082fd7f93175a52dc2614ae201d0c40829d5e0e1fda235eb27a6420827",
+          "status": "completed",
+          "known_total_tokens": 18307
+        },
+        {
+          "file": "34-solve-2a6e573d.json",
+          "sha256": "53ca12094502a6eda7ede6bf15561d21362b8f7fb73b0096385af463da1d02d8",
+          "status": "completed",
+          "known_total_tokens": 9719
+        },
+        {
+          "file": "35-solve-16168611.json",
+          "sha256": "f96ea03d40ac1d01a08aeab63ae35db5f4bf6fe5301f6b5dca5ef8ce55ae5547",
+          "status": "completed",
+          "known_total_tokens": 5818
+        },
+        {
+          "file": "36-solve-a7937f97.json",
+          "sha256": "eaff10a84aeac829514ea2b3ea18d14f3e2898aeac847a21d79c5bed23c0f2cd",
+          "status": "completed",
+          "known_total_tokens": 7818
+        },
+        {
+          "file": "37-solve-4783cd4f.json",
+          "sha256": "d2064cb15773e5fc77c4ad221153f7dce2a645acbe25e13f4214a09f605c2e52",
+          "status": "completed",
+          "known_total_tokens": 11831
+        },
+        {
+          "file": "38-solve-ba3b77c6.json",
+          "sha256": "bb259c48ad3cfc1f4b67a4ef4653cfb7af9df5226e2a778ea07cfc9557512c09",
+          "status": "completed",
+          "known_total_tokens": 15679
+        },
+        {
+          "file": "39-solve-aeb59670.json",
+          "sha256": "467e9131e8e37bdc69b359904a5eb505246b124955a26351e77ac8419b826c0a",
+          "status": "completed",
+          "known_total_tokens": 10787
+        },
+        {
+          "file": "40-solve-12792f44.json",
+          "sha256": "1ed0b53a29700c371a7353d7d352c79997296da81081f04f0b435937f50c3868",
+          "status": "completed",
+          "known_total_tokens": 10746
+        },
+        {
+          "file": "41-solve-351ea894.json",
+          "sha256": "7d23530eb5faa9a5f3b930b0fbcf9155068cde5d10ee25bde64cc1d35ead7d15",
+          "status": "completed",
+          "known_total_tokens": 10845
+        },
+        {
+          "file": "42-solve-a3bc14a0.json",
+          "sha256": "f986ad514d43e3bacefe6e5ba7b4345680ecf016548dd937077ca0d579cca2cc",
+          "status": "completed",
+          "known_total_tokens": 14824
+        },
+        {
+          "file": "43-solve-52833208.json",
+          "sha256": "1bb7c3b5b76703029295b776a29adbdaa3a2e5bdc0d511f095d651b0cbfa695b",
+          "status": "completed",
+          "known_total_tokens": 15662
+        },
+        {
+          "file": "44-solve-fc78114e.json",
+          "sha256": "edbfd3ccf8c9c25511369b1a2cb8ef2fb113f7da91a9dee5c6f4abb6db0a6f5d",
+          "status": "completed",
+          "known_total_tokens": 10359
+        },
+        {
+          "file": "45-solve-0d0e3744.json",
+          "sha256": "a47065194434d7d2425bcc1a78f765ab7ef49c905b0fd45081c3a70f70c80416",
+          "status": "completed",
+          "known_total_tokens": 10686
+        },
+        {
+          "file": "46-solve-da99138f.json",
+          "sha256": "8c636f59a1f5c08f784c4c6c7bbd1b7dc88fc7ff853ba31519e59f7af7f5ae85",
+          "status": "completed",
+          "known_total_tokens": 15216
+        },
+        {
+          "file": "47-solve-36be4327.json",
+          "sha256": "7f437fd2ec594034aaf3b3542172bd9145a049ef424cb727bdb9887d6c870743",
+          "status": "completed",
+          "known_total_tokens": 18925
+        },
+        {
+          "file": "48-solve-629a3461.json",
+          "sha256": "e1d94fb49ea3223ffe39999495f9a2e9ed9f83219944fe2ff6924c9d3113a742",
+          "status": "completed",
+          "known_total_tokens": 5880
+        },
+        {
+          "file": "49-solve-7850598c.json",
+          "sha256": "df4e642b0791921a35c33781b402167dbb1d6a67ac7788e2b5dfc4f1938ac96a",
+          "status": "completed",
+          "known_total_tokens": 7921
+        },
+        {
+          "file": "50-solve-b33aec0e.json",
+          "sha256": "a238ba0b4d0c67d3156e13b1ae054d4dd9bc444d670adc1e668edcaafde7f244",
+          "status": "completed",
+          "known_total_tokens": 11845
+        },
+        {
+          "file": "51-solve-669e24d0.json",
+          "sha256": "327142d71a8d23edfbce2f586dd74e96ff3f2d4a43c52ebcd3cd92a54bb6efc7",
+          "status": "completed",
+          "known_total_tokens": 15611
+        },
+        {
+          "file": "52-solve-d3bceb79.json",
+          "sha256": "92afa5dd49d0f0ecdb30dd93b41c145bc62e4dec6897fc3c680a1f4857449e1e",
+          "status": "completed",
+          "known_total_tokens": 10369
+        },
+        {
+          "file": "53-solve-2ac5bbee.json",
+          "sha256": "02a8604af27db8c9f4f5c56737f03283e1c26fa74de5cb5adb25e083e6ffc3e1",
+          "status": "completed",
+          "known_total_tokens": 14630
+        },
+        {
+          "file": "54-solve-80d97381.json",
+          "sha256": "cca576b7552ed69c550118f2e4aa6eace4d5cdb1d694018d1b8e4b33e0fec976",
+          "status": "completed",
+          "known_total_tokens": 15403
+        },
+        {
+          "file": "55-solve-58f18242.json",
+          "sha256": "4369ec4168141a8e6aaa55e51b1f73744946fe8903b32d57f21a91c3c763223c",
+          "status": "completed",
+          "known_total_tokens": 7351
+        },
+        {
+          "file": "56-solve-7598a012.json",
+          "sha256": "770272c05286c1583c861762993f0a8604e5ae4ee30e416aa9db020bfa788ee0",
+          "status": "completed",
+          "known_total_tokens": 11113
+        },
+        {
+          "file": "57-solve-d4a52f9b.json",
+          "sha256": "f74f8b08a4503d1a24cfba085a6aa6d3f17d55333922113f2aa97844069c62ee",
+          "status": "completed",
+          "known_total_tokens": 7593
+        },
+        {
+          "file": "58-solve-bf6ea675.json",
+          "sha256": "3a7b64cf8dfb5b631e02881d86e5a24a37948fb6828a105e5ba62922f137625e",
+          "status": "completed",
+          "known_total_tokens": 11610
+        },
+        {
+          "file": "59-solve-691ce511.json",
+          "sha256": "5cf54c974ca2d2752a4e4ee86634bccd6c2054b3b04ce9b4c7786972859e0e69",
+          "status": "completed",
+          "known_total_tokens": 15396
+        },
+        {
+          "file": "60-solve-c13b6a68.json",
+          "sha256": "387bff322a53699c9086e492cb06d09e8bd910e816537e3494a0a0efcac39eff",
+          "status": "completed",
+          "known_total_tokens": 7368
+        },
+        {
+          "file": "61-solve-39627152.json",
+          "sha256": "040061e7d31c643519fce6671b5dc5453ed6e6db579a216ed8a6b1cd54028f83",
+          "status": "completed",
+          "known_total_tokens": 5813
+        },
+        {
+          "file": "62-solve-33345ab8.json",
+          "sha256": "848f9e7d4e19fdec78e53019f4bf93790ccb52735ba818fdaf1971a54f036b51",
+          "status": "completed",
+          "known_total_tokens": 7726
+        },
+        {
+          "file": "63-solve-2daac5cb.json",
+          "sha256": "21d2aafe0323a38694ee25610946453e3e344db1f191c7cbd679f859304124e3",
+          "status": "completed",
+          "known_total_tokens": 11665
+        },
+        {
+          "file": "64-solve-e5c77419.json",
+          "sha256": "902a56ed30a20b59b3885a0ccf7032e7654e227a2f6cbe1bafd5bc7a67e9fbd0",
+          "status": "completed",
+          "known_total_tokens": 15450
+        },
+        {
+          "file": "65-solve-b91c4902.json",
+          "sha256": "ca72558b6596a80a78b267faf6302f26c92990bdd67115b8ad99e2522a4f9950",
+          "status": "completed",
+          "known_total_tokens": 7527
+        },
+        {
+          "file": "66-solve-b0987195.json",
+          "sha256": "a3f22a4a8e58390895c1d6a913e7602e3d74e39eae0a83ffe41bf81b61928c8e",
+          "status": "completed",
+          "known_total_tokens": 11525
+        },
+        {
+          "file": "67-solve-395a1902.json",
+          "sha256": "07d56e2fc0e11e167a7adbc4bfa719c611902178cdc12855d9bc26580cff5a3d",
+          "status": "completed",
+          "known_total_tokens": 15342
+        },
+        {
+          "file": "68-solve-812887f3.json",
+          "sha256": "ea4074a3b32a249164f4b5e02f8cc65334d682c19d293170ed130ba44762eebb",
+          "status": "completed",
+          "known_total_tokens": 5788
+        },
+        {
+          "file": "69-solve-df893e09.json",
+          "sha256": "71e2ba93738e4d71837644fb473e6fe0b2a7f0e1936f11ad1eb3759bd67d428a",
+          "status": "completed",
+          "known_total_tokens": 7469
+        },
+        {
+          "file": "70-solve-be1af519.json",
+          "sha256": "b90a898c3e4b812a03ff6660aa589a875df85db2a629b8cee77eaa8b6c0550b4",
+          "status": "completed",
+          "known_total_tokens": 11718
+        },
+        {
+          "file": "71-solve-93dc71a8.json",
+          "sha256": "5156726064e47e2eae59358140e75725cf670654b3eff0cc540ab7c896482139",
+          "status": "completed",
+          "known_total_tokens": 15444
+        },
+        {
+          "file": "72-solve-e01579a5.json",
+          "sha256": "6fbfa65805b2bc9550ea971faed3e9a91a84133d88ee39d81e25ba823431f952",
+          "status": "completed",
+          "known_total_tokens": 7210
+        },
+        {
+          "file": "73-solve-ea250bcc.json",
+          "sha256": "52a5b2802fe9bfb116d44afa12e1b106545699b2cbcb52133e95dea915bfd558",
+          "status": "completed",
+          "known_total_tokens": 11618
+        },
+        {
+          "file": "74-solve-61530b8f.json",
+          "sha256": "eefb1f54d9726a108296f11aab4f5450e972d0d397dc2c193d1ef2a8708afb54",
+          "status": "completed",
+          "known_total_tokens": 15160
+        },
+        {
+          "file": "75-solve-e4cd220b.json",
+          "sha256": "e1e00c2ac0fc027629a3bea4a7652c487d9c61efef31622ed5535441b77a1e6f",
+          "status": "completed",
+          "known_total_tokens": 7333
+        },
+        {
+          "file": "76-solve-5a866c27.json",
+          "sha256": "684591d642587dae15f04ea3eef86372b73e0eba20c8f3455a3d06a9046cae08",
+          "status": "completed",
+          "known_total_tokens": 10248
+        },
+        {
+          "file": "77-solve-d89ee3f9.json",
+          "sha256": "51963f092559f80acbd4148ec4bf61e10ef03ca496247344dc10b883f7bd248a",
+          "status": "completed",
+          "known_total_tokens": 14223
+        },
+        {
+          "file": "78-solve-f97b5afd.json",
+          "sha256": "bbf880e932eeb9589cd0e9b045bc65fdc79e6cd8a17a5509aa0a731a45020840",
+          "status": "completed",
+          "known_total_tokens": 18043
+        },
+        {
+          "file": "79-solve-c9865825.json",
+          "sha256": "9d1dc741d11c69bae98e4d8deff906abb3ff2bbd8cc3707b902ab3a4bc96e4bb",
+          "status": "completed",
+          "known_total_tokens": 10391
+        },
+        {
+          "file": "80-solve-c2188628.json",
+          "sha256": "b0cfd42bdd5610bf5d9e8e9006b71ce60bcd9bb5d4bcbd5140e84c15f1d6d307",
+          "status": "completed",
+          "known_total_tokens": 10434
+        },
+        {
+          "file": "81-solve-2cd4fa60.json",
+          "sha256": "50e3e23d4cd72dd401d9924c629c5768a0ac9a7c389eb6bae77cf3c8efc91dfe",
+          "status": "completed",
+          "known_total_tokens": 5765
+        },
+        {
+          "file": "82-solve-d5199816.json",
+          "sha256": "905c2c313d5773cea6787e7371f05560ab4f60b20b61e666caa3843224721ba9",
+          "status": "completed",
+          "known_total_tokens": 6993
+        },
+        {
+          "file": "83-solve-b083cbd9.json",
+          "sha256": "f823bbd2ba46a5365e65b7ca0c1523151af274c7febff6bf0b61f80b7f3feeb7",
+          "status": "completed",
+          "known_total_tokens": 11366
+        },
+        {
+          "file": "84-solve-0b6befde.json",
+          "sha256": "4b57f4d62c0e6a6e300c233f755687fee30481024c5831c553bd1b53acaea92e",
+          "status": "completed",
+          "known_total_tokens": 15118
+        },
+        {
+          "file": "85-solve-deb986b3.json",
+          "sha256": "22fa6a269cc5b9eb2ba8053a2431800d994867683d8a5813efe8379e2021400d",
+          "status": "completed",
+          "known_total_tokens": 10320
+        },
+        {
+          "file": "86-solve-086c41f5.json",
+          "sha256": "4f75e0162446823602129da7f7154e5dd4c2e252e0395e3255867a035a4c9470",
+          "status": "completed",
+          "known_total_tokens": 5811
+        },
+        {
+          "file": "87-solve-815a59f8.json",
+          "sha256": "46f4ac9d0ddedc1e00993e70eb8592d19cf274f7dd7fdd92ed664c9a0cfa6186",
+          "status": "completed",
+          "known_total_tokens": 6994
+        },
+        {
+          "file": "88-solve-6d519422.json",
+          "sha256": "bcff16caa30adcf336077358e34ad45dfa123c8904926dd0849f9b42c64136ad",
+          "status": "completed",
+          "known_total_tokens": 11343
+        },
+        {
+          "file": "89-solve-5eff18e0.json",
+          "sha256": "ee0aef3ef913911091a551c519da29eb6477c6c0c1b105e516a70cf5acbc848e",
+          "status": "completed",
+          "known_total_tokens": 15081
+        },
+        {
+          "file": "90-solve-c7f22b00.json",
+          "sha256": "07a4f9e9bdb19e417f6f2b5d74e24d40bac22de4e6188ad29883cafc9ddd5c59",
+          "status": "completed",
+          "known_total_tokens": 10081
+        },
+        {
+          "file": "91-solve-65e8eb10.json",
+          "sha256": "2ea3520b8c7aec44d5afee4c521b59a433e991af2aed7f2c8234ee7a1115540d",
+          "status": "completed",
+          "known_total_tokens": 14413
+        },
+        {
+          "file": "92-solve-02873ea4.json",
+          "sha256": "0bfc42d177b2ff69c20e80b9b2f4f005108d6bd040d5e3edd0c75d923dec41bf",
+          "status": "completed",
+          "known_total_tokens": 18104
+        },
+        {
+          "file": "93-solve-4bc345ed.json",
+          "sha256": "7288a7ac78e01035d8f551d611300bf20a2986968b6fd04478ffa5f2f1e715a4",
+          "status": "completed",
+          "known_total_tokens": 10388
+        },
+        {
+          "file": "94-solve-dab72ee9.json",
+          "sha256": "35b5c68cd64f72f38c4982843fc869ebf8b99d233f229bd672ea985bde35a99a",
+          "status": "completed",
+          "known_total_tokens": 5766
+        },
+        {
+          "file": "95-solve-86933b71.json",
+          "sha256": "3b1aa84848762167b0469c0da060f178cccbcf964f001b195f6f82faacdf5ba0",
+          "status": "completed",
+          "known_total_tokens": 9916
+        },
+        {
+          "file": "96-solve-c7cb5bb1.json",
+          "sha256": "c08b333caf2a7397477d6067ca6688880c9652c2aeb260923feff41685ea6f50",
+          "status": "completed",
+          "known_total_tokens": 14027
+        },
+        {
+          "file": "97-solve-24e80863.json",
+          "sha256": "e2f9d84f403d22bbc3f0b5bbb016e2a1d69d2d3dfa24468c4252068a9f4d0ae3",
+          "status": "completed",
+          "known_total_tokens": 18056
+        },
+        {
+          "file": "98-solve-6bd10931.json",
+          "sha256": "392491c7e2417e9ff3b2c0a6e604e401d1a72beebf7f27d617247b87adf808f5",
+          "status": "completed",
+          "known_total_tokens": 9790
+        },
+        {
+          "file": "99-solve-b0ed085d.json",
+          "sha256": "a5e326f9e8c38e7206ad379d0756a35ced6a3b8006ac4f8fc63e2480b9bb0780",
+          "status": "completed",
+          "known_total_tokens": 9733
+        }
+      ]
     }
   ],
-  "released_gpu_seconds_under_extended_ledger": 17954.384977579117,
+  "released_gpu_seconds_under_extended_ledger": 21899.7949924469,
   "incident_separately_recorded_gpu_seconds": 6511.071068048477,
-  "combined_historical_gpu_seconds": 24465.456045627594,
-  "known_model_tokens_closed_jobs": 9819740,
-  "model_attempts_closed_jobs": 844,
+  "combined_historical_gpu_seconds": 28410.866060495377,
+  "known_model_tokens_closed_jobs": 11548132,
+  "model_attempts_closed_jobs": 996,
   "unknown_usage_attempts_closed_jobs": 9,
   "incident_model_attempts_separately_recorded": 1,
   "incident_model_usage": null,

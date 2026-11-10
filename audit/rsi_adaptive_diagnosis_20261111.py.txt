@@ -1,0 +1,76 @@
+"""Post-completion descriptive audit; does not change acceptance or run code."""
+import collections
+import hashlib
+import json
+import math
+import statistics
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1]).resolve()
+read = lambda path: json.loads(path.read_text())
+summary = read(root / 'summary.json')
+raw = read(root / 'evidence/pilot-result.json')
+protocol = read(root / 'protocol.json')
+assert summary['completed'] and summary['acceptance_complete']
+
+def result(run):
+    path = root / 'evidence' / Path(run).relative_to('/tmp/kernel-rsi-pilot') / 'result.json'
+    return read(path)
+
+rows = []
+for item in raw['trials']:
+    trace = item['trace']
+    final = result(item['result']['run'])
+    decision = final['decision']
+    passed = final['execution'] == 'completed' and final['correctness'] == 'pass'
+    gains = decision.get('fixed_baseline_gain_by_batch', [])
+    quality = max(0, statistics.median(gains)) if passed and gains and decision['eligible_for_best'] else 0 if passed else -1
+    assert quality == item['result']['quality']
+    observations = [trace['initial_observation']] + [s['observation'] for s in trace['steps'] if 'observation' in s]
+    rows.append({
+        'repeat': item['repeat'], 'task': item['task'], 'arm': item['arm'],
+        'task_name': protocol['validation_tasks'][item['task']],
+        'quality': quality, 'seconds': item['result']['seconds'],
+        'eligible': decision['eligible_for_best'], 'final_reasons': decision['reasons'],
+        'final_run': item['result']['run'], 'final_result_sha256': hashlib.sha256((root/'evidence'/Path(item['result']['run']).relative_to('/tmp/kernel-rsi-pilot')/'result.json').read_bytes()).hexdigest(),
+        'selected_source': trace['selected'],
+        'selected_observations': [{k:o.get(k) for k in ('run','candidate','quality','correctness')} for o in observations if o.get('candidate')==trace['selected']],
+        'effective_actions': trace.get('effective_actions', trace['max_actions']),
+        'allocation_reason': trace.get('allocation', {}).get('reason'),
+        'step_outcomes': [{k:s.get(k) for k in ('index','action','decision_kind')} | {'observation':{k:s.get('observation',{}).get(k) for k in ('candidate','quality','correctness','run')}} for s in trace['steps']],
+    })
+arm_totals = {}
+for arm in protocol['arms']:
+    group = [x for x in rows if x['arm']==arm]
+    arm_totals[arm] = {'mean_quality':statistics.mean(x['quality'] for x in group), 'trial_seconds':sum(x['seconds'] for x in group),'promotable':sum(x['eligible'] for x in group)}
+    assert math.isclose(arm_totals[arm]['trial_seconds'],summary['aggregates'][arm]['all_attempt_trial_seconds'],abs_tol=1e-8)
+primary = summary['practical_comparisons']['adaptive-reuse-vs-control-4']
+assert math.isclose(arm_totals['adaptive-reuse']['mean_quality']/arm_totals['control-4']['mean_quality']-1,primary['quality_relative_gain'],abs_tol=1e-12)
+assert math.isclose(1-arm_totals['adaptive-reuse']['trial_seconds']/arm_totals['control-4']['trial_seconds'],primary['wall_relative_saving'],abs_tol=1e-12)
+regressions = []
+for row in rows:
+    if row['arm'] != 'adaptive-reuse': continue
+    control = next(x for x in rows if x['arm']=='control-4' and x['repeat']==row['repeat'] and x['task']==row['task'])
+    if row['quality'] < control['quality']-.02:
+        regressions.append({k:row[k] for k in ('repeat','task','task_name','effective_actions','allocation_reason','quality','eligible')} | {'control_quality':control['quality'],'quality_difference':row['quality']-control['quality']})
+focus = next(x for x in rows if x['arm']=='adaptive-reuse' and x['repeat']==1 and x['task']==5)
+comparison = []
+for label, run in [('search',focus['selected_observations'][0]['run']),('final',focus['final_run'])]:
+    d=result(run)['decision']
+    comparison.append({'stage':label,'run':run,'eligible':d['eligible_for_best'],'reasons':d['reasons'],'cases':[c for c in d['cases'] if c['case']=='size-1-bfloat16-stride-7']})
+report = {'scope':'Post-hoc descriptive diagnosis, not a new gate or a counterfactual trial',
+    'summary_sha256':hashlib.sha256((root/'summary.json').read_bytes()).hexdigest(),
+    'arm_totals_independently_recomputed':arm_totals,
+    'primary_per_task_regressions':regressions,
+    'adaptive_action_counts':dict(collections.Counter(x['effective_actions'] for x in rows if x['arm']=='adaptive-reuse')),
+    'rms_n_repeat1_search_and_final':comparison,
+    'interpretation':[
+        'The two observed per-task failures include both a 2-action smooth-l1 trial and a 4-action RMS trial. More search alone did not prevent every failure.',
+        'The RMS artifact was selected at a search score of about 0.2814, but its independent final failed the unchanged BF16 stride-7 regression constraint.',
+        'Search and final were measured at different times. These data alone cannot separate environmental drift, timing noise and adaptation effects.',
+        'Current safety margin does not establish that further search has no value. This is a mechanism limitation, not proof of a replacement policy.',
+        'No samples dropped, no remeasurement, no threshold changes, no confirmation activation.'
+    ],'trials':rows}
+(root/'diagnostic.json').write_text(json.dumps(report,indent=2))
+print(json.dumps({k:v for k,v in report.items() if k not in ('trials','rms_n_repeat1_search_and_final')},indent=2))

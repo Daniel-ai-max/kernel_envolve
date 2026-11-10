@@ -42,6 +42,12 @@
     "tests/test_rsi_managed.py": "8f96b98c64f7693291ba66ac5874ff5f866d26b93b6aaf197874b462e8cb21d0"
   },
   "static_checks": "Ruff check/format and gitdiffcheck passed",
-  "CI_after_fix": "pending new commit",
-  "updated_at": 1794348314.3727129
+  "CI_after_fix": {
+    "source_commit": "d786247da0b0dcb29ff90f3ac4ddf000b69da567",
+    "status": "both push and PR three-version matrices passed",
+    "receipt": "rsi_transaction_post-fix-ci-verification.json",
+    "push_run": 42911225105,
+    "pr_run": 42911234807
+  },
+  "updated_at": 1794350655.6965601
 }

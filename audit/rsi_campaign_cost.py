@@ -25,6 +25,7 @@ CLOSED = (
     "rsi-linked-reuse-study-20261111/development",
     "rsi-compute-allocation-study-20261111/development",
     "rsi-managed-gpu-validation-20261111",
+    "rsi-adaptive-budget-study-20261111/development",
 )
 
 
@@ -88,7 +89,7 @@ def reconcile(workspace):
     incident_path = workspace / "kernel_envolve-rsi/audit/rsi_pilot_incident_20261110.json"
     incident = read(incident_path)
     return {
-        "scope": "Closed jobs only, through Manager GPU engineering; active adaptive study excluded.",
+        "scope": "Closed jobs only, including the rejected adaptive development study; no active GPU job.",
         "entries": entries,
         "released_gpu_seconds_under_extended_ledger": running_total,
         "incident_separately_recorded_gpu_seconds": incident["conservative_resource_seconds"],
