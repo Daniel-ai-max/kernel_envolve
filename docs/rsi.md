@@ -220,6 +220,8 @@ pytest -q tests/test_rsi.py tests/test_rsi_native.py
 
 ### 真实 GPU pilot 状态（2026-11-10）
 
+最新四组多步开发比较已完成：control/fixed/raw 各 4/4 个可晋升结果，learned 为 2/4（一次模型超时、一次性能不确定）；三种非空策略均未通过准入，active 保持 base。61 份 evaluator 收据离线复核通过；所有尝试成本含失败，不删除负面结果。具体版本、资源账及分析见 [设计复核最新比较](rsi-design-review.md) 和 [四组收据](../audit/rsi_multistep_gpu_20261110.json)。本地后续适配器身份检查通过全仓 265 passed / 8 skipped，尚未进入 GPU 对照。下面保留早期单次生成试跑的历史，不能混作同一个实验。
+
 已完成 gpt-6-astra / 单张 B300 的两学习任务、两验证任务、两轮配对试跑。验证 8/8 正确性通过，但两组均无可晋升 kernel；候选策略每轮 solver 总耗时增加约 12–13%，被准入门槛拒绝，未发布到生产。详见 [设计复核](rsi-design-review.md) 和 [结构化收据](../audit/rsi_gpu_pilot_20261110.json)。这不是学习有效性或优于参考方法的证明。
 
 随后改进的后台证据摘要包含有界的数值收益、晋升资格与截断标记；旧条目不回写。建议头部不再将待验证策略预先称作“已验证”，因此验证器身份改变，升级前先 disable，再 audit，最后 enable。新摘要与措辞通过 CPU 测试，尚未做新的 GPU 收益比较。
