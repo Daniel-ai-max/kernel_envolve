@@ -112,7 +112,8 @@ def test_live_but_unproductive_rounds_are_visible(managed, monkeypatch):
     assert view["progress_stale"] and view["phase"] == "awaiting_progress"
     original_progress = view["progress_as_of"]
     store.finish(job, "succeeded")
-    clock[0] += 1
+    assert not store.schedule()  # Empty success now receives recovery backoff.
+    clock[0] = store.task("toy")["next_at"] + 1
     next_job = store.schedule()[0]
     assert store.claim(next_job, os.getpid(), identity(os.getpid()))
     view = overview(store)["tasks"][0]
@@ -271,7 +272,9 @@ def test_failure_backoff_budget_and_pause_survive_reopen(managed):
         key = store.schedule()[0]
         store.finish(key, "failed", "provider unavailable")
         assert not store.schedule()
-    assert store.task("toy")["desired"] == "blocked"
+    assert store.task("toy")["desired"] == "active"
+    assert store.task("toy")["failures"] == 3
+    assert "provider unavailable" in store.task("toy")["reason"]
     store.control("toy", "pause")
     reopened = Store(store.root)
     assert reopened.task("toy")["desired"] == "paused"
