@@ -1,12 +1,22 @@
 # kernel_envolve
 
-kernel_envolve 是面向 coding agent 的算子开发与评测工具。Agent 负责分析和编写实现，评测器负责验证正确性、比较性能，并保存已验证的最佳版本（best）。
+kernel_envolve 用于辅助 coding agent 优化 Apodex 内部训练算子，主要面向 [apodex-core](https://github.com/ApodexAI/apodex-core) 和 [Megatron-LM](https://github.com/ApodexAI/Megatron-LM)。优化目标是在保持训练语义和精度的前提下，提高实际工作负载的性能，并适配不同尺寸、上下文长度和内存布局。
 
-支持 NumPy、PyTorch 和 NVIDIA CUDA 算子，优化目标是正确、快速，并适配实际使用中的尺寸、数据类型和内存布局。
+## 内部项目使用
 
-## 快速开始
+让 agent 读取 [SKILL.md](skills/kernel-envolve/SKILL.md)，在目标 GPU 和项目指定的开发镜像中工作。
 
-要求 Python 3.11+。GPU 开发在目标机器上进行，PyTorch 和 Triton 版本需与驱动兼容。
+> 使用 $kernel-envolve 优化 apodex-core 中的目标算子。根据 Megatron-LM 的实际调用配置确定输入覆盖，复用项目数值 gate、单元测试和性能基准，验证前向、反向及模块接入。
+
+- **实现位置**：kernel 和算子测试放在 apodex-core；Megatron-LM 负责调用接线、模块测试和训练验证。
+- **迭代流程**：定向正确性测试与代表尺寸测速 → 有收益后完整验证相关算子 → 验证实际模块接入。分布式、重计算和训练验证按改动影响选择。
+- **评测标准**：沿用项目精度要求，比较原始实现与候选的完整调用成本；训练算子重点看前向与反向总耗时、逐尺寸退化和显存。
+
+具体流程、验证入口及证据要求见 [内部项目评测](skills/kernel-envolve/SKILL.md#apodex-内部项目评测)。内部任务直接使用原生测试和 benchmark；下面的通用 evaluate 用于独立算子实验，不承担训练集成验收。
+
+## 独立算子快速开始
+
+通用评测器要求 Python 3.11+，支持 NumPy、PyTorch 和 NVIDIA CUDA。内部项目沿用自身 Python、PyTorch、Triton 及扩展版本，不使用此处安装命令替换项目环境。
 
 ```bash
 git clone git@github.com:Daniel-ai-max/kernel_envolve.git
@@ -24,8 +34,6 @@ kernel-envolve evaluate --task examples/cuda_vector_add --mode full
 # 保存符合条件的完整评测结果
 kernel-envolve promote <run目录>
 ```
-
-仅使用 CPU 时，安装 `python -m pip install -e .`，示例位于 `examples/vector_add`。
 
 ### 使用 Agent
 
@@ -107,7 +115,7 @@ my_task/
 
 性能对照每轮重新测量：有 best 时比较 best，full 还会同时检查原始基线。候选和对照交错执行，按用例权重汇总延迟。两批结果都需满足收益和测量波动要求，各计时用例也需满足退化限制。具体判定见 [scoring.py](src/kernel_envolve/scoring.py)。
 
-`timer: wall` 测量完整调用，CUDA 调用前后同步设备。默认 `auto` 在 CUDA 上使用 event，其区间可能包含主机发射间隙。输入生成和预热不计入延迟，候选内部的分发、布局转换和临时缓冲操作计入。性能测量应独占 GPU。内置评测采用 eager 执行；CUDA Graph 等任务需使用对应评测器。
+`timer: wall` 测量完整调用，CUDA 调用前后同步设备。默认 `auto` 在 CUDA 上使用 event，其区间可能包含主机发射间隙。输入生成和预热不计入延迟，候选内部的分发、布局转换和临时缓冲操作计入。性能测量应独占 GPU。内置评测采用 eager 执行，输入须为不带 autograd 的实数张量；训练梯度、CUDA Graph 和分布式任务使用项目评测入口。
 
 ### 结果使用
 
