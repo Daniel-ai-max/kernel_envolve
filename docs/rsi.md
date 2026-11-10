@@ -214,3 +214,10 @@ pytest -q tests/test_rsi.py tests/test_rsi_native.py
 初版工程验证记录见 [RSI 验证收据](../audit/rsi_20261110.json)：全仓 236 passed / 8 GPU-only skipped，33 项 RSI 专项测试，独立 wheel 安装闭环，以及每轮建议读取的本机微基准。该记录不包含真实模型学习收益或真实 GPU 策略实验。
 
 准入复核后的验证见 [RSI 复核收据](../audit/rsi_review_20261110.json)：全仓 246 passed / 8 GPU-only skipped，43 项 RSI 专项测试；保留初次测试启动路径问题与复验说明。旧安装收据不代表新版验证器已复验。
+
+
+### 真实 GPU pilot 状态（2026-11-10）
+
+已完成 gpt-6-astra / 单张 B300 的两学习任务、两验证任务、两轮配对试跑。验证 8/8 正确性通过，但两组均无可晋升 kernel；候选策略每轮 solver 总耗时增加约 12–13%，被准入门槛拒绝，未发布到生产。详见 [设计复核](rsi-design-review.md) 和 [结构化收据](../audit/rsi_gpu_pilot_20261110.json)。这不是学习有效性或优于参考方法的证明。
+
+随后改进的后台证据摘要包含有界的数值收益、晋升资格与截断标记；旧条目不回写。建议头部不再将待验证策略预先称作“已验证”，因此验证器身份改变，升级前先 disable，再 audit，最后 enable。新摘要与措辞通过 CPU 测试，尚未做新的 GPU 收益比较。

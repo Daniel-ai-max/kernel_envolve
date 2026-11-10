@@ -1,6 +1,7 @@
 """Incremental observation and evidence-linked delta proposals."""
 
 import json
+import math
 import time
 from pathlib import Path
 
@@ -8,6 +9,25 @@ from ..manager.evidence import inspect_run
 from ..manager.store import Store as Manager
 from ..storage import digest, write_json
 from .model import context, keys, read, rule, text
+
+
+def numeric_metrics(data):
+    """Bounded evaluator facts, preserving missing values instead of guessing gains."""
+
+    def finite(value):
+        return value if type(value) in (int, float) and math.isfinite(value) else None
+
+    decision = data["decision"]
+    gains = decision.get("fixed_baseline_gain_by_batch", [])
+    eligible = decision.get("eligible_for_best")
+    return {
+        "baseline_speedup": finite(data.get("baseline_speedup")),
+        "incremental_speedup": finite(data.get("incremental_speedup")),
+        "fixed_baseline_gain_by_batch": [finite(value) for value in gains[:8]],
+        "batch_count": len(gains),
+        "truncated": len(gains) > 8,
+        "eligible_for_best": eligible if type(eligible) is bool else None,
+    }
 
 
 def collect(store):
@@ -39,6 +59,7 @@ def collect(store):
                         "correctness": data["correctness"],
                         "execution": data["execution"],
                         "performance": data["decision"].get("performance"),
+                        "metrics": numeric_metrics(data),
                         "reasons": data["decision"].get("reasons", [])[:8],
                         "error": str(data.get("error"))[:1200],
                         "contract": data["contract"],

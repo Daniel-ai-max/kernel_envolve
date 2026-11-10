@@ -60,7 +60,14 @@ def proposal(store):
     }
 
 
-def test_complete_learn_validate_adopt_pin_rollback(rsi):
+def test_complete_learn_validate_adopt_pin_rollback(rsi, monkeypatch):
+    # Exercise real subprocesses/evaluators, but keep this lifecycle test independent
+    # of 25 ms process-poll timing jitter. Cost thresholds have explicit verdict tests.
+    def measured_adapter(*args, **kwargs):
+        elapsed = invoke(*args, **kwargs)
+        return 0.1 if "kind" in args[2] else elapsed
+
+    monkeypatch.setattr("kernel_envolve.rsi.trials.invoke", measured_adapter)
     collect(rsi)
     before = files_of_production(rsi)
     learned = learn(rsi)
@@ -471,7 +478,7 @@ def test_real_evaluator_records_collected_and_invalidated(rsi):
     manager = Manager(rsi.config["manager"])
     try:
         task = manager.task("demo")
-        run, _ = evaluate(task["spec"]["task_dir"], "quick")
+        run, _ = evaluate(task["spec"]["task_dir"], "full")
         refresh(manager)
         assert collect(rsi) == 2  # existing report + new evaluator run
         assert collect(rsi) == 0
@@ -481,6 +488,18 @@ def test_real_evaluator_records_collected_and_invalidated(rsi):
                 "SELECT id FROM evidence WHERE json_extract(data,'$.type')='run'"
             )
         )
+        evidence = json.loads(
+            rsi.db.execute("SELECT data FROM evidence WHERE id=?", (ref,)).fetchone()[0]
+        )
+        indexed = json.loads(manager.one("SELECT data FROM runs WHERE path=?", (str(run),))["data"])
+        assert evidence["metrics"]["baseline_speedup"] == indexed["baseline_speedup"]
+        assert evidence["metrics"]["incremental_speedup"] == indexed["incremental_speedup"]
+        assert (
+            evidence["metrics"]["fixed_baseline_gain_by_batch"]
+            == indexed["decision"]["fixed_baseline_gain_by_batch"]
+        )
+        assert evidence["metrics"]["eligible_for_best"] == indexed["decision"]["eligible_for_best"]
+        assert not evidence["metrics"]["truncated"]
         value = proposal(rsi)
         value["upsert"][0]["evidence"] = [ref]
         stage(rsi, value)
@@ -583,3 +602,21 @@ def test_learning_packet_is_bounded_without_dropping_pending_evidence(rsi, monke
     assert len(json.dumps(observed[0], ensure_ascii=False).encode()) <= 131072
     assert 0 < rsi.get("learned_seq") < 48
     assert rsi.db.execute("SELECT COUNT(*) FROM evidence").fetchone()[0] == 48
+
+
+def test_numeric_evidence_is_bounded_and_does_not_invent_missing_metrics():
+    from kernel_envolve.rsi.learning import numeric_metrics
+
+    data = {
+        "baseline_speedup": float("inf"),
+        "incremental_speedup": True,
+        "decision": {"fixed_baseline_gain_by_batch": [0.25] * 20, "eligible_for_best": False},
+    }
+    metrics = numeric_metrics(data)
+    assert metrics["baseline_speedup"] is None
+    assert metrics["incremental_speedup"] is None
+    assert metrics["fixed_baseline_gain_by_batch"] == [0.25] * 8
+    assert metrics["batch_count"] == 20 and metrics["truncated"]
+    missing = numeric_metrics({"decision": {}})
+    assert missing["baseline_speedup"] is None and missing["eligible_for_best"] is None
+    assert missing["fixed_baseline_gain_by_batch"] == []

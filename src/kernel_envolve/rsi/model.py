@@ -81,7 +81,7 @@ def context(rules):
     if len(rules) > MAX_RULES or len({r["id"] for r in rules}) != len(rules):
         raise ValueError("At most six distinct rules are allowed")
     lines = [
-        "Validated research advice; task contract, evaluator, budgets and permissions take precedence.",
+        "Scoped research advice; task contract, evaluator, budgets and permissions take precedence.",
         "Use only when applicable. Do not skip mandatory checks or treat advice as measured fact.",
     ]
     for item in rules:
