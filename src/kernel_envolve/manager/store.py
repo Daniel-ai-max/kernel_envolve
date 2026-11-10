@@ -302,17 +302,21 @@ class Store:
 
     def schedule(self):
         """Reserve session capacity and commit launch intents before spawning workers."""
+        from .recovery import migrate_legacy
+
         scheduled = []
         with self.transaction():
             for row in self.rows("SELECT id FROM tasks ORDER BY next_at,created"):
-                task = self.task(row["id"])
-                if task["desired"] != "active" or task["next_at"] > time.time():
+                task = migrate_legacy(self, self.task(row["id"]))
+                if task["desired"] != "active":
                     continue
                 if self.budget_reason(task):
                     self.db.execute(
                         "UPDATE tasks SET desired='budget',reason=? WHERE id=?",
                         (self.budget_reason(task), task["id"]),
                     )
+                    continue
+                if task["next_at"] > time.time():
                     continue
                 if self.one(
                     "SELECT id FROM jobs WHERE task=? AND status IN ('queued','running')",
@@ -383,6 +387,13 @@ class Store:
     def finish(self, key, status, error=None, exit_code=None):
         if status not in ("succeeded", "failed", "interrupted", "cancelled"):
             raise ValueError("Invalid terminal status")
+        from .recovery import assess, implementation
+
+        job = self.job(key)
+        if job["status"] not in ("queued", "running"):
+            return
+        # FSx/source reads must never hold the shared manager write transaction.
+        current = implementation(self.task(job["task"])) if job["kind"] == "agent" else None
         with self.transaction():
             job = self.job(key)
             if job["status"] not in ("queued", "running"):
@@ -393,7 +404,8 @@ class Store:
             )
             if job["kind"] == "agent":
                 task = self.task(job["task"])
-                failures = task["failures"] + 1 if status in ("failed", "interrupted") else 0
+                recovery = assess(self, task, job, status, current)
+                failures = 0 if recovery["observable_progress"] else task["failures"] + 1
                 delay = (
                     min(300, 5 * 2 ** min(failures, 6))
                     if failures
@@ -403,11 +415,23 @@ class Store:
                 reason = self.budget_reason(task)
                 if desired == "active" and reason:
                     desired = "budget"
-                elif desired == "active" and failures >= 3:
-                    desired, reason = (
-                        "blocked",
-                        "Three consecutive failed rounds; inspect and resume",
+                elif desired == "active" and failures:
+                    reason = (
+                        error
+                        or "Recovery needs new action evidence with a changed outcome checkpoint"
                     )
+                recovery.update(reason=reason, retry_after_seconds=delay, attempts=failures)
+                self.db.execute(
+                    "INSERT OR REPLACE INTO metadata VALUES(?,?)",
+                    ("recovery:" + task["id"], encode(recovery)),
+                )
+                self.event(
+                    task["id"],
+                    "recovery_checkpoint"
+                    if recovery["observable_progress"]
+                    else "recovery_requested",
+                    {k: v for k, v in recovery.items() if k != "execution_signatures"},
+                )
                 self.db.execute(
                     "UPDATE tasks SET failures=?,next_at=?,desired=?,reason=? WHERE id=?",
                     (failures, time.time() + delay, desired, reason, task["id"]),

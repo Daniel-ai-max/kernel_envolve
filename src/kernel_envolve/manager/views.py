@@ -40,6 +40,10 @@ def best(store, task):
 def task_view(store, key, now=None):
     now = time.time() if now is None else now
     task = store.task(key)
+    recovery = store.one("SELECT data FROM metadata WHERE key=?", ("recovery:" + key,))
+    task["recovery"] = json.loads(recovery["data"]) if recovery else None
+    if task["recovery"]:
+        task["recovery"].pop("execution_signatures", None)
     jobs = store.rows(
         "SELECT * FROM jobs WHERE task=? AND status IN ('queued','running') ORDER BY created",
         (key,),
