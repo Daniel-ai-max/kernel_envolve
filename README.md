@@ -89,6 +89,8 @@ kernel-envolve native-promote /path/to/run
 
 `native-promote` 的路径取自合格的 full 结果。数值 gate 或 CI 通过仅说明相应检查通过，性能收益仍需测量确认。配置与适配接口见 [内部项目评测](skills/kernel-envolve/SKILL.md#apodex-内部项目评测)及[内部 evaluator](skills/kernel-envolve/SKILL.md#使用内部-evaluator)。
 
+原生评测的 CLI 与 `result.json` 提供 `phase_wall_seconds`：源码快照、设置、正确性、原生门禁、测量、后置检查、完整性校验和清理。执行阶段失败保留已耗时间及 `failed_phase`，未执行阶段不填零。各阶段是主控进程的连续墙钟耗时，总和等于 `seconds`（至 worker 清理完成，不含评分和收据写入）；首次导入/编译可能计入首个正确性请求，测量阶段还含参考计算、传输和结果核验，不能作为纯 GPU kernel 时间。
+
 ## 持续优化
 
 一个算子对应一个长期任务，执行轮次结束时保存 checkpoint，后续轮次继续已有工作。一次晋升或某个方向没有收益，都不自动结束任务；每轮在 `notes.md` 记录假设、结论、版本、资源消耗与下一步。
