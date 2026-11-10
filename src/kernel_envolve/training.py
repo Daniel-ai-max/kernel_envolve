@@ -1,5 +1,6 @@
 """Explicit training workloads: state isolation and observable forward/backward results."""
 
+import time
 from dataclasses import dataclass, field
 from typing import Callable
 
@@ -95,8 +96,15 @@ def equal(a, b):
     )
 
 
+def byte_view(tensor):
+    """Logical values in bitwise order, including signed zeros and NaN payloads."""
+    import torch
+
+    return tensor.detach().resolve_conj().resolve_neg().contiguous().reshape(-1).view(torch.uint8)
+
+
 class Session:
-    def __init__(self, workload, device):
+    def __init__(self, workload, device, device_guard_limit=0):
         import torch
 
         from .runtime import RuntimeGuard
@@ -117,7 +125,16 @@ class Session:
         self.bindings = {
             k: (id(v), v.untyped_storage().data_ptr()) for k, v in workload.tensors.items()
         }
+        started = time.perf_counter()
         self.values = {k: host(v) for k, v in workload.tensors.items()}
+        self.input_snapshot_seconds = time.perf_counter() - started
+        self.input_check_seconds = 0.0
+        self.input_check_calls = 0
+        self.input_guard_fallbacks = {}
+        self.device = device
+        self.device_guard_limit = device_guard_limit
+        self._device_values = {}
+        self._guard_allocations = {}
         self.aliases = {
             a: [b for b, y in workload.tensors.items() if same_storage(x, y)]
             for a, x in workload.tensors.items()
@@ -126,10 +143,83 @@ class Session:
         for name in workload.mutable:
             if any(n != name for n in self.aliases[name]):
                 raise ValueError("Mutable shared storage requires a dedicated workload adapter")
+        self._cache_inputs()
         self.guard = RuntimeGuard()
         self.cpu_rng = torch.get_rng_state()
         self.cuda_rng = torch.cuda.get_rng_state(device) if device.startswith("cuda") else None
-        self.device = device
+
+    @property
+    def private_allocated_bytes(self):
+        """Actual live CUDA allocator deltas, never logical tensor sizes."""
+        return sum(self._guard_allocations.values())
+
+    def _cache_inputs(self):
+        import torch
+
+        started = time.perf_counter()
+        self._device_values.clear()
+        self._guard_allocations.clear()
+        cuda = self.device.startswith("cuda")
+        budget = self.device_guard_limit
+        if cuda and budget:
+            budget = min(budget, torch.cuda.mem_get_info(self.device)[0] // 8)
+        for name, saved in self.values.items():
+            size = saved.numel() * saved.element_size()
+            if name in self.workload.mutable or not self.device_guard_limit:
+                continue
+            if size > budget:
+                self._guard_fallback("budget")
+                continue
+            before = torch.cuda.memory_allocated(self.device) if cuda else 0
+            try:
+                # Use the immutable CPU original, not a second read of live input.
+                # A factory's asynchronous write cannot redefine the expected bytes.
+                self._device_values[name] = byte_view(saved).to(self.device, copy=True)
+            except torch.cuda.OutOfMemoryError:
+                self._guard_fallback("allocation_oom")
+                break  # Keep the original exact CPU path for all uncached inputs.
+            allocated = (
+                torch.cuda.memory_allocated(self.device) - before if cuda else 0
+            )
+            cost = allocated if cuda else size
+            if cost > budget or (cuda and allocated < size):
+                # Account for allocator rounding; ambiguous deltas are not deducted.
+                del self._device_values[name]
+                self._guard_fallback("allocator_budget")
+                break
+            self._guard_allocations[name] = allocated
+            budget -= cost
+        self.input_snapshot_seconds += time.perf_counter() - started
+
+    def _guard_fallback(self, reason):
+        self.input_guard_fallbacks[reason] = self.input_guard_fallbacks.get(reason, 0) + 1
+
+    def input_guard_stats(self):
+        return {
+            "device_inputs": sorted(self._device_values),
+            "host_inputs": sorted(
+                self.workload.tensors.keys() - self._device_values.keys() - set(self.workload.mutable)
+            ),
+            "private_allocated_bytes": self.private_allocated_bytes,
+            "snapshot_seconds": self.input_snapshot_seconds,
+            "check_seconds": self.input_check_seconds,
+            "check_calls": self.input_check_calls,
+            "fallbacks": dict(self.input_guard_fallbacks),
+        }
+
+    def _unchanged(self, name, tensor):
+        import torch
+
+        if name in self._device_values:
+            try:
+                return torch.equal(byte_view(tensor), self._device_values[name])
+            except torch.cuda.OutOfMemoryError:
+                # Noncontiguous inputs can require a temporary contiguous tensor.
+                # Release only this private cache and retain exact host comparison.
+                del self._device_values[name]
+                del self._guard_allocations[name]
+                self._guard_fallback("comparison_oom")
+        return equal(tensor, self.values[name])
 
     def reset(self):
         import torch
@@ -144,17 +234,22 @@ class Session:
             torch.cuda.set_rng_state(self.cuda_rng, self.device)
 
     def check_state(self):
-        if self.workload.tensors.keys() != self.specs.keys():
-            raise AssertionError("State names changed")
-        for name, tensor in self.workload.tensors.items():
-            if (
-                metadata(tensor) != self.specs[name]
-                or (id(tensor), tensor.untyped_storage().data_ptr()) != self.bindings[name]
-            ):
-                raise AssertionError(f"Tensor binding/layout changed: {name}")
-            if name not in self.workload.mutable and not equal(tensor, self.values[name]):
-                raise AssertionError(f"Forbidden input/state mutation: {name}")
-        self.guard.check()
+        started = time.perf_counter()
+        self.input_check_calls += 1
+        try:
+            if self.workload.tensors.keys() != self.specs.keys():
+                raise AssertionError("State names changed")
+            for name, tensor in self.workload.tensors.items():
+                if (
+                    metadata(tensor) != self.specs[name]
+                    or (id(tensor), tensor.untyped_storage().data_ptr()) != self.bindings[name]
+                ):
+                    raise AssertionError(f"Tensor binding/layout changed: {name}")
+                if name not in self.workload.mutable and not self._unchanged(name, tensor):
+                    raise AssertionError(f"Forbidden input/state mutation: {name}")
+            self.guard.check()
+        finally:
+            self.input_check_seconds += time.perf_counter() - started
 
     def observe(self, output):
         self.check_state()
@@ -191,4 +286,6 @@ class Session:
                     # Refuse overlapping writes (e.g. expand) rather than silently densifying.
                     tensor.copy_(fresh.tensors[name])
         self.values = other.values
+        self.input_snapshot_seconds += other.input_snapshot_seconds
+        self._cache_inputs()
         self.cpu_rng, self.cuda_rng = other.cpu_rng, other.cuda_rng

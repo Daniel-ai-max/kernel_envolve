@@ -62,8 +62,12 @@ def serve(request_path):
         command = json.loads(line)
         reply = Path(command["reply"])
         start = time.perf_counter()
+        session = None
         try:
-            session = Session(build(command["case"], command["seed"]), device)
+            session = Session(
+                build(command["case"], command["seed"]), device,
+                device_guard_limit=2 * 1024**3 if device.startswith("cuda") else 0,
+            )
             if command["kind"] == "check":
                 observations = []
                 for index in range(3 if cfg.get("deterministic", True) else 2):
@@ -76,7 +80,7 @@ def serve(request_path):
                 torch.save(observations, command["output"])
                 result = {"status": "pass"}
             else:
-                samples, peak = [], 0
+                samples, peak, raw_peak, private_guard_bytes = [], 0, 0, []
                 for index in range(cfg["warmup"] + cfg["iterations"]):
                     session.reset()
                     sync()
@@ -90,27 +94,41 @@ def serve(request_path):
                     measured_peak = (
                         torch.cuda.max_memory_allocated(device) if device.startswith("cuda") else 0
                     )
+                    including_guards = measured_peak
+                    guard_allocation = session.private_allocated_bytes
+                    # Private guards exist before timing. Preserve the workload's
+                    # original absolute-memory limit by excluding only their actual
+                    # allocator delta; candidate allocations remain fully counted.
+                    if device.startswith("cuda"):
+                        measured_peak -= guard_allocation
                     # Checking and state reset are outside the measured F+B call.
                     observation = session.observe(output)
                     if index >= cfg["warmup"]:
                         samples.append(elapsed)
                         if device.startswith("cuda"):
                             peak = max(peak, measured_peak)
+                            raw_peak = max(raw_peak, including_guards)
+                            private_guard_bytes.append(guard_allocation)
                     del output
                 torch.save([observation], command["output"])
-                result = {"status": "pass", "samples_us": samples, "peak_bytes": peak}
+                result = {
+                    "status": "pass", "samples_us": samples, "peak_bytes": peak,
+                    "peak_bytes_including_input_guards": raw_peak,
+                    "private_input_guard_bytes_by_iteration": private_guard_bytes,
+                }
             result.update(
                 input_metadata=session.specs,
                 input_aliases=session.aliases,
                 imports=provenance(),
                 seconds=time.perf_counter() - start,
+                input_guard=session.input_guard_stats(),
                 runtime_settings=runtime_state()["torch"],
                 torch_version=torch.__version__,
                 cuda_version=torch.version.cuda,
                 gpu=torch.cuda.get_device_name(device) if device.startswith("cuda") else None,
                 command_id=command["id"],
             )
-            del session
+            session = None
             gc.collect()
 
         except Exception as exc:
@@ -119,6 +137,8 @@ def serve(request_path):
                 "status": "error",
                 "error": f"{type(exc).__name__}: {exc}",
                 "command_id": command["id"],
+                "seconds": time.perf_counter() - start,
+                "input_guard": session.input_guard_stats() if session is not None else None,
             }
         from .storage import write_json
 

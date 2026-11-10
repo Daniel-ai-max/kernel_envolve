@@ -1,0 +1,230 @@
+"""One bounded diagnostic: exact native input guards, not operator optimization.
+
+Run only through the existing manager GPU wrapper (expected duration 180 s).
+Fixed ABBA order and fixed three observations per block; no adaptive retries.
+"""
+import argparse
+import gc
+import hashlib
+import importlib.util
+import io
+import json
+import os
+import sys
+import tempfile
+import textwrap
+import time
+from pathlib import Path
+
+PEAK_ADAPTER = textwrap.dedent("""
+    import torch
+    import probeop
+    from kernel_envolve import guard_probe_candidate as training
+
+    def create(case, seed, device, oracle):
+        x = torch.ones((64, 65), device=device)[:, :64]
+        calls = 0
+        original = training.byte_view
+        def validate(out):
+            nonlocal calls
+            calls += 1
+            if calls == 2:
+                def fail_once(tensor):
+                    training.byte_view = original
+                    raise torch.cuda.OutOfMemoryError('injected contiguous allocation OOM')
+                training.byte_view = fail_once
+        return training.Workload({'x': x}, lambda: x + probeop.VALUE, validate=validate)
+""")
+
+
+def load(name, path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--baseline', type=Path, required=True)
+    parser.add_argument('--candidate', type=Path, required=True)
+    parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--peak-only', action='store_true',
+                        help='Only the worker peak/OOM case; never repeats ABBA or mutation cases')
+    args = parser.parse_args()
+    for name in ('KERNEL_ENVOLVE_GPU_JOB', 'KERNEL_ENVOLVE_TASK', 'KERNEL_ENVOLVE_ROUND'):
+        if not os.environ.get(name):
+            raise RuntimeError('Missing managed GPU context: ' + name)
+    visible = os.environ.get('CUDA_VISIBLE_DEVICES', '')
+    if not visible or len(visible.split(',')) != 1:
+        raise RuntimeError('Exactly one manager-assigned GPU is required')
+    os.fstat(int(os.environ['KERNEL_ENVOLVE_LOCK_FD']))
+    import torch
+    import triton
+    import triton.language as tl
+
+    torch.set_num_threads(1)
+    torch.use_deterministic_algorithms(True)
+    old = load('kernel_envolve.guard_probe_baseline', args.baseline / 'training.py')
+    new = load('kernel_envolve.guard_probe_candidate', args.candidate / 'training.py')
+    started = time.perf_counter()
+    result = {'status': 'running', 'scope': 'Session observe only, not end-to-end evaluator',
+              'gpu': torch.cuda.get_device_name(), 'blocks': [], 'checks': [],
+              'threads': torch.get_num_threads(),
+              'deterministic': torch.are_deterministic_algorithms_enabled(),
+              'manager': {name: os.environ[name] for name in
+                  ('KERNEL_ENVOLVE_GPU_JOB', 'KERNEL_ENVOLVE_TASK', 'KERNEL_ENVOLVE_ROUND',
+                   'CUDA_VISIBLE_DEVICES')},
+              'source_sha256': {str(path): hashlib.sha256(path.read_bytes()).hexdigest()
+                  for path in (args.baseline / 'training.py', args.candidate / 'training.py',
+                               args.candidate / 'native_worker.py', Path(__file__))}}
+
+    def save():
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(json.dumps(result, indent=2) + '\n')
+
+    def session(mod, tensors, limit=2 * 1024**3, validate=lambda out: None):
+        first = next(iter(tensors.values()))
+        work = mod.Workload(tensors, lambda: first.reshape(-1)[:1].clone(), validate=validate)
+        options = {'device_guard_limit': limit} if mod is new else {}
+        return mod.Session(work, 'cuda:0', **options)
+
+    def rejected(call, label):
+        try:
+            call()
+        except AssertionError as exc:
+            assert 'Forbidden input' in str(exc) or 'binding/layout' in str(exc), str(exc)
+        else:
+            raise AssertionError('Mutation not rejected: ' + label)
+        result['checks'].append(label)
+
+    save()
+    try:
+        if not args.peak_only:
+            # Real KL Teacher K size: 1.573 GB (1.465 GiB). Keep input fixed across ABBA.
+            large = torch.full((1, 16, 127996, 192), .25, device='cuda')
+            result['input_bytes'] = large.numel() * large.element_size()
+            for index, mod in enumerate((old, new, new, old)):
+                torch.cuda.synchronize()
+                before = time.perf_counter()
+                current = session(mod, {'large': large})
+                torch.cuda.synchronize()
+                setup = time.perf_counter() - before
+                current.observe(current.workload.run())  # One fixed guard warmup.
+                observations = []
+                for _ in range(3):
+                    torch.cuda.synchronize()
+                    before = time.perf_counter()
+                    current.observe(current.workload.run())
+                    torch.cuda.synchronize()
+                    observations.append(time.perf_counter() - before)
+                result['blocks'].append({'order': index, 'role': 'candidate' if mod is new else 'baseline',
+                                         'setup_seconds': setup, 'observe_seconds': observations,
+                                         'guard': current.input_guard_stats() if mod is new else None})
+                del current
+                gc.collect()
+                save()
+            del large
+            gc.collect()
+    
+            @triton.jit
+            def raw_write(pointer):
+                value = tl.load(pointer)
+                tl.store(pointer, value ^ 1)
+    
+            # Compile the custom write once, outside all timed guard blocks.
+            scratch = torch.zeros(1, device='cuda', dtype=torch.int32)
+            raw_write[(1,)](scratch)
+            torch.cuda.synchronize()
+            for dtype in (torch.float32, torch.bfloat16):
+                base = torch.ones((16, 34), device='cuda', dtype=dtype)
+                x = base[:, 2:34:2]
+                current = session(new, {'x': x, 'alias': x[:, :4]})
+                current.observe(current.workload.run())
+                version = base._version
+                raw_write[(1,)](base.view(torch.uint8).reshape(-1))
+                # First write was outside the declared logical view; valid input unchanged.
+                current.check_state()
+                raw_write[(1,)](base.view(torch.uint8).reshape(-1)[2 * base.element_size():])
+                torch.cuda.synchronize()
+                assert base._version == version
+                rejected(current.check_state, 'raw-write-noncontiguous-alias-' + str(dtype))
+                del current, x, base
+    
+            for bits, changed, label in ((0, -2147483648, 'signed-zero'),
+                                          (2143289345, 2143289346, 'nan-payload')):
+                raw = torch.tensor([bits], dtype=torch.int32, device='cuda')
+                current = session(new, {'x': raw.view(torch.float32)})
+                current.check_state()
+                raw.fill_(changed)
+                rejected(current.check_state, label)
+    
+            x = torch.ones(32, device='cuda')
+            current = session(new, {'x': x}, limit=1)
+            assert current.input_guard_stats()['host_inputs'] == ['x']
+            current.check_state()
+            x.data[0] = 2
+            rejected(current.check_state, 'budget-fallback-exact')
+            x = torch.ones(32, device='cuda')
+            current = session(new, {'x': x}, validate=lambda out: x.data.add_(1))
+            rejected(lambda current=current: current.observe(current.workload.run()), 'validator-mutation')
+            current = session(new, {'x': torch.ones(32, device='cuda')})
+            current.refresh(new.Workload({'x': torch.full((32,), 3., device='cuda')}, lambda: None))
+            current.check_state()
+            current.workload.tensors['x'].data[0] = 1
+            rejected(current.check_state, 'refresh-old-value')
+            del current
+            gc.collect()
+    
+        # Run the modified real worker, not a duplicate of its peak arithmetic.
+        # The second observe forces a cache OOM after the measured peak is captured.
+        previous_training = sys.modules.get('kernel_envolve.training')
+        previous_stdin = sys.stdin
+        try:
+            sys.modules['kernel_envolve.training'] = new
+            worker = load('kernel_envolve.guard_probe_worker', args.candidate / 'native_worker.py')
+            with tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                (root / 'probeop.py').write_text('VALUE = 1\n')
+                adapter = root / 'adapter.py'
+                adapter.write_text(PEAK_ADAPTER)
+                request = {'config': {'device': 'cuda:0', 'env': {}, 'threads': 1,
+                                     'deterministic': True, 'warmup': 1, 'iterations': 1,
+                                     'imports': {'probeop': 'core'}}, 'roots': {'core': str(root)},
+                           'role': 'candidate', 'adapter': str(adapter)}
+                request_path = root / 'request.json'
+                request_path.write_text(json.dumps(request))
+                command = {'id': 1, 'kind': 'measure', 'case': {'id': 'peak-fallback', 'args': {}},
+                           'seed': 0, 'reply': str(root / 'reply.json'), 'output': str(root / 'out.pt')}
+                sys.stdin = io.StringIO(json.dumps(command) + '\n')
+                assert worker.serve(request_path) == 0
+                reply = json.loads((root / 'reply.json').read_text())
+                excluded = reply['private_input_guard_bytes_by_iteration'][0]
+                assert excluded > 0
+                assert reply['input_guard']['private_allocated_bytes'] == 0
+                assert reply['input_guard']['fallbacks']['comparison_oom'] == 1
+                assert reply['peak_bytes_including_input_guards'] - excluded == reply['peak_bytes']
+                assert reply['peak_bytes'] >= 2 * 64 * 64 * 4  # Input plus real candidate output.
+                result['worker_peak_fallback'] = reply
+                result['checks'].append('real-worker-peak-captured-before-cache-release')
+        finally:
+            sys.stdin = previous_stdin
+            if previous_training is None:
+                sys.modules.pop('kernel_envolve.training', None)
+            else:
+                sys.modules['kernel_envolve.training'] = previous_training
+        result.update(status='pass', seconds=time.perf_counter() - started)
+        save()
+        print(json.dumps({'status': result['status'], 'seconds': result['seconds'],
+                          'checks': result['checks']}))
+    except BaseException as exc:
+        result.update(status='failed', error=f'{type(exc).__name__}: {exc}')
+        raise
+    finally:
+        result['seconds'] = time.perf_counter() - started
+        save()
+
+
+if __name__ == '__main__':
+    main()

@@ -1,0 +1,24 @@
+{
+  "baseline_commit": "b084e38b73bfb2f46a544f608c504930d1603d92",
+  "product_sha256": {
+    "training.py": "d67582346443c1d0e6baa23bf31e51db7910ea86f2172185bf553360495e9d77",
+    "native_worker.py": "a25575cbdf7bbdff33fa5f442ac479a53173a013af4c0af8281f3f5c41a5e760"
+  },
+  "files": {
+    "evidence/005-input-guard-bounded-probe.requests.json": "73b49585dce81c3b1645d0e7b5a4404c817324324cc04bef485d304cc68706aa",
+    "evidence/005-input-guard-bounded-probe.results.json": "2143e7619f559a3317dc365ec28f28594a9acedd1ca10360d07568dfed7a52d6",
+    "evidence/005-input-guard-bounded-probe.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evidence/005-input-guard-bounded-probe.stdout.log": "aa6f397ca4804b830f05845292b9d407c3eb1bc3220834328d1d4d77a3449501",
+    "evidence/006-input-guard-peak-only.requests.json": "8b702fb8cecb03373cec54cbd93b32728735f9fe0530a567f394da34f1d4d81b",
+    "evidence/006-input-guard-peak-only.results.json": "4438df8ce6c71f349d69863d001a101f0f5950a9ee655bec01393638b00cbb59",
+    "evidence/006-input-guard-peak-only.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evidence/006-input-guard-peak-only.stdout.log": "b02132718c5026946eae220e8ed90189c6f6261f360da4ab3e39cb6b3b886389",
+    "evidence/first-probe.py.txt": "4bc2631e98a8141e76b4c77540186146c4145114de28a6c75487365a4699a27a",
+    "evidence/initial-input-manifest.json": "4d66cf7cd5182231e033466df45e0b12c451f3c6935e1d5516f7a47699bf8794",
+    "evidence/peak-probe.py.txt": "2d297f2681a2498644976f34f56274a3a458fee59c6a532255e3eb8e056f50b8",
+    "evidence/peak-result.json": "4ee0e6f3ea47ec0be8d8baa6a585635cf91ccb5e10901e368884b379ecf8795c",
+    "evidence/result.json": "620ec0440a6d50d955acbe8a0a2d3d8464fd44db910a60024bdec5f27444b5fb",
+    "full-tests.log": "07842eafa47e44a0f0dcc7fe95dd5a0618324e30148dfd495f20b5f822cff2cb"
+  },
+  "probe_sha256": "2d297f2681a2498644976f34f56274a3a458fee59c6a532255e3eb8e056f50b8"
+}

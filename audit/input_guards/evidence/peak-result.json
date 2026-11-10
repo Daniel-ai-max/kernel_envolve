@@ -1,0 +1,92 @@
+{
+  "status": "pass",
+  "scope": "Session observe only, not end-to-end evaluator",
+  "gpu": "NVIDIA B300 SXM6 AC",
+  "blocks": [],
+  "checks": [
+    "real-worker-peak-captured-before-cache-release"
+  ],
+  "threads": 1,
+  "deterministic": true,
+  "manager": {
+    "KERNEL_ENVOLVE_GPU_JOB": "5f006f336e6047c582b7979bb99fbebb",
+    "KERNEL_ENVOLVE_TASK": "student_v2",
+    "KERNEL_ENVOLVE_ROUND": "901af64d08a14a6188fd0c0c2346078a",
+    "CUDA_VISIBLE_DEVICES": "GPU-acc9c793-86b8-b645-c9dc-c453167c80bb"
+  },
+  "source_sha256": {
+    "/tmp/ke-dsa-updates/ddfb65c14a7b72a2e687/releases/b084e38b73bfb2f46a544f608c504930d1603d92/src/kernel_envolve/training.py": "2275ec95600b80096eb385dec6a7705913f46bfd115a0fbd25887efc290756f6",
+    "/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-dsa-six-20261110/student_v2/diagnostics/input-guard/candidate/training.py": "d67582346443c1d0e6baa23bf31e51db7910ea86f2172185bf553360495e9d77",
+    "/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-dsa-six-20261110/student_v2/diagnostics/input-guard/candidate/native_worker.py": "a25575cbdf7bbdff33fa5f442ac479a53173a013af4c0af8281f3f5c41a5e760",
+    "/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-dsa-six-20261110/student_v2/diagnostics/input-guard/probe-peak.py": "2d297f2681a2498644976f34f56274a3a458fee59c6a532255e3eb8e056f50b8"
+  },
+  "worker_peak_fallback": {
+    "command_id": 1,
+    "cuda_version": "13.0",
+    "gpu": "NVIDIA B300 SXM6 AC",
+    "imports": {
+      "probeop": "/tmp/tmpz63cp3py/probeop.py"
+    },
+    "input_aliases": {
+      "x": [
+        "x"
+      ]
+    },
+    "input_guard": {
+      "check_calls": 4,
+      "check_seconds": 0.12058392900507897,
+      "device_inputs": [],
+      "fallbacks": {
+        "comparison_oom": 1
+      },
+      "host_inputs": [
+        "x"
+      ],
+      "private_allocated_bytes": 0,
+      "snapshot_seconds": 0.04556218895595521
+    },
+    "input_metadata": {
+      "x": {
+        "conjugate": false,
+        "device": "cuda:0",
+        "dtype": "torch.float32",
+        "negative": false,
+        "offset": 0,
+        "requires_grad": false,
+        "shape": [
+          64,
+          64
+        ],
+        "stride": [
+          65,
+          1
+        ]
+      }
+    },
+    "peak_bytes": 33280,
+    "peak_bytes_including_input_guards": 49664,
+    "private_input_guard_bytes_by_iteration": [
+      16384
+    ],
+    "runtime_settings": {
+      "bf16_reduced_precision_reduction": true,
+      "cudnn_benchmark": false,
+      "cudnn_deterministic": false,
+      "cudnn_tf32": true,
+      "default_dtype": "torch.float32",
+      "deterministic_algorithms": true,
+      "fp16_reduced_precision_reduction": true,
+      "grad_enabled": true,
+      "matmul_precision": "highest",
+      "matmul_tf32": false,
+      "threads": 1
+    },
+    "samples_us": [
+      37.498
+    ],
+    "seconds": 0.2350340239936486,
+    "status": "pass",
+    "torch_version": "2.12.1+cu130"
+  },
+  "seconds": 0.7736488280352205
+}
