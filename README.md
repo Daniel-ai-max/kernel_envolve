@@ -184,6 +184,8 @@ pytest -q
 
 PyTorch 路径需要安装兼容的 PyTorch；CUDA 测试需在空闲 GPU 上设置 `KERNEL_ENVOLVE_TEST_CUDA=1`。浏览器轮询逻辑的测试使用 Node.js，缺少时跳过对应测试。
 
+提交 PR 时使用[中文模板](.github/PULL_REQUEST_TEMPLATE.md)，说明修改前后、影响范围、实际验证结果和回滚方式。不适用项注明原因；性能收益附版本、硬件、覆盖范围和评测证据。发布前可运行 `python3 tools/check_pr_body.py --body-file /path/to/pr.md`。`Validate PR template` CI 会在创建、编辑正文和推送后检查；校验器只从默认分支加载，不执行 PR 分支代码。
+
 更多资料：
 
 - [Agent 优化流程与 PR 规范](skills/kernel-envolve/SKILL.md)
