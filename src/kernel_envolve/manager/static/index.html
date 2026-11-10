@@ -11,22 +11,21 @@
     <main>
       <header>
         <div>
-          <span class="eyebrow">KERNEL ENVOLVE / OPTIMIZATION</span>
-          <h1>持续优化工作台</h1>
+          <h1>算子优化</h1>
         </div>
         <div id="updated" role="status">正在连接…</div>
       </header>
       <nav aria-label="主导航">
-        <button data-view="overview" aria-pressed="true">算子总览</button
-        ><button data-view="resources" aria-pressed="false">计算资源</button
+        <button data-view="overview" aria-pressed="true">总览</button
+        ><button data-view="resources" aria-pressed="false">资源</button
         ><button id="refresh">刷新</button>
       </nav>
       <div id="error" role="alert" hidden></div>
       <section id="metrics" aria-label="整体状态"></section>
       <section id="overview">
         <div class="section-head">
-          <h2>算子任务</h2>
-          <label><input id="show-paused" type="checkbox" />显示已暂停任务</label>
+          <h2>任务</h2>
+          <label><input id="show-history" type="checkbox" />历史任务</label>
           <label
             >筛选
             <input id="search" type="search" placeholder="算子、版本、状态"
@@ -36,15 +35,11 @@
           <table>
             <thead>
               <tr>
-                <th>算子 / 目标</th>
-                <th>当前阶段</th>
-                <th>原始 baseline</th>
-                <th>实现提出时间</th>
+                <th>算子</th>
+                <th>状态</th>
+                <th>最近评测</th>
                 <th>已验证加速</th>
-                <th>最近晋升</th>
-                <th>最近评测 / 证据校验</th>
-                <th>GPU / 资源</th>
-                <th>最近研究记录</th>
+                <th>更新</th>
               </tr>
             </thead>
             <tbody id="tasks"></tbody>
@@ -53,7 +48,7 @@
         <p id="empty" class="empty" hidden>尚未注册任务</p>
       </section>
       <section id="resources" hidden>
-        <div class="section-head"><h2>资源与等待队列</h2></div>
+        <div class="section-head"><h2>资源</h2></div>
         <div id="resource-list"></div>
       </section>
       <section id="detail" hidden aria-label="算子详情"></section>
