@@ -4,6 +4,7 @@ import math
 import os
 from pathlib import Path
 
+from .native_harness import validate_paths
 from .protocol import objective_cases, performance_role, plan
 from .storage import read_json
 
@@ -35,7 +36,9 @@ def load_config(task):
         "required_scopes": ["operator", "numerical", "integration"],
         "required_outputs": ["output", "gradients"],
     }
-    unknown = set(raw) - (set(defaults) | {"name", "objective", "sources", "imports", "cases"})
+    unknown = set(raw) - (
+        set(defaults) | {"name", "objective", "sources", "imports", "cases", "implementation_paths"}
+    )
     if unknown:
         raise ValueError(f"Unknown native settings: {sorted(unknown)}")
     cfg = defaults | raw
@@ -62,6 +65,11 @@ def load_config(task):
             if "$" in expanded:
                 raise ValueError(f"Unresolved source environment variable: {path}")
             roots[name] = str((task / expanded).resolve())
+    if "implementation_paths" not in cfg:
+        raise ValueError(
+            "Declare implementation_paths for native checks; create a new task contract"
+        )
+    validate_paths(cfg)
     if set(cfg["imports"].values()) - cfg["sources"]["candidate"].keys():
         raise ValueError("Unknown import root")
     if cfg["device"] != "cpu" and not (

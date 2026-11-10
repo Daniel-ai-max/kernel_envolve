@@ -151,6 +151,7 @@ def load_cases(task, kind, cases):
             "device": "cpu",
             "sources": {"candidate": {"core": str(task)}, "baseline": {"core": str(task)}},
             "imports": {"fixture": "core"},
+            "implementation_paths": {"core": ["candidate.py"]},
         }
     raw["cases"] = cases
     path.write_text(json.dumps(raw))

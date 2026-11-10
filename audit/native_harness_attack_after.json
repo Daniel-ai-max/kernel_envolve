@@ -1,0 +1,25 @@
+{
+  "attack": {
+    "run": "/private/var/folders/1_/pg6y0vt5551__6957j13nzmc0000gn/T/ke-harness-attack-after-yvis8vou/task/.kernel_native/runs/8e98de5c27464cd0870fabfc074e1ef3",
+    "correctness": "partial",
+    "error": {
+      "type": "ValueError",
+      "message": "Candidate changed a protected harness/source file: core/test_native_contract.py"
+    },
+    "eligible": false,
+    "workers_created": false
+  },
+  "full_workflow": {
+    "run": "/private/var/folders/1_/pg6y0vt5551__6957j13nzmc0000gn/T/ke-harness-full-after-3we1juii/task/.kernel_native/runs/87f1893fb0a34d9eb0f73217d243865a",
+    "correctness": "pass",
+    "error": null,
+    "eligible": true,
+    "native_scopes": [
+      "operator",
+      "numerical",
+      "integration"
+    ],
+    "harness_seconds": 0.0015275830010068603,
+    "validation_files": 2
+  }
+}
