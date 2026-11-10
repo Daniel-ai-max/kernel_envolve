@@ -1,0 +1,33 @@
+{
+  "recorded_at": 1794334536.639393,
+  "base_commit": "590f1551674f92f38005bf6122792b590e54f5ea",
+  "change": "Opt-in bounded stop on decision callback TimeoutError, preserving only already full-tested correct incumbents for independent final evaluation. Default behavior unchanged.",
+  "motivation": "Current frozen GPU study observed decision transport timeouts across all three arms. That study is not modified or rerun. Existing behavior aborts outer trial on callback failure even if earlier full candidates exist.",
+  "validation": {
+    "focused": "41 passed in21.92s before adding independent-final timeout parametrization",
+    "full": "515 passed,10 skipped in156.66s",
+    "log": "/tmp/rsi-timeout-full-tests-20261111.log",
+    "ruff": "passed",
+    "diff_check": "passed"
+  },
+  "source_sha256": {
+    "src/kernel_envolve/rsi/research.py": "b8aed9fcfc9df5a50ab3bdc26274eb0b69c30a5da8f6b0cfb584730e7ad72bb7",
+    "src/kernel_envolve/rsi/episodes.py": "e2ed0dccd63d9381cdaebe8c0580f3b1b0d3c312bb27a1aa6177759793042f47",
+    "tests/test_rsi_research.py": "177be14052ab5eb10ebd7dac8a361d9cb4f483d2fa4a61d91a9459cd1aa0662d"
+  },
+  "verified_boundaries": [
+    "Failed decision consumes an action and no retry occurs.",
+    "Quick-only improvement cannot replace the full incumbent.",
+    "No valid full incumbent, protected-file tampering, cancellation and unrelated exceptions still propagate.",
+    "Source-validator timeouts are not caught as decision timeouts.",
+    "Independent outer full trial verification still runs and uses the selected source.",
+    "Report/episode preserve failed decision, controller stop origin and unknown token usage.",
+    "Global budgets, evaluator gates and promotion permissions unchanged."
+  ],
+  "limitations": [
+    "CPU engineering recovery evidence only; no measured RSI gain or production benefit.",
+    "Adapters must explicitly map known transport timeouts to TimeoutError; this flag does not impose callback deadlines.",
+    "Does not recover a hard-killed outer process or grant extra evaluation/model budget.",
+    "Frozen590f155GPUresults must be analyzed with their archived package, not this modified checkout."
+  ]
+}

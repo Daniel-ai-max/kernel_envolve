@@ -74,6 +74,9 @@ def report_records(task, trace, artifacts):
         if "decision_kind" in step:
             record["reported_decision_kind"] = step["decision_kind"]
             record["reported_artifact_episode_id"] = step.get("artifact_episode_id")
+        if "decision_error" in step:
+            record["reported_decision_error"] = step["decision_error"]
+            record["reported_stop_origin"] = step.get("stop_origin")
         observed = step.get("observation")
         if observed and observed["status"] == "evaluated":
             path = Path(observed["run"])
@@ -118,6 +121,7 @@ def run(
     experience=None,
     artifact_proposal=None,
     source_validator=None,
+    stop_on_decision_timeout=False,
 ):
     """Call decide(request, timeout) for operator-fixed actions; return a saved trace.
 
@@ -134,11 +138,19 @@ def run(
     implementation. It requires the trusted adapter's source validator, always
     uses full evaluation, and never imports an old score or replaces the initial
     candidate before measurement. This is not an automatic archive execution path.
+
+    stop_on_decision_timeout explicitly allows a timed-out decision callback to end
+    search with an already measured, correctness-passing full candidate. The failed
+    request remains a charged action in the trace, with unknown token cost. It does
+    not retry, extend a deadline, catch evaluator failures/cancellation, or replace
+    the outer controller's independent final evaluation. The default still raises.
     """
     if packet["kind"] != "generic":
         raise ValueError("The experimental research loop supports generic tasks only")
     if type(max_actions) is not int or not 1 <= max_actions <= 8:
         raise ValueError("max_actions must be 1–8")
+    if type(stop_on_decision_timeout) is not bool:
+        raise ValueError("stop_on_decision_timeout must be boolean")
     for name, value in (
         ("seconds", packet["seconds"]),
         ("model", model_seconds),
@@ -219,6 +231,7 @@ def run(
         "scope": "Bounded research; full RSI acceptance remains independent",
         "experience_hash": experience_hash,
         "artifact_proposal_hash": proposal_hash,
+        "stop_on_decision_timeout": stop_on_decision_timeout,
     }
     previous = {}
 
@@ -326,7 +339,29 @@ def run(
                     "hypothesis": "Test the explicitly supplied historical implementation on this task; its old result does not establish current correctness or performance.",
                 }
             else:
-                action = decide(request, min(model_seconds, remaining()))
+                try:
+                    action = decide(request, min(model_seconds, remaining()))
+                except TimeoutError:
+                    # Only this callback can recover. Evaluator timeouts, signals,
+                    # protected-file changes and other adapter errors still fail.
+                    protected()
+                    if not stop_on_decision_timeout or best_quality < 0:
+                        raise
+                    elapsed = time.monotonic() - started
+                    trace["steps"].append(
+                        {
+                            "index": index,
+                            "decision_kind": "adapter",
+                            "decision_seconds": elapsed,
+                            "model_seconds": elapsed,
+                            "action": "stop",
+                            "hypothesis": "Controller stopped search after a decision timeout; retain the measured full incumbent for independent final evaluation.",
+                            "stop_origin": "controller",
+                            "decision_error": {"type": "TimeoutError", "tokens": None},
+                        }
+                    )
+                    trace["stop_reason"] = "decision_timeout"
+                    break
             protected()
             elapsed = time.monotonic() - started
             row = {

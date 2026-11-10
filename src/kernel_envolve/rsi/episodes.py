@@ -136,6 +136,15 @@ def build(task, artifacts, task_profile, *, origin_task=None, confirmation_run=N
     for step in steps:
         text(step["hypothesis"], "untrusted hypothesis", 1200)
         action = {"action": step["action"], "untrusted_hypothesis": step["hypothesis"]}
+        if "decision_error" in step:
+            if (
+                step["decision_error"] != {"type": "TimeoutError", "tokens": None}
+                or step.get("stop_origin") != "controller"
+                or step["action"] != "stop"
+            ):
+                raise ValueError("Invalid reported decision timeout")
+            action["reported_decision_error"] = step["decision_error"]
+            action["reported_stop_origin"] = "controller"
         if "decision_kind" in step:
             if step["decision_kind"] not in {"adapter", "artifact_proposal"}:
                 raise ValueError("Unsupported reported decision kind")

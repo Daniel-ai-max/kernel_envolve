@@ -695,7 +695,8 @@ def test_unconfirmed_episode_does_not_supply_an_artifact(measured_episode, tmp_p
             select(tmp_path / "library", ids, packet["task"], {}, env)
 
 
-def test_artifact_trial_still_requires_independent_final_evaluation(research):
+@pytest.mark.parametrize("recover_timeout", [False, True])
+def test_artifact_trial_still_requires_independent_final_evaluation(research, recover_timeout):
     import sys
 
     from kernel_envolve.rsi.trials import freeze_template, trial
@@ -710,7 +711,7 @@ def test_artifact_trial_still_requires_independent_final_evaluation(research):
         "import ast,json,sys\nfrom pathlib import Path\n"
         "from kernel_envolve.rsi.research import run\n"
         f"proposal=json.loads(Path({str(proposal_file)!r}).read_text())\n"
-        "run(json.load(sys.stdin),Path.cwd(),lambda *a: (_ for _ in ()).throw(AssertionError('no model decision allowed')),max_actions=1,artifact_proposal=proposal,source_validator=ast.parse)\n"
+        f"run(json.load(sys.stdin),Path.cwd(),lambda *a: (_ for _ in ()).throw(TimeoutError('fixture')),max_actions={2 if recover_timeout else 1},artifact_proposal=proposal,source_validator=ast.parse,stop_on_decision_timeout={recover_timeout!r})\n"
     )
     template = freeze_template({"path": packet["task"], "kind": "generic"}, root / "template")
     template["kind"] = "generic"
@@ -730,3 +731,124 @@ def test_artifact_trial_still_requires_independent_final_evaluation(research):
     assert result["run"] != trace["initial_observation"]["run"]
     assert result["run"] != trace["steps"][0]["observation"]["run"]
     assert (Path(result["run"]) / "source/candidate.py").read_text() == source
+
+
+@pytest.mark.parametrize("mode", ["quick", "full"])
+def test_opt_in_decision_timeout_keeps_only_full_incumbent(research, mode):
+    from kernel_envolve.rsi.research import report_records
+
+    packet, out, initial = research
+    source = "def run(x): return x+1\n"
+    calls = []
+
+    def decide(request, timeout):
+        calls.append(request["remaining_actions"])
+        if len(calls) == 1:
+            return {
+                "action": "propose",
+                "source": source,
+                "mode": mode,
+                "hypothesis": "CPU fixture",
+            }
+        raise TimeoutError("private transport detail must not become archive content")
+
+    old = signal.getsignal(signal.SIGTERM)
+    trace = run(packet, out, decide, max_actions=4, stop_on_decision_timeout=True)
+    assert calls == [4, 3]  # Failure consumes its action, with no retry or extra decisions.
+    assert trace["stop_reason"] == "decision_timeout" and "error" not in trace
+    assert trace["selected"] == source_id(source if mode == "full" else initial)
+    assert Path(packet["editable_files"][0]).read_text() == (source if mode == "full" else initial)
+    stop = trace["steps"][-1]
+    assert stop["decision_error"] == {"type": "TimeoutError", "tokens": None}
+    assert stop["stop_origin"] == "controller" and "observation" not in stop
+    assert stop["model_seconds"] >= 0
+    assert signal.getsignal(signal.SIGTERM) == old
+    records = report_records(packet["task"], trace, out)
+    assert records[-1]["reported_decision_error"] == stop["decision_error"]
+    assert "evaluator_run" not in records[-1]
+    assert "private transport detail" not in (out / "search-trace.json").read_text()
+
+
+@pytest.mark.parametrize(
+    "failure", ["invalid_incumbent", "protected_mutation", "cancel", "other_error"]
+)
+def test_timeout_fallback_does_not_bypass_fail_closed_boundaries(research, failure):
+    packet, out, _ = research
+    if failure == "invalid_incumbent":
+        Path(packet["editable_files"][0]).write_text("def run(x): return x-1\n")
+
+    def fail(*args):
+        if failure == "protected_mutation":
+            (Path(packet["task"]) / "task.py").write_text("tampered")
+        if failure == "cancel":
+            raise InterruptedError("cancelled")
+        if failure == "other_error":
+            raise ValueError("invalid transport result")
+        raise TimeoutError("timeout")
+
+    expected = {
+        "invalid_incumbent": TimeoutError,
+        "protected_mutation": ValueError,
+        "cancel": InterruptedError,
+        "other_error": ValueError,
+    }[failure]
+    with pytest.raises(expected):
+        run(packet, out, fail, stop_on_decision_timeout=True)
+    assert "error" in json.loads((out / "search-trace.json").read_text())
+
+
+def test_timeout_fallback_does_not_swallow_source_validation_timeout(research):
+    packet, out, _ = research
+
+    def validator(source):
+        raise TimeoutError("source validation did not complete")
+
+    with pytest.raises(TimeoutError, match="source validation"):
+        run(
+            packet,
+            out,
+            lambda *a: {
+                "action": "propose",
+                "source": "def run(x): return x+1\n",
+                "mode": "full",
+                "hypothesis": "fixture",
+            },
+            source_validator=validator,
+            stop_on_decision_timeout=True,
+        )
+    assert "error" in json.loads((out / "search-trace.json").read_text())
+
+
+def test_timeout_fallback_retains_failure_in_independently_confirmed_episode(research):
+    import ast
+
+    from kernel_envolve.cli import evaluate
+    from kernel_envolve.rsi.episodes import build, save, view
+
+    packet, out, _ = research
+    source = "def run(x): return x+1\n"
+
+    def timeout(*args):
+        raise TimeoutError("synthetic decision failure")
+
+    trace = run(
+        packet,
+        out,
+        timeout,
+        max_actions=4,
+        artifact_proposal=artifact(packet, source),
+        source_validator=ast.parse,
+        stop_on_decision_timeout=True,
+    )
+    assert len(trace["steps"]) == 2 and trace["selected"] == source_id(source)
+    confirmation, result = evaluate(Path(packet["task"]), "full", timeout=15)
+    assert result["correctness"] == "pass"
+    assert str(confirmation) != trace["steps"][0]["observation"]["run"]
+    episode = build(packet["task"], out, {}, confirmation_run=confirmation)
+    assert episode["actions"][-1]["reported_decision_error"] == {
+        "type": "TimeoutError",
+        "tokens": None,
+    }
+    library = out.parent / "library"
+    identity = save(library, episode)
+    assert view(library, identity)["actions"][-1]["reported_stop_origin"] == "controller"
