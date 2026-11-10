@@ -10,7 +10,7 @@ import time
 import uuid
 from pathlib import Path
 
-from .execution import lock, stop
+from .execution import lock, spawn, stop
 from .native_checks import junit as junit  # Preserve the existing native helper import.
 from .native_checks import native_checks
 from .native_config import environment, load_config
@@ -110,7 +110,7 @@ class Worker:
             request,
             {"config": cfg, "roots": roots, "role": role, "adapter": str(run / "adapter.py")},
         )
-        self.process = subprocess.Popen(
+        self.process = spawn(
             [sys.executable, "-m", "kernel_envolve.native_worker", str(request)],
             stdin=subprocess.PIPE,
             stdout=self.log,
@@ -497,5 +497,13 @@ def promote_native(run):
             "result_hash": digest(result),
             "previous": best[0]["run"] if best else None,
         }
+        write_json(
+            run / "promotion.json",
+            {
+                "pointer": pointer,
+                "previous_pointer": best[0] if best else None,
+                "at": time.time(),
+            },
+        )
         write_json(state / "best.json", pointer)
         return pointer

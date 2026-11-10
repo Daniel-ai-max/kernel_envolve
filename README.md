@@ -34,7 +34,7 @@ kernel-envolve native-promote <run目录>
 
 每次确认明确收益后，agent 自动向目标仓库提交优化 PR；同一算子的 PR 未合入时更新原分支和正文，合入后再开启下一阶段 PR。PR 使用规范的中文描述，列出改动、累计及增量收益、逐场景耗时、验证结果和复现证据。提交后继续优化，详见 [PR 交付流程与格式](skills/kernel-envolve/SKILL.md#收益确认后自动维护-pr)。
 
-跨会话自动续跑需要宿主执行器唤起 agent；当前 CLI 提供单次评测和版本晋升，skill 提供持续探索与恢复规则。累计额度用尽或用户暂停时保存状态，满足恢复条件后再继续。
+跨会话持续运行可使用[优化管理层](docs/optimization-manager.md)：`manage run` 调度每个算子的 Agent 命令，`manage serve` 展示 baseline 溯源、已验证收益、实验历史和 GPU 队列。每张 GPU 可绑定一到两个会话，GPU 作业互斥执行。累计额度用尽或用户暂停时停止自动推进，恢复后继续已有任务。单独使用 evaluate/promote 和 skill 的工作方式保持不变。设计取舍和验证范围见 [Super-agent 对比](docs/super-agent-comparison.md)。
 
 ## 独立算子快速开始
 

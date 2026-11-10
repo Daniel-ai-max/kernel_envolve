@@ -7,6 +7,36 @@ import signal
 import subprocess
 
 
+def spawn(*args, **kwargs):
+    """Register managed evaluator children so supervisor recovery can reap separate groups."""
+    if os.environ.get("KERNEL_ENVOLVE_GPU_JOB") and os.environ.get("KERNEL_ENVOLVE_LOCK_FD"):
+        # All evaluator process groups retain the device lock through supervisor crashes,
+        # even while importing/compiling before they have a visible CUDA context.
+        descriptor = int(os.environ["KERNEL_ENVOLVE_LOCK_FD"])
+        os.fstat(descriptor)
+        kwargs["pass_fds"] = tuple(set(kwargs.get("pass_fds", ())) | {descriptor})
+    process = subprocess.Popen(*args, **kwargs)
+    if os.environ.get("KERNEL_ENVOLVE_GPU_JOB"):
+        try:
+            from .manager.process import identity
+            from .manager.store import Store
+
+            store = Store(os.environ["KERNEL_ENVOLVE_STATE"])
+            try:
+                birth = identity(process.pid)
+                if birth:
+                    store.db.execute(
+                        "INSERT OR IGNORE INTO processes(job,pid,identity) VALUES(?,?,?)",
+                        (os.environ["KERNEL_ENVOLVE_GPU_JOB"], process.pid, birth),
+                    )
+            finally:
+                store.close()
+        except BaseException:
+            stop(process)
+            raise
+    return process
+
+
 @contextlib.contextmanager
 def lock(path):
     with path.open("a") as handle:

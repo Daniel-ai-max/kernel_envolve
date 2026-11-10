@@ -45,7 +45,9 @@ description: 持续优化 apodex-core 与 Megatron-LM 训练算子，复用原�
 
 阶段交付后保留 best 并继续下一项实验。单轮执行时限或上下文交接只触发保存和续接；累计预算/资源授权用尽、外部故障或用户暂停则保存原因并进入等待，不宣称优化完成，也不超额消耗或反复提交失败作业。等待 GPU 时可继续有价值的源码分析；没有可推进工作时释放闲置资源，由执行器在条件满足后续接。用户暂停后仅在用户恢复时继续。
 
-skill 规定决策与恢复流程；跨会话持续运行还需要宿主执行器唤起下一轮。接入时必须做到单任务不重叠执行、累计额度检查、读取检查点继续，并将「本轮返回」与「优化任务结束」区分；不能只靠提示词中的「不要停止」实现后台运行。本仓库 CLI 当前只执行单次 evaluate/promote，未实现自动唤起 agent。
+skill 规定决策与恢复流程；跨会话持续运行还需要宿主执行器唤起下一轮。可使用本仓库 `manage run` 管理层连接 coding-agent 命令，自动续接任务、检查累计额度并串行化 GPU 作业，参见 `docs/optimization-manager.md`。将「本轮返回」与「优化任务结束」区分；不能只靠提示词中的「不要停止」实现后台运行。
+
+当环境包含 `KERNEL_ENVOLVE_ROUND` 时，当前会话属于管理层任务。所有 GPU 命令必须经过 `kernel-envolve manage gpu-run -- <命令>`，包括正确性测试、编译时会访问 GPU 的过程和 profiler；不得自行改可见设备、嵌套 gpu-run 或留后台 GPU 作业。普通 CPU 分析可并行。轮次结束前更新 notes.md，并将 hypothesis、outcome、next_action 等研究记录写到 `KERNEL_ENVOLVE_REPORT` 指定的 JSON 文件；过程更新可用 `manage report --file`。性能结论只来自 evaluator，报告中不自填 speedup。暂停或预算用尽不绕过执行器续跑。
 
 ### 持续搜索中的 evaluate
 
