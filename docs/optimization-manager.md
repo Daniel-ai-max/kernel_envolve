@@ -147,6 +147,8 @@ kernel-envolve manage --state /work/manager-state refresh --force
 报告、主管心跳和自动开启下一轮不会清除提示。长时间 CPU 分析应在有实际进展时
 通过 `manage report` 更新结论和下一步。提示不自动终止任务，也不把报告当性能证据。
 GPU 正在运行、等待 GPU 或暂停时不会显示该提示。
+任务详情优先读取 `task_dir/notes.md`；未提供时读取 `workspace/notes.md`，
+兼容评测配置与研究工作区分开的目录结构。
 
 GPU 锁在本操作系统用户的 `~/.cache/kernel-envolve/locks` 下，按物理 UUID 命名，
 能防止该用户的多个管理状态目录同时使用同一卡。FIFO 顺序属于单个管理实例；不

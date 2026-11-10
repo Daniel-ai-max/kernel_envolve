@@ -119,6 +119,22 @@ def test_live_but_unproductive_rounds_are_visible(managed, monkeypatch):
     assert view["progress_stale"] and view["progress_as_of"] == original_progress
 
 
+def test_detail_reads_workspace_notes_when_task_directory_is_separate(managed):
+    store, _, work = managed
+    task_dir = work / "task"
+    task_dir.mkdir()
+    spec = store.task("toy")["spec"]
+    spec["task_dir"] = str(task_dir)
+    store.db.execute("UPDATE tasks SET spec=? WHERE id='toy'", (json.dumps(spec),))
+    assert detail(store, "toy")["notes"] == ""
+    (work / "notes.md").write_text("workspace research checkpoint")
+    assert detail(store, "toy")["notes"] == "workspace research checkpoint"
+    (task_dir / "notes.md").write_text("task-specific checkpoint")
+    assert detail(store, "toy")["notes"] == "task-specific checkpoint"
+    (task_dir / "notes.md").write_text("x" * 40000)
+    assert len(detail(store, "toy")["notes"]) == 32000
+
+
 def test_first_session_has_grace_after_waiting_for_capacity(managed, monkeypatch):
     store, _, _ = managed
     clock = [time.time() + 600]

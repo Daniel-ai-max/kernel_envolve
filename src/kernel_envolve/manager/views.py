@@ -71,8 +71,7 @@ def task_view(store, key, now=None):
     task["progress_as_of"] = progress_time(store, task)
     task["progress_age_seconds"] = max(0, now - task["progress_as_of"])
     task["progress_stale"] = (
-        task["phase"] == "agent_running"
-        and task["progress_age_seconds"] >= PROGRESS_NOTICE_SECONDS
+        task["phase"] == "agent_running" and task["progress_age_seconds"] >= PROGRESS_NOTICE_SECONDS
     )
     if task["progress_stale"]:
         task["phase"] = "awaiting_progress"
@@ -151,11 +150,13 @@ def detail(store, key, now=None):
     task["rounds"] = store.rows(
         "SELECT * FROM jobs WHERE task=? ORDER BY created DESC LIMIT 100", (key,)
     )
-    notes = Path(task["spec"]["task_dir"]) / "notes.md"
     task["notes"] = ""
-    if notes.is_file():
-        with notes.open(errors="replace") as stream:
-            task["notes"] = stream.read(32000)
+    for directory in ("task_dir", "workspace"):
+        notes = Path(task["spec"][directory]) / "notes.md"
+        if notes.is_file():
+            with notes.open(errors="replace") as stream:
+                task["notes"] = stream.read(32000)
+            break
     return task
 
 
