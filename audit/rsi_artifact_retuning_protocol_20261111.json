@@ -1,0 +1,228 @@
+{
+  "registered_at": 1794331812.404665,
+  "status": "frozen_before_submission",
+  "source_commit": "590f1551674f92f38005bf6122792b590e54f5ea",
+  "phase": "exact-operator-retuning-development",
+  "arms": [
+    "control",
+    "source-memory",
+    "artifact-reuse"
+  ],
+  "catalog": {
+    "data": {
+      "cases": {
+        "a": {
+          "pointwise": [
+            [
+              65549
+            ],
+            [
+              2097169
+            ]
+          ],
+          "row-reduction": [
+            [
+              127,
+              257
+            ],
+            [
+              1021,
+              2053
+            ]
+          ],
+          "strides": [
+            1,
+            2
+          ],
+          "seeds": [
+            307,
+            311
+          ]
+        },
+        "b": {
+          "pointwise": [
+            [
+              262151
+            ],
+            [
+              4194319
+            ]
+          ],
+          "row-reduction": [
+            [
+              311,
+              769
+            ],
+            [
+              523,
+              4097
+            ]
+          ],
+          "strides": [
+            1,
+            5
+          ],
+          "seeds": [
+            337,
+            347
+          ]
+        }
+      },
+      "episodes": [
+        {
+          "id": "f4d08a34c9dc48c2b919fc470129cb556b3e259d21dc644399e7ecf2321d482b",
+          "task": "value-train-swish-gate"
+        },
+        {
+          "id": "8e7f3e6f024917bcb6a2cc01fca05b1fb5892111bfe3efdbec50dbf85867befd",
+          "task": "value-train-smooth-l1"
+        },
+        {
+          "id": "575207e89a57d44fe9ba07704ed6d5c700abf3b05862617154949fc959caa51b",
+          "task": "value-train-rms-normalize"
+        },
+        {
+          "id": "30328cf08106c3390296659a93dd2c324a571260f554ef4712b98f3802a8a557",
+          "task": "value-train-central-variance"
+        }
+      ],
+      "scope": "Same exact task/reference/input-generator source; new case configuration only."
+    },
+    "sha256": "656bcfc18aeb1bc636fb76b92c16b84e67621ed1222858fcdd2956d25fd59486"
+  },
+  "validation_tasks": [
+    "artifact-retune-swish-gate-a",
+    "artifact-retune-swish-gate-b",
+    "artifact-retune-smooth-l1-a",
+    "artifact-retune-smooth-l1-b",
+    "artifact-retune-rms-normalize-a",
+    "artifact-retune-rms-normalize-b",
+    "artifact-retune-central-variance-a",
+    "artifact-retune-central-variance-b"
+  ],
+  "repeats": 2,
+  "max_actions": 4,
+  "artifact_actions": 1,
+  "max_model_requests": 176,
+  "model": "gpt-6-astra",
+  "reasoning": "medium",
+  "platform_seconds": 5400,
+  "worker_seconds": 5250,
+  "validation_total_seconds": 4900,
+  "prior_confirmed_gpu_seconds": 7418.484849452972,
+  "training_manifest_sha256": "dbb5fced15ed50cfa39204dad97b0d51212b2e540b7fc00f3de36cbd6e7b4d25",
+  "order": [
+    [
+      "control",
+      "source-memory",
+      "artifact-reuse"
+    ],
+    [
+      "artifact-reuse",
+      "source-memory",
+      "control"
+    ],
+    [
+      "artifact-reuse",
+      "control",
+      "source-memory"
+    ],
+    [
+      "source-memory",
+      "artifact-reuse",
+      "control"
+    ],
+    [
+      "source-memory",
+      "control",
+      "artifact-reuse"
+    ],
+    [
+      "control",
+      "artifact-reuse",
+      "source-memory"
+    ],
+    [
+      "control",
+      "source-memory",
+      "artifact-reuse"
+    ],
+    [
+      "artifact-reuse",
+      "source-memory",
+      "control"
+    ],
+    [
+      "artifact-reuse",
+      "control",
+      "source-memory"
+    ],
+    [
+      "source-memory",
+      "artifact-reuse",
+      "control"
+    ],
+    [
+      "source-memory",
+      "control",
+      "artifact-reuse"
+    ],
+    [
+      "control",
+      "artifact-reuse",
+      "source-memory"
+    ],
+    [
+      "control",
+      "source-memory",
+      "artifact-reuse"
+    ],
+    [
+      "artifact-reuse",
+      "source-memory",
+      "control"
+    ],
+    [
+      "artifact-reuse",
+      "control",
+      "source-memory"
+    ],
+    [
+      "source-memory",
+      "artifact-reuse",
+      "control"
+    ]
+  ],
+  "comparisons": [
+    [
+      "control",
+      "source-memory"
+    ],
+    [
+      "control",
+      "artifact-reuse"
+    ],
+    [
+      "source-memory",
+      "artifact-reuse"
+    ]
+  ],
+  "primary_criteria": {
+    "screen": "Same immutable per-task .02 quality allowance, nondecreasing aggregate quality per repeat, <=5% wall/solver overhead and original quality/cost benefit gates; complete independent full results.",
+    "practical": "Additionally >=10% relative quality gain with <=5% wall and token overhead, or >=10% wall saving at protected quality with <=5% token overhead. Both repeats protected; failed/incomplete usage prevents acceptance.",
+    "uncertainty": "Exhaustive paired bootstrap over4operator clusters (256 ordered resamples); each includes bothcase sets and bothrepeats. Six exploratory outcome/reference comparisons, one-sided alpha .05/6. Do not pretend8case sets are independent operators.",
+    "cost": "All acquisition/failed development costs retained; explicit incremental effects and total campaign resources, no hypothetical amortization claimed as observed ROI."
+  },
+  "selection": "Exact complete task.py/input-generator, declared precision/mutability and profile, current independently observed runtime, same4approved original successes. Compact prompt and artifact action use identical selected source. No score ranking or learner.",
+  "stop_rules": [
+    "One frozen comparison, no automatic model/job retries or further resampling in this study",
+    "No conditional confirmation unless protected practical benefit passes; retain all failures and costs",
+    "Prefer compact source prompting if explicit artifact proposal does not earn its extra machinery"
+  ],
+  "limitations": [
+    "Same4known operator formulas on new shapes/strides/seeds, not unseen operators, families, hardware or production evidence",
+    "Initial and independent final full remain; artifact spends one of4action slots, leaving at most3model decisions",
+    "Content hashes are integrity checks; approved manifests/trusted adapters are not OS sandboxes",
+    "No proof of general recursive capability improvement or superiority to original reference algorithms"
+  ]
+}

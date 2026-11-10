@@ -1,0 +1,11 @@
+{
+  "at": 1794335319.697073,
+  "status": "closed_not_launched",
+  "reason": "Frozen development has7model timeouts,7missing usage records and incomplete matched final outcomes; all original gates rejected. No practical/interval claim computed. Do not rerun or use the reserved c/d cases to tune or seek positives.",
+  "development_source_commit": "590f1551674f92f38005bf6122792b590e54f5ea",
+  "development_evidence_sha256": "5c068338d4e1ecf7f3f9593b96949b04fc3c133ca3aaa3231b8ce958b2bd05c3",
+  "development_summary_sha256": "2fde1469f3ecf1ec7e5626e60271929fb0dfd22a6c9dc2a815677bf05ac9c9b0",
+  "gpu_allocations": 0,
+  "model_calls": 0,
+  "preparation": "Helpers and synthetic CPU adapter checks prepared while development ran. No execution-protocol, preview, request or submission was created."
+}
