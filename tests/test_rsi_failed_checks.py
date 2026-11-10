@@ -39,6 +39,10 @@ def test_no_checks_is_not_claimed_complete_coverage():
     value = failed_checks({"execution": "error"}, {"cases": []})
     assert value["checks"] == [] and value["count"] == 0
     assert "may stop early" in value["scope"]
+    omitted = failed_checks(
+        {"checks": [{"case": "default", "status": "fail"}]}, {"cases": [{"id": "default"}]}
+    )
+    assert omitted["checks"][0]["args"] == {}  # Same default as make_inputs in the worker.
 
 
 def test_verified_cpu_failure_preserves_frozen_case_and_detects_tampering(tmp_path):

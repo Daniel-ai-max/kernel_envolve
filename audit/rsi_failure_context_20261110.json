@@ -94,13 +94,14 @@
   "verification": {
     "full_cpu_suite_passed": 284,
     "gpu_opt_in_skipped": 8,
-    "seconds": 109.44,
+    "seconds": 110.97,
     "tests": [
       "Real CPU failure provenance and tampering rejection",
       "Background learner receives observed failure conditions",
       "UTF-8 parameter and check-count bounds",
       "Absent cases remain explicitly unknown"
-    ]
+    ],
+    "includes_optional_case_args_compatibility": true
   },
   "limits": [
     "No new GPU comparison of this field",

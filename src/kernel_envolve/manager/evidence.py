@@ -31,7 +31,7 @@ def failed_checks(result, cfg):
     Call only with the verified result and its frozen generic task configuration.
     Native adapters have different check contracts and leave this field unknown.
     """
-    cases = {case["id"]: case["args"] for case in cfg["cases"]}
+    cases = {case["id"]: case.get("args", {}) for case in cfg["cases"]}
     failures = [check for check in result.get("checks", []) if check.get("status") == "fail"]
     values = []
     for check in failures[:8]:
