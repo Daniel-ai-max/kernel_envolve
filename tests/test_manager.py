@@ -99,6 +99,111 @@ def wait_for(check, timeout=10):
     raise AssertionError("Timed out waiting for a verified process/state transition")
 
 
+def test_live_but_unproductive_rounds_are_visible(managed, monkeypatch):
+    store, _, _ = managed
+    clock = [time.time()]
+    monkeypatch.setattr("kernel_envolve.manager.store.time.time", lambda: clock[0])
+    job = store.schedule()[0]
+    assert store.claim(job, os.getpid(), identity(os.getpid()))
+    clock[0] += 301
+    store.heartbeat(job, 301)
+    view = overview(store)["tasks"][0]
+    assert not view["stale"]  # Supervisor is healthy; research progress is a separate clock.
+    assert view["progress_stale"] and view["phase"] == "awaiting_progress"
+    original_progress = view["progress_as_of"]
+    store.finish(job, "succeeded")
+    clock[0] += 1
+    next_job = store.schedule()[0]
+    assert store.claim(next_job, os.getpid(), identity(os.getpid()))
+    view = overview(store)["tasks"][0]
+    assert view["progress_stale"] and view["progress_as_of"] == original_progress
+
+
+def test_detail_reads_workspace_notes_when_task_directory_is_separate(managed):
+    store, _, work = managed
+    task_dir = work / "task"
+    task_dir.mkdir()
+    spec = store.task("toy")["spec"]
+    spec["task_dir"] = str(task_dir)
+    store.db.execute("UPDATE tasks SET spec=? WHERE id='toy'", (json.dumps(spec),))
+    assert detail(store, "toy")["notes"] == ""
+    (work / "notes.md").write_text("workspace research checkpoint")
+    assert detail(store, "toy")["notes"] == "workspace research checkpoint"
+    (task_dir / "notes.md").write_text("task-specific checkpoint")
+    assert detail(store, "toy")["notes"] == "task-specific checkpoint"
+    (task_dir / "notes.md").write_text("x" * 40000)
+    assert len(detail(store, "toy")["notes"]) == 32000
+
+
+def test_first_session_has_grace_after_waiting_for_capacity(managed, monkeypatch):
+    store, _, _ = managed
+    clock = [time.time() + 600]
+    monkeypatch.setattr("kernel_envolve.manager.store.time.time", lambda: clock[0])
+    job = store.schedule()[0]
+    assert store.claim(job, os.getpid(), identity(os.getpid()))
+    assert not overview(store)["tasks"][0]["progress_stale"]
+    clock[0] += 301
+    assert overview(store)["tasks"][0]["progress_stale"]
+
+
+def test_only_changed_reports_refresh_research_progress(managed, monkeypatch):
+    store, _, _ = managed
+    clock = [time.time()]
+    monkeypatch.setattr("kernel_envolve.manager.store.time.time", lambda: clock[0])
+    job = store.schedule()[0]
+    assert store.claim(job, os.getpid(), identity(os.getpid()))
+    report = {"phase": "inspect precision", "next_action": "run fixed seed diagnosis"}
+    store.report("toy", job, report)
+    reported_at = overview(store)["tasks"][0]["progress_as_of"]
+    clock[0] += 301
+    store.report("toy", job, report)
+    store.report("toy", job, {})
+    view = overview(store)["tasks"][0]
+    assert view["progress_stale"] and view["progress_as_of"] == reported_at
+    store.report("toy", job, {"outcome": "identified an FP32 reduction discrepancy"})
+    view = overview(store)["tasks"][0]
+    assert not view["progress_stale"] and view["phase"] == "agent_running"
+    assert view["progress_as_of"] == clock[0]
+
+
+def test_gpu_work_and_pause_do_not_report_stalled_agent(managed, monkeypatch):
+    store, _, _ = managed
+    clock = [time.time()]
+    monkeypatch.setattr("kernel_envolve.manager.store.time.time", lambda: clock[0])
+    parent = store.schedule()[0]
+    assert store.claim(parent, os.getpid(), identity(os.getpid()))
+    gpu = store.enqueue(store.task("toy"), "gpu", ["unused"], parent)
+    clock[0] += 600
+    assert overview(store)["tasks"][0]["phase"] == "waiting_gpu"
+    assert not overview(store)["tasks"][0]["progress_stale"]
+    assert store.claim(gpu, os.getpid(), identity(os.getpid()))
+    clock[0] += 600
+    assert overview(store)["tasks"][0]["phase"] == "gpu_running"
+    assert not overview(store)["tasks"][0]["progress_stale"]
+    store.finish(gpu, "succeeded")
+    assert overview(store)["tasks"][0]["progress_as_of"] == clock[0]
+    clock[0] += 301
+    store.control("toy", "pause")
+    assert not overview(store)["tasks"][0]["progress_stale"]
+
+
+def test_legacy_report_clock_survives_upgrade_and_repeated_report(managed, monkeypatch):
+    store, _, _ = managed
+    clock = [time.time()]
+    monkeypatch.setattr("kernel_envolve.manager.store.time.time", lambda: clock[0])
+    job = store.schedule()[0]
+    assert store.claim(job, os.getpid(), identity(os.getpid()))
+    report = {"phase": "baseline preparation"}
+    store.report("toy", job, report)
+    store.db.execute("DELETE FROM metadata WHERE key='report_progress:toy'")
+    reported_at = clock[0]
+    clock[0] += 301
+    assert overview(store)["tasks"][0]["progress_as_of"] == reported_at
+    store.report("toy", job, report)
+    assert overview(store)["tasks"][0]["progress_as_of"] == reported_at
+    assert overview(store)["tasks"][0]["progress_stale"]
+
+
 def launch(store, key):
     return subprocess.Popen(
         [sys.executable, "-m", "kernel_envolve.manager.worker", str(store.root), key],
@@ -699,6 +804,93 @@ def test_evidence_freshness_is_independent_of_http_snapshot_time(managed):
         (json.dumps({"observed_at": observed - 60}),),
     )
     assert snapshot(store, "toy")["detail"]["evidence_stale"]
+
+
+def test_scan_progress_distinguishes_queue_age_from_scan_failure(managed, monkeypatch):
+    from kernel_envolve.manager import evidence
+    from kernel_envolve.manager.views import task_view
+
+    store, _, _ = managed
+    refresh(store)
+    observed = task_view(store, "toy")["evidence_as_of"]
+    now = observed + 60
+    assert task_view(store, "toy", now)["evidence_status"] == "pending"
+
+    def scan_task(*args):
+        scan = json.loads(store.one("SELECT data FROM metadata WHERE key='evidence_scan'")["data"])
+        assert scan["running"] and scan["task"] == "toy"
+        view = task_view(store, "toy", now)
+        assert view["evidence_stale"]  # Observation age alone is not a failure.
+        assert view["evidence_status"] == "verifying"
+        scan["task"] = "another-task"
+        store.db.execute(
+            "UPDATE metadata SET data=? WHERE key='evidence_scan'", (json.dumps(scan),)
+        )
+        assert task_view(store, "toy", now)["evidence_status"] == "queued"
+        assert task_view(store, "toy", scan["updated_at"] + 301)["evidence_status"] == "slow"
+        raise OSError("filesystem unavailable")
+
+    monkeypatch.setattr(evidence, "refresh_task", scan_task)
+    with pytest.raises(OSError, match="filesystem unavailable"):
+        refresh(store)
+    view = task_view(store, "toy")
+    assert view["evidence_status"] == "error"
+    assert view["evidence_scan_error"] == "filesystem unavailable"
+    scan = json.loads(store.one("SELECT data FROM metadata WHERE key='evidence_scan'")["data"])
+    assert not scan["running"] and scan["finished_at"] >= scan["started_at"]
+    monkeypatch.undo()
+    refresh(store)
+    assert task_view(store, "toy")["evidence_status"] == "current"
+
+
+def test_latest_evaluation_visible_without_promotion_and_invalidated_on_tamper(managed):
+    store, _, work = managed
+    run, result = evaluate(work, "quick")
+    refresh(store)
+    task = detail(store, "toy")
+    assert task["best"] is None
+    latest = task["latest_evaluation"]
+    assert latest["run"] == str(run)
+    assert latest["correctness"] == "pass"
+    assert latest["passed_checks"] == len(result["checks"])
+    assert "source" not in latest and "decision" not in latest
+
+    # A later failed candidate must replace the summary, not leave the older PASS visible.
+    (work / "candidate.py").write_text("def run(x): return x\n")
+    failed, _ = evaluate(work, "quick")
+    refresh(store)
+    latest = detail(store, "toy")["latest_evaluation"]
+    assert latest["run"] == str(failed) and latest["correctness"] == "fail"
+    assert not latest["evidence_error"]  # A verified failure is valid evidence.
+    (failed / "source" / "candidate.py").write_text("def run(x): return x+1\n")
+    refresh(store)
+    latest = detail(store, "toy")["latest_evaluation"]
+    assert latest["run"] == str(failed)
+    assert latest["evidence_error"] and latest["correctness"] is None
+
+
+def test_old_cached_results_receive_latest_projection_once(managed, monkeypatch):
+    from kernel_envolve.manager import evidence
+
+    store, _, work = managed
+    run, _ = evaluate(work, "quick")
+    refresh(store)
+    row = store.one("SELECT data FROM runs WHERE path=?", (str(run),))
+    legacy = json.loads(row["data"])
+    legacy.pop("recorded_at")
+    store.db.execute("UPDATE runs SET data=? WHERE path=?", (json.dumps(legacy), str(run)))
+    original = evidence.inspect_run
+    calls = []
+
+    def inspect(*args):
+        calls.append(args[0])
+        return original(*args)
+
+    monkeypatch.setattr(evidence, "inspect_run", inspect)
+    refresh(store)
+    refresh(store)
+    assert calls == [run]
+    assert detail(store, "toy")["latest_evaluation"]["recorded_at"] > 0
 
 
 def test_http_selected_detail_and_compact_summary(managed):

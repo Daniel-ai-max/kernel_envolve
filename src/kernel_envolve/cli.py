@@ -11,7 +11,7 @@ import uuid
 from pathlib import Path
 
 from .execution import lock, managed_lock_fd, spawn, stop
-from .protocol import measured_cases, plan
+from .protocol import measured_cases, objective_cases, plan
 from .scoring import score
 from .storage import (
     bundle,
@@ -81,6 +81,10 @@ def evaluate(
     selected, _, _, _ = plan(cfg, mode, selection)
     if not check_only and not measured_cases(selected):
         raise ValueError("No measured cases selected; use --check-only for correctness diagnostics")
+    if not check_only and not objective_cases(selected):
+        raise ValueError(
+            "No objective cases selected; use --check-only for correctness diagnostics"
+        )
     if check_only and mode != "quick":
         raise ValueError("Check-only diagnostics require quick mode")
     if signal_only and mode != "quick":

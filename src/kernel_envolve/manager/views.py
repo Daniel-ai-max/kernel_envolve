@@ -4,6 +4,29 @@ import json
 import time
 from pathlib import Path
 
+PROGRESS_NOTICE_SECONDS = 300
+
+
+def progress_time(store, task):
+    """Activity is a changed research report or a GPU job, never a process heartbeat."""
+    report = store.one("SELECT data FROM metadata WHERE key=?", (f"report_progress:{task['id']}",))
+    if report:
+        reported_at = json.loads(report["data"])
+    else:
+        legacy = store.one(
+            "SELECT MAX(at) AS at FROM events WHERE task=? AND kind='report'", (task["id"],)
+        )
+        reported_at = legacy["at"] if legacy else None
+    gpu = store.one(
+        "SELECT MAX(COALESCE(ended,started,created)) AS at FROM jobs WHERE task=? AND kind='gpu'",
+        (task["id"],),
+    )
+    first_session = store.one(
+        "SELECT MIN(started) AS at FROM jobs WHERE task=? AND kind='agent'", (task["id"],)
+    )
+    # Waiting for the first session slot must not consume its startup grace period.
+    return max(task["created"], first_session["at"] or 0, reported_at or 0, gpu["at"] or 0)
+
 
 def best(store, task):
     projection = store.one("SELECT data FROM metadata WHERE key=?", (f"best:{task['id']}",))
@@ -26,6 +49,29 @@ def task_view(store, key, now=None):
     evidence = store.one("SELECT data FROM metadata WHERE key=?", (f"evidence:{key}",))
     task["evidence_as_of"] = json.loads(evidence["data"])["observed_at"] if evidence else None
     task["evidence_stale"] = task["evidence_as_of"] is None or now - task["evidence_as_of"] > 15
+    scan = store.one("SELECT data FROM metadata WHERE key='evidence_scan'")
+    scan = json.loads(scan["data"]) if scan else {}
+    task["evidence_scan_error"] = scan.get("error")
+    task["evidence_scan_slow"] = bool(
+        scan.get("running") and now - scan.get("updated_at", now) > 300
+    )
+    task["evidence_status"] = (
+        "error"
+        if task["evidence_error"] or scan.get("error")
+        else "slow"
+        if task["evidence_scan_slow"]
+        else "verifying"
+        if scan.get("running") and scan.get("task") == key
+        else "queued"
+        if scan.get("running")
+        else "pending"
+        if task["evidence_stale"]
+        else "current"
+    )
+    latest = store.one("SELECT data FROM metadata WHERE key=?", (f"latest:{key}",))
+    task["latest_evaluation"] = json.loads(latest["data"]) if latest else None
+    report = store.one("SELECT MAX(at) AS at FROM events WHERE task=? AND kind='report'", (key,))
+    task["report_as_of"] = report["at"]
     task["phase"] = task["desired"]
     if task["desired"] == "active":
         gpu = next((j for j in jobs if j["kind"] == "gpu" and j["status"] == "running"), None)
@@ -45,6 +91,13 @@ def task_view(store, key, now=None):
                 task["phase"] = "waiting_session"
     task["heartbeat"] = max((j["heartbeat"] or j["created"] for j in jobs), default=None)
     task["stale"] = bool(jobs and now - task["heartbeat"] > 10)
+    task["progress_as_of"] = progress_time(store, task)
+    task["progress_age_seconds"] = max(0, now - task["progress_as_of"])
+    task["progress_stale"] = (
+        task["phase"] == "agent_running" and task["progress_age_seconds"] >= PROGRESS_NOTICE_SECONDS
+    )
+    if task["progress_stale"]:
+        task["phase"] = "awaiting_progress"
     task["last_promotion"] = store.one(
         "SELECT at,data FROM promotions WHERE task=? ORDER BY at DESC LIMIT 1", (key,)
     )
@@ -120,11 +173,13 @@ def detail(store, key, now=None):
     task["rounds"] = store.rows(
         "SELECT * FROM jobs WHERE task=? ORDER BY created DESC LIMIT 100", (key,)
     )
-    notes = Path(task["spec"]["task_dir"]) / "notes.md"
     task["notes"] = ""
-    if notes.is_file():
-        with notes.open(errors="replace") as stream:
-            task["notes"] = stream.read(32000)
+    for directory in ("task_dir", "workspace"):
+        notes = Path(task["spec"][directory]) / "notes.md"
+        if notes.is_file():
+            with notes.open(errors="replace") as stream:
+                task["notes"] = stream.read(32000)
+            break
     return task
 
 

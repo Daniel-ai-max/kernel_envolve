@@ -43,11 +43,11 @@ my_task/
 ```
 
 - `args`：传给输入生成函数的参数。
-- `weight`：该用例的调用频次权重；无业务分布时可使用等权重。
+- `weight`：目标用例的调用频次权重；无业务分布时可使用等权重。
 - `quick: false`：默认只参加 full，也可通过 `--case` 单独检查。
 - `measure: false`：只验证正确性，不计时；不能设置 `weight` 或 `max_us`。
 
-任务至少包含一个参与 quick 的计时用例。常用配置如下，完整配置见 [storage.py](../src/kernel_envolve/storage.py)。
+任务的 quick、full 各至少包含一个参与计时的目标用例。常用配置如下，完整配置见 [storage.py](../src/kernel_envolve/storage.py)。
 
 | 配置 | 默认值 | 含义 |
 |---|---|---|
@@ -57,7 +57,22 @@ my_task/
 | `max_baseline_regression` | `0.05` | 单个用例相对原始基线的最大允许退化 |
 | `mutable_inputs` | `[]` | 允许原地修改的输入索引 |
 
-输入覆盖、精度和测量规则在任务建立时固定。修改这些规则后，应在新任务目录重新评测。
+### 目标用例与保护用例
+
+`task.json` 和项目原生评测的 `native.json` 均支持 `performance_role`：
+
+```json
+"cases": [
+  {"id": "kernel", "args": {}, "weight": 1},
+  {"id": "public_api", "args": {}, "performance_role": "guard"}
+]
+```
+
+默认 `objective` 用例按权重计算总体收益与测量波动。`guard` 用例完整验证正确性并计时，检查相对当前对照、原始基线的退化限制及 `max_us`，但不参与总体收益与波动计算；项目原生评测中的显存上限和原生检查仍保留。保护用例不能设置 `weight`，正确性专用用例（`measure: false`）不能设置角色。
+
+适用于优化底层 kernel，同时防止完整 API 退化的任务。目标和保护用例各自比较同一测量单位下的候选与对照，不混合汇总 kernel 批量调用与 API 延迟。仅选择保护用例时，使用 `--check-only` 做正确性诊断；性能评测必须含目标用例。
+
+输入覆盖、角色、精度和测量规则在任务建立时固定。修改这些规则后，应在新任务目录重新评测。
 
 ## 评测规则
 
