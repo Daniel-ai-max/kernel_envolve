@@ -24,6 +24,58 @@ def source_id(source):
     return hashlib.sha256(source.encode()).hexdigest()
 
 
+def linked_history(request):
+    """Losslessly reference observations already present in the candidate table.
+
+    This only changes a decision-input copy. Sources, candidate observations and
+    stored full traces remain complete. Unknown/inconsistent links fail rather
+    than silently dropping measurement facts. No model or filesystem is accessed.
+    """
+    value = json.loads(json.dumps(request, allow_nan=False))
+    observations, identities = {}, set()
+    for candidate in value["candidates"]:
+        identity = candidate["id"]
+        if identity in identities:
+            raise ValueError("Duplicate candidate in decision input")
+        identities.add(identity)
+        for observed in candidate["observations"]:
+            key = (identity, observed["mode"])
+            if key in observations:
+                raise ValueError("Ambiguous observation in decision input")
+            observations[key] = observed
+    for step in value["history"]:
+        if "observation_ref" in step:
+            raise ValueError("Decision history is already linked")
+        if "observation" not in step:
+            continue
+        observed = step.pop("observation")
+        key = (observed["candidate"], observed["mode"])
+        original = observations.get(key)
+        if original is None:
+            raise ValueError("History observation has no candidate observation")
+        status = observed["status"]
+        expected = {"status": status, "candidate": key[0], "mode": key[1]}
+        if status == "evaluated":
+            expected.update(original)
+        elif status != "duplicate_skipped":
+            raise ValueError("Unsupported history observation status")
+        if observed != expected:
+            raise ValueError("History and candidate observations disagree")
+        step["observation_ref"] = {
+            "candidate": key[0],
+            "mode": key[1],
+            "run": original["run"],
+            "status": status,
+        }
+    value["history_representation"] = "candidate-observation-refs-v1"
+    value["instructions"] += (
+        " Each history observation_ref points to the candidate with that id and its"
+        " observation with the same mode and run. All measurement facts are present"
+        " there once. duplicate_skipped reports no new measurement."
+    )
+    return value
+
+
 def observation(run, result):
     decision = result["decision"]
     gains = decision.get("fixed_baseline_gain_by_batch", [])
@@ -122,6 +174,7 @@ def run(
     artifact_proposal=None,
     source_validator=None,
     stop_on_decision_timeout=False,
+    compact_history=False,
 ):
     """Call decide(request, timeout) for operator-fixed actions; return a saved trace.
 
@@ -144,6 +197,10 @@ def run(
     request remains a charged action in the trace, with unknown token cost. It does
     not retry, extend a deadline, catch evaluator failures/cancellation, or replace
     the outer controller's independent final evaluation. The default still raises.
+
+    compact_history optionally sends history observation references to the complete
+    candidate observation table instead of duplicating its facts. Stored traces
+    remain full. It does not summarize measurements, sources, failures or actions.
     """
     if packet["kind"] != "generic":
         raise ValueError("The experimental research loop supports generic tasks only")
@@ -151,6 +208,8 @@ def run(
         raise ValueError("max_actions must be 1–8")
     if type(stop_on_decision_timeout) is not bool:
         raise ValueError("stop_on_decision_timeout must be boolean")
+    if type(compact_history) is not bool:
+        raise ValueError("compact_history must be boolean")
     for name, value in (
         ("seconds", packet["seconds"]),
         ("model", model_seconds),
@@ -232,6 +291,7 @@ def run(
         "experience_hash": experience_hash,
         "artifact_proposal_hash": proposal_hash,
         "stop_on_decision_timeout": stop_on_decision_timeout,
+        "compact_history": compact_history,
     }
     previous = {}
 
@@ -326,6 +386,8 @@ def run(
             }
             if experience_json is not None:
                 request["historical_experience"] = json.loads(experience_json)
+            if compact_history:
+                request = linked_history(request)
             if len(json.dumps(request, allow_nan=False).encode()) > 131072:
                 trace["stop_reason"] = "decision_input_limit"
                 break

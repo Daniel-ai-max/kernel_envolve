@@ -852,3 +852,143 @@ def test_timeout_fallback_retains_failure_in_independently_confirmed_episode(res
     library = out.parent / "library"
     identity = save(library, episode)
     assert view(library, identity)["actions"][-1]["reported_stop_origin"] == "controller"
+
+
+def expand_history(request):
+    """Independent test decoder for the public reference representation."""
+    history = json.loads(json.dumps(request["history"]))
+    for step in history:
+        ref = step.pop("observation_ref", None)
+        if ref is None:
+            continue
+        candidates = [c for c in request["candidates"] if c["id"] == ref["candidate"]]
+        assert len(candidates) == 1
+        observations = [
+            o
+            for o in candidates[0]["observations"]
+            if o["run"] == ref["run"] and o["mode"] == ref["mode"]
+        ]
+        assert len(observations) == 1
+        step["observation"] = {
+            "candidate": ref["candidate"],
+            "status": ref["status"],
+            "mode": ref["mode"],
+        }
+        if ref["status"] == "evaluated":
+            step["observation"].update(observations[0])
+    return history
+
+
+@pytest.fixture
+def decision_input():
+    observed = {
+        "run": "/fixture/run1",
+        "mode": "full",
+        "quality": -1,
+        "correctness": "fail",
+        "failed_checks": {
+            "checks": [{"case": "strided", "args": {"stride": 7}}],
+            "truncated": False,
+        },
+        "cases": [{"case": "strided", "candidate_us": 2.0}],
+        "error": "fixture",
+    }
+    return {
+        "candidates": [
+            {"id": "a", "source": "# 完整源码\ndef run(x): return x\n", "observations": [observed]}
+        ],
+        "history": [
+            {
+                "action": "propose",
+                "hypothesis": "actual failed experiment",
+                "observation": {"candidate": "a", "status": "evaluated", **observed},
+            },
+            {
+                "action": "evaluate",
+                "hypothesis": "already tested",
+                "observation": {"candidate": "a", "mode": "full", "status": "duplicate_skipped"},
+            },
+            {"action": "stop", "decision_error": {"type": "TimeoutError", "tokens": None}},
+        ],
+        "instructions": "fixture instructions",
+        "task_source": "complete reference",
+        "task_config": {"atol": 0.1},
+        "historical_experience": {"source": "full source", "unknown_cost": None},
+    }
+
+
+def test_linked_history_roundtrip_preserves_complete_facts_and_input(decision_input):
+    from kernel_envolve.rsi.research import linked_history
+
+    original = json.loads(json.dumps(decision_input))
+    linked = linked_history(decision_input)
+    assert linked["history_representation"] == "candidate-observation-refs-v1"
+    assert expand_history(linked) == original["history"]
+    for key in ["candidates", "task_source", "task_config", "historical_experience"]:
+        assert linked[key] == original[key]
+    assert decision_input == original
+    linked["candidates"][0]["source"] = "mutate view copy"
+    assert decision_input == original
+
+
+@pytest.mark.parametrize(
+    "corruption",
+    [
+        "missing",
+        "duplicate_candidate",
+        "duplicate_observation",
+        "altered_fact",
+        "extra_fact",
+        "already_linked",
+    ],
+)
+def test_linked_history_rejects_lossy_or_ambiguous_input(decision_input, corruption):
+    from kernel_envolve.rsi.research import linked_history
+
+    if corruption == "missing":
+        decision_input["candidates"][0]["observations"] = []
+    elif corruption == "duplicate_candidate":
+        decision_input["candidates"].append(decision_input["candidates"][0])
+    elif corruption == "duplicate_observation":
+        decision_input["candidates"][0]["observations"] *= 2
+    elif corruption == "altered_fact":
+        decision_input["history"][0]["observation"]["quality"] = 1
+    elif corruption == "extra_fact":
+        decision_input["history"][0]["observation"]["extra"] = "must not disappear"
+    else:
+        decision_input["history"][0]["observation_ref"] = {}
+    with pytest.raises(ValueError):
+        linked_history(decision_input)
+
+
+def test_compact_decisions_keep_raw_trace_and_observed_failures(research):
+    packet, out, initial = research
+    requests = []
+
+    def decide(request, timeout):
+        requests.append(request)
+        if len(requests) == 1:
+            return {
+                "action": "propose",
+                "source": "def run(x): return x-1\n",
+                "mode": "full",
+                "hypothesis": "intentional incorrect source",
+            }
+        if len(requests) == 2:
+            return {
+                "action": "evaluate",
+                "candidate": source_id(initial),
+                "mode": "full",
+                "hypothesis": "duplicate fixture",
+            }
+        return {"action": "stop", "hypothesis": "end fixture"}
+
+    trace = run(packet, out, decide, max_actions=3, compact_history=True)
+    assert trace["compact_history"] is True and trace["selected"] == source_id(initial)
+    assert requests[0]["history"] == []
+    assert all("observation" not in s for s in requests[-1]["history"])
+    assert expand_history(requests[-1]) == trace["steps"][:2]
+    assert trace["steps"][0]["observation"]["correctness"] == "fail"
+    assert trace["steps"][0]["observation"]["failed_checks"]["count"] > 0
+    assert trace["steps"][1]["observation"]["status"] == "duplicate_skipped"
+    assert json.loads((out / "search-trace.json").read_text())["steps"] == trace["steps"]
