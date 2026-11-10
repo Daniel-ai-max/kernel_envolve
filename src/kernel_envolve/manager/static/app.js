@@ -107,7 +107,7 @@ function render() {
           <td class="execution"><div>${escape(executionLabelFor(recent))}</div>${recent ? `<small title="${escape(stamp(recent.recorded_at))}">${recent.kind === "evaluation" ? "记录于 " : "执行于 "}${shortTime(recent.recorded_at)}${recent.inherited ? " · 历史任务" : ""}</small><button class="source-link" data-task="${escape(recent.task)}">${escape((recent.id || recent.run?.split("/").pop() || recent.task).slice(0, 12))}</button>` : ""}</td>
           <td class="research"><div class="snippet">${escape(outcome)}</div>${record ? `<small>${record.inherited ? "历史 Agent 记录" : "Agent 记录"} · ${shortTime(record.recorded_at)}</small>` : ""}</td>
           <td class="research"><div class="snippet">${escape(next)}</div></td>
-          <td class="record-count"><button class="source-link" data-task="${escape(t.id)}">评测记录 当前 ${counts.current_runs}<br>${t.history_complete ? `历史 ${counts.previous_runs}` : "历史链异常"}</button><small>GPU 作业 ${counts.gpu_jobs} 次</small></td>
+          <td class="record-count"><button class="source-link" data-task="${escape(t.id)}">评测记录 当前 ${counts.current_runs}<br>${t.history_complete ? `历史 ${counts.previous_runs}` : "历史链异常"}</button><br><button class="source-link" data-task="${escape(t.id)}">GPU 作业 ${counts.gpu_jobs} 次</button></td>
           <td class="benefit ${t.best ? "good" : "muted"}">${escape(benefitLabel(t.best))}</td>
         </tr>`;
       })
