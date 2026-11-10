@@ -332,3 +332,23 @@ SelfImprove-Bench 的 [成本回归测试](https://github.com/theseus-labs-rsi/S
 经验采集应由控制器从真实收据自动完成；agent 的解释另存为未经验证的假设。后台进化器可以整理、提出改动，前台只读取有界的版本化快照。经验内容、调用策略与验收门槛是三个独立对象，学习器不能改写测量结果或放宽自身通过条件。选择器需要当前运行环境观测；不能把历史设备记录冒充当前设备，也不能为了匹配经验偷偷增加一次前台 GPU 探测。
 
 先验证单个机制的净收益，再决定是否建立自动发布、撤回和两代闭环。增加记忆图、编辑器数量或反思频率都有成本；这些论文不能作为无条件扩大架构的依据。本次资料补充不改变正在执行的 `14a3e29` 四组冻结协议、预留确认集或验收规则，不宣称已优于任何参考算法。
+
+
+### 算子与训练基础设施的直接参考
+
+进一步按应用领域检索，补充以下工作。特别区分“优化出的 kernel 更快”和“经验系统让后续优化更有效”，后者仍需同预算消融。日期与固定源码哈希见 [算子资料审计](../audit/rsi_kernel_reference_supplement_20261111.json)。
+
+| 工作 | 公开日期与版本 | 机制、可借鉴之处及边界 |
+| --- | --- | --- |
+| [ForgeKernel](https://arxiv.org/abs/2611.04998) | 2026-11-03，v1；[官方代码 024f7e0](https://github.com/OpenBMB/ForgeKernel/tree/024f7e0b39a9b6e87819e0f6a925dd940c704f77)，2026-11-10 | 将硬件机制整理为有适用条件、最小探测程序和测量依据的知识；接受的实现成为下一代性能参考。值得借鉴独立探测和代际记录。论文部分消融只有一次运行，知识库消融还明确有输入不同的案例，不能把总榜成绩全归因于记忆。 |
+| [InfraRSI](https://arxiv.org/abs/2611.11558) | 2026-11-08，v1；[官方代码 5e5f694](https://github.com/TokenRhythm/InfraRSI/tree/5e5f6944d8e298d96abcc2340b5396728d5f1604)，2026-11-10 | 用固定训练契约、当前噪声和验证约束搜索；区分环境、观测、效果，目标端实测校正迁移先验。失败用于更新内存与冲突判断，避免把组合失败一概归因于单项。它研究整套训练配置与代码组合，不能直接套用其 MFU 收益到单个算子。 |
+| [KOPE / Beyond Scaling](https://arxiv.org/abs/2608.25570) | 2026-08-26，v1；本次未在所读论文页面找到官方代码链接 | 同时保存叙述和结构化的决策—结果图，在预算内组装当前状态与经验。图边表示执行来源而非已识别因果；同理，本项目不能把先后发生的成功修复自动当成通用规则。主要实验证据来自 Ascend，不是当前 B300 与 gpt-6-astra 的复现。 |
+| [Meta KernelEvolve](https://arxiv.org/abs/2512.23236) | 2025-12-29 首发，v4 2026-07-06；[工程博客](https://engineering.fb.com/2026/04/02/developer-tools/kernelevolve-how-metas-ranking-engineer-agent-optimizes-ai-infrastructure/) 2026-04-02 | 图搜索、运行反馈和按环境检索提示适合异构硬件。生产成绩支持自动化搜索的应用价值，但不能代替本项目跨任务记忆的增量消融。这是 Meta 的系统，与用户的 kernel_envolve 仓库不是同一项目。 |
+| [AlphaEvolve](https://arxiv.org/abs/2506.13131) | [官方公告](https://deepmind.google/blog/alphaevolve-a-gemini-powered-coding-agent-for-designing-advanced-algorithms/) 2025-05-14；arXiv v1 2025-06-16 | 代码候选经自动 evaluator 反馈持续搜索，已有基础设施应用。应借鉴可靠评测和保留有效候选；“优化了自身模型的训练设施”不能自动解释成学习器能无限改进自己的算法。OpenEvolve 是另一个实现，不能当成其官方源码。 |
+| [BOXBOX](https://arxiv.org/abs/2611.09218) | 2026-11-06 首发；v2 2026-11-09 **已撤稿** | 页面给出的原因为暂撤以补充 Claude Code 使用说明。保留为检索状态记录，不将二手转载的成绩作为当前有效收益证据，也不据此引入运行中任意 harness 热替换。 |
+
+ForgeKernel 的 [self_evolve.py](https://github.com/OpenBMB/ForgeKernel/blob/024f7e0b39a9b6e87819e0f6a925dd940c704f77/scripts/self_evolve.py) 确实读取确认后的 best、比较同 job 比率的噪声范围，并创建新的代际目录。`--max-gen` 可限代数，但默认无代数上限；这不等于无限的单轮预算，也不提供本项目要求的跨代累计 GPU 上限。源码模式还区分能读取上一代源码的 teacher 与不能读取的 student，不能概括成所有角色都看不到源码。本项目即使采用代际性能参考，原始正确性 oracle 与固定收益基线仍须保存，避免基准移动掩盖累计退化。
+
+InfraRSI 的 [transfer.py](https://github.com/TokenRhythm/InfraRSI/blob/5e5f6944d8e298d96abcc2340b5396728d5f1604/infrarsi/experience/transfer.py) 将模型的定量预估记录下来，用实际运行反向评分，而非直接按这些数字排序；源码还记录了一次符号翻转预测未达到事前目标，因此限制模型覆盖已有部分证据。[learned.py](https://github.com/TokenRhythm/InfraRSI/blob/5e5f6944d8e298d96abcc2340b5396728d5f1604/infrarsi/experience/learned.py) 对失败组合绑定框架和软件版本。可参考的是“评估经验判断本身是否可靠”，不是把它的参数门槛或某个模型判断直接加入当前策略。
+
+这也解释了当前实验的能力边界：只有生成、quick/full 评测与停止的 solver，不能凭一段建议完成 NCU/SASS 诊断。硬件机制学习需要额外的受限测量工具、独立探测成本和跨任务验证；此次没有临时增加这些动作，更没有将新论文的 profiler 或搜索能力冒充已实现功能。
