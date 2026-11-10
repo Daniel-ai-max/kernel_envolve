@@ -23,13 +23,14 @@ const phases = {
   active: "持续优化",
   cooldown: "准备下一轮",
   resource_blocked: "资源待检查",
-  paused: "已暂停",
+  paused: "已停止",
+  superseded: "历史版本",
   budget: "预算耗尽",
-  blocked: "等待处理",
+  blocked: "执行受阻",
   gpu_running: "GPU 作业中",
   waiting_gpu: "等待 GPU",
   agent_running: "Agent 会话在线",
-  awaiting_progress: "待核实进展",
+  awaiting_progress: "暂无新进展",
   queued: "准备会话",
   backoff: "失败退避",
   waiting_session: "等待会话名额",
@@ -37,8 +38,6 @@ const phases = {
 let state = null,
   selected = null,
   view = "overview",
-  formDirty = false,
-  draftVersion = 0,
   mutating = false,
   controlError = null,
   connected = false;
@@ -104,27 +103,13 @@ function render() {
   patch(
     $("metrics"),
     metric("活动任务", tasks.filter((t) => t.desired === "active").length) +
-      metric("已暂停", tasks.filter((t) => t.desired === "paused").length) +
       metric(
-        "运行中",
-        tasks.filter((t) => ["agent_running", "gpu_running"].includes(t.phase)).length,
+        "GPU 执行中",
+        tasks.filter((t) => t.phase === "gpu_running").length,
       ) +
       metric(
         "等待 GPU",
         tasks.filter((t) => t.phase === "waiting_gpu").length,
-      ) +
-      metric(
-        "需要处理",
-        tasks.filter(
-          (t) =>
-            t.desired !== "paused" &&
-            (t.desired === "blocked" ||
-              t.evidence_error ||
-              t.progress_stale ||
-              t.stale ||
-              t.evidence_scan_error ||
-              t.evidence_scan_slow),
-        ).length,
       ) +
       metric(
         "GPU 作业累计",
@@ -134,7 +119,7 @@ function render() {
   const query = $("search").value.toLowerCase();
   const filtered = tasks.filter(
     (t) =>
-      ($("show-paused").checked || t.desired !== "paused") &&
+      ($("show-history").checked || !["paused", "superseded", "budget"].includes(t.desired)) &&
       JSON.stringify([t.id, t.spec.name, t.spec.baseline, phases[t.phase]])
         .toLowerCase()
         .includes(query),
@@ -180,7 +165,7 @@ function disableControls() {
   if (mutating)
     document
       .querySelectorAll(
-        "[data-action], [data-sessions], [data-clear], #configure button",
+        "[data-sessions], [data-clear]",
       )
       .forEach((b) => (b.disabled = true));
 }
@@ -214,22 +199,20 @@ function renderDetail(t) {
   const rows = t.best?.decision?.cases || [];
   patch(
     $("detail"),
-    `<div class="section-head"><h2>${escape(t.spec.name)}</h2><button id="close-detail">返回总览</button></div><div data-key="actions" class="controls"><button data-action="pause" ${t.desired === "paused" ? "disabled" : ""}>暂停</button><button data-action="resume" ${t.desired === "active" ? "disabled" : ""}>恢复</button><span>${escape(phases[t.phase])} ${escape(t.reason || "")}</span></div>${t.progress_stale ? `<p data-key="progress-notice" class="warn">会话仍在线，但 ${duration(t.progress_age_seconds)} 没有新报告或 GPU 作业。检查 Agent 是否已接续，并更新具体下一步。</p>` : ""}${t.evidence_error ? `<p data-key="evidence-error" class="warn">证据问题：${escape(t.evidence_error)}</p>` : ""}<div data-key="identity" class="grid"><article class="card"><h3>固定 baseline</h3><dl><dt>仓库 / 版本</dt><dd>${escape(b.repository)} · <code>${escape(b.revision)}</code></dd><dt>算子入口</dt><dd><code>${escape(b.entrypoint)}</code></dd><dt>实现提出</dt><dd>${link(b.introduction_url, b.introduced_on || "待确认")}</dd><dt>冻结日期</dt><dd>${escape(b.frozen_on)}</dd><dt>目标硬件</dt><dd>${escape(b.hardware)}</dd><dt>评测契约</dt><dd><code>${escape(b.contract)}</code></dd></dl></article><article class="card"><h3>研究进展</h3><dl><dt>最近活动</dt><dd>${stamp(t.progress_as_of)}</dd><dt>当前方向</dt><dd>${escape(t.report.hypothesis || "—")}</dd><dt>最近结论</dt><dd>${escape(t.report.outcome || "—")}</dd><dt>下一步</dt><dd>${escape(t.report.next_action || "—")}</dd><dt>会话</dt><dd>${link(t.report.session_url, t.report.session_url || "—")}</dd><dt>PR</dt><dd>${(t.report.pr_urls || []).map((u) => link(u, u)).join("<br>") || "—"}</dd><dt>已集成版本</dt><dd>${escape(t.report.integrated_revision || "—")}</dd></dl></article></div><article class="card"><h3 title="评测扫描：${escape(stamp(t.evidence_as_of))}">已验证 best · 相对 baseline${["error", "slow"].includes(t.evidence_status) ? ' <span class="warn">证据需检查</span>' : ""}</h3>${chart(t.history)}</article><article class="card"><h3>当前 best · 逐用例原始延迟</h3><div class="scroll"><table><thead><tr><th>用例</th><th>测量批次</th><th>baseline μs</th><th>上一版对照 μs</th><th>best μs</th><th>相对 baseline</th></tr></thead><tbody>${
+    `<div class="section-head"><h2>${escape(t.spec.name)}</h2><button id="close-detail">返回总览</button></div><p data-key="task-state">${escape(phases[t.phase])} ${escape(t.reason || "")}${t.superseded_by ? ` · 后续任务 ${escape(t.superseded_by)}` : ""}</p>${t.progress_stale ? `<p data-key="progress-notice" class="warn">会话仍在线，但 ${duration(t.progress_age_seconds)} 没有新报告或 GPU 作业。Agent 应核对会话、现有请求和结果后更新下一步。</p>` : ""}${t.evidence_error ? `<p data-key="evidence-error" class="warn">证据问题：${escape(t.evidence_error)}</p>` : ""}<div data-key="identity" class="grid"><article class="card"><h3>固定 baseline</h3><dl><dt>仓库 / 版本</dt><dd>${escape(b.repository)} · <code>${escape(b.revision)}</code></dd><dt>算子入口</dt><dd><code>${escape(b.entrypoint)}</code></dd><dt>实现提出</dt><dd>${link(b.introduction_url, b.introduced_on || "待确认")}</dd><dt>冻结日期</dt><dd>${escape(b.frozen_on)}</dd><dt>目标硬件</dt><dd>${escape(b.hardware)}</dd><dt>评测契约</dt><dd><code>${escape(b.contract)}</code></dd></dl></article><article class="card"><h3>研究进展</h3><dl><dt>最近活动</dt><dd>${stamp(t.progress_as_of)}</dd><dt>当前方向</dt><dd>${escape(t.report.hypothesis || "—")}</dd><dt>最近结论</dt><dd>${escape(t.report.outcome || "—")}</dd><dt>下一步</dt><dd>${escape(t.report.next_action || "—")}</dd><dt>会话</dt><dd>${link(t.report.session_url, t.report.session_url || "—")}</dd><dt>PR</dt><dd>${(t.report.pr_urls || []).map((u) => link(u, u)).join("<br>") || "—"}</dd><dt>已集成版本</dt><dd>${escape(t.report.integrated_revision || "—")}</dd></dl></article></div><article class="card"><h3 title="评测扫描：${escape(stamp(t.evidence_as_of))}">已验证 best · 相对 baseline${["error", "slow"].includes(t.evidence_status) ? ' <span class="warn">证据需检查</span>' : ""}</h3>${chart(t.history)}</article><article class="card"><h3>当前 best · 逐用例原始延迟</h3><div class="scroll"><table><thead><tr><th>用例</th><th>测量批次</th><th>baseline μs</th><th>上一版对照 μs</th><th>best μs</th><th>相对 baseline</th></tr></thead><tbody>${
       rows
         .map((c) => {
           const base = c.baseline_us ?? c.comparator_us;
           return `<tr data-key="${escape(c.case)}-${c.batch}"><td>${escape(c.case)}</td><td>${c.batch + 1}</td><td>${base?.toFixed(3) ?? "—"}</td><td>${c.comparator_us?.toFixed(3) ?? "—"}</td><td>${c.candidate_us?.toFixed(3) ?? "—"}</td><td class="${c.candidate_us > base ? "warn" : "good"}">${base ? (base / c.candidate_us).toFixed(3) + "×" : "—"}</td></tr>`;
         })
         .join("") || '<tr><td colspan="6">尚无已晋升的完整测量</td></tr>'
-    }</tbody></table></div></article><article class="card"><h3>资源与累计额度</h3><p>会话 ${duration(t.wall_seconds)} / ${t.spec.wall_budget_seconds == null ? "未设上限" : duration(t.spec.wall_budget_seconds)} · GPU 作业 ${duration(t.gpu_seconds)} / ${t.spec.gpu_budget_seconds == null ? "未设上限" : duration(t.spec.gpu_budget_seconds)}</p><form id="configure" class="controls"><label>资源 <select name="resource">${state.resources.map((r) => `<option value="${escape(r.id)}" ${r.id === t.spec.resource ? "selected" : ""}>${escape(r.id)}</option>`).join("")}</select></label><label>会话上限（小时） <input name="wall" type="number" min="0.001" step="any" value="${t.spec.wall_budget_seconds == null ? "" : t.spec.wall_budget_seconds / 3600}" placeholder="不设上限"></label><label>GPU 上限（小时） <input name="gpu" type="number" min="0.001" step="any" value="${t.spec.gpu_budget_seconds == null ? "" : t.spec.gpu_budget_seconds / 3600}" placeholder="不设上限"></label><button title="暂停任务并等待作业退出后可修改" ${t.desired !== "paused" || t.jobs.length ? "disabled" : ""}>保存设置</button></form></article><article class="card"><h3>最近实验</h3><div class="scroll"><table><thead><tr><th>记录</th><th>模式</th><th>正确性</th><th>性能结论</th><th>证据 / 原因</th></tr></thead><tbody>${t.runs.map((r) => `<tr data-key="${escape(r.path)}"><td>${escape(r.path.split("/").pop())}</td><td>${escape(r.data.mode)}</td><td>${escape(r.data.correctness)}</td><td>${escape(r.data.decision?.performance)}</td><td>${escape(r.error || r.data.decision?.reasons?.join("; ") || "有效")}<small>${escape(r.path)}</small></td></tr>`).join("") || '<tr><td colspan="5">暂无实验记录</td></tr>'}</tbody></table></div></article><details><summary>候选与 best 版本</summary><dl><dt>最近评测候选</dt><dd><code>${escape(t.runs[0]?.path.split("/").pop() || "—")}</code></dd><dt>已验证 best</dt><dd><code>${escape(t.best?.run.split("/").pop() || "—")}</code></dd></dl><pre>${escape(JSON.stringify({ candidate: t.runs[0]?.data.source ?? null, best: t.best?.source ?? null }, null, 2))}</pre></details><details><summary>研究笔记 notes.md</summary><pre>${escape(t.notes || "尚未记录")}</pre></details><details><summary>运行记录与可追溯事件</summary>${t.events.map((e) => `<div data-key="${e.seq}" class="event"><time>${stamp(e.at)}</time><div>${escape(e.kind)}</div><div>${escape(JSON.stringify(e.data))}</div></div>`).join("")}</details>`,
-    formDirty,
+    }</tbody></table></div></article><article class="card"><h3>资源与累计额度</h3><p>会话 ${duration(t.wall_seconds)} / ${t.spec.wall_budget_seconds == null ? "未设上限" : duration(t.spec.wall_budget_seconds)} · GPU 作业 ${duration(t.gpu_seconds)} / ${t.spec.gpu_budget_seconds == null ? "未设上限" : duration(t.spec.gpu_budget_seconds)}</p></article><article class="card"><h3>最近实验</h3><div class="scroll"><table><thead><tr><th>记录</th><th>模式</th><th>正确性</th><th>性能结论</th><th>证据 / 原因</th></tr></thead><tbody>${t.runs.map((r) => `<tr data-key="${escape(r.path)}"><td>${escape(r.path.split("/").pop())}</td><td>${escape(r.data.mode)}</td><td>${escape(r.data.correctness)}</td><td>${escape(r.data.decision?.performance)}</td><td>${escape(r.error || r.data.decision?.reasons?.join("; ") || "有效")}<small>${escape(r.path)}</small></td></tr>`).join("") || '<tr><td colspan="5">暂无实验记录</td></tr>'}</tbody></table></div></article><details><summary>候选与 best 版本</summary><dl><dt>最近评测候选</dt><dd><code>${escape(t.runs[0]?.path.split("/").pop() || "—")}</code></dd><dt>已验证 best</dt><dd><code>${escape(t.best?.run.split("/").pop() || "—")}</code></dd></dl><pre>${escape(JSON.stringify({ candidate: t.runs[0]?.data.source ?? null, best: t.best?.source ?? null }, null, 2))}</pre></details><details><summary>研究笔记 notes.md</summary><pre>${escape(t.notes || "尚未记录")}</pre></details><details><summary>运行记录与可追溯事件</summary>${t.events.map((e) => `<div data-key="${e.seq}" class="event"><time>${stamp(e.at)}</time><div>${escape(e.kind)}</div><div>${escape(JSON.stringify(e.data))}</div></div>`).join("")}</details>`,
   );
   disableControls();
 }
 function switchView(next) {
   view = next;
   selected = null;
-  formDirty = false;
   $("detail").hidden = true;
   $("overview").hidden = next !== "overview";
   $("resources").hidden = next !== "resources";
@@ -288,8 +271,7 @@ document.addEventListener("click", async (event) => {
   } else if (b.id === "refresh") updates.refresh();
   else if (b.dataset.task) {
     selected = b.dataset.task;
-    formDirty = false;
-    $("overview").hidden = true;
+      $("overview").hidden = true;
     $("resources").hidden = true;
     $("detail").hidden = false;
     $("detail").textContent = "读取中…";
@@ -297,52 +279,16 @@ document.addEventListener("click", async (event) => {
   } else if (b.id === "close-detail") {
     switchView(view);
     updates.refresh();
-  } else if (b.dataset.action)
-    await mutate("/api/control", { task: selected, action: b.dataset.action });
-  else if (b.dataset.clear)
+  } else if (b.dataset.clear)
     await mutate("/api/resource", { id: b.dataset.clear, clear: true });
 });
-document.addEventListener("input", (event) => {
-  if (event.target.closest("#configure")) {
-    formDirty = true;
-    draftVersion++;
-  }
-});
 document.addEventListener("change", async (event) => {
-  if (event.target.closest("#configure")) {
-    formDirty = true;
-    draftVersion++;
-  }
-  if (event.target.id === "show-paused") render();
+  if (event.target.id === "show-history") render();
   if (event.target.dataset.sessions)
     await mutate("/api/resource", {
       id: event.target.dataset.sessions,
       sessions: Number(event.target.value),
     });
-});
-document.addEventListener("submit", async (event) => {
-  if (event.target.id !== "configure") return;
-  event.preventDefault();
-  const data = new FormData(event.target),
-    id = selected,
-    version = draftVersion;
-  const ok = await mutate("/api/control", {
-    task: id,
-    action: "configure",
-    changes: {
-      resource: data.get("resource"),
-      wall_budget_seconds: data.get("wall")
-        ? Number(data.get("wall")) * 3600
-        : null,
-      gpu_budget_seconds: data.get("gpu")
-        ? Number(data.get("gpu")) * 3600
-        : null,
-    },
-  });
-  if (ok && selected === id && draftVersion === version) {
-    formDirty = false;
-    renderDetail(state.detail);
-  }
 });
 $("search").addEventListener("input", () => state && render());
 document.addEventListener("visibilitychange", () =>
