@@ -100,9 +100,9 @@ def test_new_round_never_renews_cumulative_budget(managed):
     store, _, work = managed
     store.db.execute("UPDATE tasks SET gpu_seconds=4 WHERE id='toy'")
     for _ in range(2):
-        wait_for(
-            lambda: not store.task("toy")["next_at"] or time.time() >= store.task("toy")["next_at"]
-        )
+        # Exercise the next admitted round without waiting for recovery backoff.
+        # Only the test clock gate moves; original usage and limits stay intact.
+        store.db.execute("UPDATE tasks SET next_at=0 WHERE id='toy'")
         _, process, marker = agent(store, work, 2, returncode=2, gpu_budget_seconds=5)
         finish(process)
         assert not marker.exists()
