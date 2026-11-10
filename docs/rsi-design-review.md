@@ -302,3 +302,5 @@ RSI 分支合入 main 的 `8faa939`，保留新增的原生 harness、输入保�
 相对现有 Manager 普通 full 评测，12 对交错 CPU 测量（另保留一对预热）中额外耗时中位数 4.26ms，配对差值范围 −9.55ms 至 +12.23ms；两组耗时中位数为 230.69ms 和 235.18ms。没有模型调用或云 GPU 消耗，也没有把 CPU 测量当作生产延迟或 RSI 收益。首次测量 fixture 因 quick/full seed 配置不一致在任何子进程启动前被拒绝；修正 fixture 后使用新目录测量，失败记录保留。见 [接入收据](../audit/rsi_managed_evaluation_20261111.json)、[全部 CPU 测量](../audit/rsi_managed_overhead_20261111.json) 与 [复现脚本](../audit/rsi_managed_overhead.py)。
 
 同时运行的四组 GPU 表示对照仍冻结在 `14a3e29`，不包含这项后续桥接。新接入的真实 GPU 成本、自动收集/发布/撤回和两代闭环仍待验证；任何已完成实验不能直接当作新版本生产收益证据。
+
+随后检查发现，设备空闲探测的 `OSError` 重试分支也可能吞掉一次性定时器的 `TimeoutError`。适配器改用独立异常退出准入/监督流程，在清理后才转换为明确的超时；没有修改通用 Manager 的重试逻辑。新增卡住的设备探测测试确认超时后不会启动子进程，10 项接入专项、72 项相关测试及全仓 533 passed / 10 skipped 通过。上述 CPU 开销样本属于修正前的 `f4be938`，未将它冒充异常分支修正后的新测量。详见 [截止时间修正收据](../audit/rsi_managed_deadline_20261111.json)。

@@ -1,0 +1,24 @@
+{
+  "at": 1794338623.925097,
+  "base_commit": "f4be938c5e943dee6f9774f404f3b9c024804067",
+  "change": "Raise a private non-OSError deadline exception through device-probe retry and GPU supervision; translate to TimeoutError only after unwinding and cleanup. Existing Manager code unchanged.",
+  "reason": "A bare TimeoutError is an OSError. The device busy/probe retry branch could swallow it and continue queuing after a one-shot timer; the earlier post-return flag covered supervisor failures but not this continuing loop.",
+  "source_sha256": {
+    "src/kernel_envolve/rsi/managed.py": "2889f55acf93bfc221a1cb87b81ddc7acf8d6b8a98a65f66a566242161f1f680",
+    "tests/test_rsi_managed.py": "25d3511017d54355b7fc5326c012a3b8b9949f022de1fd6ced4c91e39dcdcc78"
+  },
+  "tests": {
+    "managed_specific": 10,
+    "affected_total": 72,
+    "all_passed": 533,
+    "all_skipped": 10,
+    "affected_log": "/tmp/rsi-managed-deadline-tests-20261111.log",
+    "full_log": "/tmp/rsi-managed-deadline-full-tests-20261111.log",
+    "full_log_sha256": "cdc7ab55bdc19bfcc6d3f54086336d9ce55562a39ee196ab561df0fa73141a78"
+  },
+  "lint_and_format_passed": true,
+  "prior_cpu_overhead_scope": "12 paired CPU measurements belong to f4be938, before this exceptional-path correction; no new overhead or GPU efficacy measurement claimed.",
+  "current_gpu_experiment": "ef46cf6e2cc74cbfb469f0bbc4850963 remains frozen at14a3e29, unchanged",
+  "main_changed": false,
+  "rsi_utility_proven": false
+}

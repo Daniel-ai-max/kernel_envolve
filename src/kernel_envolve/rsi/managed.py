@@ -19,6 +19,10 @@ from ..storage import config, contract, digest, file_hash, read_json, write_json
 from .model import keys, number, read
 
 
+class _DeadlineExpired(Exception):
+    """Do not let device-probe OSError recovery swallow the local deadline."""
+
+
 def binding(task, *, worker=False):
     """Bind the request to the current registered generic task and live round."""
     if bool(os.environ.get("KERNEL_ENVOLVE_GPU_JOB")) != worker:
@@ -100,12 +104,9 @@ def evaluate(task, mode, timeout, directory):
     )
     old = signal.getsignal(signal.SIGALRM)
     started = time.monotonic()
-    timed_out = False
 
     def expired(signum, frame):
-        nonlocal timed_out
-        timed_out = True
-        raise TimeoutError("Managed evaluation exhausted its queue/execution deadline")
+        raise _DeadlineExpired("Managed evaluation exhausted its queue/execution deadline")
 
     try:
         signal.signal(signal.SIGALRM, expired)
@@ -117,10 +118,6 @@ def evaluate(task, mode, timeout, directory):
             [sys.executable, "-c", launch, pythonpath, str(directory)],
             expected_seconds=timeout,
         )
-        # The existing supervisor handles OSError (including TimeoutError) and
-        # completes child cleanup before returning its failure code.
-        if timed_out:
-            raise TimeoutError("Managed evaluation exhausted its queue/execution deadline")
         if code:
             raise ValueError("Managed evaluation did not finish successfully; inspect Manager logs")
         locator = read(directory / "result.json", 8192)
@@ -140,6 +137,10 @@ def evaluate(task, mode, timeout, directory):
         ):
             raise ValueError("Managed evaluation source, mode, or receipt mismatch")
         return path, result
+    except _DeadlineExpired as exc:
+        # Translate only after GPU admission/supervision has unwound and cleaned
+        # up. TimeoutError itself is an OSError and can be retried by device probes.
+        raise TimeoutError(str(exc)) from exc
     finally:
         signal.setitimer(signal.ITIMER_REAL, 0)
         signal.signal(signal.SIGALRM, old)

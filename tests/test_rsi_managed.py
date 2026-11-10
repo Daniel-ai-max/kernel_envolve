@@ -4,6 +4,7 @@ import json
 import os
 import signal
 import sys
+import time
 
 import pytest
 from test_manager import launch, replace_command
@@ -101,6 +102,24 @@ def test_expired_execution_cleans_child_and_preserves_failure(active):
         assert not alive(child["pid"], child["identity"])
     with exclusive(lock_path("gpu", "cpu")) as handle:
         assert handle is not None
+
+
+def test_device_probe_cannot_swallow_queue_deadline(active, monkeypatch):
+    store, work, _ = active
+    probes = []
+
+    def busy(device):
+        probes.append(device)
+        time.sleep(5)
+        pytest.fail("The device probe swallowed the deadline")
+
+    monkeypatch.setattr("kernel_envolve.manager.gpu.gpu_idle", busy)
+    with pytest.raises(TimeoutError, match="queue/execution"):
+        evaluate(work, "full", 0.2, work.parent / "probe-deadline")
+    assert probes == ["cpu"]
+    job = store.one("SELECT * FROM jobs WHERE kind='gpu'")
+    assert job["status"] == "cancelled"
+    assert job["child_pid"] is None
 
 
 def test_duration_admission_is_not_bypassed(active):
