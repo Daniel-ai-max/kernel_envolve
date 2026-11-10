@@ -1,0 +1,345 @@
+{
+  "status": "prepared_not_authorized_not_started",
+  "purpose": "Workflow ablation on broad inputs; not native full-system replication. No result-based source selection or automatic retries.",
+  "source_base_commit": "7f62c2de35a0b817086c6f9c53c7d6bab7f2e0f7",
+  "evaluator_hash": "8dec002fc1b11789b353c58ff541acb9b0b3aaad45915fda46c8cf31628c32d8",
+  "model": {
+    "name": "gpt-6-astra",
+    "reasoning_effort": "medium",
+    "cli_version": "0.157.0",
+    "image": "sha256:9a01c6b6c843cb744230328611ddc741d1a8633660fd5a5b51f331e1cf1743bf",
+    "transport": "native Responses provider; no custom model HTTP proxy",
+    "usage": "Record native CLI token usage and all available provider cost records; do not invent missing billed usage."
+  },
+  "budget": {
+    "independent_searches": 45,
+    "wall_seconds_per_search": 480,
+    "gpu_count": 1,
+    "gpu_seconds_total_cap": 25200,
+    "search_seconds_cap": 21600,
+    "setup_acceptance_cleanup_seconds_cap": 3600,
+    "additional_real_model_calls_authorized": false
+  },
+  "schedule": [
+    {
+      "index": 0,
+      "repeat": 0,
+      "task": "fused_relu",
+      "arm": "goal_only"
+    },
+    {
+      "index": 1,
+      "repeat": 0,
+      "task": "fused_relu",
+      "arm": "ako4all_workflow_adaptation"
+    },
+    {
+      "index": 2,
+      "repeat": 0,
+      "task": "fused_relu",
+      "arm": "kernel_envolve_skill"
+    },
+    {
+      "index": 3,
+      "repeat": 0,
+      "task": "row_sum",
+      "arm": "goal_only"
+    },
+    {
+      "index": 4,
+      "repeat": 0,
+      "task": "row_sum",
+      "arm": "ako4all_workflow_adaptation"
+    },
+    {
+      "index": 5,
+      "repeat": 0,
+      "task": "row_sum",
+      "arm": "kernel_envolve_skill"
+    },
+    {
+      "index": 6,
+      "repeat": 0,
+      "task": "matmul",
+      "arm": "kernel_envolve_skill"
+    },
+    {
+      "index": 7,
+      "repeat": 0,
+      "task": "matmul",
+      "arm": "goal_only"
+    },
+    {
+      "index": 8,
+      "repeat": 0,
+      "task": "matmul",
+      "arm": "ako4all_workflow_adaptation"
+    },
+    {
+      "index": 9,
+      "repeat": 1,
+      "task": "row_sum",
+      "arm": "kernel_envolve_skill"
+    },
+    {
+      "index": 10,
+      "repeat": 1,
+      "task": "row_sum",
+      "arm": "ako4all_workflow_adaptation"
+    },
+    {
+      "index": 11,
+      "repeat": 1,
+      "task": "row_sum",
+      "arm": "goal_only"
+    },
+    {
+      "index": 12,
+      "repeat": 1,
+      "task": "matmul",
+      "arm": "goal_only"
+    },
+    {
+      "index": 13,
+      "repeat": 1,
+      "task": "matmul",
+      "arm": "ako4all_workflow_adaptation"
+    },
+    {
+      "index": 14,
+      "repeat": 1,
+      "task": "matmul",
+      "arm": "kernel_envolve_skill"
+    },
+    {
+      "index": 15,
+      "repeat": 1,
+      "task": "fused_relu",
+      "arm": "ako4all_workflow_adaptation"
+    },
+    {
+      "index": 16,
+      "repeat": 1,
+      "task": "fused_relu",
+      "arm": "goal_only"
+    },
+    {
+      "index": 17,
+      "repeat": 1,
+      "task": "fused_relu",
+      "arm": "kernel_envolve_skill"
+    },
+    {
+      "index": 18,
+      "repeat": 2,
+      "task": "row_sum",
+      "arm": "goal_only"
+    },
+    {
+      "index": 19,
+      "repeat": 2,
+      "task": "row_sum",
+      "arm": "ako4all_workflow_adaptation"
+    },
+    {
+      "index": 20,
+      "repeat": 2,
+      "task": "row_sum",
+      "arm": "kernel_envolve_skill"
+    },
+    {
+      "index": 21,
+      "repeat": 2,
+      "task": "fused_relu",
+      "arm": "ako4all_workflow_adaptation"
+    },
+    {
+      "index": 22,
+      "repeat": 2,
+      "task": "fused_relu",
+      "arm": "goal_only"
+    },
+    {
+      "index": 23,
+      "repeat": 2,
+      "task": "fused_relu",
+      "arm": "kernel_envolve_skill"
+    },
+    {
+      "index": 24,
+      "repeat": 2,
+      "task": "matmul",
+      "arm": "kernel_envolve_skill"
+    },
+    {
+      "index": 25,
+      "repeat": 2,
+      "task": "matmul",
+      "arm": "ako4all_workflow_adaptation"
+    },
+    {
+      "index": 26,
+      "repeat": 2,
+      "task": "matmul",
+      "arm": "goal_only"
+    },
+    {
+      "index": 27,
+      "repeat": 3,
+      "task": "matmul",
+      "arm": "ako4all_workflow_adaptation"
+    },
+    {
+      "index": 28,
+      "repeat": 3,
+      "task": "matmul",
+      "arm": "kernel_envolve_skill"
+    },
+    {
+      "index": 29,
+      "repeat": 3,
+      "task": "matmul",
+      "arm": "goal_only"
+    },
+    {
+      "index": 30,
+      "repeat": 3,
+      "task": "row_sum",
+      "arm": "kernel_envolve_skill"
+    },
+    {
+      "index": 31,
+      "repeat": 3,
+      "task": "row_sum",
+      "arm": "ako4all_workflow_adaptation"
+    },
+    {
+      "index": 32,
+      "repeat": 3,
+      "task": "row_sum",
+      "arm": "goal_only"
+    },
+    {
+      "index": 33,
+      "repeat": 3,
+      "task": "fused_relu",
+      "arm": "ako4all_workflow_adaptation"
+    },
+    {
+      "index": 34,
+      "repeat": 3,
+      "task": "fused_relu",
+      "arm": "goal_only"
+    },
+    {
+      "index": 35,
+      "repeat": 3,
+      "task": "fused_relu",
+      "arm": "kernel_envolve_skill"
+    },
+    {
+      "index": 36,
+      "repeat": 4,
+      "task": "fused_relu",
+      "arm": "kernel_envolve_skill"
+    },
+    {
+      "index": 37,
+      "repeat": 4,
+      "task": "fused_relu",
+      "arm": "goal_only"
+    },
+    {
+      "index": 38,
+      "repeat": 4,
+      "task": "fused_relu",
+      "arm": "ako4all_workflow_adaptation"
+    },
+    {
+      "index": 39,
+      "repeat": 4,
+      "task": "matmul",
+      "arm": "ako4all_workflow_adaptation"
+    },
+    {
+      "index": 40,
+      "repeat": 4,
+      "task": "matmul",
+      "arm": "kernel_envolve_skill"
+    },
+    {
+      "index": 41,
+      "repeat": 4,
+      "task": "matmul",
+      "arm": "goal_only"
+    },
+    {
+      "index": 42,
+      "repeat": 4,
+      "task": "row_sum",
+      "arm": "goal_only"
+    },
+    {
+      "index": 43,
+      "repeat": 4,
+      "task": "row_sum",
+      "arm": "ako4all_workflow_adaptation"
+    },
+    {
+      "index": 44,
+      "repeat": 4,
+      "task": "row_sum",
+      "arm": "kernel_envolve_skill"
+    }
+  ],
+  "public_task_files": {
+    "row_sum/task.json": "cccc6ad4a186f6fdbd4a3f467e9cf959c6d2181bb8c15ee35879a1eea9ca8138",
+    "row_sum/task.py": "8d0a527c0881a294f57fd221dd8cd2670203b467af45437381534ee8ad368d1c",
+    "row_sum/workload.py": "274bd31597b5d26d97b3ca585550f1cd0bf51af88d8361d02f98e2a7f1983e31",
+    "row_sum/candidate.py": "4098bbed9ebbefc5ce0a114f1bfe7d27354d1253781015b7ce1c1fa49bc95242",
+    "matmul/task.json": "932ac93997fae12eaedffe218f1aba5c2192ab8620a8699bdadb672ada0ba17e",
+    "matmul/task.py": "95ad53891ede9e45a1dd10e727571503d911b338b6f41fad455a72f87dfa5f77",
+    "matmul/workload.py": "274bd31597b5d26d97b3ca585550f1cd0bf51af88d8361d02f98e2a7f1983e31",
+    "matmul/candidate.py": "796525e3764f49e7d066e5f878c4d4e96e15036fa3ec4886f3d70ee87f56c4d2",
+    "fused_relu/task.json": "550276a2e5a361ce183ec91582666d411154faea28ea11ed9f8660f3e39c1878",
+    "fused_relu/task.py": "745895fd73b034f29a5950a18a79331ba0d2406cf50656955ffee8b4c01f6602",
+    "fused_relu/workload.py": "274bd31597b5d26d97b3ca585550f1cd0bf51af88d8361d02f98e2a7f1983e31",
+    "fused_relu/candidate.py": "e9762d9c178ae0f13254512993603800419c5aade021c70e2e1cf84a158afbbb"
+  },
+  "source_sha256": {
+    "audit/general_workloads.py": "274bd31597b5d26d97b3ca585550f1cd0bf51af88d8361d02f98e2a7f1983e31",
+    "audit/build_general_tasks.py": "3a5fa96190fdeb65c8d928ad5fd9372dc7a47982779dc89bf5cc831212dcc871",
+    "audit/general_final_acceptance.py": "ffdce839a7682f6b0ba9d221301429902235d25e0ae45692bb3ae56c616ac739",
+    "audit/probe_general_tasks.py": "fe96b6967ef243617bf3de2028e229eec85f239354613b1ba6b9ac7ca5288503",
+    "audit/direct_codex_command.py": "3ba0cdd23dd0ac9a3d339ac09d04d9e736bec442547ba83ae54d366d243b102c",
+    "audit/run_bounded_trial.py": "9ceb6ebbb484281317e91fc87bf043cefa4759c1a1bb5b34f4916446ce87fcbc",
+    "skills/kernel-envolve/SKILL.md": "a927880490dd9bc307790f616edd60121787cc019543abf4b2bd5cba9e8206a6",
+    "skills/kernel-envolve/references/hardware.md": "1beb215f1f16944de31913b145a92ddc1b0c123aeb5f9aa9732d09792f3c9602",
+    "audit/general_comparison_prompts/ako4all_workflow_adaptation.txt": "497f7b33d532f69e85fed4262c08863bcd7af54c9169ce0fa21fd5bcd8165703",
+    "audit/general_comparison_prompts/common.txt": "300a1d24ca6a45abc7d7b90c0869b65747a25635bfe33e156a29924f50f3fe2d",
+    "audit/general_comparison_prompts/goal_only.txt": "30929711bb8ef084ea67907424a8f3efae84e16e914d0c1481c4a1f87526117a",
+    "audit/general_comparison_prompts/kernel_envolve_skill.txt": "a927880490dd9bc307790f616edd60121787cc019543abf4b2bd5cba9e8206a6"
+  },
+  "final_acceptance": {
+    "verifier": "audit/general_final_acceptance.py",
+    "prespecification": "Before any search, freeze a separate same-domain sample and at least three value seeds outside all agent workspaces; publish their SHA-256 commitments. Do not reuse the public 20261110 diagnostic sample.",
+    "coverage": "Accept public and withheld suites separately; every correctness case must pass. Preserve all measured case latencies, weights, dtype, layouts, two-batch totals and worst regressions.",
+    "submission": "Freeze the declared submission at the deadline; missing or invalid submission remains a failure. Never choose the best final-test score retrospectively.",
+    "failures": "Retain every started search and all infrastructure failures. Pause on transport/cleanup failure; no replacement runs without authorization."
+  },
+  "execution_requirements": [
+    "Before real inference, confirm actual GPU and toolchain, same native provider settings for all arms, trusted source hashes, cancel/cleanup and per-trial deadlines. Any real-model trial consumes one of the 45 slots.",
+    "Fresh independent conversation and workspace per run. GPU performance measurement is serial. No other-arm source or final-test results are exposed.",
+    "Use per-trial CUDA_CACHE_PATH, TRITON_CACHE_DIR, TORCHINDUCTOR_CACHE_DIR, TORCH_EXTENSIONS_DIR and TMPDIR; use an identical prespecified baseline warmup policy.",
+    "No standalone CPU dev instance. The local audit controller may drive the existing identical GPU tool; transport costs are recorded and included.",
+    "Do not start a trial without enough remaining GPU budget for its full wall limit and cleanup."
+  ],
+  "analysis": {
+    "primary": "Correct-delivery count across all started runs, public and withheld correctness together.",
+    "secondary": [
+      "Public and withheld latency gains and per-region regression distributions",
+      "All-run wall time, model usage, GPU allocation, evaluator and recovery costs"
+    ],
+    "inference": "Independent search run is the replication unit. Timing samples are not extra agent replicates. Report per-task results and uncertainty; five runs per arm is an initial comparison, not guaranteed statistical power."
+  }
+}

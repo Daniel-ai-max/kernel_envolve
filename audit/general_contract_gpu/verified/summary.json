@@ -1,0 +1,829 @@
+{
+  "scope": "Broad public task/validator controls and acceptance costs; no agent search, no hidden final tests",
+  "source_commit": "7f62c2de35a0b817086c6f9c53c7d6bab7f2e0f7",
+  "environment": {
+    "gpu": "NVIDIA B300 SXM6 AC",
+    "capability": [
+      10,
+      3
+    ],
+    "torch": "2.12.1+cu130",
+    "triton": "3.7.1",
+    "numpy": "2.3.5",
+    "cuda": "13.0",
+    "evaluator_hash": "8dec002fc1b11789b353c58ff541acb9b0b3aaad45915fda46c8cf31628c32d8"
+  },
+  "tests": {
+    "returncode": 0,
+    "wall_seconds": 43.597675849101506,
+    "output": "/opt/venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py:247: PytestDeprecationWarning: The configuration option \"asyncio_default_fixture_loop_scope\" is unset.\nThe event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: \"function\", \"class\", \"module\", \"package\", \"session\"\n\n  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))\n........................................................................ [ 59%]\n..................................................                       [100%]\n122 passed in 42.31s\n"
+  },
+  "records": [
+    {
+      "task": "row_sum",
+      "probe": "correct-development",
+      "dev_pass": true,
+      "independent_pass": true,
+      "dev_checks": 288,
+      "final_checks": 288,
+      "final_samples": 0,
+      "development_error": null,
+      "independent_error": null
+    },
+    {
+      "task": "row_sum",
+      "probe": "correct-sample",
+      "dev_pass": true,
+      "independent_pass": true,
+      "dev_checks": 144,
+      "final_checks": 144,
+      "final_samples": 480,
+      "development_error": null,
+      "independent_error": null
+    },
+    {
+      "task": "row_sum",
+      "probe": "wrong-values",
+      "dev_rejected": true,
+      "independent_rejected": true,
+      "development_error": {
+        "message": "output: \nNot equal to tolerance rtol=0.025, atol=0.025\n\nMismatched elements: 17 / 17 (100%)\nMax absolute difference among violations: 1.00000191\nMax relative difference among violations: 17.00130824\n ACTUAL: array([-18.846889, -10.443026,   5.575856,  12.048624,   1.847355,\n       -15.726873, -13.041961,  -8.30726 , -12.166739,  -3.914354,\n         5.484645,  -6.808301,  22.554466,   0.94118 , -16.812815,\n        21.998768,  12.346699])\n DESIRED: array([-19.846888, -11.443026,   4.575857,  11.048624,   0.847354,\n       -16.726873, -14.04196 ,  -9.307257, -13.166739,  -4.914353,\n         4.484644,  -7.8083  ,  21.554466,  -0.058819, -17.812813,\n        20.998768,  11.346697])",
+        "type": "Mismatch"
+      },
+      "independent_error": {
+        "type": "AssertionError",
+        "message": "\nNot equal to tolerance rtol=1e-05, atol=0.0002\n\nMismatched elements: 17 / 17 (100%)\nMax absolute difference among violations: 1.00000191\nMax relative difference among violations: 0.7272036\n ACTUAL: array([ -0.375131,  -5.482016,   8.644115,  -6.972665, -18.264456,\n        -1.381104, -15.239   ,  -2.238256, -13.597724,   8.774079,\n       -15.653042,  13.131043,  -9.159193,  10.98771 ,  21.682083,\n        23.064306,  15.743902])\n DESIRED: array([ -1.375131,  -6.482015,   7.644116,  -7.972665, -19.264458,\n        -2.381103, -16.239   ,  -3.238257, -14.597723,   7.77408 ,\n       -16.65304 ,  12.131043, -10.159193,   9.987709,  20.682085,\n        22.064308,  14.743902])",
+        "context": {
+          "case": "float32-1",
+          "role": "candidate",
+          "seed": 1907101,
+          "kind": "fresh"
+        },
+        "traceback": "Traceback (most recent call last):\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 180, in accept\n    check_call(name, fn, inputs, golden(name, inputs), device)\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 114, in check_call\n    np.testing.assert_allclose(actual, expected, rtol=rtol, atol=atol, equal_nan=False)\n  File \"/opt/venv/lib/python3.12/site-packages/numpy/testing/_private/utils.py\", line 1711, in assert_allclose\n    assert_array_compare(compare, actual, desired, err_msg=str(err_msg),\n  File \"/opt/venv/lib/python3.12/site-packages/numpy/testing/_private/utils.py\", line 919, in assert_array_compare\n    raise AssertionError(msg)\nAssertionError: \nNot equal to tolerance rtol=1e-05, atol=0.0002\n\nMismatched elements: 17 / 17 (100%)\nMax absolute difference among violations: 1.00000191\nMax relative difference among violations: 0.7272036\n ACTUAL: array([ -0.375131,  -5.482016,   8.644115,  -6.972665, -18.264456,\n        -1.381104, -15.239   ,  -2.238256, -13.597724,   8.774079,\n       -15.653042,  13.131043,  -9.159193,  10.98771 ,  21.682083,\n        23.064306,  15.743902])\n DESIRED: array([ -1.375131,  -6.482015,   7.644116,  -7.972665, -19.264458,\n        -2.381103, -16.239   ,  -3.238257, -14.597723,   7.77408 ,\n       -16.65304 ,  12.131043, -10.159193,   9.987709,  20.682085,\n        22.064308,  14.743902])\n"
+      }
+    },
+    {
+      "task": "row_sum",
+      "probe": "precision-bias",
+      "dev_rejected": true,
+      "independent_rejected": true,
+      "development_error": {
+        "message": "task.validate: Tensor-likes are not close!\n\nMismatched elements: 17 / 17 (100.0%)\nGreatest absolute difference: 0.01000213623046875 at index (16,) (up to 0.0002 allowed)\nGreatest relative difference: 0.16999931633472443 at index (13,) (up to 1e-05 allowed)",
+        "type": "Mismatch"
+      },
+      "independent_error": {
+        "type": "AssertionError",
+        "message": "\nNot equal to tolerance rtol=1e-05, atol=0.0002\n\nMismatched elements: 17 / 17 (100%)\nMax absolute difference among violations: 0.01000214\nMax relative difference among violations: 0.00727194\n ACTUAL: array([ -1.365131,  -6.472015,   7.654116,  -7.962665, -19.254456,\n        -2.371104, -16.229   ,  -3.228256, -14.587724,   7.78408 ,\n       -16.643042,  12.141044, -10.149193,   9.99771 ,  20.692083,\n        22.074306,  14.753902])\n DESIRED: array([ -1.375131,  -6.482015,   7.644116,  -7.972665, -19.264458,\n        -2.381103, -16.239   ,  -3.238257, -14.597723,   7.77408 ,\n       -16.65304 ,  12.131043, -10.159193,   9.987709,  20.682085,\n        22.064308,  14.743902])",
+        "context": {
+          "case": "float32-1",
+          "role": "candidate",
+          "seed": 1907101,
+          "kind": "fresh"
+        },
+        "traceback": "Traceback (most recent call last):\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 180, in accept\n    check_call(name, fn, inputs, golden(name, inputs), device)\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 114, in check_call\n    np.testing.assert_allclose(actual, expected, rtol=rtol, atol=atol, equal_nan=False)\n  File \"/opt/venv/lib/python3.12/site-packages/numpy/testing/_private/utils.py\", line 1711, in assert_allclose\n    assert_array_compare(compare, actual, desired, err_msg=str(err_msg),\n  File \"/opt/venv/lib/python3.12/site-packages/numpy/testing/_private/utils.py\", line 919, in assert_array_compare\n    raise AssertionError(msg)\nAssertionError: \nNot equal to tolerance rtol=1e-05, atol=0.0002\n\nMismatched elements: 17 / 17 (100%)\nMax absolute difference among violations: 0.01000214\nMax relative difference among violations: 0.00727194\n ACTUAL: array([ -1.365131,  -6.472015,   7.654116,  -7.962665, -19.254456,\n        -2.371104, -16.229   ,  -3.228256, -14.587724,   7.78408 ,\n       -16.643042,  12.141044, -10.149193,   9.99771 ,  20.692083,\n        22.074306,  14.753902])\n DESIRED: array([ -1.375131,  -6.482015,   7.644116,  -7.972665, -19.264458,\n        -2.381103, -16.239   ,  -3.238257, -14.597723,   7.77408 ,\n       -16.65304 ,  12.131043, -10.159193,   9.987709,  20.682085,\n        22.064308,  14.743902])\n"
+      }
+    },
+    {
+      "task": "row_sum",
+      "probe": "input-mutation",
+      "dev_rejected": true,
+      "independent_rejected": true,
+      "development_error": {
+        "message": "input[0] mutation: \nNot equal to tolerance rtol=0, atol=0\n\nMismatched elements: 4369 / 4369 (100%)\nMax absolute difference among violations: 1.00000024\nMax relative difference among violations: 4297.557138\n ACTUAL: array([[ 0.075338,  0.574656, -1.643846, ...,  4.315647,  0.15334 ,\n         1.237366],\n       [ 2.088396,  0.750267,  0.502637, ...,  1.655937, -0.109862,...\n DESIRED: array([[-0.924662, -0.425344, -2.643846, ...,  3.315647, -0.84666 ,\n         0.237366],\n       [ 1.088396, -0.249733, -0.497363, ...,  0.655937, -1.109862,...",
+        "type": "Mismatch"
+      },
+      "independent_error": {
+        "type": "AssertionError",
+        "message": "Input values changed",
+        "context": {
+          "case": "float32-1",
+          "role": "candidate",
+          "seed": 1907101,
+          "kind": "fresh"
+        },
+        "traceback": "Traceback (most recent call last):\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 180, in accept\n    check_call(name, fn, inputs, golden(name, inputs), device)\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 124, in check_call\n    assert torch.equal(base.nan_to_num(), before.nan_to_num()), \"Input values changed\"\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Input values changed\n"
+      }
+    },
+    {
+      "task": "row_sum",
+      "probe": "padding-write",
+      "dev_rejected": true,
+      "independent_rejected": true,
+      "development_error": {
+        "message": "task.validate: Input padding was overwritten",
+        "type": "Mismatch"
+      },
+      "independent_error": {
+        "type": "AssertionError",
+        "message": "Input padding changed",
+        "context": {
+          "case": "float32-1",
+          "role": "candidate",
+          "seed": 1907101,
+          "kind": "fresh"
+        },
+        "traceback": "Traceback (most recent call last):\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 180, in accept\n    check_call(name, fn, inputs, golden(name, inputs), device)\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 123, in check_call\n    assert torch.equal(torch.isnan(base), torch.isnan(before)), \"Input padding changed\"\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Input padding changed\n"
+      }
+    },
+    {
+      "task": "row_sum",
+      "probe": "wrong-dtype",
+      "dev_rejected": true,
+      "independent_rejected": true,
+      "development_error": {
+        "message": "output: dtype, shape or device differs: ('torch.float32', (17,), (1,), 'cuda:0') vs ('torch.float16', (17,), (1,), 'cuda:0')",
+        "type": "Mismatch"
+      },
+      "independent_error": {
+        "type": "AssertionError",
+        "message": "Wrong output dtype",
+        "context": {
+          "case": "float16-1",
+          "role": "candidate",
+          "seed": 1907101,
+          "kind": "fresh"
+        },
+        "traceback": "Traceback (most recent call last):\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 180, in accept\n    check_call(name, fn, inputs, golden(name, inputs), device)\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 108, in check_call\n    assert output.dtype == inputs[0].dtype, \"Wrong output dtype\"\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Wrong output dtype\n"
+      }
+    },
+    {
+      "task": "row_sum",
+      "probe": "precision-policy",
+      "dev_rejected": true,
+      "independent_rejected": true,
+      "development_error": {
+        "message": "Persistent runtime setting changed: torch; expected {'default_dtype': 'torch.float32', 'grad_enabled': True, 'threads': 1, 'matmul_precision': 'highest', 'deterministic_algorithms': False, 'matmul_tf32': False, 'cudnn_tf32': True, 'fp16_reduced_precision_reduction': True, 'bf16_reduced_precision_reduction': True, 'cudnn_benchmark': False, 'cudnn_deterministic': False}, got {'default_dtype': 'torch.float32', 'grad_enabled': True, 'threads': 1, 'matmul_precision': 'highest', 'deterministic_algorithms': False, 'matmul_tf32': False, 'cudnn_tf32': True, 'fp16_reduced_precision_reduction': True, 'bf16_reduced_precision_reduction': False, 'cudnn_benchmark': False, 'cudnn_deterministic': False}",
+        "phase": "correctness",
+        "type": "RuntimeError"
+      },
+      "independent_error": {
+        "type": "AssertionError",
+        "message": "Changed precision settings",
+        "context": {
+          "case": "float32-1",
+          "role": "candidate",
+          "seed": 1907101,
+          "kind": "fresh"
+        },
+        "traceback": "Traceback (most recent call last):\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 180, in accept\n    check_call(name, fn, inputs, golden(name, inputs), device)\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 105, in check_call\n    assert settings() == policy, \"Changed precision settings\"\n           ^^^^^^^^^^^^^^^^^^^^\nAssertionError: Changed precision settings\n"
+      }
+    },
+    {
+      "task": "row_sum",
+      "probe": "packed-row-assumption",
+      "dev_rejected": true,
+      "independent_rejected": true,
+      "development_error": {
+        "message": "output: \nNot equal to tolerance rtol=0.025, atol=0.025\n\nMismatched elements: 16 / 17 (94.1%)\nMax absolute difference among violations: nan\nMax relative difference among violations: nan\n ACTUAL: array([-19.846889,        nan,        nan,        nan,        nan,\n              nan,        nan,        nan,        nan,        nan,\n              nan,        nan,        nan,        nan,        nan,\n              nan,        nan])\n DESIRED: array([-19.846888, -11.443026,   4.575857,  11.048624,   0.847354,\n       -16.726873, -14.04196 ,  -9.307257, -13.166739,  -4.914353,\n         4.484644,  -7.8083  ,  21.554466,  -0.058819, -17.812813,\n        20.998768,  11.346697])",
+        "type": "Mismatch"
+      },
+      "independent_error": {
+        "type": "AssertionError",
+        "message": "Nonfinite output",
+        "context": {
+          "case": "float32-1",
+          "role": "candidate",
+          "seed": 1907101,
+          "kind": "fresh"
+        },
+        "traceback": "Traceback (most recent call last):\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 180, in accept\n    check_call(name, fn, inputs, golden(name, inputs), device)\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 111, in check_call\n    assert np.isfinite(actual).all(), \"Nonfinite output\"\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Nonfinite output\n"
+      }
+    },
+    {
+      "task": "row_sum",
+      "probe": "empty-reduction-assumption",
+      "dev_rejected": true,
+      "independent_rejected": true,
+      "development_error": {
+        "message": "output: dtype, shape or device differs: ('torch.float32', (0,), (1,), 'cuda:0') vs ('torch.float32', (3,), (1,), 'cuda:0')",
+        "type": "Mismatch"
+      },
+      "independent_error": {
+        "type": "AssertionError",
+        "message": "Wrong output shape",
+        "context": {
+          "case": "float32-6",
+          "role": "candidate",
+          "seed": 1907101,
+          "kind": "fresh"
+        },
+        "traceback": "Traceback (most recent call last):\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 180, in accept\n    check_call(name, fn, inputs, golden(name, inputs), device)\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 107, in check_call\n    assert output.shape == expected.shape, \"Wrong output shape\"\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Wrong output shape\n"
+      }
+    },
+    {
+      "task": "matmul",
+      "probe": "correct-development",
+      "dev_pass": true,
+      "independent_pass": true,
+      "dev_checks": 288,
+      "final_checks": 288,
+      "final_samples": 0,
+      "development_error": null,
+      "independent_error": null
+    },
+    {
+      "task": "matmul",
+      "probe": "correct-sample",
+      "dev_pass": true,
+      "independent_pass": true,
+      "dev_checks": 144,
+      "final_checks": 144,
+      "final_samples": 480,
+      "development_error": null,
+      "independent_error": null
+    },
+    {
+      "task": "matmul",
+      "probe": "wrong-values",
+      "dev_rejected": true,
+      "independent_rejected": true,
+      "development_error": {
+        "message": "output: \nNot equal to tolerance rtol=0.025, atol=0.025\n\nMismatched elements: 2015 / 2015 (100%)\nMax absolute difference among violations: 1.00001526\nMax relative difference among violations: 98.68130643\n ACTUAL: array([[ 18.501427,  -8.386219,  11.09408 , ...,   7.178576,   0.743175,\n          1.176849],\n       [ -0.086041,  -3.954868, -25.906717, ...,  -4.351777,   2.441222,...\n DESIRED: array([[ 17.501423,  -9.386218,  10.094078, ...,   6.17858 ,  -0.256825,\n          0.17685 ],\n       [ -1.086041,  -4.954868, -26.906723, ...,  -5.351776,   1.441222,...",
+        "type": "Mismatch"
+      },
+      "independent_error": {
+        "type": "AssertionError",
+        "message": "\nNot equal to tolerance rtol=0.0001, atol=0.0005\n\nMismatched elements: 2015 / 2015 (100%)\nMax absolute difference among violations: 1.00001335\nMax relative difference among violations: 611.25069522\n ACTUAL: array([[-17.615822,  -1.320143,  10.789952, ...,  22.67528 ,   8.866617,\n        -19.262754],\n       [-22.9231  ,  -5.010562, -15.055723, ..., -10.057639,  10.812217,...\n DESIRED: array([[-18.615818,  -2.320143,   9.789953, ...,  21.675278,   7.866617,\n        -20.262753],\n       [-23.9231  ,  -6.01056 , -16.055719, ..., -11.057639,   9.812218,...",
+        "context": {
+          "case": "float32-1",
+          "role": "candidate",
+          "seed": 1907101,
+          "kind": "fresh"
+        },
+        "traceback": "Traceback (most recent call last):\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 180, in accept\n    check_call(name, fn, inputs, golden(name, inputs), device)\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 114, in check_call\n    np.testing.assert_allclose(actual, expected, rtol=rtol, atol=atol, equal_nan=False)\n  File \"/opt/venv/lib/python3.12/site-packages/numpy/testing/_private/utils.py\", line 1711, in assert_allclose\n    assert_array_compare(compare, actual, desired, err_msg=str(err_msg),\n  File \"/opt/venv/lib/python3.12/site-packages/numpy/testing/_private/utils.py\", line 919, in assert_array_compare\n    raise AssertionError(msg)\nAssertionError: \nNot equal to tolerance rtol=0.0001, atol=0.0005\n\nMismatched elements: 2015 / 2015 (100%)\nMax absolute difference among violations: 1.00001335\nMax relative difference among violations: 611.25069522\n ACTUAL: array([[-17.615822,  -1.320143,  10.789952, ...,  22.67528 ,   8.866617,\n        -19.262754],\n       [-22.9231  ,  -5.010562, -15.055723, ..., -10.057639,  10.812217,...\n DESIRED: array([[-18.615818,  -2.320143,   9.789953, ...,  21.675278,   7.866617,\n        -20.262753],\n       [-23.9231  ,  -6.01056 , -16.055719, ..., -11.057639,   9.812218,...\n"
+      }
+    },
+    {
+      "task": "matmul",
+      "probe": "precision-bias",
+      "dev_rejected": true,
+      "independent_rejected": true,
+      "development_error": {
+        "message": "task.validate: Tensor-likes are not close!\n\nMismatched elements: 2015 / 2015 (100.0%)\nGreatest absolute difference: 0.010015487670898438 at index (4, 10) (up to 0.0005 allowed)\nGreatest relative difference: 0.9866989850997925 at index (0, 52) (up to 0.0001 allowed)",
+        "type": "Mismatch"
+      },
+      "independent_error": {
+        "type": "AssertionError",
+        "message": "\nNot equal to tolerance rtol=0.0001, atol=0.0005\n\nMismatched elements: 2015 / 2015 (100%)\nMax absolute difference among violations: 0.01001358\nMax relative difference among violations: 6.11118012\n ACTUAL: array([[-18.605822,  -2.310143,   9.799953, ...,  21.68528 ,   7.876617,\n        -20.252754],\n       [-23.913099,  -6.000562, -16.045723, ..., -11.047639,   9.822217,...\n DESIRED: array([[-18.615818,  -2.320143,   9.789953, ...,  21.675278,   7.866617,\n        -20.262753],\n       [-23.9231  ,  -6.01056 , -16.055719, ..., -11.057639,   9.812218,...",
+        "context": {
+          "case": "float32-1",
+          "role": "candidate",
+          "seed": 1907101,
+          "kind": "fresh"
+        },
+        "traceback": "Traceback (most recent call last):\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 180, in accept\n    check_call(name, fn, inputs, golden(name, inputs), device)\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 114, in check_call\n    np.testing.assert_allclose(actual, expected, rtol=rtol, atol=atol, equal_nan=False)\n  File \"/opt/venv/lib/python3.12/site-packages/numpy/testing/_private/utils.py\", line 1711, in assert_allclose\n    assert_array_compare(compare, actual, desired, err_msg=str(err_msg),\n  File \"/opt/venv/lib/python3.12/site-packages/numpy/testing/_private/utils.py\", line 919, in assert_array_compare\n    raise AssertionError(msg)\nAssertionError: \nNot equal to tolerance rtol=0.0001, atol=0.0005\n\nMismatched elements: 2015 / 2015 (100%)\nMax absolute difference among violations: 0.01001358\nMax relative difference among violations: 6.11118012\n ACTUAL: array([[-18.605822,  -2.310143,   9.799953, ...,  21.68528 ,   7.876617,\n        -20.252754],\n       [-23.913099,  -6.000562, -16.045723, ..., -11.047639,   9.822217,...\n DESIRED: array([[-18.615818,  -2.320143,   9.789953, ...,  21.675278,   7.866617,\n        -20.262753],\n       [-23.9231  ,  -6.01056 , -16.055719, ..., -11.057639,   9.812218,...\n"
+      }
+    },
+    {
+      "task": "matmul",
+      "probe": "input-mutation",
+      "dev_rejected": true,
+      "independent_rejected": true,
+      "development_error": {
+        "message": "input[0] mutation: \nNot equal to tolerance rtol=0, atol=0\n\nMismatched elements: 3937 / 3937 (100%)\nMax absolute difference among violations: 1.00000024\nMax relative difference among violations: 4297.557138\n ACTUAL: array([[ 0.075338,  0.574656, -1.643846, ...,  0.097889,  0.787185,\n         0.668519],\n       [ 0.79774 , -0.145141,  0.428544, ..., -0.709418, -0.108505,...\n DESIRED: array([[-0.924662, -0.425344, -2.643846, ..., -0.902111, -0.212815,\n        -0.331481],\n       [-0.20226 , -1.145141, -0.571456, ..., -1.709418, -1.108505,...",
+        "type": "Mismatch"
+      },
+      "independent_error": {
+        "type": "AssertionError",
+        "message": "Input values changed",
+        "context": {
+          "case": "float32-1",
+          "role": "candidate",
+          "seed": 1907101,
+          "kind": "fresh"
+        },
+        "traceback": "Traceback (most recent call last):\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 180, in accept\n    check_call(name, fn, inputs, golden(name, inputs), device)\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 124, in check_call\n    assert torch.equal(base.nan_to_num(), before.nan_to_num()), \"Input values changed\"\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Input values changed\n"
+      }
+    },
+    {
+      "task": "matmul",
+      "probe": "padding-write",
+      "dev_rejected": true,
+      "independent_rejected": true,
+      "development_error": {
+        "message": "task.validate: Input padding was overwritten",
+        "type": "Mismatch"
+      },
+      "independent_error": {
+        "type": "AssertionError",
+        "message": "Input padding changed",
+        "context": {
+          "case": "float32-1",
+          "role": "candidate",
+          "seed": 1907101,
+          "kind": "fresh"
+        },
+        "traceback": "Traceback (most recent call last):\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 180, in accept\n    check_call(name, fn, inputs, golden(name, inputs), device)\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 123, in check_call\n    assert torch.equal(torch.isnan(base), torch.isnan(before)), \"Input padding changed\"\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Input padding changed\n"
+      }
+    },
+    {
+      "task": "matmul",
+      "probe": "wrong-dtype",
+      "dev_rejected": true,
+      "independent_rejected": true,
+      "development_error": {
+        "message": "output: dtype, shape or device differs: ('torch.float32', (31, 65), (65, 1), 'cuda:0') vs ('torch.float16', (31, 65), (65, 1), 'cuda:0')",
+        "type": "Mismatch"
+      },
+      "independent_error": {
+        "type": "AssertionError",
+        "message": "Wrong output dtype",
+        "context": {
+          "case": "float16-1",
+          "role": "candidate",
+          "seed": 1907101,
+          "kind": "fresh"
+        },
+        "traceback": "Traceback (most recent call last):\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 180, in accept\n    check_call(name, fn, inputs, golden(name, inputs), device)\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 108, in check_call\n    assert output.dtype == inputs[0].dtype, \"Wrong output dtype\"\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Wrong output dtype\n"
+      }
+    },
+    {
+      "task": "matmul",
+      "probe": "precision-policy",
+      "dev_rejected": true,
+      "independent_rejected": true,
+      "development_error": {
+        "message": "Persistent runtime setting changed: torch; expected {'default_dtype': 'torch.float32', 'grad_enabled': True, 'threads': 1, 'matmul_precision': 'highest', 'deterministic_algorithms': False, 'matmul_tf32': False, 'cudnn_tf32': True, 'fp16_reduced_precision_reduction': True, 'bf16_reduced_precision_reduction': True, 'cudnn_benchmark': False, 'cudnn_deterministic': False}, got {'default_dtype': 'torch.float32', 'grad_enabled': True, 'threads': 1, 'matmul_precision': 'highest', 'deterministic_algorithms': False, 'matmul_tf32': False, 'cudnn_tf32': True, 'fp16_reduced_precision_reduction': True, 'bf16_reduced_precision_reduction': False, 'cudnn_benchmark': False, 'cudnn_deterministic': False}",
+        "phase": "correctness",
+        "type": "RuntimeError"
+      },
+      "independent_error": {
+        "type": "AssertionError",
+        "message": "Changed precision settings",
+        "context": {
+          "case": "float32-1",
+          "role": "candidate",
+          "seed": 1907101,
+          "kind": "fresh"
+        },
+        "traceback": "Traceback (most recent call last):\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 180, in accept\n    check_call(name, fn, inputs, golden(name, inputs), device)\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 105, in check_call\n    assert settings() == policy, \"Changed precision settings\"\n           ^^^^^^^^^^^^^^^^^^^^\nAssertionError: Changed precision settings\n"
+      }
+    },
+    {
+      "task": "matmul",
+      "probe": "packed-row-assumption",
+      "dev_rejected": true,
+      "independent_rejected": true,
+      "development_error": {
+        "message": "output: \nNot equal to tolerance rtol=0.025, atol=0.025\n\nMismatched elements: 1950 / 2015 (96.8%)\nMax absolute difference among violations: nan\nMax relative difference among violations: nan\n ACTUAL: array([[17.501427, -9.386219, 10.09408 , ...,  6.178576, -0.256825,\n         0.176849],\n       [      nan,       nan,       nan, ...,       nan,       nan,...\n DESIRED: array([[ 17.501423,  -9.386218,  10.094078, ...,   6.17858 ,  -0.256825,\n          0.17685 ],\n       [ -1.086041,  -4.954868, -26.906723, ...,  -5.351776,   1.441222,...",
+        "type": "Mismatch"
+      },
+      "independent_error": {
+        "type": "AssertionError",
+        "message": "Nonfinite output",
+        "context": {
+          "case": "float32-1",
+          "role": "candidate",
+          "seed": 1907101,
+          "kind": "fresh"
+        },
+        "traceback": "Traceback (most recent call last):\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 180, in accept\n    check_call(name, fn, inputs, golden(name, inputs), device)\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 111, in check_call\n    assert np.isfinite(actual).all(), \"Nonfinite output\"\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Nonfinite output\n"
+      }
+    },
+    {
+      "task": "matmul",
+      "probe": "empty-reduction-assumption",
+      "dev_rejected": true,
+      "independent_rejected": true,
+      "development_error": {
+        "message": "output: dtype, shape or device differs: ('torch.float32', (0,), (1,), 'cuda:0') vs ('torch.float32', (5, 7), (7, 1), 'cuda:0')",
+        "type": "Mismatch"
+      },
+      "independent_error": {
+        "type": "AssertionError",
+        "message": "Wrong output shape",
+        "context": {
+          "case": "float32-6",
+          "role": "candidate",
+          "seed": 1907101,
+          "kind": "fresh"
+        },
+        "traceback": "Traceback (most recent call last):\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 180, in accept\n    check_call(name, fn, inputs, golden(name, inputs), device)\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 107, in check_call\n    assert output.shape == expected.shape, \"Wrong output shape\"\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Wrong output shape\n"
+      }
+    },
+    {
+      "task": "fused_relu",
+      "probe": "correct-development",
+      "dev_pass": true,
+      "independent_pass": true,
+      "dev_checks": 288,
+      "final_checks": 288,
+      "final_samples": 0,
+      "development_error": null,
+      "independent_error": null
+    },
+    {
+      "task": "fused_relu",
+      "probe": "correct-sample",
+      "dev_pass": true,
+      "independent_pass": true,
+      "dev_checks": 144,
+      "final_checks": 144,
+      "final_samples": 480,
+      "development_error": null,
+      "independent_error": null
+    },
+    {
+      "task": "fused_relu",
+      "probe": "wrong-values",
+      "dev_rejected": true,
+      "independent_rejected": true,
+      "development_error": {
+        "message": "output: \nNot equal to tolerance rtol=0.025, atol=0.025\n\nMismatched elements: 4369 / 4369 (100%)\nMax absolute difference among violations: 1.00000048\nMax relative difference among violations: 5535.22857896\n ACTUAL: array([[ 3.728477, -0.417141,  0.165113, ..., -0.791003,  1.755272,\n         1.180465],\n       [ 2.069145,  0.957275,  1.457118, ..., -0.161442,  3.250911,...\n DESIRED: array([[ 2.728477, -1.417141, -0.834887, ..., -1.791003,  0.755272,\n         0.180465],\n       [ 1.069146, -0.042725,  0.457118, ..., -1.161442,  2.250911,...",
+        "type": "Mismatch"
+      },
+      "independent_error": {
+        "type": "AssertionError",
+        "message": "\nNot equal to tolerance rtol=1e-05, atol=1e-05\n\nMismatched elements: 4369 / 4369 (100%)\nMax absolute difference among violations: 1.00000048\nMax relative difference among violations: 2602.19424581\n ACTUAL: array([[ 3.238119,  2.498719,  0.440402, ...,  0.817255,  1.242645,\n         0.143574],\n       [ 3.162172,  1.496386,  1.839688, ..., -0.220311,  1.302826,...\n DESIRED: array([[ 2.238119,  1.498719, -0.559598, ..., -0.182745,  0.242645,\n        -0.856426],\n       [ 2.162173,  0.496386,  0.839688, ..., -1.220311,  0.302826,...",
+        "context": {
+          "case": "float32-1",
+          "role": "candidate",
+          "seed": 1907101,
+          "kind": "fresh"
+        },
+        "traceback": "Traceback (most recent call last):\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 180, in accept\n    check_call(name, fn, inputs, golden(name, inputs), device)\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 114, in check_call\n    np.testing.assert_allclose(actual, expected, rtol=rtol, atol=atol, equal_nan=False)\n  File \"/opt/venv/lib/python3.12/site-packages/numpy/testing/_private/utils.py\", line 1711, in assert_allclose\n    assert_array_compare(compare, actual, desired, err_msg=str(err_msg),\n  File \"/opt/venv/lib/python3.12/site-packages/numpy/testing/_private/utils.py\", line 919, in assert_array_compare\n    raise AssertionError(msg)\nAssertionError: \nNot equal to tolerance rtol=1e-05, atol=1e-05\n\nMismatched elements: 4369 / 4369 (100%)\nMax absolute difference among violations: 1.00000048\nMax relative difference among violations: 2602.19424581\n ACTUAL: array([[ 3.238119,  2.498719,  0.440402, ...,  0.817255,  1.242645,\n         0.143574],\n       [ 3.162172,  1.496386,  1.839688, ..., -0.220311,  1.302826,...\n DESIRED: array([[ 2.238119,  1.498719, -0.559598, ..., -0.182745,  0.242645,\n        -0.856426],\n       [ 2.162173,  0.496386,  0.839688, ..., -1.220311,  0.302826,...\n"
+      }
+    },
+    {
+      "task": "fused_relu",
+      "probe": "precision-bias",
+      "dev_rejected": true,
+      "independent_rejected": true,
+      "development_error": {
+        "message": "task.validate: Tensor-likes are not close!\n\nMismatched elements: 4369 / 4369 (100.0%)\nGreatest absolute difference: 0.01000070571899414 at index (0, 115) (up to 1e-05 allowed)\nGreatest relative difference: 55.35261535644531 at index (12, 158) (up to 1e-05 allowed)",
+        "type": "Mismatch"
+      },
+      "independent_error": {
+        "type": "AssertionError",
+        "message": "\nNot equal to tolerance rtol=1e-05, atol=1e-05\n\nMismatched elements: 4369 / 4369 (100%)\nMax absolute difference among violations: 0.01000071\nMax relative difference among violations: 26.02193986\n ACTUAL: array([[ 2.248119,  1.508719, -0.549598, ..., -0.172744,  0.252645,\n        -0.846426],\n       [ 2.172172,  0.506386,  0.849688, ..., -1.210311,  0.312826,...\n DESIRED: array([[ 2.238119,  1.498719, -0.559598, ..., -0.182745,  0.242645,\n        -0.856426],\n       [ 2.162173,  0.496386,  0.839688, ..., -1.220311,  0.302826,...",
+        "context": {
+          "case": "float32-1",
+          "role": "candidate",
+          "seed": 1907101,
+          "kind": "fresh"
+        },
+        "traceback": "Traceback (most recent call last):\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 180, in accept\n    check_call(name, fn, inputs, golden(name, inputs), device)\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 114, in check_call\n    np.testing.assert_allclose(actual, expected, rtol=rtol, atol=atol, equal_nan=False)\n  File \"/opt/venv/lib/python3.12/site-packages/numpy/testing/_private/utils.py\", line 1711, in assert_allclose\n    assert_array_compare(compare, actual, desired, err_msg=str(err_msg),\n  File \"/opt/venv/lib/python3.12/site-packages/numpy/testing/_private/utils.py\", line 919, in assert_array_compare\n    raise AssertionError(msg)\nAssertionError: \nNot equal to tolerance rtol=1e-05, atol=1e-05\n\nMismatched elements: 4369 / 4369 (100%)\nMax absolute difference among violations: 0.01000071\nMax relative difference among violations: 26.02193986\n ACTUAL: array([[ 2.248119,  1.508719, -0.549598, ..., -0.172744,  0.252645,\n        -0.846426],\n       [ 2.172172,  0.506386,  0.849688, ..., -1.210311,  0.312826,...\n DESIRED: array([[ 2.238119,  1.498719, -0.559598, ..., -0.182745,  0.242645,\n        -0.856426],\n       [ 2.162173,  0.496386,  0.839688, ..., -1.220311,  0.302826,...\n"
+      }
+    },
+    {
+      "task": "fused_relu",
+      "probe": "input-mutation",
+      "dev_rejected": true,
+      "independent_rejected": true,
+      "development_error": {
+        "message": "input[0] mutation: \nNot equal to tolerance rtol=0, atol=0\n\nMismatched elements: 4369 / 4369 (100%)\nMax absolute difference among violations: 1.00000024\nMax relative difference among violations: 4297.557138\n ACTUAL: array([[ 0.075338,  0.574656, -1.643846, ...,  4.315647,  0.15334 ,\n         1.237366],\n       [ 2.088396,  0.750267,  0.502637, ...,  1.655937, -0.109862,...\n DESIRED: array([[-0.924662, -0.425344, -2.643846, ...,  3.315647, -0.84666 ,\n         0.237366],\n       [ 1.088396, -0.249733, -0.497363, ...,  0.655937, -1.109862,...",
+        "type": "Mismatch"
+      },
+      "independent_error": {
+        "type": "AssertionError",
+        "message": "Input values changed",
+        "context": {
+          "case": "float32-1",
+          "role": "candidate",
+          "seed": 1907101,
+          "kind": "fresh"
+        },
+        "traceback": "Traceback (most recent call last):\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 180, in accept\n    check_call(name, fn, inputs, golden(name, inputs), device)\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 124, in check_call\n    assert torch.equal(base.nan_to_num(), before.nan_to_num()), \"Input values changed\"\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Input values changed\n"
+      }
+    },
+    {
+      "task": "fused_relu",
+      "probe": "padding-write",
+      "dev_rejected": true,
+      "independent_rejected": true,
+      "development_error": {
+        "message": "task.validate: Input padding was overwritten",
+        "type": "Mismatch"
+      },
+      "independent_error": {
+        "type": "AssertionError",
+        "message": "Input padding changed",
+        "context": {
+          "case": "float32-1",
+          "role": "candidate",
+          "seed": 1907101,
+          "kind": "fresh"
+        },
+        "traceback": "Traceback (most recent call last):\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 180, in accept\n    check_call(name, fn, inputs, golden(name, inputs), device)\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 123, in check_call\n    assert torch.equal(torch.isnan(base), torch.isnan(before)), \"Input padding changed\"\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Input padding changed\n"
+      }
+    },
+    {
+      "task": "fused_relu",
+      "probe": "wrong-dtype",
+      "dev_rejected": true,
+      "independent_rejected": true,
+      "development_error": {
+        "message": "output: dtype, shape or device differs: ('torch.float32', (17, 257), (257, 1), 'cuda:0') vs ('torch.float16', (17, 257), (257, 1), 'cuda:0')",
+        "type": "Mismatch"
+      },
+      "independent_error": {
+        "type": "AssertionError",
+        "message": "Wrong output dtype",
+        "context": {
+          "case": "float16-1",
+          "role": "candidate",
+          "seed": 1907101,
+          "kind": "fresh"
+        },
+        "traceback": "Traceback (most recent call last):\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 180, in accept\n    check_call(name, fn, inputs, golden(name, inputs), device)\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 108, in check_call\n    assert output.dtype == inputs[0].dtype, \"Wrong output dtype\"\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Wrong output dtype\n"
+      }
+    },
+    {
+      "task": "fused_relu",
+      "probe": "precision-policy",
+      "dev_rejected": true,
+      "independent_rejected": true,
+      "development_error": {
+        "message": "Persistent runtime setting changed: torch; expected {'default_dtype': 'torch.float32', 'grad_enabled': True, 'threads': 1, 'matmul_precision': 'highest', 'deterministic_algorithms': False, 'matmul_tf32': False, 'cudnn_tf32': True, 'fp16_reduced_precision_reduction': True, 'bf16_reduced_precision_reduction': True, 'cudnn_benchmark': False, 'cudnn_deterministic': False}, got {'default_dtype': 'torch.float32', 'grad_enabled': True, 'threads': 1, 'matmul_precision': 'highest', 'deterministic_algorithms': False, 'matmul_tf32': False, 'cudnn_tf32': True, 'fp16_reduced_precision_reduction': True, 'bf16_reduced_precision_reduction': False, 'cudnn_benchmark': False, 'cudnn_deterministic': False}",
+        "phase": "correctness",
+        "type": "RuntimeError"
+      },
+      "independent_error": {
+        "type": "AssertionError",
+        "message": "Changed precision settings",
+        "context": {
+          "case": "float32-1",
+          "role": "candidate",
+          "seed": 1907101,
+          "kind": "fresh"
+        },
+        "traceback": "Traceback (most recent call last):\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 180, in accept\n    check_call(name, fn, inputs, golden(name, inputs), device)\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 105, in check_call\n    assert settings() == policy, \"Changed precision settings\"\n           ^^^^^^^^^^^^^^^^^^^^\nAssertionError: Changed precision settings\n"
+      }
+    },
+    {
+      "task": "fused_relu",
+      "probe": "packed-row-assumption",
+      "dev_rejected": true,
+      "independent_rejected": true,
+      "development_error": {
+        "message": "output: \nNot equal to tolerance rtol=0.025, atol=0.025\n\nMismatched elements: 2419 / 4369 (55.4%)\nMax absolute difference among violations: nan\nMax relative difference among violations: nan\n ACTUAL: array([[ 2.728477, -1.417141, -0.834887, ..., -1.791003,  0.755272,\n         0.180465],\n       [      nan,       nan,       nan, ..., -1.161442,  2.62426 ,...\n DESIRED: array([[ 2.728477, -1.417141, -0.834887, ..., -1.791003,  0.755272,\n         0.180465],\n       [ 1.069146, -0.042725,  0.457118, ..., -1.161442,  2.250911,...",
+        "type": "Mismatch"
+      },
+      "independent_error": {
+        "type": "AssertionError",
+        "message": "Nonfinite output",
+        "context": {
+          "case": "float32-1",
+          "role": "candidate",
+          "seed": 1907101,
+          "kind": "fresh"
+        },
+        "traceback": "Traceback (most recent call last):\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 180, in accept\n    check_call(name, fn, inputs, golden(name, inputs), device)\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 111, in check_call\n    assert np.isfinite(actual).all(), \"Nonfinite output\"\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Nonfinite output\n"
+      }
+    },
+    {
+      "task": "fused_relu",
+      "probe": "empty-reduction-assumption",
+      "dev_rejected": true,
+      "independent_rejected": true,
+      "development_error": {
+        "message": "output: dtype, shape or device differs: ('torch.float32', (0,), (1,), 'cuda:0') vs ('torch.float32', (3, 0), (1, 1), 'cuda:0')",
+        "type": "Mismatch"
+      },
+      "independent_error": {
+        "type": "AssertionError",
+        "message": "Wrong output shape",
+        "context": {
+          "case": "float32-6",
+          "role": "candidate",
+          "seed": 1907101,
+          "kind": "fresh"
+        },
+        "traceback": "Traceback (most recent call last):\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 180, in accept\n    check_call(name, fn, inputs, golden(name, inputs), device)\n  File \"/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-generality-20261110-051257/audit/general_final_acceptance.py\", line 107, in check_call\n    assert output.shape == expected.shape, \"Wrong output shape\"\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Wrong output shape\n"
+      }
+    }
+  ],
+  "full_costs": [
+    {
+      "task": "row_sum",
+      "api_wall_seconds": 3.982699657091871,
+      "checks": 336,
+      "timing_samples": 960,
+      "coverage": {
+        "correctness_cases": [
+          "float32-0",
+          "float32-1",
+          "float32-2",
+          "float32-3",
+          "float32-4",
+          "float32-5",
+          "float32-6",
+          "float32-7",
+          "float16-0",
+          "float16-1",
+          "float16-2",
+          "float16-3",
+          "float16-4",
+          "float16-5",
+          "float16-6",
+          "float16-7",
+          "bfloat16-0",
+          "bfloat16-1",
+          "bfloat16-2",
+          "bfloat16-3",
+          "bfloat16-4",
+          "bfloat16-5",
+          "bfloat16-6",
+          "bfloat16-7"
+        ],
+        "timed_cases": [
+          "float32-1",
+          "float32-2",
+          "float32-3",
+          "float32-7",
+          "float16-1",
+          "float16-2",
+          "float16-3",
+          "float16-7",
+          "bfloat16-1",
+          "bfloat16-2",
+          "bfloat16-3",
+          "bfloat16-7"
+        ]
+      },
+      "eligible_for_best": false,
+      "phase_wall_seconds": {
+        "correctness": 1.7800970009993762,
+        "finalize": 0.009890093002468348,
+        "measurement": 0.24892111693043262,
+        "setup": 1.2212083850754425
+      }
+    },
+    {
+      "task": "matmul",
+      "api_wall_seconds": 7.6934927260736,
+      "checks": 336,
+      "timing_samples": 960,
+      "coverage": {
+        "correctness_cases": [
+          "float32-0",
+          "float32-1",
+          "float32-2",
+          "float32-3",
+          "float32-4",
+          "float32-5",
+          "float32-6",
+          "float32-7",
+          "float16-0",
+          "float16-1",
+          "float16-2",
+          "float16-3",
+          "float16-4",
+          "float16-5",
+          "float16-6",
+          "float16-7",
+          "bfloat16-0",
+          "bfloat16-1",
+          "bfloat16-2",
+          "bfloat16-3",
+          "bfloat16-4",
+          "bfloat16-5",
+          "bfloat16-6",
+          "bfloat16-7"
+        ],
+        "timed_cases": [
+          "float32-1",
+          "float32-2",
+          "float32-3",
+          "float32-7",
+          "float16-1",
+          "float16-2",
+          "float16-3",
+          "float16-7",
+          "bfloat16-1",
+          "bfloat16-2",
+          "bfloat16-3",
+          "bfloat16-7"
+        ]
+      },
+      "eligible_for_best": false,
+      "phase_wall_seconds": {
+        "correctness": 4.69566178903915,
+        "finalize": 0.00998616497963667,
+        "measurement": 0.9610066160093993,
+        "setup": 1.2451057160506025
+      }
+    },
+    {
+      "task": "fused_relu",
+      "api_wall_seconds": 7.135386027977802,
+      "checks": 336,
+      "timing_samples": 960,
+      "coverage": {
+        "correctness_cases": [
+          "float32-0",
+          "float32-1",
+          "float32-2",
+          "float32-3",
+          "float32-4",
+          "float32-5",
+          "float32-6",
+          "float32-7",
+          "float16-0",
+          "float16-1",
+          "float16-2",
+          "float16-3",
+          "float16-4",
+          "float16-5",
+          "float16-6",
+          "float16-7",
+          "bfloat16-0",
+          "bfloat16-1",
+          "bfloat16-2",
+          "bfloat16-3",
+          "bfloat16-4",
+          "bfloat16-5",
+          "bfloat16-6",
+          "bfloat16-7"
+        ],
+        "timed_cases": [
+          "float32-1",
+          "float32-2",
+          "float32-3",
+          "float32-7",
+          "float16-1",
+          "float16-2",
+          "float16-3",
+          "float16-7",
+          "bfloat16-1",
+          "bfloat16-2",
+          "bfloat16-3",
+          "bfloat16-7"
+        ]
+      },
+      "eligible_for_best": false,
+      "phase_wall_seconds": {
+        "correctness": 4.07249957206659,
+        "finalize": 0.010969414026476443,
+        "measurement": 1.1046415829332545,
+        "setup": 1.2150695689488202
+      }
+    }
+  ],
+  "cpu_backend_diagnostic": {
+    "case": {
+      "id": "sample-bfloat16-2",
+      "args": {
+        "m": 385,
+        "n": 38,
+        "k": 92,
+        "device": "cpu",
+        "dtype": "bfloat16",
+        "layouts": [
+          {
+            "column": 1,
+            "pad": 3,
+            "offset": 5
+          },
+          {
+            "column": 3,
+            "pad": 11,
+            "offset": 7
+          }
+        ],
+        "pattern": "normal"
+      },
+      "quick": false,
+      "weight": 1
+    },
+    "seed": 7,
+    "variants": [
+      {
+        "kind": "original_views",
+        "nonfinite_count": 7296,
+        "matches_fp64": false
+      },
+      {
+        "kind": "contiguous_copies",
+        "nonfinite_count": 0,
+        "matches_fp64": true
+      },
+      {
+        "kind": "zeroed_padding",
+        "nonfinite_count": 0,
+        "matches_fp64": true
+      }
+    ]
+  },
+  "resource": {
+    "id": "99119c5be90d405d9fbca5bf425b0a7d",
+    "name": "kernel-envolve-general-r2-ehlc89zi0o",
+    "phase": "Completed",
+    "workspace_id": "4b070c1a-398d-4fb3-847c-fd9e5a318707",
+    "restart_count": 0,
+    "started_at": "2026-11-10T05:13:04Z",
+    "ended_at": "2026-11-10T05:17:29Z",
+    "pods": 0,
+    "gpu_count": 1,
+    "observed_at": 1794287923.4884481,
+    "submission_requested_at": 1794287577.1307561,
+    "active_deadline_seconds": 360,
+    "platform_running_seconds": 265.0
+  },
+  "including_initial_failed_job": {
+    "platform_running_seconds": 334.0,
+    "max_concurrent_gpus": 1,
+    "model_calls": 0
+  },
+  "interpretation": "GPU baseline controls passed on all public and diagnostic sample cases; 24 fault cases rejected by both validators. Full costs are single observations, not an old/new or cross-system efficiency comparison. Public diagnostic samples are not hidden final acceptance."
+}

@@ -1,0 +1,23 @@
+Optimize candidate.py for one NVIDIA B300 within 480 seconds from trial start, including tool calls, compilation, profiling and evaluation. Work autonomously without starting other agents or models. Read task.json, task.py and workload.py. All arms receive identical files, tools, hardware references and evaluation rules; only the additional workflow prompt differs.
+
+Deliver /work/submission.py, a self-contained Python module exposing run(*inputs). This exact file is frozen when you finish or the deadline expires. Keep it updated with the deliverable you choose; a missing submission fails. Use installed PyTorch, Triton or available CUDA compilation facilities. No dependency on other local helpers. Preserve input tensors and all backing storage, output shape/dtype, and runtime precision settings. Do not modify task/evaluator files or identify benchmarks by seed, address, call count or evaluation state.
+
+Support the declared range, not only the listed cases. For row_sum, rows span 0..128 and columns 0..32769; for matmul, M/N span 0..512 and K 0..1024; for fused_relu, rows span 0..512 and columns 0..8193. Each task includes FP32, FP16 and BF16, independent positive strides, row padding, transposed matrices and storage offsets. Inputs are finite and disjoint. Empty reductions and dimensions retain ordinary PyTorch semantics. workload.py specifies numerical checks per dtype. You may dispatch on public input metadata and use a correct general fallback, including its cost in measurements. Frozen submissions will be tested on both public cases and previously unseen dimension/layout combinations from this same domain. Final acceptance results are not available during search.
+
+The performance objective is lower equal-weight total synchronized eager wall latency on the declared representative cases, with no measured case more than 5% slower than the fixed original implementation. Correctness-only cases remain mandatory. Final public and unseen-input results are reported separately, including failures and per-case regressions. No CUDA Graph score is substituted for eager latency. environment.json contains the actual toolchain and device information.
+
+Use the shared GPU tool from this isolated workspace:
+  python3 gpu.py status
+  python3 gpu.py evaluate --candidate candidate.py --mode quick
+  python3 gpu.py evaluate --candidate candidate.py --mode quick --signal-only
+  python3 gpu.py evaluate --candidate candidate.py --case CASE --seed INTEGER --check-only
+  python3 gpu.py evaluate --candidate candidate.py --mode full
+  python3 gpu.py promote RUN_ID
+  python3 gpu.py best --output submission.py
+  python3 gpu.py result RUN_ID
+  python3 gpu.py profile --target baseline
+  python3 gpu.py profile --target candidate --candidate candidate.py
+
+All arms use the same GPU transport, and all tool time counts against the budget. If a workflow shows local kernel-envolve CLI commands, use the equivalent python3 gpu.py operation here; the evaluator semantics are unchanged. quick includes correctness; signal-only gives no speedup or promotion. full checks complete declared correctness, measures the representative cases in two batches against current best and fixed baseline, and applies noise/regression gates. A successful full can be promoted to an immutable best. CLI summaries expose phase_wall_seconds, worker_process_wall_seconds and compilation errors; result returns the raw report. Profiling is best effort and reports unavailability explicitly. Hardware/reference links are in references/hardware.md. Internet documentation may be read within the budget. Do not access another trial or control infrastructure.
+
+This is a fresh workspace and conversation. Choose and submit your implementation within the deadline. Apply the additional workflow below if present.

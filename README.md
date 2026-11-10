@@ -328,13 +328,39 @@ evaluator 或任务契约变化后，旧 run 保留为历史，不能沿用其�
 
 状态隔离、精度与证据检查的其他回归包括冻结 oracle/计时返回值、FP16 比较溢出、全局数值设置污染、零 MAD 多峰、遗漏 helper、过期 `.pyc`、Python `-O` 和伪造 worker 结果。详见[旧新版本反例](audit/evaluator_regression_probes.json)、[测试](tests)。这些保障已进入运行时，无需用户每轮手动执行额外流程。
 
+### 后续对照使用的广域任务
+
+[任务生成器](audit/build_general_tasks.py)为归约、GEMM、融合 ReLU 各生成一个普通任务目录，不增加运行服务。每个任务的同一入口须支持 FP32、FP16、BF16；24 个公开正确性 case 中，12 个代表 case 计时、3 个进入 quick。另有按固定规则抽样的 12 个同域 case，其中 6 个计时；抽样 seed 在正式搜索开始前确定并放在 agent 工作区之外。
+
+| 任务 | 公开支持范围 | 额外覆盖 |
+|---|---|---|
+| 行归约 | rows 0–128，归约长度 0–32769 | 长短归约、非整倍数、空归约、成对抵消 |
+| GEMM | M/N 0–512，K 0–1024，三维独立变化 | 瘦长矩阵、非对齐 K、K=0、各输入独立布局 |
+| 融合 ReLU | rows 0–512，columns 0–8193 | 激活阈值两侧、尾部、独立 residual/scale/bias 布局 |
+
+输入使用各自的列 stride、行 padding、storage offset 和转置，未使用的底层存储填 NaN 哨兵。开发任务的 `validate` 按 dtype 检查精度，并拒绝写坏 padding。正确性与性能是两套覆盖，未计时 case 不进入加速比。这里使用等权 benchmark 目标；接入实际业务时换成已知调用分布。
+
+[独立验收](audit/general_final_acceptance.py)使用单独实现的 NumPy FP64 oracle，不读取开发 verdict，不导入本库评分器；检查 fresh/原地址换值、输出 dtype/shape、完整输入存储、精度设置污染，以及每个实际计时输出。计时覆盖两批交错测量，报告逐 case 延迟和退化；公开开发集与未见组合分别报告，不能仅保留得分较好的集合。
+
+[正反例检查脚本](audit/probe_general_tasks.py)分别验证正确 baseline，以及错误数值、FP32 小偏置、输入修改、padding 写坏、错误 dtype、精度设置泄漏、紧密行假设、空归约处理错误。其固定公开抽样只用于检查实验工具；正式对照必须另选未揭示样本。
+
+B300 上已完成这组检查：**122 项测试通过，6 组正确实现和 24 个故障反例在两套验证器中全部得到预期结果**。每项任务的 full 包含 336 条正确性记录、960 个计时样本；归约/GEMM/融合的 API 总耗时分别为 3.98/7.69/7.14 秒，三个相同实现对照都未获得晋升资格。这是单次广域评测成本，不是 quick/full 或跨仓库速度排名。[摘要](audit/general_contract_gpu/verified/summary.json)、[完整记录](audit/general_contract_gpu/verified/raw.json.gz)及[源码快照](audit/general_contract_gpu/verified/sources.tar.gz)均已保存。
+
+[首次失败](audit/general_contract_gpu/initial/summary.json)也保留：工厂一致性测试误把该机器的 CPU BF16 matmul 当成已验证 baseline，遇到非连续布局时产生 NaN，因而在 GPU 合约检查之前停止。随后独立复现了同一现象：原视图产生 7,296 个 NaN，连续副本和仅清零视图外 padding 的版本均匹配 FP64。工厂测试改为验证 oracle，目标 GPU baseline 仍完整接受独立检查，未放松精度或删除失败输入。两次任务最终均无 Pod，平台运行合计 334 秒；模型调用为零。
+
+
+```bash
+python audit/build_general_tasks.py --directory /path/to/tasks --device cuda:0
+kernel-envolve evaluate --task /path/to/tasks/matmul --mode quick
+```
+
 ### 搜索流程是否更好：现有结果与下一步
 
 九次 GPT-6 Astra 预实验已经执行并保留全部结果：六次正确交付、一次编译失败、两次未交付。其中 0–1 受模型代理串行锁影响，2–7 受 SSE 终止分隔符截断影响，1、7 被控制器中止；只有第 8 次正常完成。该次融合 ReLU 两批收益为 65.2%/65.5%，但不能与异常结束的组比较来排名流程。[全部运行及成本](audit/search_pilot_20261110/summary.json)、[释放记录](audit/search_pilot_20261110/resource-release.json)保留；GPU 保守计费范围约 28.5 分钟，九次额度已用完。
 
 实验接入现在改用 Codex 原生 Responses provider，取消自建模型 HTTP/SSE 代理。凭证仅按环境变量名传入容器；[本地合成验证](audit/direct_provider_validation.json)检查多轮工具调用、分段终止事件、HTTP 延迟关闭、超时清理和源码冻结，**零真实推理、零 GPU**。它验证传输与生命周期机制，真实模型和远端 GPU 联通仍需在正式实验时确认。相关代码只在 `audit/`，不进入产品运行包，也不增加 CPU 开发阶段。
 
-后续对照采用以下具体方案；尚未启动，另需模型/GPU 预算授权：
+[后续对照计划](audit/general_comparison_plan.json)已固定三组提示词、公开任务源码哈希和 45 次运行次序；尚未启动，另需模型/GPU 预算授权：
 
 - **比较对象：** 目标提示、AKO4ALL 改编流程、本 skill；同模型 GPT-6 Astra/medium，同开发 evaluator、工具、资料和起始实现，只改变工作流指令。因此结果回答 skill 的价值，不能冒充各仓库完整系统排名。
 - **规模：** 归约、GEMM、融合三任务×三组×五次独立搜索，共 45 次，每次最多 8 分钟。串行 1 张 B300，搜索最多 6 小时，环境检查和独立验收最多 1 小时，总 GPU 上限 7 小时。模型以 45 次独立会话和逐次 wall deadline 为上限，记录全部实际 tokens/费用，不复用此前九次授权。
