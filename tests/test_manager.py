@@ -1204,3 +1204,43 @@ def test_cancel_after_acquiring_writer_lock_rolls_back_projection(managed, monke
     for key in ("best", "history", "latest_evaluation", "evidence_as_of", "evidence_error"):
         assert after[key] == before[key]
     assert store.rows("SELECT * FROM runs") == rows
+
+
+def test_coordinator_signal_handler_does_not_acquire_event_lock(managed, monkeypatch):
+    from kernel_envolve.manager import service
+
+    store, _, _ = managed
+    in_handler = False
+    set_event = threading.Event.set
+    set_signal = signal.signal
+
+    def guarded_event_set(event):
+        assert not in_handler, "Signal handlers must not acquire Event's internal lock"
+        set_event(event)
+
+    def guarded_signal(signum, handler):
+        if callable(handler):
+
+            def wrapped(*args):
+                nonlocal in_handler
+                in_handler = True
+                try:
+                    handler(*args)
+                finally:
+                    in_handler = False
+
+            return set_signal(signum, wrapped)
+        return set_signal(signum, handler)
+
+    def request_stop(_):
+        signal.getsignal(signal.SIGTERM)(signal.SIGTERM, None)
+
+    monkeypatch.setattr(threading.Event, "set", guarded_event_set)
+    monkeypatch.setattr(signal, "signal", guarded_signal)
+    monkeypatch.setattr(service, "reconcile", request_stop)
+    previous = {sig: signal.getsignal(sig) for sig in (signal.SIGTERM, signal.SIGINT)}
+    try:
+        service.run(store)
+    finally:
+        for sig, handler in previous.items():
+            set_signal(sig, handler)

@@ -87,9 +87,12 @@ def run(store, once=False):
         if handle is None:
             raise ValueError("A coordinator already owns this state directory")
         stopped = threading.Event()
+        stop_requested = False
 
         def on_signal(signum, frame):
-            stopped.set()
+            # A signal handler must not acquire Event locks held by this thread.
+            nonlocal stop_requested
+            stop_requested = True
 
         handlers = {s: signal.signal(s, on_signal) for s in (signal.SIGINT, signal.SIGTERM)}
         children = []
@@ -108,7 +111,7 @@ def run(store, once=False):
                 local.close()
 
         try:
-            while not stopped.is_set():
+            while not stop_requested:
                 health = {
                     "pid": os.getpid(),
                     "identity": identity(os.getpid()),
@@ -123,9 +126,9 @@ def run(store, once=False):
                     )
                     if once:
                         raise
-                    stopped.wait(1)
+                    time.sleep(1)
                     continue
-                if stopped.is_set():
+                if stop_requested:
                     break
                 if future is not None and future.done():
                     try:
@@ -141,7 +144,7 @@ def run(store, once=False):
                 store.db.execute(
                     "INSERT OR REPLACE INTO metadata VALUES('coordinator',?)", (encode(health),)
                 )
-                if stopped.is_set():
+                if stop_requested:
                     break
                 for key in store.schedule():
                     directory = store.root / "jobs" / key
@@ -170,12 +173,13 @@ def run(store, once=False):
                 if once:
                     completed_once = True
                     break
-                stopped.wait(1)
+                time.sleep(1)
         finally:
             # Keep both locks owned until the evidence thread reaches a safe boundary.
-            if not completed_once:
+            cancel_scan = stop_requested or not completed_once
+            if cancel_scan:
                 stopped.set()
-            pool.shutdown(wait=True, cancel_futures=not completed_once)
+            pool.shutdown(wait=True, cancel_futures=cancel_scan)
             for sig, handler in handlers.items():
                 signal.signal(sig, handler)
         # Round supervisors intentionally survive a coordinator restart. Pause tasks to stop them.
