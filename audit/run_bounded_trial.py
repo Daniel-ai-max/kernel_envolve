@@ -1,13 +1,15 @@
 """Bound one isolated comparison trial and freeze its declared submission.
 
 Audit-only runner, not part of the kernel_envolve runtime. The image must already
-exist locally and be pinned by digest or image ID. Model credentials/connectivity
-are intentionally not supplied by this generic runner.
+exist locally and be pinned by digest or image ID. Network access and environment
+variable names must be passed explicitly; this runner does not discover credentials.
 """
 
 import argparse
 import hashlib
 import json
+import os
+import re
 import subprocess
 import time
 from pathlib import Path
@@ -20,6 +22,8 @@ def main():
     parser.add_argument("--image", required=True)
     parser.add_argument("--seconds", type=float, required=True)
     parser.add_argument("--network", choices=["none", "bridge"], default="none")
+    parser.add_argument("--stdin-file", type=Path)
+    parser.add_argument("--env-name", action="append", default=[])
     parser.add_argument("command", nargs=argparse.REMAINDER)
     args = parser.parse_args()
     workspace, output = args.workspace.resolve(), args.output.resolve()
@@ -32,6 +36,10 @@ def main():
     command = args.command[1:] if args.command[:1] == ["--"] else args.command
     if not command:
         raise ValueError("Supply the trial command")
+    for name in args.env_name:
+        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name) or name not in os.environ:
+            raise ValueError("Every passed environment name must be valid and present")
+    stdin = args.stdin_file.read_bytes() if args.stdin_file else None
     output.mkdir(parents=True, exist_ok=False)
     cidfile = output / "container-id"
     report = {
@@ -41,10 +49,13 @@ def main():
         "network": args.network,
         "timed_out": False,
         "submission": None,
+        "stdin_sha256": hashlib.sha256(stdin).hexdigest() if stdin is not None else None,
+        "environment_names": args.env_name,
     }
     invocation = [
         "docker",
         "run",
+        "-i",
         "--pull=never",
         "--cidfile",
         str(cidfile),
@@ -58,10 +69,15 @@ def main():
         "--memory=2g",
         "--tmpfs",
         "/tmp:rw,nosuid,size=256m",
+        "--tmpfs",
+        "/root/.codex:rw,nosuid,size=128m",
+        "--tmpfs",
+        "/root/.cache:rw,nosuid,size=128m",
         "--mount",
         f"type=bind,src={workspace},dst=/work",
         "--workdir",
         "/work",
+        *[part for name in args.env_name for part in ("--env", name)],
         args.image,
         *command,
     ]
@@ -72,34 +88,45 @@ def main():
             (output / "stdout.log").open("wb") as stdout,
             (output / "stderr.log").open("wb") as stderr,
         ):
-            process = subprocess.Popen(invocation, stdout=stdout, stderr=stderr)
+            process = subprocess.Popen(
+                invocation, stdin=subprocess.PIPE, stdout=stdout, stderr=stderr
+            )
             try:
-                process.wait(timeout=args.seconds)
+                process.communicate(stdin, timeout=args.seconds)
             except subprocess.TimeoutExpired:
                 report["timed_out"] = True
             finally:
-                if cidfile.exists():
-                    cid = cidfile.read_text().strip()
-                    # Removing this exact owned container also kills detached children.
-                    removed = subprocess.run(
-                        ["docker", "rm", "--force", cid], capture_output=True, text=True, timeout=30
-                    )
-                    report["container_removed"] = removed.returncode == 0
-                    if removed.returncode:
-                        report["cleanup_error"] = removed.stderr
-                if process.poll() is None:
-                    process.terminate()
-                    try:
-                        process.wait(timeout=5)
-                    except subprocess.TimeoutExpired:
-                        process.kill()
-                        process.wait(timeout=5)
+                try:
+                    if cidfile.exists():
+                        cid = cidfile.read_text().strip()
+                        # Removing this exact owned container also kills detached children.
+                        removed = subprocess.run(
+                            ["docker", "rm", "--force", cid],
+                            capture_output=True,
+                            text=True,
+                            timeout=30,
+                        )
+                        report["container_removed"] = removed.returncode == 0
+                        if removed.returncode:
+                            report["cleanup_error"] = removed.stderr
+                finally:
+                    if process.poll() is None:
+                        process.terminate()
+                        try:
+                            process.wait(timeout=5)
+                        except subprocess.TimeoutExpired:
+                            process.kill()
+                            process.wait(timeout=5)
         report["returncode"] = process.returncode
         report["wall_seconds_including_cleanup"] = time.monotonic() - started
+        if not report.get("container_removed"):
+            raise RuntimeError("Container cleanup unconfirmed; submission was not frozen")
         submission = workspace / "submission.py"
         if submission.is_symlink():
             raise ValueError("Declared submission must not be a symlink")
         if submission.is_file():
+            if submission.stat().st_size > 1024 * 1024:
+                raise ValueError("Single-file pilot submission exceeds 1 MiB")
             data = submission.read_bytes()
             if len(data) > 1024 * 1024:
                 raise ValueError("Single-file pilot submission exceeds 1 MiB")
