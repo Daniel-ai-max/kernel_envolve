@@ -255,3 +255,75 @@ def test_nested_research_rejected_before_any_evaluation(active, monkeypatch):
     with pytest.raises(ValueError, match="outside the Manager GPU"):
         run(packet, work.parent / "nested", lambda *args: pytest.fail("decision called"))
     assert not store.rows("SELECT id FROM jobs WHERE kind='gpu'")
+
+
+def test_commit_boundary_deadline_keeps_timeout_and_cleans_real_child(active, monkeypatch):
+    from test_transaction_interrupt import InterruptedTransaction
+
+    from kernel_envolve.manager.store import Store
+    from kernel_envolve.rsi.managed import _DeadlineExpired
+
+    store, work, _ = active
+    (work / "candidate.py").write_text("import time\ndef run(x):\n time.sleep(60)\n return x+1\n")
+    original = Store.heartbeat
+    injected = []
+
+    def deadline_after_first_gpu_heartbeat(self, key, seconds):
+        if injected or self.job(key)["kind"] != "gpu":
+            return original(self, key, seconds)
+        injected.append(key)
+        connection = self.db
+        self.db = InterruptedTransaction(
+            connection, _DeadlineExpired("queue/execution commit deadline")
+        )
+        try:
+            return original(self, key, seconds)
+        finally:
+            self.db = connection
+
+    monkeypatch.setattr(Store, "heartbeat", deadline_after_first_gpu_heartbeat)
+    with pytest.raises(TimeoutError, match="queue/execution commit deadline"):
+        evaluate(work, "full", 5, work.parent / "commit-interrupt")
+    assert len(injected) == 1
+    job = store.job(injected[0])
+    assert job["status"] in {"failed", "cancelled"}
+    assert job["child_pid"] is not None
+    assert not alive(job["child_pid"], job["child_identity"])
+    for child in store.rows("SELECT * FROM processes WHERE job=?", (job["id"],)):
+        assert not alive(child["pid"], child["identity"])
+    with exclusive(lock_path("gpu", "cpu")) as handle:
+        assert handle is not None
+    assert not store.db.in_transaction
+    assert signal.getitimer(signal.ITIMER_REAL) == (0, 0)
+
+
+@pytest.mark.parametrize("after", [False, True])
+def test_enqueue_interruption_cleans_only_a_committed_waiter(active, monkeypatch, after):
+    from test_transaction_interrupt import InterruptedTransaction
+
+    from kernel_envolve.manager.store import Store
+    from kernel_envolve.rsi.managed import _DeadlineExpired
+
+    store, work, _ = active
+    original = Store.enqueue
+    injected = []
+
+    def enqueue(self, task, kind, command, parent=None):
+        key = original(self, task, kind, command, parent)
+        if kind == "gpu":
+            injected.append(key)
+            self.db = InterruptedTransaction(
+                self.db, _DeadlineExpired("queue/execution enqueue deadline"), after=after
+            )
+        return key
+
+    monkeypatch.setattr(Store, "enqueue", enqueue)
+    with pytest.raises(TimeoutError, match="queue/execution enqueue deadline"):
+        evaluate(work, "full", 5, work.parent / "enqueue-interrupt")
+    assert len(injected) == 1
+    jobs = store.rows("SELECT * FROM jobs WHERE kind='gpu'")
+    assert len(jobs) == int(after)
+    if after:
+        assert jobs[0]["status"] == "cancelled" and jobs[0]["child_pid"] is None
+    assert not (work / ".kernel_envolve/runs").exists()
+    assert not store.db.in_transaction

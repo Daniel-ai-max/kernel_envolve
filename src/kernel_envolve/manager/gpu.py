@@ -119,7 +119,9 @@ def run(root, task_id, round_id, command, *, expected_seconds=None):
                             return result
             time.sleep(0.2)
     except BaseException as exc:
-        if key:
+        # An interruption before enqueue's COMMIT can roll the row back after
+        # assigning key. There is then no persisted waiter to cancel.
+        if key and store.one("SELECT id FROM jobs WHERE id=?", (key,)):
             reason = str(exc) if isinstance(exc, ValueError) else "GPU waiter interrupted"
             store.finish(key, "cancelled", reason)
         raise

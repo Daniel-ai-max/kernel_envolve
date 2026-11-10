@@ -69,12 +69,15 @@ class Store:
 
     @contextlib.contextmanager
     def transaction(self):
-        self.db.execute("BEGIN IMMEDIATE")
+        owns_transaction = not self.db.in_transaction
         try:
+            self.db.execute("BEGIN IMMEDIATE")
             yield
             self.db.execute("COMMIT")
         except BaseException:
-            self.db.execute("ROLLBACK")
+            # COMMIT can finish before a signal interrupts its Python return.
+            if owns_transaction and self.db.in_transaction:
+                self.db.execute("ROLLBACK")
             raise
 
     def get(self, key, default=None):

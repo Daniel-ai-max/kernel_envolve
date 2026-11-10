@@ -1,0 +1,47 @@
+{
+  "at": 1794348172.378399,
+  "observed_ci": {
+    "run": 42909275572,
+    "job": 130155323760,
+    "python": "3.13.18",
+    "source_commit": "bff1343",
+    "failure": "SQLCOMMITcompleted before deadlineexception;unconditionalROLLBACK masked original _DeadlineExpired with noactive transaction OperationalError",
+    "log_sha256": "85f80511e317c920dbc61f6ee75a27b69ab0b283d53b62adf7306c360f9a2a9b",
+    "py312_job": 130155324311,
+    "py312_conclusion": "cancelled per authoritative job API;not independent failure"
+  },
+  "fix": {
+    "Manager_and_RSI_transactions": "BEGINinsideguard;onlyrollback an ownedtransaction thatremains active;preserve originalexception after COMMITcompleted;do notrollback callers on rejectednestedBEGIN",
+    "GPUwaiter_cleanup": "Cancel only if assignedkey actuallycommitted;rolledbackenqueue has no persistedwaiter"
+  },
+  "targeted_tests": {
+    "passed": 27,
+    "seconds": 8.8,
+    "new_test_scenarios": [
+      "realSQLiteBEGINbefore/after deadline",
+      "realSQLiteCOMMITbefore/after deadline",
+      "nestedtransactionownership",
+      "normalbodyexceptionrollback",
+      "actual Managerchild cleanup after heartbeatCOMMITdeadline",
+      "enqueuebefore/afterCOMMIT nochild/noghostwaiter"
+    ]
+  },
+  "full_suite": {
+    "passed": 604,
+    "skipped": 10,
+    "seconds": 177.14,
+    "pythonpath": "/Users/daniel/Documents/ChatGPT/\u7b97\u5b50\u4f18\u5316/kernel_envolve-rsi/src"
+  },
+  "active_GPUstudy_unchanged": true,
+  "production_enabled": false,
+  "source_sha256": {
+    "src/kernel_envolve/manager/store.py": "c07e5e625811bf186df80b4fd865d99aa815f217b43a3dc76315a0d3a8aaf086",
+    "src/kernel_envolve/manager/gpu.py": "9f31e3be60a5baff08b357f666783703fddcd48381aa415a9d170ab2b8c15460",
+    "src/kernel_envolve/rsi/store.py": "db80cec8692bddf82b5be30d0a777ff90f11dbe7ea211ed2dae2ae4d8dd99b40",
+    "tests/test_transaction_interrupt.py": "c174e507066a19fe396ff47c8cc95910d7e7d368d6565d5ba5b20f1a9080661b",
+    "tests/test_rsi_managed.py": "8f96b98c64f7693291ba66ac5874ff5f866d26b93b6aaf197874b462e8cb21d0"
+  },
+  "static_checks": "Ruff check/format and gitdiffcheck passed",
+  "CI_after_fix": "pending new commit",
+  "updated_at": 1794348314.3727129
+}

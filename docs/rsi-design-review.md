@@ -479,3 +479,12 @@ InfraRSI 的 [transfer.py](https://github.com/TokenRhythm/InfraRSI/blob/5e5f6944
 这是自动成果生命周期的接入基础，不是发布器：没有因“保存成功”而自动采用，没有活动版本指针、收益准入、撤回或两代选优。调用者必须显式批准并固定内容身份，原始收据仍需保留供后台审计。借鉴 SciMARS 的证据身份区分和 Artifact-to-Capability 的形成/激活拆分；没有把形成/激活工程完成写成能力增益。
 
 全仓 **589 passed / 10 skipped（175.69 秒）**，静态检查通过。实际 CPU Manager 子进程确认 initial/候选/独立 final 共三次准入，模型决策不持有设备锁；异常文件和语义/运行环境漂移回退，运行中不热加载，旧验证器身份不能冒用新实现。见 [验证收据](../audit/rsi_artifact_snapshot_implementation_20261111.json)。当前 GPU 对照继续使用冻结 `6e97cdd`，不包含此接口；不将其结果归因到新快照路径。
+
+
+### CI 暴露的事务截止时间竞态及修复
+
+`bff1343` 的一组 Python 3.13 CI 在真实 Manager 子进程超时测试中失败：SQLite 已完成 `COMMIT`，随后截止时间异常到达 Python；原事务包装器无条件 `ROLLBACK`，用“无活动事务”错误盖住了原始超时。Python 3.12 同矩阵任务经平台详情核实为取消，不是第二个独立失败。另一组通过不能抵消这个已观察缺陷，原失败日志和 job ID 已保留。
+
+Manager 与 RSI 事务包装器现只回滚自己开启且仍活动的事务，覆盖 `BEGIN` 已执行后被中断的窗口，也不回滚调用者的已有事务。GPU 队列清理仅取消实际已提交的 waiter；如果入队事务回滚后只留下本地 key，不再对不存在的记录调用 finish。没有延长期限或放宽准入。
+
+新增真实 SQLite 的确定性边界注入，覆盖 BEGIN/COMMIT 前后、正文异常和嵌套事务所有权；实际 Manager 子进程测试确认 heartbeat 提交后中断仍清理子进程并释放设备锁，入队提交前后中断不留下运行任务或额外评测。27 项专项与全仓 **604 passed / 10 skipped（177.14 秒）** 通过，静态检查通过，修复后的远端 CI 待确认。见 [故障与修复收据](../audit/rsi_transaction_deadline_20261111.json)。当前单卡收益试验继续使用冻结 `6e97cdd` 的独立实验路径，没有替换代码、阈值或样本。

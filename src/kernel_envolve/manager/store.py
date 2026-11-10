@@ -96,12 +96,17 @@ class Store:
 
     @contextlib.contextmanager
     def transaction(self, *, readonly=False):
-        self.db.execute("BEGIN" if readonly else "BEGIN IMMEDIATE")
+        owns_transaction = not self.db.in_transaction
         try:
+            self.db.execute("BEGIN" if readonly else "BEGIN IMMEDIATE")
             yield
             self.db.execute("COMMIT")
         except BaseException:
-            self.db.execute("ROLLBACK")
+            # A deadline/signal may arrive after SQLite committed but before
+            # execute() returns. Preserve that exception instead of masking it
+            # with "cannot rollback - no transaction is active".
+            if owns_transaction and self.db.in_transaction:
+                self.db.execute("ROLLBACK")
             raise
 
     def rows(self, query, params=()):
