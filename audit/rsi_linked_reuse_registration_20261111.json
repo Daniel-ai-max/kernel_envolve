@@ -1,0 +1,29 @@
+{
+  "registered_at": 1794336617.9547698,
+  "before_submission": true,
+  "sha256": {
+    "analyze.py": "6ccecd0ad33eff3adb83ffe359a67371f9c3566f665bc3b8c6c45069a26b2896",
+    "artifact_adapter_smoke.py": "a2989c713edd12b3886e8cf8bc417e447e19392dcbf7617c8fda31850468a223",
+    "batch_worker.py": "6b1f2ea85af91ba46b7452c5ca3a2c7630af9528888679df30d402db577e1d3d",
+    "controller.py": "dd90913781ab7b27c27ce20ce1267e02c1c79f8d83808451cc171a8961e29997",
+    "controller_guard_test.py": "25fbe25f05dac62822e795a36d3fa9f6759839e92b7890626b286590588ff92d",
+    "jupyter_remote.py": "897c9cad9c8e1be7ce102ec04477360b2358240f3f7410c243b48a5b2927e2d8",
+    "model_client.py": "a6a394d5a7bfc3086ca5250457da4b125e53dbe12ec151d2601c5f54db7f6714",
+    "model_process_smoke.py": "18b948ec8ede3c602a4b08ccdb9576b533132c73d44f2fa432065e8ad1ff4656",
+    "pilot_adapter.py": "567816075355d8d15bee94ca3fa9d1bdfc36a28ad297d4a9837287e02c07609a",
+    "pilot_driver.py": "f89746e5fdadd2da1fd2a6c363dee64560bab92e3c3701b94690ee1405bcf5ea",
+    "pilot_guard.py": "65e892ce4e1ca5d2d665f62ca81cf1b66d509341e902a5ea0fd992311bd50b1c",
+    "prepare.py": "a36b88f74d25b29f074d74913da70e572df189def48e653913feb57d4d861f2f",
+    "relay.py": "8c0cdd5cad244a135b37944fcd520a45f99b232816c1291d3fa01c264da7efcb",
+    "reuse_context.py": "37c56b6c3c6b7f8f85e273e21b8b9a1e075b8b384e61eddf8778e33eb5c8ed83",
+    "workload_smoke.py": "3dad5dbe7782f563c23a2dfd535be598df2ac8409082ceec3b337d07893c45c8",
+    "workloads.py": "310b57609b8504624a18357cd17f92fc1509ab900690ed149a2b1cf058c286a4",
+    "protocol.json": "0b37b58fad25038463be5f96fd43d1cae2b3f9851d1dc85bff594914bb78d7d6",
+    "training-episodes-manifest.json": "dbb5fced15ed50cfa39204dad97b0d51212b2e540b7fc00f3de36cbd6e7b4d25",
+    "training-episodes/30328cf08106c3390296659a93dd2c324a571260f554ef4712b98f3802a8a557.json": "30328cf08106c3390296659a93dd2c324a571260f554ef4712b98f3802a8a557",
+    "training-episodes/575207e89a57d44fe9ba07704ed6d5c700abf3b05862617154949fc959caa51b.json": "575207e89a57d44fe9ba07704ed6d5c700abf3b05862617154949fc959caa51b",
+    "training-episodes/8e7f3e6f024917bcb6a2cc01fca05b1fb5892111bfe3efdbec50dbf85867befd.json": "8e7f3e6f024917bcb6a2cc01fca05b1fb5892111bfe3efdbec50dbf85867befd",
+    "training-episodes/f4d08a34c9dc48c2b919fc470129cb556b3e259d21dc644399e7ecf2321d482b.json": "f4d08a34c9dc48c2b919fc470129cb556b3e259d21dc644399e7ecf2321d482b"
+  },
+  "scope": "Four-arm matched efficacy and full-view ablation; all raw receipts,64final results,linked packet reconstruction,actual calls/usage/failures,exact source/runtime/profile,all costs;original gates plus practical conditions. Bootstrap4operatorclusters descriptive development."
+}
