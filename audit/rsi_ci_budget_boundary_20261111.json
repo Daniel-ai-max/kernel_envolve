@@ -1,0 +1,14 @@
+{
+  "observed_at": 1794341045.056926,
+  "failed_run": "https://github.com/Daniel-ai-max/kernel_envolve/actions/runs/42890850169",
+  "source": "241671d",
+  "test": "test_real_retry_exhausts_original_wall_budget",
+  "cause": "CI subprocess may already exhaust original 0.5s budget on first attempt; test assumed second admission",
+  "change": "Test branches on actual accounted usage: consumed budget rejects admission; remaining budget runs retry; no budget reset or production change",
+  "validation": {
+    "recovery_tests_passed": 20,
+    "ruff": "passed",
+    "diff_check": "passed"
+  },
+  "gpu_experiment_source_unchanged": "4894926cb0538d2f641d63e8d881c08f6d517617"
+}

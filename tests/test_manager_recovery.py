@@ -127,9 +127,17 @@ def test_real_retry_exhausts_original_wall_budget(managed):
     assert store.job(first)["status"] == "failed"
     before = store.task("toy")["wall_seconds"]
     advance_retry(store)
-    run_round(store)
+    # On a loaded runner the first real subprocess can already consume the
+    # entire budget. Admission must reject it then; only retry when time remains.
+    # Never refund measured usage or enlarge the original budget for the test.
+    if before < 0.5:
+        run_round(store)
+        assert store.task("toy")["wall_seconds"] > before
+    else:
+        assert not store.schedule()
+        assert store.task("toy")["wall_seconds"] == before
     assert store.task("toy")["wall_seconds"] >= 0.5
-    assert store.task("toy")["wall_seconds"] > before
+    assert store.task("toy")["spec"]["wall_budget_seconds"] == 0.5
     assert store.task("toy")["desired"] == "budget"
     assert not store.schedule()
 
