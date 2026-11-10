@@ -1,0 +1,88 @@
+"""Posthoc failure diagnosis of a CLOSED study; no model, evaluation or acceptance."""
+import collections
+import hashlib
+import json
+from pathlib import Path
+
+from kernel_envolve.manager.evidence import inspect_run
+from kernel_envolve.rsi.reuse import runtime_key
+from kernel_envolve.storage import digest
+
+ROOT = Path(__file__).resolve().parent
+E = ROOT / 'evidence'
+summary = json.loads((ROOT / 'summary.json').read_text())
+assert summary['job'] == 'ef46cf6e2cc74cbfb469f0bbc4850963'
+assert hashlib.sha256((ROOT / 'evidence.tar.gz').read_bytes()).hexdigest() == summary['evidence_sha256']
+rows, source_groups, exact_groups = [], collections.defaultdict(list), collections.defaultdict(list)
+for trial in summary['trials']:
+    directory = E / 'comparison' / trial['trial_id']
+    trace = json.loads((directory / 'search-trace.json').read_text())
+    failed = 0
+    for step in trace['steps']:
+        observed = step.get('observation', {})
+        if observed.get('status') != 'evaluated' or observed.get('quality', 0) >= 0:
+            continue
+        run = E / Path(observed['run']).relative_to('/tmp/kernel-rsi-pilot')
+        raw = json.loads((run / 'result.json').read_text())
+        spec = {'kind': 'generic', 'task_dir': str(Path(raw['task_root']).resolve()),
+                'baseline': {'contract': raw['identity']['contract']}}
+        verified = inspect_run(run, spec)
+        assert verified['correctness'] != 'pass' or verified['execution'] != 'completed'
+        source_hash = hashlib.sha256((run / 'source/candidate.py').read_bytes()).hexdigest()
+        assert source_hash == observed['candidate']
+        assert hashlib.sha256((directory / f'candidate-{source_hash}.py').read_bytes()).hexdigest() == source_hash
+        failed += 1
+        runtime = digest(runtime_key(verified['environment']))
+        row = {
+            'trial': trial['trial_id'], 'arm': trial['arm'], 'task': trial['task'],
+            'repeat': trial['repeat'], 'step': step['index'], 'source': source_hash,
+            'task_source': raw['identity']['files']['task.py'],
+            'contract': raw['identity']['contract'], 'evaluator': verified['evaluator_hash'],
+            'runtime_key_hash': runtime, 'mode': verified['mode'],
+            'result_hash': verified['result_hash'], 'error_type': (raw.get('error') or {}).get('type'),
+            'failed_checks': verified['failed_checks'],
+            'trace_reported_model_seconds': step.get('model_seconds'),
+            'worker_wall_seconds': raw.get('worker_wall_seconds'),
+            'run': str(run.relative_to(E)),
+        }
+        # Never combine different arms into a putative continuous learning history.
+        source_key = (row['arm'], row['task_source'], row['source'], row['evaluator'], runtime)
+        exact_key = (*source_key, row['contract'], row['mode'], row['error_type'], digest(row['failed_checks']))
+        source_groups[source_key].append(len(rows))
+        exact_groups[exact_key].append(len(rows))
+        rows.append(row)
+    assert failed == trial['wrong_candidate_evaluations']
+
+def groups_report(groups):
+    return [{'indices': ids, 'arm': rows[ids[0]]['arm'], 'source': rows[ids[0]]['source'],
+             'observations': len(ids), 'distinct_trials': len({rows[i]['trial'] for i in ids}),
+             'distinct_contracts': len({rows[i]['contract'] for i in ids})}
+            for ids in groups.values() if len(ids) > 1]
+
+out = {
+    'job': summary['job'], 'source_commit': summary['source_commit'],
+    'evidence_sha256': summary['evidence_sha256'], 'summary_sha256': hashlib.sha256((ROOT/'summary.json').read_bytes()).hexdigest(),
+    'analysis': 'Posthoc descriptive diagnosis, no change to the closed verdict or current i/j protocol.',
+    'failures': len(rows), 'error_types': dict(collections.Counter(r['error_type'] for r in rows)),
+    'by_arm': {}, 'same_source_groups': groups_report(source_groups),
+    'exact_failure_groups': groups_report(exact_groups), 'rows': rows,
+    'limitations': [
+        'Each trial was independent; repeated observations across trials are NOT observed failures of a continuously updating learner.',
+        'Exact means same source bytes, task contract, evaluator, declared runtime key, mode, error type and failed-check payload. It does not prove deterministic recurrence or safe veto after environmental drift.',
+        'Cross-arm repetitions are not counted as learned recurrence. General error labels are not a causal equivalence class.',
+        'Repeated-source observations under new input configurations are evidence of those measurements, not proof of failure on every future shape or seed.',
+        'Worker/model durations are reported components, not measured GPU kernel time or a counterfactual cost saving.',
+        'No memory method was tested here; future negative-memory utility needs a prospective same-budget comparison.',
+    ],
+}
+for arm in summary['aggregates']:
+    subset = [r for r in rows if r['arm'] == arm]
+    out['by_arm'][arm] = {
+        'failed_evaluations': len(subset),
+        'exact_repeat_observations_after_first': sum(len(v)-1 for k,v in exact_groups.items() if k[0] == arm),
+        'same_source_observations_after_first_across_configs': sum(len(v)-1 for k,v in source_groups.items() if k[0] == arm),
+        'worker_wall_seconds': sum(r['worker_wall_seconds'] for r in subset),
+        'trace_reported_model_seconds': sum(r['trace_reported_model_seconds'] for r in subset),
+    }
+(ROOT/'failure-recurrence.json').write_text(json.dumps(out,indent=2))
+print(json.dumps({k:out[k] for k in ('failures','error_types','by_arm','exact_failure_groups')},indent=2))
