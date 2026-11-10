@@ -392,10 +392,80 @@ record = audit(library, record_id)
 
 收集器从原始收据重建完整 episode，不接收 agent 声称的成绩或操作者手工选择的源码。若指定父版本，必须核实本轮实际读取了该父快照、绑定当前 initial full、将其中源码作为第一个普通动作进行评测。只有本轮 agent 提出的不同源码被选中，并通过独立最终 full，才形成 `candidate`。初始与最终的 evaluator 或运行环境不一致时仅保留观察。没有变化、快照回退、最终失败或视图超限也仅形成 `observation`，不伪造新一代。
 
-完整失败事实留在 episode，`parent_observations` 指向父代码在本轮契约下的实际观察；失败只约束已测契约，不能推断该实现对所有未来输入无效。相同父版本、scope 和源码对应同一个 `proposal_key`，即使另一次测量产生新的 episode ID。后续采用台账必须按此键消耗一次验证机会；本模块只提供身份，不声称已经完成采用防重。
+完整失败事实留在 episode，`parent_observations` 指向父代码在本轮契约下的实际观察；失败只约束已测契约，不能推断该实现对所有未来输入无效。相同父版本、scope 和源码对应同一个 `proposal_key`，即使另一次测量产生新的 episode ID。采用台账必须按此键消耗一次验证机会；形成器只提供身份，下面的 `Registry` 实现持久化防重。
 
 文件均按内容寻址，重复收集同一轮幂等；中断可能留下无引用数据，不会留下活动指针。`audit` 最多回查 32 层祖先的原始完整收据、源码和真实父快照使用，并绑定收集器所在的验证器代码身份。版本漂移、原始证据被改动或缺失时拒绝，即使物化文件自身哈希仍然匹配。后一次元数据读取不能取代已经验证的首个动作。
 
-在**另行授权的后台实验**中，`validation_snapshot(library, record_id)` 重验该记录后返回 `{path, identity, profile}`，可供 `research.run` 的显式 `artifact_snapshot` 输入。它不是采用批准。不要把祖先审计放在生产前台；前台仍只有原有单文件读取，没有历史遍历、额外模型调用或 GPU 探测。收集触发由可信编排器负责，目前没有生产 Manager 自动挂钩、活动版本发布、撤回或收益准入；这些仍是后续工作。
+在**另行授权的后台实验**中，`validation_snapshot(library, record_id)` 重验该记录后返回 `{path, identity, profile}`，可供 `research.run` 的显式 `artifact_snapshot` 输入。它不是采用批准。不要把祖先审计放在生产前台；前台仍只有原有单文件读取，没有历史遍历、额外模型调用或 GPU 探测。收集触发由可信编排器负责，没有生产 Manager 自动挂钩；下面的实验 `Registry` 负责活动版本发布、撤回和收益准入。
 
 CPU 工程测试形成种子与两个连续子代，并覆盖失败保留、父版本未实际使用、环境变化、旧收据被篡改、无变化与重复收集。它只验证链路，不是两代学习收益。已关闭的真实 GPU 归档也经新收集器离线验证；61 份种子视图、3 份最终不合格观察与 28 次错误候选全部保留，没有新 GPU/model 请求，没有将历史数据冒充为新代际试验。
+
+### 成果目录的晋升、撤回与后台发布（实验接口，默认不接入生产）
+
+`rsi.artifact_registry.Registry` 在上述形成器之上增加了持久化生命周期。
+这是一项新工程机制，**不是已关闭 GPU 试验的获胜版本，也尚未证明跨代收益**。
+`Registry.create(root, archive, seeds, max_attempts=..., max_seconds=..., max_tokens=...)`
+显式建立一个实验目录：每个精确 reference/profile/precision/runtime scope 只有一个
+经原始收据核实的种子。SQLite 中的一次事务更新整个目录与活动指针。
+
+可信控制器在学习开始前调用 `declare_learning(entries)`，按固定顺序登记未来收据的
+`{scope, receipt}`；这些路径必须尚不存在。完成后写入
+`{provenance: {task, artifacts, task_profile, confirmation_run, origin_task?}}`，失败则
+写入明确的 `error`。`collect_learning(phase)` 检查全部登记记录，并选择每个 scope
+在登记顺序中**第一个**合格且改变了源码的子代。其余槽位保留父版本；其他成功、失败
+和未变化的记录均保留，不通过跨任务成绩排名挑一个有利结果。没有变化就不形成新目录。
+
+`reserve(candidate, suite)` 必须先于验证调用。它把父版本、模板、solver 文件身份、
+验证器身份和预算封存；每个改变的 `proposal_key` 只获得一次验证机会。中断保留已占用
+预算和已消耗机会。换一个解释、收据或学习 phase 不会给相同父版本/源码重新抽签。
+验证配置不能弱化原先 0.02 的逐任务质量保护、5% 耗时保护、0.01 的质量收益或 10%
+成本收益门槛。另有不能低于 10% 的实用门槛：每次重复相对每个对照，必须达到
+质量分数相对提升至少 10%，或在质量不下降时总 trial 耗时减少至少 10%；同时仍须通过
+原保护和 token 成本限制。分数变化不是 kernel 加速比。所有槽位需要 retention/fresh 两种配置与至少两次匹配重复；配置仅改名称
+不能伪装成新模板。fresh 验证配置与形成数据隔离；retention 必须覆盖种子及父版本准入中全部已测配置，
+可以重测已知旧配置来检查能力保留，不能将其称为盲测泛化。已登记验证配置不能再用于形成新代。
+这只检查实际配置身份，不能证明语义层面的无限泛化或阻止不可信控制器泄露信息。
+
+每个配置分别运行 `control`（无经验）、`seed`（冻结初始目录）、`parent` 和 `candidate`。
+`artifact_validation.trial_order(suite)` 交替反转组内顺序；各组的模型、指令前缀、传输选项、
+动作上限和原始候选相同。经验源码占普通动作，保留 initial full 与独立 final full。
+`finish(attempt, evidence)` 在资源释放、原始工作区与全部 transport 收据收回后进行离线核验：
+
+- 从原始 evaluator 收据重新计算正确性与质量，核对保护文件、初始源码、完整轨迹、独立
+  final、实际读取和执行的各组成果；不能用 agent 自报分数或 `accepted` 字段替代。
+- 把每个模型请求绑定到任务、重复编号、当时的候选/历史/剩余动作，并核对实际响应中
+  的动作、源码、mode 与执行记录；模型和传输设置漂移、遗漏调用、重复响应、缺失 usage
+  都不能通过。验证前发生的调用不能冒充本次验证。
+- 对三个对照逐一执行原门槛，同时检查 token 成本与 retention/fresh 分区质量保护。
+  所有重复都必须合格；并不把两个重复合并，以一个幸运结果抵消另一次退化。
+- 保存全部结果和后台核验耗时。无法完整核实时至少保留预算上限的扣账；已知超支仍扣入
+  台账，未知 token 从不记成零。任何验证失败都不会自动重试或启用新版本。
+
+`suite` 的任务来自 `trials.freeze_template`，另带 `kind="generic"`、规范化 `profile`、
+`scope`、`partition`；当前仅支持单文件 generic `candidate.py`。它还需要 `model`、
+`reasoning`、`prompt_prefix_hash`、`request_options`（除 model/reasoning/input 外的完整
+请求选项）、`command`/`adapter_files`、上述阈值、`max_token_regression`、`repeats`、
+`max_actions`、`max_seconds`、`max_tokens`、`min_relative_quality_gain` 和 `min_wall_saving`。
+
+`evidence` 包含 `attempt`、`trials`、完整 `calls` 文件路径列表和 `release_receipt` 路径。
+每个 trial 含 `repeat/task/arm`、`provenance`、可信控制器计量的 `seconds/solver_seconds`；
+provenance 的 `origin_task` 允许已释放 Linux 工作区到本地归档的单目录路径映射。
+模型收据采用当前研究 transport 的 `trial_id/started_at/status/request/response` 格式。
+释放收据包含终态 `phase`、空 `pods`、可用的 `live_read_status.pods` 和 `at`。
+这些是可信控制器提供的计量与平台采集记录，不是模块自己查询平台或第三方计费的证明。
+
+`adopt(candidate)` 会再次审计原始数据，并在事务中拒绝 stale parent、禁用状态、已使用
+或已撤回的版本。`snapshot(scope)` **只由后台编排器在轮次之间调用**；发现证据漂移时
+撤回受影响的活动目录及后代，恢复仍可审计的祖先，全部无效则返回无经验。
+`set_enabled(False)` 禁止后续解析和晋升；`rollback(reason)` 显式撤回。已经开始的轮次
+仍使用原来固定的输入，不声称能够撤销远端正在执行的代码。
+
+前台仍只接收 `{path, identity, profile}` 并读取一份最多 32 KiB 的快照；没有新增生产
+Manager 自动挂钩、数据库查询、历史扫描、反思模型调用或 GPU 探测。该数据库、归档、
+模板和模型 transport 日志必须由可信控制器持有，不能让候选 solver 写入。内容哈希不能
+代替 OS 隔离或认证。远端容器、实际 solver/source-guard 与源代码包仍由外层冻结协议
+核对；本地 adapter 文件身份不是远端二进制执行证明。
+
+此台账只覆盖晋升验证。学习、失败、初始经验获取、GPU 租约及全局模型费用仍由外层
+campaign 账本与平台硬期限限制。实际 ROI 必须计入这些成本及后台成本；一项验证门槛
+通过不等于整个 campaign 已回本，也不是统计显著性、所有算子上的收益或论文优越性证明。

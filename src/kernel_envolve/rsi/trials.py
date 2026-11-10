@@ -38,6 +38,8 @@ def validator_identity():
                 "allocation.py",
                 "artifact_snapshot.py",
                 "artifact_lineage.py",
+                "artifact_validation.py",
+                "artifact_registry.py",
             )
         }
     )

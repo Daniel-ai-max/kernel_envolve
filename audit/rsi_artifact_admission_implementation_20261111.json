@@ -1,0 +1,37 @@
+{
+  "at": 1794354772.37231,
+  "status": "Engineering implemented; new GPU efficacy not tested",
+  "branch": "feature/rsi-evolution",
+  "base_commit": "20f0c98429785eaf26a2486f6fac5c615a001e9a",
+  "source_sha256": {
+    "src/kernel_envolve/rsi/artifact_registry.py": "08e985971a7549445c7aff5da2cfdcd0ed05659a7413d67aa765ebf162177f4a",
+    "src/kernel_envolve/rsi/artifact_validation.py": "026b780977562bd513a27b20941e60a8e5b46bd327eb926ab199db97cb63858f",
+    "src/kernel_envolve/rsi/trials.py": "d17c9f95d66ae865854430a9925b14931af5af0ed55553cc59371a8ca9c74f9e",
+    "tests/test_rsi_artifact_registry.py": "bc86fe4e51b3a7af6a60722d333006883da4399bd0db39327c8444e38f93726d"
+  },
+  "checks": {
+    "final_focused": "32passed59.86seconds",
+    "final_full": "651 passed, 10 skipped in 264.68s (0:04:24)",
+    "full_source_inventory_unchanged": true,
+    "ruff": "134filespassed",
+    "previous_full": "649passed10skipped before explicit practical floors; preserved externally, not final-source evidence",
+    "predecessor_ci": "20f0c98 push+PR Python3.11/3.12/3.13 allpassed"
+  },
+  "implemented": [
+    "Fixed declared learning order; first eligible changed descendant per scope; all observations retained",
+    "Persistent once-only parent/scope/source admission reservation; interruption remains charged",
+    "Four matched arms with raw evaluator/source/template/context verification and actually activated artifacts",
+    "Transport request/history/candidate/response binding, complete usage and fixed model/request options",
+    "Original quality/cost protections plus >=10percent practical benefit perrepeat against allthreecontrols, token protection",
+    "Retention covers seed and all admitted parent configurations; fresh formation/validation split",
+    "Atomic catalog publication, stale-parent rejection, disable, cascading revocation and valid-ancestor rollback",
+    "No Manager production hook, hot-path history/DB scan, extraGPUprobe or per-actionreflection"
+  ],
+  "engineering_scope": "Actual CPU seed->child->grandchild formation/validation/adoption/rollback; synthetic transport usage/controller durations and deliberate sleep removal. Not evidence of model learning or GPU utility.",
+  "trust_boundary": "Publisher/controller, transport inventory and timing manifest trusted and isolated from solver. Hashes are not OS authentication. Remote immutable container, sourceguard/solver execution and totalGPU/provider budgets are external campaign responsibilities.",
+  "costs": "Unknown or invalid validation retains reservation; known overrun also charged; registry admission budget is not wholecampaignbilling. Background verification time recorded.",
+  "gpu_model_requests_this_implementation": 0,
+  "production_activation": false,
+  "current_utility": "Unproven; closed fixed2/adaptive negative outcomes remain closed. No universal paper superiority or complete campaign ROI claim.",
+  "next": "Freeze separate original-seed generational experiment after exactheadCI; continue inside existing24h authorization."
+}
