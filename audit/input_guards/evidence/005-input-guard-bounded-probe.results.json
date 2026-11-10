@@ -1,0 +1,26 @@
+{
+  "id": "005-input-guard-bounded-probe",
+  "round": "901af64d08a14a6188fd0c0c2346078a",
+  "started_at": 1794327202.4009275,
+  "argv": [
+    "/tmp/ke-dsa-updates/ddfb65c14a7b72a2e687/releases/b084e38b73bfb2f46a544f608c504930d1603d92/.entry/kernel-envolve",
+    "manage",
+    "gpu-run",
+    "--expected-seconds",
+    "180",
+    "--",
+    "/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-dsa-six-20261110/venv/bin/python",
+    "/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-dsa-six-20261110/student_v2/diagnostics/input-guard/probe.py",
+    "--baseline",
+    "/tmp/ke-dsa-updates/ddfb65c14a7b72a2e687/releases/b084e38b73bfb2f46a544f608c504930d1603d92/src/kernel_envolve",
+    "--candidate",
+    "/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-dsa-six-20261110/student_v2/diagnostics/input-guard/candidate",
+    "--output",
+    "/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-dsa-six-20261110/student_v2/diagnostics/input-guard/result.json"
+  ],
+  "stdout": "/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-dsa-six-20261110/control/manager/bridge/student_v2/901af64d08a14a6188fd0c0c2346078a/logs/005-input-guard-bounded-probe.stdout.log",
+  "stderr": "/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-dsa-six-20261110/control/manager/bridge/student_v2/901af64d08a14a6188fd0c0c2346078a/logs/005-input-guard-bounded-probe.stderr.log",
+  "returncode": 2,
+  "status": "failed",
+  "finished_at": 1794327242.5317934
+}

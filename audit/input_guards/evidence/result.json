@@ -1,0 +1,97 @@
+{
+  "status": "failed",
+  "scope": "Session observe only, not end-to-end evaluator",
+  "gpu": "NVIDIA B300 SXM6 AC",
+  "blocks": [
+    {
+      "order": 0,
+      "role": "baseline",
+      "setup_seconds": 1.660922895069234,
+      "observe_seconds": [
+        3.6202718529384583,
+        3.536499081994407,
+        3.5054907070007175
+      ],
+      "guard": null
+    },
+    {
+      "order": 1,
+      "role": "candidate",
+      "setup_seconds": 1.7050934380386025,
+      "observe_seconds": [
+        0.0032333170529454947,
+        0.003172122989781201,
+        0.0031625349074602127
+      ],
+      "guard": {
+        "device_inputs": [
+          "large"
+        ],
+        "host_inputs": [],
+        "private_allocated_bytes": 1572864000,
+        "snapshot_seconds": 1.7049281680956483,
+        "check_seconds": 0.1294705019099638,
+        "check_calls": 8,
+        "fallbacks": {}
+      }
+    },
+    {
+      "order": 2,
+      "role": "candidate",
+      "setup_seconds": 1.6990617309929803,
+      "observe_seconds": [
+        0.00318230502307415,
+        0.0031690350733697414,
+        0.003173584002070129
+      ],
+      "guard": {
+        "device_inputs": [
+          "large"
+        ],
+        "host_inputs": [],
+        "private_allocated_bytes": 1572864000,
+        "snapshot_seconds": 1.698916992987506,
+        "check_seconds": 0.012487958883866668,
+        "check_calls": 8,
+        "fallbacks": {}
+      }
+    },
+    {
+      "order": 3,
+      "role": "baseline",
+      "setup_seconds": 1.5202022140147164,
+      "observe_seconds": [
+        3.4727003569714725,
+        3.475023106089793,
+        3.4789654429769143
+      ],
+      "guard": null
+    }
+  ],
+  "checks": [
+    "raw-write-noncontiguous-alias-torch.float32",
+    "raw-write-noncontiguous-alias-torch.bfloat16",
+    "signed-zero",
+    "nan-payload",
+    "budget-fallback-exact",
+    "validator-mutation",
+    "refresh-old-value"
+  ],
+  "threads": 1,
+  "deterministic": true,
+  "manager": {
+    "KERNEL_ENVOLVE_GPU_JOB": "b7fe050505f44184b1cfa9072f305d68",
+    "KERNEL_ENVOLVE_TASK": "student_v2",
+    "KERNEL_ENVOLVE_ROUND": "901af64d08a14a6188fd0c0c2346078a",
+    "CUDA_VISIBLE_DEVICES": "GPU-acc9c793-86b8-b645-c9dc-c453167c80bb"
+  },
+  "source_sha256": {
+    "/tmp/ke-dsa-updates/ddfb65c14a7b72a2e687/releases/b084e38b73bfb2f46a544f608c504930d1603d92/src/kernel_envolve/training.py": "2275ec95600b80096eb385dec6a7705913f46bfd115a0fbd25887efc290756f6",
+    "/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-dsa-six-20261110/student_v2/diagnostics/input-guard/candidate/training.py": "d67582346443c1d0e6baa23bf31e51db7910ea86f2172185bf553360495e9d77",
+    "/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-dsa-six-20261110/student_v2/diagnostics/input-guard/candidate/native_worker.py": "a25575cbdf7bbdff33fa5f442ac479a53173a013af4c0af8281f3f5c41a5e760",
+    "/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-dsa-six-20261110/student_v2/diagnostics/input-guard/probe.py": "4bc2631e98a8141e76b4c77540186146c4145114de28a6c75487365a4699a27a"
+  },
+  "input_bytes": 1572814848,
+  "error": "IndentationError: unexpected indent (adapter.py, line 2)",
+  "seconds": 36.700577986077406
+}

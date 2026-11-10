@@ -1,0 +1,27 @@
+{
+  "id": "006-input-guard-peak-only",
+  "round": "901af64d08a14a6188fd0c0c2346078a",
+  "started_at": 1794327397.6054237,
+  "argv": [
+    "/tmp/ke-dsa-updates/ddfb65c14a7b72a2e687/releases/b084e38b73bfb2f46a544f608c504930d1603d92/.entry/kernel-envolve",
+    "manage",
+    "gpu-run",
+    "--expected-seconds",
+    "30",
+    "--",
+    "/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-dsa-six-20261110/venv/bin/python",
+    "/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-dsa-six-20261110/student_v2/diagnostics/input-guard/probe-peak.py",
+    "--baseline",
+    "/tmp/ke-dsa-updates/ddfb65c14a7b72a2e687/releases/b084e38b73bfb2f46a544f608c504930d1603d92/src/kernel_envolve",
+    "--candidate",
+    "/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-dsa-six-20261110/student_v2/diagnostics/input-guard/candidate",
+    "--output",
+    "/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-dsa-six-20261110/student_v2/diagnostics/input-guard/peak-result.json",
+    "--peak-only"
+  ],
+  "stdout": "/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-dsa-six-20261110/control/manager/bridge/student_v2/901af64d08a14a6188fd0c0c2346078a/logs/006-input-guard-peak-only.stdout.log",
+  "stderr": "/fsx/infra-p1-slow-2/shared/runs/daniel/kernel-envolve-dsa-six-20261110/control/manager/bridge/student_v2/901af64d08a14a6188fd0c0c2346078a/logs/006-input-guard-peak-only.stderr.log",
+  "returncode": 0,
+  "status": "succeeded",
+  "finished_at": 1794327401.8130467
+}

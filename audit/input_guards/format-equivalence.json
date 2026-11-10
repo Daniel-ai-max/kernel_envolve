@@ -1,0 +1,35 @@
+{
+  "formatter": "ruff 0.17.4",
+  "method": "ast.dump(ast.parse(source), include_attributes=False)",
+  "tested_commit": "50a2e2d38dd643001e7261a67c1786aa283ac43a",
+  "files": [
+    {
+      "path": "audit/input_guards/probe.py",
+      "before_sha256": "2d297f2681a2498644976f34f56274a3a458fee59c6a532255e3eb8e056f50b8",
+      "after_sha256": "a8b2406d88db003f58c8c7722d56f3db43b0a11606c0154bc0e171b744d4fdf9",
+      "ast_dump_sha256": "1ca9c433777576ea51ed4ba1eaf8ef54f8b115d8b305a6127c001a40b4623762",
+      "ast_equal": true
+    },
+    {
+      "path": "src/kernel_envolve/training.py",
+      "before_sha256": "d67582346443c1d0e6baa23bf31e51db7910ea86f2172185bf553360495e9d77",
+      "after_sha256": "e6d38e32961f0f94279748f720f3869af82ec4150b8fa8c2ce2568b387a96831",
+      "ast_dump_sha256": "71856e98ba9f53c8333f3d630a2771d7b970b2276a16416a7d26e3ecdcf91583",
+      "ast_equal": true
+    },
+    {
+      "path": "src/kernel_envolve/native_worker.py",
+      "before_sha256": "a25575cbdf7bbdff33fa5f442ac479a53173a013af4c0af8281f3f5c41a5e760",
+      "after_sha256": "275aef874030c9953b6138b3656447c462efc9e1843440f293a1036206b597d0",
+      "ast_dump_sha256": "6adabbe9662d39b10c9bb85ef68234421a925f9af753b2737ef2cc29be1a8840",
+      "ast_equal": true
+    },
+    {
+      "path": "tests/test_input_guards.py",
+      "before_sha256": "fbbecf709ec21f21e2f0db7bd6be00f386f03d4f71a0a2195b31641c410ecffc",
+      "after_sha256": "810658147af78940c527ef5f6fd95bd0185c4ebea16a5b62ccbc7a585693e8a2",
+      "ast_dump_sha256": "90c449cf3b673fcfa523f24c9145d8df160f177b2fd5fffa51d05ffc94ea7d96",
+      "ast_equal": true
+    }
+  ]
+}
