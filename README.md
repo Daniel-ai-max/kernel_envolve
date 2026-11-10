@@ -299,7 +299,7 @@ full 已有 best 时 R 从 2 变为 3，因此计时调用数增加 50%；这是
 
 上述对照的公开开发任务现已落地：[行归约](audit/search_tasks/row_sum)、[FP32 GEMM](audit/search_tasks/matmul)、[带非连续输入的融合 ReLU](audit/search_tasks/fused_relu)。每项包含三种 shape/layout、固定 FP64 oracle、原始实现和候选入口，统一测同步的 eager wall latency。CPU 与 B300 自检均确认三项正确实现通过、六项错误数值/输入篡改探针被拒绝；B300 还分别跑通完整评测，每项 48 条正确性记录、240 个计时样本，未将相同原始实现晋升。三项完整评测单次总耗时分别约 2.17/2.47/2.63 秒，包含初始化；这不是 quick/full 成本对照或搜索效果排名。[原始记录与复现入口](audit/search_workload_preflight.json)已保存，任务已结束并释放 GPU。
 
-[九次预实验草案](audit/search_pilot_plan.json)固定了三种流程、三项任务、轮换次序和每次八分钟的拟议预算。它只用于检查实验是否可执行；模型配置和远端 GPU 反馈接线仍须完成并固定，独立 agent 尚未启动。正式比较仍按上表进行多次独立运行，不用一次预实验宣布胜出。
+[九次预实验方案](audit/search_pilot_plan.json)已获授权：三种流程、三项任务，每次最多八分钟，统一 GPT-6 Astra／medium，串行使用一张 B300，总 GPU 预算不超过九十分钟。[完整提示词](audit/search_pilot_prompts/)和隐藏最终种子的哈希已在搜索前固定。模型流式接口及远端执行入口已通过静态接入检查；独立 agent 尚未启动，待实际 GPU 自检后运行。CPU 准备仅用于这次实验接入调试，不属于产品流程；正常使用直接在目标 GPU 环境做一次自检后开始迭代。正式比较仍按上表进行多次独立运行，不用一次预实验宣布胜出。
 
 独立的[最终验收脚本](audit/search_final_acceptance.py)现已实现：不导入 kernel_envolve evaluator/scoring，以 NumPy FP64 计算期望值，检查数值、shape、dtype、设备、输入状态及同地址换值；独立生成交错计时，每个实际计时输出都在计时区间外校验，保留原始样本，不读取开发阶段的晋升状态。为控制预实验的适配成本，三组都只提交单个 candidate.py。CPU 和 B300 各通过三个正确对照、拒绝十五个错误数值/输入篡改/缓存/dtype/shape 探针；B300 额外完成三项完整计时，每项 36 条初始检查、240 个逐项验证的计时样本。[自检记录](audit/search_final_validation.json)保留实际结果；correct 只表示功能正确，不表示性能胜出。实际模型接入后的隐藏种子隔离和远端评测终止，仍需在启动搜索前验证。
 

@@ -1,0 +1,15 @@
+{
+  "common": "Same task, original candidate, evaluator APIs, tools, reference links, runtime and resource limits for all arms.",
+  "goal_only": "Prompt baseline inspired by JustGoal, not a native JustGoal reproduction.",
+  "ako4all_workflow_adaptation": {
+    "source_commit": "bbd0e1cf1ce2fb19d4322a932680f4c3d175d80e",
+    "adaptations": [
+      "Codex applies the workflow despite original Claude routing guidance.",
+      "Fixed task.py/candidate.py replace Model/get_inputs scaffold and solution folder.",
+      "User-provided evaluator path replaces benchmark scaffolding; only public fast switches allowed.",
+      "Same baseline, profiling attempt, per-iteration next-two-tool-call log/commit, signal/verdict split, 3-iteration stall review and exact-source restore.",
+      "Eight-minute user budget takes precedence over minimum-exploration stopping advice."
+    ]
+  },
+  "kernel_envolve_skill": "Exact repository skill content; common gpu.py CLI maps repository commands to remote API. All arms have identical hardware.md, but only this arm receives the skill workflow."
+}

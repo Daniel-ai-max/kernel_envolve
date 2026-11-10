@@ -1,11 +1,13 @@
 {
-  "status": "prepared_not_started_pending_explicit_agent_authorization",
+  "status": "authorized_ready_for_gpu_preflight",
   "purpose": "Feasibility pilot for workflow ablation, not a full-system comparison or a superiority test. Runtime evaluator remains unchanged.",
-  "source_base_commit": "3f25448c51e057cca08e5809a06efdc9000e20e9",
+  "source_base_commit": "e1d13e427ac88e41b1c5aae42212575b40fa1b84",
   "model": {
-    "proposed": "gpt-6-astra",
-    "selection_confirmed": false,
-    "settings": "Resolve and pin actual supported reasoning/configuration before any search; identical for all arms."
+    "selected": "gpt-6-astra",
+    "selection_confirmed": true,
+    "reasoning_effort": "medium",
+    "cli_version": "0.157.0",
+    "settings": "Same pinned CLI/catalog and HTTP Responses provider for all arms; independent containers/conversations; additional agents disabled."
   },
   "budget": {
     "runs": 9,
@@ -13,7 +15,7 @@
     "wall_seconds_per_run": 480,
     "gpu_count": 1,
     "gpu_seconds_total_cap": 5400,
-    "token_budget": "Not yet confirmed; log all usage. No model calls have been made."
+    "token_budget": "No explicit token cap; use the authorized nine 480-second wall budgets and log all returned usage."
   },
   "arms": {
     "goal_only": "A goal-only prompt baseline inspired by JustGoal. This is not a reproduction of the entire JustGoal system.",
@@ -90,12 +92,10 @@
     "row_sum/task.py": "45019d9b266c5cc88ae26fe6e6e15b98e8b85e9bfde02421c9bc3058596e2276"
   },
   "final_acceptance": {
-    "status": "validator_and_static_container_runner_self_checked; model_and_remote_gpu_adapter_pending",
+    "status": "model_HTTP_and_remote_REST_transport_static_checks_passed; actual_GPU_controls_pending",
     "required_before_launch": [
-      "Freeze the common prompt, exact arm prompts, model configuration and version identities.",
-      "Establish independent directories/conversations and enforce no cross-arm candidate access.",
-      "Precommit final input seeds outside the agents’ accessible workspace.",
-      "Integrate the authorized model and remote GPU feedback inside the isolated runner; verify deadline cancellation of any active remote evaluations and record all startup/cleanup costs. Static no-network container tests alone do not prove this integration."
+      "Verify actual GPU identity, complete workload controls and cancellation on the pinned environment before starting model inference.",
+      "Freeze actual runtime/configuration and retain every trial including failures."
     ],
     "submission": "At the deadline freeze the explicitly declared delivery; do not retrospectively choose the candidate with best final-test score.",
     "outcomes": [
@@ -111,5 +111,26 @@
     "runner_sha256": "f542c93a60a532cd0a87f378ddc77723a4131001eae5796374c3e3476ddf36ae",
     "runner_self_check_evidence": "bounded_trial_validation.json"
   },
-  "formal_comparison": "After the pilot, at least five independent runs per task/arm with prespecified practical benefit and cost criteria. Expanded model budget and final settings remain to be confirmed; no formal runs are scheduled."
+  "formal_comparison": "After the pilot, at least five independent runs per task/arm with prespecified practical benefit and cost criteria. Expanded model budget and final settings remain to be confirmed; no formal runs are scheduled.",
+  "authorization": {
+    "runs": 9,
+    "model": "gpt-6-astra",
+    "wall_seconds_per_run": 480,
+    "gpu_count": 1,
+    "gpu_seconds_total_cap": 5400,
+    "scope": "User explicitly authorized the nine feasibility runs; formal repeated runs remain separate."
+  },
+  "precommitted_prompts_and_seeds": {
+    "prompts": {
+      "adaptations.json": "c618cdf65fc6b177c41c85649bcdabf490dd9f33847316155d9354fa238b1d64",
+      "ako4all_workflow_adaptation.txt": "497f7b33d532f69e85fed4262c08863bcd7af54c9169ce0fa21fd5bcd8165703",
+      "common.txt": "480c315f354931aae8e0ae2cbb0c86376fb2132508a0b0395f9c52ac6d702876",
+      "goal_only.txt": "30929711bb8ef084ea67907424a8f3efae84e16e914d0c1481c4a1f87526117a",
+      "kernel_envolve_skill.txt": "437d1d1b71ef7b633d97c9758ab6ba5543e381b58f45bfbb129afc0b151dd75f"
+    },
+    "hidden_seed_sha256": "abd7a9cacc7f201145abd90f3e740c5cfe11889e0da6c4eff55c80b9dc2b26b2",
+    "model": "gpt-6-astra",
+    "reasoning": "medium",
+    "actual_search_started": false
+  }
 }

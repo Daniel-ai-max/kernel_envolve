@@ -1,0 +1,19 @@
+Optimize the task's candidate.py for one NVIDIA B300 GPU. You have at most 480 seconds from trial start, including tool calls, compilation and evaluation. Work autonomously. Do not start other agents or models. Read task.py and task.json for the complete public workload and numerical contract. The three public cases/layouts are the final domain too; final acceptance uses withheld values/seeds.
+
+Deliver a self-contained Python file /work/submission.py exposing run(*inputs). This exact file is frozen when you finish or the deadline expires. Keep it updated with your chosen deliverable; a missing file fails the trial. It may use installed PyTorch/Triton and CUDA compilation facilities but cannot depend on other local helper files. You may specialize for declared shapes/dtypes/layouts. Do not mutate input tensors, persist altered precision settings, key results on input address/seed/evaluation state, modify the evaluator, access another trial, or access host/control infrastructure. The objective is lower equal-weight sum of per-case median synchronized eager wall latency than the original PyTorch baseline, with no case regressing >5%. FP32 inputs/outputs and the specified accuracy are mandatory. No CUDA Graph timing. Remote environment details are in environment.json.
+
+All GPU operations use the same remote tool, with a fresh evaluator process for each call. Your local container has Python/git/curl but no GPU, PyTorch or Triton. Edit and inspect source locally; run GPU code through gpu.py. Public operations:
+  python3 gpu.py status
+  python3 gpu.py evaluate --candidate candidate.py --mode quick
+  python3 gpu.py evaluate --candidate candidate.py --mode quick --signal-only
+  python3 gpu.py evaluate --candidate candidate.py --case CASE --seed INTEGER --check-only
+  python3 gpu.py evaluate --candidate candidate.py --mode full
+  python3 gpu.py promote RUN_ID
+  python3 gpu.py best --output submission.py
+  python3 gpu.py result RUN_ID
+  python3 gpu.py profile --target baseline
+  python3 gpu.py profile --target candidate --candidate candidate.py
+
+quick includes correctness checks but has a smaller sample/case set and cannot promote. signal-only reports candidate timings without comparator timing and cannot establish speedup. full uses fixed complete coverage, repeated correctness checks, two batches of paired measurements, current saved best plus fixed original baseline, and the contract's noise/regression gates. Full is the only promotion-eligible mode. --case/--seed are quick exploration/diagnostic selectors; do not reduce full coverage. --baseline can diagnose the original baseline. On full success, promote saves an immutable best snapshot; best --output restores its exact source. result returns the complete raw report. Evaluation summaries include phase_wall_seconds and worker_process_wall_seconds. Tool transport overhead counts against your wall budget. The profiler is best effort; if unavailable it returns the reason. Every arm has the same tool behavior and reference links in references/hardware.md. Internet documents may be read with curl, within your budget. Do not alter the task contract or tool scripts.
+
+Your current directory is /work. This is a fresh conversation and workspace. Follow the workflow below, if provided. Submit your implementation within the time budget.
