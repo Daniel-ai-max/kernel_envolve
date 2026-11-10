@@ -65,6 +65,11 @@ def parser():
     control.add_argument(
         "--changes", required=True, help="JSON resource/budget changes; task must be paused"
     )
+    replacement = commands.add_parser(
+        "supersede", help="Retire a task in favor of an existing identity, preserving all usage"
+    )
+    replacement.add_argument("task")
+    replacement.add_argument("--by", required=True)
     resource = commands.add_parser("resource")
     resource.add_argument("id")
     resource.add_argument("--sessions", type=int, choices=(1, 2))
@@ -126,6 +131,8 @@ def main(argv=None):
                 args.action,
                 json.loads(args.changes) if args.action == "configure" else None,
             )
+        elif args.action == "supersede":
+            print(json.dumps(store.supersede(args.task, args.by), ensure_ascii=False, indent=2))
         elif args.action == "resource":
             from .service import clear_resource, resource_sessions
 

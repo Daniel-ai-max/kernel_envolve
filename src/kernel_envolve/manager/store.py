@@ -122,6 +122,10 @@ class Store:
         if not row:
             raise ValueError(f"Unknown task: {key}")
         row["spec"], row["report"] = json.loads(row["spec"]), json.loads(row["report"])
+        replacement = self.one("SELECT data FROM metadata WHERE key=?", (f"superseded:{key}",))
+        row["superseded_by"] = (
+            json.loads(replacement["data"])["superseded_by"] if replacement else None
+        )
         return row
 
     def resource(self, key):
@@ -166,6 +170,10 @@ class Store:
     def control(self, key, action, changes=None):
         with self.transaction():
             task = self.task(key)
+            if task["superseded_by"] or task["desired"] == "superseded":
+                if action == "pause":
+                    return  # Allocation cleanup may pause every task, including history.
+                raise ValueError("Superseded tasks cannot be resumed or reconfigured")
             if action in ("pause", "resume"):
                 desired = "paused" if action == "pause" else "active"
                 self.db.execute(
@@ -200,6 +208,81 @@ class Store:
             else:
                 raise ValueError("Unknown action")
             self.event(key, action, changes or {})
+
+    def supersede(self, key, replacement):
+        """Retire an existing identity without transferring usage or allocating new budget."""
+        with self.transaction():
+            old, new = self.task(key), self.task(replacement)
+            if key == replacement:
+                raise ValueError("A task cannot supersede itself")
+            previous = self.one("SELECT data FROM metadata WHERE key=?", (f"superseded:{key}",))
+            if previous:
+                receipt = json.loads(previous["data"])
+                if receipt["superseded_by"] == replacement:
+                    return receipt
+                raise ValueError("Task already has a different replacement")
+            if old["desired"] == "superseded":
+                raise ValueError("Superseded task is missing its migration receipt")
+            if new["superseded_by"] or new["desired"] == "superseded":
+                raise ValueError("Replacement must be a current task; cycles are not allowed")
+            for row in self.rows("SELECT data FROM metadata WHERE key LIKE 'superseded:%'"):
+                if json.loads(row["data"])["superseded_by"] == replacement:
+                    raise ValueError("Replacement already has a predecessor")
+            if self.one(
+                "SELECT id FROM jobs WHERE task=? AND status IN ('queued','running')", (key,)
+            ):
+                raise ValueError("Wait for all predecessor jobs to finish before superseding")
+            a, b = old["spec"], new["spec"]
+            if a["resource"] != b["resource"] or a["kind"] != b["kind"]:
+                raise ValueError("Replacement must use the same resource and evaluator kind")
+            self.resource(a["resource"])
+            if any(
+                a["baseline"][field] != b["baseline"][field]
+                for field in ("repository", "revision", "entrypoint", "hardware")
+            ):
+                raise ValueError("Replacement must preserve the fixed source baseline and target")
+            workspaces = []
+            for spec in (a, b):
+                workspace, task_dir = (Path(spec[f]).resolve() for f in ("workspace", "task_dir"))
+                if (
+                    not workspace.is_dir()
+                    or not task_dir.is_dir()
+                    or not task_dir.is_relative_to(workspace)
+                    or self.root.is_relative_to(workspace)
+                ):
+                    raise ValueError("Replacement requires valid dedicated workspaces")
+                workspaces.append(workspace)
+            if any(workspaces[i].is_relative_to(workspaces[1 - i]) for i in (0, 1)):
+                raise ValueError("Predecessor and replacement workspaces must not overlap")
+            for kind in ("wall", "gpu"):
+                limit, next_limit = a[f"{kind}_budget_seconds"], b[f"{kind}_budget_seconds"]
+                if limit is not None and (
+                    next_limit is None or next_limit > limit - old[f"{kind}_seconds"]
+                ):
+                    raise ValueError(
+                        f"Replacement {kind} budget exceeds predecessor's unused budget"
+                    )
+            receipt = {
+                "task": key,
+                "superseded_by": replacement,
+                "at": time.time(),
+                "predecessor": {
+                    field: old[field] for field in ("spec", "wall_seconds", "gpu_seconds")
+                },
+                "replacement": {
+                    field: new[field] for field in ("spec", "wall_seconds", "gpu_seconds")
+                },
+            }
+            self.db.execute(
+                "INSERT INTO metadata(key,data) VALUES(?,?)", (f"superseded:{key}", encode(receipt))
+            )
+            self.db.execute(
+                "UPDATE tasks SET desired='superseded',reason=? WHERE id=?",
+                (f"Replaced by {replacement}", key),
+            )
+            self.event(key, "superseded", {"superseded_by": replacement})
+            self.event(replacement, "supersedes", {"task": key})
+            return receipt
 
     def budget_reason(self, task):
         for kind in ("wall", "gpu"):
