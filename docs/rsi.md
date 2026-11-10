@@ -236,6 +236,10 @@ pytest -q tests/test_rsi.py tests/test_rsi_native.py
 准入复核后的验证见 [RSI 复核收据](../audit/rsi_review_20261110.json)：全仓 246 passed / 8 GPU-only skipped，43 项 RSI 专项测试；保留初次测试启动路径问题与复验说明。旧安装收据不代表新版验证器已复验。
 
 
+### 最新收益验收状态（2026-11-10）
+
+两轮扩展开发对照均未通过。最新轮每组 8/8 正确且可晋升，RSI trial 时间减少约 14.3%，但性能收益分数降低约 3.9%；加上学习时间后只节省约 8.9%，尚未计训练与选择。错误候选与 control 同为 6 次。未采用策略，未启动最终留出审计，PR 保持草稿。原始收据和成本见 [最新设计复核](rsi-design-review.md) 与 [第二轮收据](../audit/rsi_value_development_round2_20261110.json)。以下较早 pilot 为历史记录，不代表当前版本的收益结论。
+
 ### 真实 GPU pilot 状态（2026-11-10）
 
 最新四组多步开发比较已完成：control/fixed/raw 各 4/4 个可晋升结果，learned 为 2/4（一次模型超时、一次性能不确定）；三种非空策略均未通过准入，active 保持 base。61 份 evaluator 收据离线复核通过；所有尝试成本含失败，不删除负面结果。具体版本、资源账及分析见 [设计复核最新比较](rsi-design-review.md) 和 [四组收据](../audit/rsi_multistep_gpu_20261110.json)。本地后续适配器身份检查通过全仓 265 passed / 8 skipped，尚未进入 GPU 对照。下面保留早期单次生成试跑的历史，不能混作同一个实验。

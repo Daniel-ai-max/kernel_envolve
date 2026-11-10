@@ -1,0 +1,47 @@
+{
+  "at": 1794325728.326041,
+  "scope": "Fresh training plus both development rounds, all arms included; training reused once, no duplicate charge",
+  "entries": [
+    {
+      "folder": "train-batch",
+      "job": "4bb80298cb394f5fa3237d6e46219699",
+      "driver_wall_seconds": 194.63440203666687,
+      "gpu_allocation_seconds": 234.6931290626526,
+      "known_tokens": 132731,
+      "missing_usage": 0,
+      "model_calls": 12,
+      "released": true
+    },
+    {
+      "folder": "dev-round1-transport2",
+      "job": "05f132f5106b4a32bb99a5d7b01cf4d8",
+      "driver_wall_seconds": 1252.1319561004639,
+      "gpu_allocation_seconds": 1312.3303558826447,
+      "known_tokens": 836957,
+      "missing_usage": 0,
+      "model_calls": 72,
+      "released": true
+    },
+    {
+      "folder": "dev-round2",
+      "job": "42831a44bb6045ee8ce0e9932fe253c3",
+      "driver_wall_seconds": 1332.1016845703125,
+      "gpu_allocation_seconds": 1377.60174202919,
+      "known_tokens": 914142,
+      "missing_usage": 0,
+      "model_calls": 77,
+      "released": true
+    }
+  ],
+  "gpu_allocation_seconds": 2924.6252269744873,
+  "driver_wall_seconds": 2778.8680427074432,
+  "known_tokens": 1883830,
+  "model_calls": 161,
+  "extended_budget_cumulative_gpu_seconds": 5231.132279634476,
+  "budget_gpu_seconds_ceiling": 86400,
+  "remaining_gpu_seconds": 81168.86772036552,
+  "earlier_independent_incident": "108.5 GPU minutes retained separately in rsi_pilot_incident_20261110.json; not erased",
+  "final_audit_run": false,
+  "production_adoption": false,
+  "result": "No accepted RSI policy. Remaining budget is not a reason to violate the preregistered stopping rule."
+}
