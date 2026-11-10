@@ -4,6 +4,29 @@ import json
 import time
 from pathlib import Path
 
+PROGRESS_NOTICE_SECONDS = 300
+
+
+def progress_time(store, task):
+    """Activity is a changed research report or a GPU job, never a process heartbeat."""
+    report = store.one("SELECT data FROM metadata WHERE key=?", (f"report_progress:{task['id']}",))
+    if report:
+        reported_at = json.loads(report["data"])
+    else:
+        legacy = store.one(
+            "SELECT MAX(at) AS at FROM events WHERE task=? AND kind='report'", (task["id"],)
+        )
+        reported_at = legacy["at"] if legacy else None
+    gpu = store.one(
+        "SELECT MAX(COALESCE(ended,started,created)) AS at FROM jobs WHERE task=? AND kind='gpu'",
+        (task["id"],),
+    )
+    first_session = store.one(
+        "SELECT MIN(started) AS at FROM jobs WHERE task=? AND kind='agent'", (task["id"],)
+    )
+    # Waiting for the first session slot must not consume its startup grace period.
+    return max(task["created"], first_session["at"] or 0, reported_at or 0, gpu["at"] or 0)
+
 
 def best(store, task):
     projection = store.one("SELECT data FROM metadata WHERE key=?", (f"best:{task['id']}",))
@@ -45,6 +68,14 @@ def task_view(store, key, now=None):
                 task["phase"] = "waiting_session"
     task["heartbeat"] = max((j["heartbeat"] or j["created"] for j in jobs), default=None)
     task["stale"] = bool(jobs and now - task["heartbeat"] > 10)
+    task["progress_as_of"] = progress_time(store, task)
+    task["progress_age_seconds"] = max(0, now - task["progress_as_of"])
+    task["progress_stale"] = (
+        task["phase"] == "agent_running"
+        and task["progress_age_seconds"] >= PROGRESS_NOTICE_SECONDS
+    )
+    if task["progress_stale"]:
+        task["phase"] = "awaiting_progress"
     task["last_promotion"] = store.one(
         "SELECT at,data FROM promotions WHERE task=? ORDER BY at DESC LIMIT 1", (key,)
     )

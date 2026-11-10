@@ -2,6 +2,8 @@
 
 import json
 import math
+import os
+import stat
 import statistics
 import time
 from pathlib import Path
@@ -86,14 +88,45 @@ def inspect_run(path, spec):
 
 
 def fingerprint(path):
-    """Cheap invalidation, including source/evidence additions and deletions, before hash checks."""
-    return digest(
-        [
-            (str(p.relative_to(path)), p.stat().st_size, p.stat().st_mtime_ns)
-            for p in sorted(path.rglob("*"))
-            if p.is_file() and "__pycache__" not in p.parts
-        ]
-    )
+    """Invalidate cached verification with one metadata read per non-cache entry.
+
+    Metadata only decides whether to repeat inspect_run's content hashes. ctime
+    and inode identity also catch equal-sized writes/replacements that preserve
+    mtime. Never follow links, including links named like an ignored cache.
+    """
+    path = Path(path)
+    root = path.lstat()
+    if not stat.S_ISDIR(root.st_mode):
+        raise ValueError("Evidence root must be a real directory")
+    pending = [(os.fspath(path), "")]
+    files = []
+    while pending:
+        directory, prefix = pending.pop()
+        with os.scandir(directory) as entries:
+            for entry in entries:
+                info = entry.stat(follow_symlinks=False)
+                name = prefix + entry.name
+                if stat.S_ISLNK(info.st_mode):
+                    raise ValueError(f"Symlink introduced in evidence: {name}")
+                if entry.name == "__pycache__":
+                    continue
+                if stat.S_ISDIR(info.st_mode):
+                    pending.append((entry.path, name + os.sep))
+                elif stat.S_ISREG(info.st_mode):
+                    files.append(
+                        (
+                            name,
+                            info.st_size,
+                            info.st_mtime_ns,
+                            info.st_ctime_ns,
+                            info.st_dev,
+                            info.st_ino,
+                            info.st_mode,
+                        )
+                    )
+                else:
+                    raise ValueError(f"Unsupported evidence file type: {name}")
+    return digest(sorted(files))
 
 
 def refresh_task(store, task, force=False):

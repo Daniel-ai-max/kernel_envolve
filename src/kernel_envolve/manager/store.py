@@ -364,5 +364,21 @@ class Store:
             if job["task"] != task_id or job["kind"] != "agent" or job["status"] != "running":
                 raise ValueError("Only the current agent round may report")
             old = self.task(task_id)["report"]
+            progress_key = f"report_progress:{task_id}"
+            progress = self.one("SELECT data FROM metadata WHERE key=?", (progress_key,))
+            if old | report != old:
+                at = time.time()
+            elif progress is None:
+                # Preserve the last legacy report time on upgrade. Repeating an unchanged
+                # checkpoint or finishing/restarting a round is not new research activity.
+                previous = self.one(
+                    "SELECT MAX(at) AS at FROM events WHERE task=? AND kind='report'", (task_id,)
+                )
+                at = previous["at"] if previous else None
+            else:
+                at = json.loads(progress["data"])
+            self.db.execute(
+                "INSERT OR REPLACE INTO metadata VALUES(?,?)", (progress_key, encode(at))
+            )
             self.db.execute("UPDATE tasks SET report=? WHERE id=?", (encode(old | report), task_id))
             self.event(task_id, "report", report)

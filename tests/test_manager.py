@@ -99,6 +99,95 @@ def wait_for(check, timeout=10):
     raise AssertionError("Timed out waiting for a verified process/state transition")
 
 
+def test_live_but_unproductive_rounds_are_visible(managed, monkeypatch):
+    store, _, _ = managed
+    clock = [time.time()]
+    monkeypatch.setattr("kernel_envolve.manager.store.time.time", lambda: clock[0])
+    job = store.schedule()[0]
+    assert store.claim(job, os.getpid(), identity(os.getpid()))
+    clock[0] += 301
+    store.heartbeat(job, 301)
+    view = overview(store)["tasks"][0]
+    assert not view["stale"]  # Supervisor is healthy; research progress is a separate clock.
+    assert view["progress_stale"] and view["phase"] == "awaiting_progress"
+    original_progress = view["progress_as_of"]
+    store.finish(job, "succeeded")
+    clock[0] += 1
+    next_job = store.schedule()[0]
+    assert store.claim(next_job, os.getpid(), identity(os.getpid()))
+    view = overview(store)["tasks"][0]
+    assert view["progress_stale"] and view["progress_as_of"] == original_progress
+
+
+def test_first_session_has_grace_after_waiting_for_capacity(managed, monkeypatch):
+    store, _, _ = managed
+    clock = [time.time() + 600]
+    monkeypatch.setattr("kernel_envolve.manager.store.time.time", lambda: clock[0])
+    job = store.schedule()[0]
+    assert store.claim(job, os.getpid(), identity(os.getpid()))
+    assert not overview(store)["tasks"][0]["progress_stale"]
+    clock[0] += 301
+    assert overview(store)["tasks"][0]["progress_stale"]
+
+
+def test_only_changed_reports_refresh_research_progress(managed, monkeypatch):
+    store, _, _ = managed
+    clock = [time.time()]
+    monkeypatch.setattr("kernel_envolve.manager.store.time.time", lambda: clock[0])
+    job = store.schedule()[0]
+    assert store.claim(job, os.getpid(), identity(os.getpid()))
+    report = {"phase": "inspect precision", "next_action": "run fixed seed diagnosis"}
+    store.report("toy", job, report)
+    reported_at = overview(store)["tasks"][0]["progress_as_of"]
+    clock[0] += 301
+    store.report("toy", job, report)
+    store.report("toy", job, {})
+    view = overview(store)["tasks"][0]
+    assert view["progress_stale"] and view["progress_as_of"] == reported_at
+    store.report("toy", job, {"outcome": "identified an FP32 reduction discrepancy"})
+    view = overview(store)["tasks"][0]
+    assert not view["progress_stale"] and view["phase"] == "agent_running"
+    assert view["progress_as_of"] == clock[0]
+
+
+def test_gpu_work_and_pause_do_not_report_stalled_agent(managed, monkeypatch):
+    store, _, _ = managed
+    clock = [time.time()]
+    monkeypatch.setattr("kernel_envolve.manager.store.time.time", lambda: clock[0])
+    parent = store.schedule()[0]
+    assert store.claim(parent, os.getpid(), identity(os.getpid()))
+    gpu = store.enqueue(store.task("toy"), "gpu", ["unused"], parent)
+    clock[0] += 600
+    assert overview(store)["tasks"][0]["phase"] == "waiting_gpu"
+    assert not overview(store)["tasks"][0]["progress_stale"]
+    assert store.claim(gpu, os.getpid(), identity(os.getpid()))
+    clock[0] += 600
+    assert overview(store)["tasks"][0]["phase"] == "gpu_running"
+    assert not overview(store)["tasks"][0]["progress_stale"]
+    store.finish(gpu, "succeeded")
+    assert overview(store)["tasks"][0]["progress_as_of"] == clock[0]
+    clock[0] += 301
+    store.control("toy", "pause")
+    assert not overview(store)["tasks"][0]["progress_stale"]
+
+
+def test_legacy_report_clock_survives_upgrade_and_repeated_report(managed, monkeypatch):
+    store, _, _ = managed
+    clock = [time.time()]
+    monkeypatch.setattr("kernel_envolve.manager.store.time.time", lambda: clock[0])
+    job = store.schedule()[0]
+    assert store.claim(job, os.getpid(), identity(os.getpid()))
+    report = {"phase": "baseline preparation"}
+    store.report("toy", job, report)
+    store.db.execute("DELETE FROM metadata WHERE key='report_progress:toy'")
+    reported_at = clock[0]
+    clock[0] += 301
+    assert overview(store)["tasks"][0]["progress_as_of"] == reported_at
+    store.report("toy", job, report)
+    assert overview(store)["tasks"][0]["progress_as_of"] == reported_at
+    assert overview(store)["tasks"][0]["progress_stale"]
+
+
 def launch(store, key):
     return subprocess.Popen(
         [sys.executable, "-m", "kernel_envolve.manager.worker", str(store.root), key],
