@@ -1,0 +1,271 @@
+{
+  "source_commit": "29f0a759ef1cc43d6f897248eae8a6cb83e1c1e5",
+  "environment": {
+    "gpu": "NVIDIA B300 SXM6 AC",
+    "capability": [
+      10,
+      3
+    ],
+    "torch": "2.12.1+cu130",
+    "triton": "3.7.1",
+    "numpy": "2.3.5",
+    "cuda": "13.0",
+    "evaluator_hash": "8dec002fc1b11789b353c58ff541acb9b0b3aaad45915fda46c8cf31628c32d8"
+  },
+  "tests": {
+    "returncode": 0,
+    "wall_seconds": 43.541977506130934,
+    "output": "/opt/venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py:247: PytestDeprecationWarning: The configuration option \"asyncio_default_fixture_loop_scope\" is unset.\nThe event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: \"function\", \"class\", \"module\", \"package\", \"session\"\n\n  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))\n........................................................................ [ 61%]\n.............................................                            [100%]\n117 passed in 42.22s\n"
+  },
+  "records": [
+    {
+      "kind": "new_shapes",
+      "task": "row_sum",
+      "label": "control-row_sum",
+      "check_only": true,
+      "command_wall_seconds": 2.9186546518467367,
+      "process_returncode": 0,
+      "correct": true,
+      "error": null,
+      "gain_by_batch": null,
+      "checks": 132,
+      "samples": 0
+    },
+    {
+      "kind": "new_shapes",
+      "task": "matmul",
+      "label": "control-matmul",
+      "check_only": true,
+      "command_wall_seconds": 3.137311968021095,
+      "process_returncode": 0,
+      "correct": true,
+      "error": null,
+      "gain_by_batch": null,
+      "checks": 120,
+      "samples": 0
+    },
+    {
+      "kind": "new_shapes",
+      "task": "fused_relu",
+      "label": "control-fused_relu",
+      "check_only": true,
+      "command_wall_seconds": 2.5253630047664046,
+      "process_returncode": 0,
+      "correct": true,
+      "error": null,
+      "gain_by_batch": null,
+      "checks": 132,
+      "samples": 0
+    },
+    {
+      "kind": "new_shapes",
+      "task": "matmul",
+      "label": "03-matmul-kernel_envolve_skill",
+      "check_only": false,
+      "command_wall_seconds": 4.646519863978028,
+      "process_returncode": 0,
+      "correct": true,
+      "error": null,
+      "gain_by_batch": [
+        0.3382795343538012,
+        0.3375078260778066
+      ],
+      "checks": 120,
+      "samples": 800,
+      "worst_regression_fraction": -0.2810885317023938,
+      "cases_over_5_percent_regression": []
+    },
+    {
+      "kind": "new_shapes",
+      "task": "matmul",
+      "label": "04-matmul-goal_only",
+      "check_only": false,
+      "command_wall_seconds": 4.595926072914153,
+      "process_returncode": 0,
+      "correct": true,
+      "error": null,
+      "gain_by_batch": [
+        0.34449361223141184,
+        0.34266097465932277
+      ],
+      "checks": 120,
+      "samples": 800,
+      "worst_regression_fraction": -0.2854723147344739,
+      "cases_over_5_percent_regression": []
+    },
+    {
+      "kind": "new_shapes",
+      "task": "fused_relu",
+      "label": "08-fused_relu-kernel_envolve_skill",
+      "check_only": false,
+      "command_wall_seconds": 17.8344185850583,
+      "process_returncode": 0,
+      "correct": true,
+      "error": null,
+      "gain_by_batch": [
+        0.6520917558500556,
+        0.6515038219081244
+      ],
+      "checks": 132,
+      "samples": 880,
+      "worst_regression_fraction": -0.6339817237326053,
+      "cases_over_5_percent_regression": []
+    },
+    {
+      "kind": "extended_layout",
+      "task": "row_sum",
+      "label": "control-row_sum",
+      "check_only": true,
+      "command_wall_seconds": 2.1333942520432174,
+      "process_returncode": 0,
+      "correct": true,
+      "error": null,
+      "gain_by_batch": null,
+      "checks": 24,
+      "samples": 0
+    },
+    {
+      "kind": "extended_layout",
+      "task": "matmul",
+      "label": "control-matmul",
+      "check_only": true,
+      "command_wall_seconds": 2.226925517898053,
+      "process_returncode": 0,
+      "correct": true,
+      "error": null,
+      "gain_by_batch": null,
+      "checks": 24,
+      "samples": 0
+    },
+    {
+      "kind": "extended_layout",
+      "task": "fused_relu",
+      "label": "control-fused_relu",
+      "check_only": true,
+      "command_wall_seconds": 2.8183460710570216,
+      "process_returncode": 0,
+      "correct": true,
+      "error": null,
+      "gain_by_batch": null,
+      "checks": 24,
+      "samples": 0
+    },
+    {
+      "kind": "extended_layout",
+      "task": "matmul",
+      "label": "03-matmul-kernel_envolve_skill",
+      "check_only": false,
+      "command_wall_seconds": 2.4907221379689872,
+      "process_returncode": 1,
+      "correct": false,
+      "error": {
+        "type": "AssertionError",
+        "message": "Wrong output values"
+      },
+      "gain_by_batch": null,
+      "checks": 0,
+      "samples": 0
+    },
+    {
+      "kind": "extended_layout",
+      "task": "matmul",
+      "label": "04-matmul-goal_only",
+      "check_only": false,
+      "command_wall_seconds": 2.491144571918994,
+      "process_returncode": 1,
+      "correct": false,
+      "error": {
+        "type": "AssertionError",
+        "message": "Wrong output values"
+      },
+      "gain_by_batch": null,
+      "checks": 0,
+      "samples": 0
+    },
+    {
+      "kind": "extended_layout",
+      "task": "fused_relu",
+      "label": "08-fused_relu-kernel_envolve_skill",
+      "check_only": false,
+      "command_wall_seconds": 15.903730861842632,
+      "process_returncode": 1,
+      "correct": false,
+      "error": {
+        "type": "AssertionError",
+        "message": "Wrong output values"
+      },
+      "gain_by_batch": null,
+      "checks": 0,
+      "samples": 0
+    }
+  ],
+  "costs": {
+    "all_timed": {
+      "api_wall_seconds": [
+        4.459644390270114,
+        4.465746441856027,
+        4.666307423263788
+      ],
+      "median_seconds": 4.465746441856027,
+      "fresh_reuse_check_counts": [
+        144,
+        144,
+        144
+      ],
+      "timing_related_check_counts": [
+        48,
+        48,
+        48
+      ],
+      "timing_sample_counts": [
+        288,
+        288,
+        288
+      ],
+      "promoted_identical_add_count": 0
+    },
+    "representative_timing": {
+      "api_wall_seconds": [
+        3.9061913322657347,
+        3.9548361487686634,
+        4.0589497881010175
+      ],
+      "median_seconds": 3.9548361487686634,
+      "fresh_reuse_check_counts": [
+        144,
+        144,
+        144
+      ],
+      "timing_related_check_counts": [
+        16,
+        16,
+        16
+      ],
+      "timing_sample_counts": [
+        96,
+        96,
+        96
+      ],
+      "promoted_identical_add_count": 0
+    }
+  },
+  "cost_median_reduction_fraction": 0.11440647151364502,
+  "resource_release": {
+    "id": "82b3e51b749f49f897d4357aa75bafcc",
+    "phase": "Completed",
+    "pods_remaining": 0,
+    "observed_at": 1794285585.0260868,
+    "started_at": "2026-11-10T04:35:36Z",
+    "finished_at": null,
+    "ended_at": "2026-11-10T04:38:14Z",
+    "restart_count": 0,
+    "workspace_id": "4b070c1a-398d-4fb3-847c-fd9e5a318707",
+    "source_commit": "29f0a759ef1cc43d6f897248eae8a6cb83e1c1e5",
+    "gpu_count": 1,
+    "active_deadline_seconds": 600,
+    "platform_running_seconds": 158.0,
+    "conservative_request_to_release_seconds": 273.98645782470703
+  },
+  "scope": "Frozen candidates on new shapes; extended layouts separately labelled; evaluator sampling costs. No workflow ranking.",
+  "interpretation": "New-shape checks stay in the original input-layout family. Extended row padding is a new input contract; failures do not retroactively reclassify the original pilot. No workflow ranking, no model calls."
+}

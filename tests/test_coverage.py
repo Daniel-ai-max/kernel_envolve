@@ -128,3 +128,39 @@ def test_task_needs_a_measured_quick_case(broad_task):
     (broad_task / "task.json").write_text(json.dumps(cfg))
     with pytest.raises(ValueError, match="measured quick case"):
         config(broad_task)
+
+
+def test_row_padding_and_independent_input_strides_are_covered(task):
+    cfg = json.loads((task / "task.json").read_text())
+    cfg["cases"] = [
+        {"id": "packed", "args": {"pad": 0}, "weight": 1},
+        {"id": "padded", "args": {"pad": 7}, "measure": False, "quick": False},
+    ]
+    (task / "task.json").write_text(json.dumps(cfg))
+    (task / "task.py").write_text(
+        "import numpy as np\n"
+        "def make_inputs(case,seed):\n"
+        " g=np.random.default_rng(seed)\n"
+        " x=g.normal(size=(3,33+case['pad'])).astype(np.float32)[:,:33]\n"
+        " y=g.normal(size=(3,99)).astype(np.float32)[:,::3]\n"
+        " return x,y\n"
+        "def reference(x,y): return x+y\n"
+        "baseline=reference\n"
+    )
+    # Model the frozen GPU kernels' assumption that row stride is width * column stride.
+    (task / "candidate.py").write_text(
+        "import numpy as np\n"
+        "def run(x,y):\n"
+        " packed=np.lib.stride_tricks.as_strided(x,shape=x.shape,"
+        "strides=(x.shape[1]*x.strides[1],x.strides[1]))\n"
+        " return packed+y\n"
+    )
+    _, quick = evaluate(task)
+    assert quick["correctness"] == "pass"
+    _, full = evaluate(task, "full")
+    assert full["correctness"] == "fail"
+    assert full["checks"][-1]["case"] == "padded"
+    assert not full["samples"]
+    (task / "candidate.py").write_text("def run(x,y): return x+y\n")
+    _, repaired = evaluate(task, "full")
+    assert repaired["correctness"] == "pass", repaired
