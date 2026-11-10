@@ -221,3 +221,17 @@ pytest -q tests/test_rsi.py tests/test_rsi_native.py
 已完成 gpt-6-astra / 单张 B300 的两学习任务、两验证任务、两轮配对试跑。验证 8/8 正确性通过，但两组均无可晋升 kernel；候选策略每轮 solver 总耗时增加约 12–13%，被准入门槛拒绝，未发布到生产。详见 [设计复核](rsi-design-review.md) 和 [结构化收据](../audit/rsi_gpu_pilot_20261110.json)。这不是学习有效性或优于参考方法的证明。
 
 随后改进的后台证据摘要包含有界的数值收益、晋升资格与截断标记；旧条目不回写。建议头部不再将待验证策略预先称作“已验证”，因此验证器身份改变，升级前先 disable，再 audit，最后 enable。新摘要与措辞通过 CPU 测试，尚未做新的 GPU 收益比较。
+
+### 实验性多步 solver
+
+`examples/rsi/research_solver.py` 是可选的通用任务实验适配器，不替换生产 Manager。操作者配置的 decision 命令从 stdin 读取任务、候选和真实评测历史，写出 `decision.json`。例如 solver argv 为：
+
+```text
+python /checkout/examples/rsi/research_solver.py --actions 2 --model-seconds 55 --evaluation-seconds 30 --model-command /opt/adapters/decision
+```
+
+只支持单个可编辑 `candidate.py`。固定动作是 `propose`（完整 source、quick/full、hypothesis）、`evaluate`（已有 candidate 哈希、quick/full、hypothesis）、`stop`（hypothesis）。命令由操作者配置；学习建议不能增加动作、改预算或改 evaluator。先 full 测量原始候选，每个动作后提供真实结果；相同源码/模式不重复测量。只有 full 正确且质量严格改善的候选才能替换保留的起点，quick 仅供诊断。最终仍由独立 RSI 控制器执行自己的 full，不以 solver 的成绩决定策略采用。
+
+`search-trace.json` 保存每个假设、动作、源码身份、真实结果路径、成本和最终选择，保留失败与停止，不覆盖已有实验目录。模型输入最多 128 KiB；动作数、源码大小、每步与总预算受限。超时或中断恢复已确认候选并清理 evaluator 子进程；硬杀仍依赖外层进程监督和平台资源期限。这不是 OS 沙箱，模型传输回调也须由外层强制限时。
+
+这是对 GEPA 等轨迹反馈机制的局部借鉴，同时为后续检验搜索记录能否用于回放建立可追溯数据；目前没有实现 GEPA 搜索或 Dream-RSI 的反事实回放。它能观察停止、无效重复、quick/full 安排，但仅两次动作不足以代表长期自主研究能力。与单次生成相比，它增加了测量成本，必须让所有对照使用相同工具与预算，不能把执行器本身的改进归因于 RSI。

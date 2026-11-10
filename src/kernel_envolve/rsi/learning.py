@@ -19,6 +19,7 @@ def numeric_metrics(data):
 
     decision = data["decision"]
     gains = decision.get("fixed_baseline_gain_by_batch", [])
+    cases = decision.get("cases", [])
     eligible = decision.get("eligible_for_best")
     return {
         "baseline_speedup": finite(data.get("baseline_speedup")),
@@ -27,6 +28,19 @@ def numeric_metrics(data):
         "batch_count": len(gains),
         "truncated": len(gains) > 8,
         "eligible_for_best": eligible if type(eligible) is bool else None,
+        "cases": [
+            {
+                "case": str(item.get("case", ""))[:160],
+                "batch": item.get("batch"),
+                **{
+                    key: finite(item.get(key))
+                    for key in ("candidate_us", "comparator_us", "speedup")
+                },
+            }
+            for item in cases[:8]
+        ],
+        "case_count": len(cases),
+        "cases_truncated": len(cases) > 8,
     }
 
 

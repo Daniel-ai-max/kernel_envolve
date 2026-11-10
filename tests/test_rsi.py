@@ -620,3 +620,20 @@ def test_numeric_evidence_is_bounded_and_does_not_invent_missing_metrics():
     missing = numeric_metrics({"decision": {}})
     assert missing["baseline_speedup"] is None and missing["eligible_for_best"] is None
     assert missing["fixed_baseline_gain_by_batch"] == []
+
+
+def test_case_latency_summary_retains_comparator_identity_and_bounds():
+    from kernel_envolve.rsi.learning import numeric_metrics
+
+    case = {
+        "case": "strided",
+        "batch": 0,
+        "candidate_us": 40.0,
+        "comparator_us": 20.0,
+        "speedup": 0.5,
+    }
+    metrics = numeric_metrics({"decision": {"cases": [case] * 20}})
+    assert metrics["cases"] == [case] * 8
+    assert metrics["case_count"] == 20 and metrics["cases_truncated"]
+    # This comparator can be current best; do not relabel it as fixed baseline.
+    assert "baseline_us" not in metrics["cases"][0]
