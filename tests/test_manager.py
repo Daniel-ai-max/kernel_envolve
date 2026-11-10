@@ -806,6 +806,93 @@ def test_evidence_freshness_is_independent_of_http_snapshot_time(managed):
     assert snapshot(store, "toy")["detail"]["evidence_stale"]
 
 
+def test_scan_progress_distinguishes_queue_age_from_scan_failure(managed, monkeypatch):
+    from kernel_envolve.manager import evidence
+    from kernel_envolve.manager.views import task_view
+
+    store, _, _ = managed
+    refresh(store)
+    observed = task_view(store, "toy")["evidence_as_of"]
+    now = observed + 60
+    assert task_view(store, "toy", now)["evidence_status"] == "pending"
+
+    def scan_task(*args):
+        scan = json.loads(store.one("SELECT data FROM metadata WHERE key='evidence_scan'")["data"])
+        assert scan["running"] and scan["task"] == "toy"
+        view = task_view(store, "toy", now)
+        assert view["evidence_stale"]  # Observation age alone is not a failure.
+        assert view["evidence_status"] == "verifying"
+        scan["task"] = "another-task"
+        store.db.execute(
+            "UPDATE metadata SET data=? WHERE key='evidence_scan'", (json.dumps(scan),)
+        )
+        assert task_view(store, "toy", now)["evidence_status"] == "queued"
+        assert task_view(store, "toy", scan["updated_at"] + 301)["evidence_status"] == "slow"
+        raise OSError("filesystem unavailable")
+
+    monkeypatch.setattr(evidence, "refresh_task", scan_task)
+    with pytest.raises(OSError, match="filesystem unavailable"):
+        refresh(store)
+    view = task_view(store, "toy")
+    assert view["evidence_status"] == "error"
+    assert view["evidence_scan_error"] == "filesystem unavailable"
+    scan = json.loads(store.one("SELECT data FROM metadata WHERE key='evidence_scan'")["data"])
+    assert not scan["running"] and scan["finished_at"] >= scan["started_at"]
+    monkeypatch.undo()
+    refresh(store)
+    assert task_view(store, "toy")["evidence_status"] == "current"
+
+
+def test_latest_evaluation_visible_without_promotion_and_invalidated_on_tamper(managed):
+    store, _, work = managed
+    run, result = evaluate(work, "quick")
+    refresh(store)
+    task = detail(store, "toy")
+    assert task["best"] is None
+    latest = task["latest_evaluation"]
+    assert latest["run"] == str(run)
+    assert latest["correctness"] == "pass"
+    assert latest["passed_checks"] == len(result["checks"])
+    assert "source" not in latest and "decision" not in latest
+
+    # A later failed candidate must replace the summary, not leave the older PASS visible.
+    (work / "candidate.py").write_text("def run(x): return x\n")
+    failed, _ = evaluate(work, "quick")
+    refresh(store)
+    latest = detail(store, "toy")["latest_evaluation"]
+    assert latest["run"] == str(failed) and latest["correctness"] == "fail"
+    assert not latest["evidence_error"]  # A verified failure is valid evidence.
+    (failed / "source" / "candidate.py").write_text("def run(x): return x+1\n")
+    refresh(store)
+    latest = detail(store, "toy")["latest_evaluation"]
+    assert latest["run"] == str(failed)
+    assert latest["evidence_error"] and latest["correctness"] is None
+
+
+def test_old_cached_results_receive_latest_projection_once(managed, monkeypatch):
+    from kernel_envolve.manager import evidence
+
+    store, _, work = managed
+    run, _ = evaluate(work, "quick")
+    refresh(store)
+    row = store.one("SELECT data FROM runs WHERE path=?", (str(run),))
+    legacy = json.loads(row["data"])
+    legacy.pop("recorded_at")
+    store.db.execute("UPDATE runs SET data=? WHERE path=?", (json.dumps(legacy), str(run)))
+    original = evidence.inspect_run
+    calls = []
+
+    def inspect(*args):
+        calls.append(args[0])
+        return original(*args)
+
+    monkeypatch.setattr(evidence, "inspect_run", inspect)
+    refresh(store)
+    refresh(store)
+    assert calls == [run]
+    assert detail(store, "toy")["latest_evaluation"]["recorded_at"] > 0
+
+
 def test_http_selected_detail_and_compact_summary(managed):
     store, _, work = managed
     run, _ = evaluate(work, "full")

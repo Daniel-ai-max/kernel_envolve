@@ -49,6 +49,29 @@ def task_view(store, key, now=None):
     evidence = store.one("SELECT data FROM metadata WHERE key=?", (f"evidence:{key}",))
     task["evidence_as_of"] = json.loads(evidence["data"])["observed_at"] if evidence else None
     task["evidence_stale"] = task["evidence_as_of"] is None or now - task["evidence_as_of"] > 15
+    scan = store.one("SELECT data FROM metadata WHERE key='evidence_scan'")
+    scan = json.loads(scan["data"]) if scan else {}
+    task["evidence_scan_error"] = scan.get("error")
+    task["evidence_scan_slow"] = bool(
+        scan.get("running") and now - scan.get("updated_at", now) > 300
+    )
+    task["evidence_status"] = (
+        "error"
+        if task["evidence_error"] or scan.get("error")
+        else "slow"
+        if task["evidence_scan_slow"]
+        else "verifying"
+        if scan.get("running") and scan.get("task") == key
+        else "queued"
+        if scan.get("running")
+        else "pending"
+        if task["evidence_stale"]
+        else "current"
+    )
+    latest = store.one("SELECT data FROM metadata WHERE key=?", (f"latest:{key}",))
+    task["latest_evaluation"] = json.loads(latest["data"]) if latest else None
+    report = store.one("SELECT MAX(at) AS at FROM events WHERE task=? AND kind='report'", (key,))
+    task["report_as_of"] = report["at"]
     task["phase"] = task["desired"]
     if task["desired"] == "active":
         gpu = next((j for j in jobs if j["kind"] == "gpu" and j["status"] == "running"), None)

@@ -78,6 +78,8 @@ def inspect_run(path, spec):
         "native_checks": result.get("native_checks", []),
         "memory": result.get("memory", []),
         "error": result.get("error"),
+        "recorded_at": (path / "receipt.json").stat().st_mtime,
+        "passed_checks": sum(c.get("status") == "pass" for c in result.get("checks", [])),
         "verified_at": time.time(),
         "baseline_speedup": 1 / (1 - statistics.median(fixed)) if fixed else None,
         "incremental_speedup": 1 / (1 - statistics.median(incremental)) if incremental else None,
@@ -146,7 +148,12 @@ def refresh_task(store, task, force=False):
             continue  # New in-flight results are not final evidence; indexed ones must revalidate.
         try:
             signature = fingerprint(path)
-            if old and not force and json.loads(old["data"]).get("fingerprint") == signature:
+            if (
+                old
+                and not force
+                and "recorded_at" in json.loads(old["data"])
+                and json.loads(old["data"]).get("fingerprint") == signature
+            ):
                 if old["error"]:
                     problems.append(f"{path.name}: {old['error']}")
                 continue
@@ -154,7 +161,13 @@ def refresh_task(store, task, force=False):
             error = None
         except (OSError, ValueError, KeyError, TypeError, OverflowError) as exc:
             error = str(exc)
-            data = {"run": str(path)}
+            # Retain observation order even if a previously verified receipt disappears.
+            recorded_at = json.loads(old["data"]).get("recorded_at", 0) if old else 0
+            try:
+                recorded_at = (path / "receipt.json").stat().st_mtime
+            except OSError:
+                pass
+            data = {"run": str(path), "recorded_at": recorded_at}
             problems.append(f"{path.name}: {error}")
         updates[str(path)] = {"data": encode(data), "error": error}
         indexed_runs[str(path)] = updates[str(path)]
@@ -214,6 +227,29 @@ def refresh_task(store, task, force=False):
             problems.append("Previously observed best pointer is missing")
     except (OSError, ValueError, KeyError, TypeError) as exc:
         problems.append(str(exc))
+    latest = None
+    for row in indexed_runs.values():
+        value = json.loads(row["data"])
+        if latest is None or value.get("recorded_at", 0) > latest["recorded_at"]:
+            latest = {
+                **{
+                    key: value.get(key)
+                    for key in (
+                        "run",
+                        "mode",
+                        "execution",
+                        "correctness",
+                        "passed_checks",
+                        "error",
+                    )
+                },
+                "native_checks": [
+                    {key: check.get(key) for key in ("id", "scope", "status")}
+                    for check in value.get("native_checks", [])
+                ],
+                "recorded_at": value.get("recorded_at", 0),
+                "evidence_error": row["error"],
+            }
     # File IO and verification above never hold SQLite's writer lock. Publish each task's
     # runs, best, history, errors and observation time atomically for dashboard readers.
     with store.transaction():
@@ -245,6 +281,10 @@ def refresh_task(store, task, force=False):
         )
         store.db.execute(
             "INSERT OR REPLACE INTO metadata VALUES(?,?)",
+            (f"latest:{task['id']}", encode(latest)),
+        )
+        store.db.execute(
+            "INSERT OR REPLACE INTO metadata VALUES(?,?)",
             (
                 f"evidence:{task['id']}",
                 encode({"observed_at": started, "published_at": time.time()}),
@@ -257,6 +297,23 @@ def refresh(store, force=False):
     with exclusive(store.root / "evidence.lock") as handle:
         if handle is None:
             return False
-        for row in store.rows("SELECT id FROM tasks"):
-            refresh_task(store, store.task(row["id"]), force)
+        scan = {"started_at": time.time(), "running": True, "task": None, "error": None}
+
+        def publish():
+            scan["updated_at"] = time.time()
+            store.db.execute(
+                "INSERT OR REPLACE INTO metadata VALUES('evidence_scan',?)", (encode(scan),)
+            )
+
+        try:
+            for row in store.rows("SELECT id FROM tasks"):
+                scan["task"] = row["id"]
+                publish()
+                refresh_task(store, store.task(row["id"]), force)
+        except Exception as exc:
+            scan["error"] = str(exc)
+            raise
+        finally:
+            scan.update(running=False, task=None, finished_at=time.time())
+            publish()
     return True
