@@ -13,6 +13,9 @@ from .store import Store
 
 def checkpoint(store, task, job):
     spec = task["spec"]
+    from ..rsi.context import for_task
+
+    advice = for_task(store.root, task)
     return f"""Continue the persistent kernel optimization task {spec["name"]}.
 Task ID: {task["id"]}; round: {job["id"]}; evaluator: {spec["kind"]}.
 Workspace: {spec["workspace"]}
@@ -39,6 +42,7 @@ Recent lifecycle events: {json.dumps(store.rows("SELECT kind,data FROM events WH
 Consumed active session wall seconds: {task["wall_seconds"]:.1f}; GPU job seconds:
 {task["gpu_seconds"]:.1f}. Cumulative budgets: wall={spec["wall_budget_seconds"]},
 gpu={spec["gpu_budget_seconds"]}. This round is limited to {spec["round_timeout_seconds"]}s.
+{advice}
 """
 
 

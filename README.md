@@ -133,6 +133,12 @@ Agent 适配器从 stdin 接收恢复提示，结束前写入结构化 checkpoin
 
 部署、控制命令和恢复规则见[管理层文档](docs/optimization-manager.md)，数据一致性与刷新策略见[自动更新契约](docs/optimization-manager.md#自动更新契约)。
 
+## 可选的自进化
+
+RSI sidecar 从实验结果和研究 checkpoint 中提炼有条件的经验与策略，在独立任务上比较新旧策略，通过完整验证后才提供给后续 Agent。支持累计学习/验证预算、停用、证据审计与回退；现有 kernel 验收和晋升规则保持不变。
+
+正常会话每轮只读取一份有大小限制的策略快照，不运行学习模型或扫描历史。GPU 策略验证使用显式配置的独立资源。初始化、模型适配器协议、CPU 演示和信任边界见 [RSI 使用与设计](docs/rsi.md)。试用此功能分支时设置 `KERNEL_ENVOLVE_AUTO_UPDATE=0`，防止自动切回公共 main。
+
 ## 任务配置
 
 两类任务使用不同的接入方式：
