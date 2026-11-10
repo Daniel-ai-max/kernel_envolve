@@ -235,6 +235,11 @@ def promote(run):
 
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
+    from .updates import enter
+
+    result = enter(argv)
+    if result is not None:
+        return result
     if argv and argv[0] == "manage":
         from .manager.cli import main as manage
 
@@ -245,6 +250,8 @@ def main(argv=None):
             return 2
     parser = argparse.ArgumentParser(description="Reproducible kernel iteration evidence")
     sub = parser.add_subparsers(dest="command", required=True)
+    sub.add_parser("update", help="Check main and print the current revision and Skill path")
+    sub.add_parser("session", help="Run an agent or shell with one fixed tool revision")
     sub.add_parser(
         "manage", help="Supervise persistent tasks, GPU queues and the progress dashboard"
     )

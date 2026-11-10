@@ -51,6 +51,22 @@ kernel-envolve evaluate --task examples/cuda_vector_add --mode full
 
 Skill 规定优化方法，跨会话自动续接由下方管理层或现有宿主执行器负责。
 
+### 自动跟随 main
+
+安装含此机制的版本后，CLI 在使用前自动检查远端 `main`；管理器在每轮 Agent 启动前检查。新版本通过依赖和启动检查后启用，Skill 与评测器使用同一个提交。更新保存到独立缓存，不改动本地仓库、算子代码或 Python/CUDA 依赖。
+
+手动启动 Agent 或连续执行 full → promote 时，使用固定版本的会话：
+
+```bash
+kernel-envolve session -- <agent命令及参数>
+# 也可以进入固定版本的交互式 shell
+kernel-envolve session -- bash
+```
+
+会话运行期间保持版本不变，下次会话再检查更新。已有 Agent 可执行 `kernel-envolve update`，读取返回的 `skill`，并在本轮使用返回的 `executable`；复制安装的 Skill 也会按此入口读取最新流程。
+
+断网或新版本检查失败时保留可用版本，原因输出到 stderr。`kernel-envolve update --status` 查看最近检查结果。开发本仓库时设置 `KERNEL_ENVOLVE_AUTO_UPDATE=0` 使用本地代码。缓存、兼容性与升级边界见[自动更新指南](docs/auto-update.md)。
+
 ## 内部项目使用
 
 训练算子使用 `native-evaluate`，由 `native.json` 和 `adapter.py` 接入项目原生测试、数值 gate 和 benchmark。
@@ -160,6 +176,7 @@ audit/                      按实验或版本保存的验证证据
 
 ```bash
 python -m pip install -e '.[dev]'
+export KERNEL_ENVOLVE_AUTO_UPDATE=0
 ruff check .
 ruff format --check .
 pytest -q

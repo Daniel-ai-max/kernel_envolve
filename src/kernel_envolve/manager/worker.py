@@ -57,6 +57,18 @@ def supervise(store, key, handle, stdin=None):
         "KERNEL_ENVOLVE_ROUND": key if job["kind"] == "agent" else job["parent"],
         "KERNEL_ENVOLVE_REPORT": str(report),
     }
+    if job["kind"] == "agent":
+        from ..updates import SESSION, environment, refresh
+
+        version = refresh()
+        env[SESSION] = "1"
+        if version.get("release"):
+            env = environment(version["release"], env)
+            stdin = (stdin or "") + (
+                f"\nTool revision for this round: {version['revision']}\n"
+                f"Read the Skill at {version['skill']} (including its relative references).\n"
+                f"Use {version['executable']} for this entire round; keep its inherited environment.\n"
+            )
     device = store.resource(job["resource"])["spec"]["device"]
     env["CUDA_VISIBLE_DEVICES"] = "" if job["kind"] == "agent" or device == "cpu" else device
     if job["kind"] == "gpu":
