@@ -103,12 +103,12 @@ function render() {
         const outcome = noteSnippet(record?.outcome || record?.hypothesis, "尚无研究结论");
         const next = noteSnippet(record?.next_action, "尚未记录下一步");
         return `<tr data-key="${escape(t.id)}">
-          <td><button class="name" data-task="${escape(t.id)}">${escape(t.spec.name)}</button><small>${executionLabel(t.execution_state)}${t.desired === "paused" ? " · 实验已停止" : t.desired === "budget" ? " · 预算结束" : ""}</small></td>
-          <td class="execution"><div>${escape(executionLabelFor(recent))}</div>${recent ? `<small title="${escape(stamp(recent.recorded_at))}">${recent.kind === "evaluation" ? "记录于 " : "执行于 "}${shortTime(recent.recorded_at)}${recent.inherited ? " · 历史任务" : ""}</small><button class="source-link" data-task="${escape(recent.task)}">${escape((recent.id || recent.run?.split("/").pop() || recent.task).slice(0, 12))}</button>` : ""}</td>
-          <td class="research"><div class="snippet">${escape(outcome)}</div>${record ? `<small>${record.inherited ? "历史 Agent 记录" : "Agent 记录"} · ${shortTime(record.recorded_at)}</small>` : ""}</td>
-          <td class="research"><div class="snippet">${escape(next)}</div></td>
-          <td class="record-count"><button class="source-link" data-task="${escape(t.id)}">评测记录 当前 ${counts.current_runs}<br>${t.history_complete ? `历史 ${counts.previous_runs}` : "历史链异常"}</button><br><button class="source-link" data-task="${escape(t.id)}">GPU 作业 ${counts.gpu_jobs} 次</button></td>
-          <td class="benefit ${t.best ? "good" : "muted"}">${escape(benefitLabel(t.best))}</td>
+          <td data-label="算子"><button class="name" data-task="${escape(t.id)}">${escape(t.spec.name)}</button><small>${executionLabel(t.execution_state)}${t.desired === "paused" ? " · 实验已停止" : t.desired === "budget" ? " · 预算结束" : ""}</small></td>
+          <td class="execution" data-label="最近执行 / 评测记录"><div>${escape(executionLabelFor(recent))}</div>${recent ? `<small title="${escape(stamp(recent.recorded_at))}">${recent.kind === "evaluation" ? "记录于 " : "执行于 "}${shortTime(recent.recorded_at)}${recent.inherited ? " · 历史任务" : ""}</small><button class="source-link" data-task="${escape(recent.task)}">${escape((recent.id || recent.run?.split("/").pop() || recent.task).slice(0, 12))}</button>` : ""}</td>
+          <td class="research" data-label="最近结论"><div class="snippet">${escape(outcome)}</div>${record ? `<small>${record.inherited ? "历史 Agent 记录" : "Agent 记录"} · ${shortTime(record.recorded_at)}</small>` : ""}</td>
+          <td class="research" data-label="下一步"><div class="snippet">${escape(next)}</div></td>
+          <td class="record-count" data-label="记录"><button class="source-link" data-task="${escape(t.id)}">评测记录 当前 ${counts.current_runs}<br>${t.history_complete ? `历史 ${counts.previous_runs}` : "历史链异常"}</button><br><button class="source-link" data-task="${escape(t.id)}">GPU 作业 ${counts.gpu_jobs} 次</button></td>
+          <td class="benefit ${t.best ? "good" : "muted"}" data-label="当前验收收益">${escape(benefitLabel(t.best))}</td>
         </tr>`;
       })
       .join(""),
