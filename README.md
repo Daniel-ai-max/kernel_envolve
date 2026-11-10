@@ -4,7 +4,7 @@ kernel_envolve 用于辅助 coding agent 优化 Apodex 内部训练算子，主�
 
 ## 内部项目使用
 
-让 agent 读取 [SKILL.md](skills/kernel-envolve/SKILL.md)，在目标 GPU 和项目指定的开发镜像中工作。
+让 agent 读取 [SKILL.md](skills/kernel-envolve/SKILL.md)，在目标 GPU 和项目指定的开发镜像中工作。内部评测使用 `native-evaluate`，任务由 `native.json` 和 `adapter.py` 定义。
 
 > 使用 $kernel-envolve 持续优化 apodex-core 中的目标算子，在已授权资源范围内自主推进；一个方向没有收益时换方向继续。根据 Megatron-LM 的实际调用配置确定输入覆盖，复用项目数值 gate、单元测试和性能基准，验证前向、反向及模块接入。
 
@@ -13,6 +13,18 @@ kernel_envolve 用于辅助 coding agent 优化 Apodex 内部训练算子，主�
 - **评测标准**：沿用项目精度要求，比较原始实现与候选的完整调用成本；训练算子重点看前向与反向总耗时、逐尺寸退化和显存。
 
 具体流程、验证入口及证据要求见 [内部项目评测](skills/kernel-envolve/SKILL.md#apodex-内部项目评测)。内部任务复用原生测试和 benchmark，并按目标算子补齐输入覆盖、接口检查和性能收益判定。数值 gate 或 CI 通过本身不代表优化成功；下面的通用 evaluate 用于独立算子实验。
+
+[MoE probs_scale 示例](examples/apodex_probs_scale) 接入 core 契约测试、原生数值 gate 和 Megatron 的分发及模块梯度测试。先在 `native.json` 配置候选和原始基线的源码目录；示例使用 `APODEX_CORE_CANDIDATE`、`APODEX_CORE_BASELINE`、`MEGATRON_CANDIDATE`、`MEGATRON_BASELINE` 环境变量。
+
+```bash
+# 在项目镜像内安装本仓工具，保留镜像已有依赖版本
+python -m pip install --no-deps -e .
+kernel-envolve native-evaluate --task examples/apodex_probs_scale --mode quick
+kernel-envolve native-evaluate --task examples/apodex_probs_scale --mode full --timeout 1800
+kernel-envolve native-promote <run目录>
+```
+
+原生评测冻结源码，分进程加载候选、原始基线、best 和独立参考，检查前反向输出、输入布局及状态更新。`full` 还要求声明的原生测试通过、报告齐全且无 skip，并复用两批配对计时、收益及逐用例退化判定。验证、重置和数据传输不计入调用耗时；结果保存在任务的 `.kernel_native/`。适配接口见 [内部 evaluator](skills/kernel-envolve/SKILL.md#使用内部-evaluator)。
 
 ## 持续优化
 
@@ -148,7 +160,8 @@ output = run(*inputs)
 
 - [硬件文档与参考实现](skills/kernel-envolve/references/hardware.md)
 - [参考架构来源](audit/reference_sources.json)与[评测设计来源](audit/evaluator_sources.json)
-- [B300 验证记录](audit/general_contract_gpu/verified/summary.json)与[输入泛化验证](audit/generality_gpu_050/summary.json)
+- [内部 evaluator 的 B300 集成验证](audit/native_gpu_060/summary.json)
+- [通用 evaluator 的 B300 验证](audit/general_contract_gpu/verified/summary.json)与[输入泛化验证](audit/generality_gpu_050/summary.json)
 
 ```bash
 python -m pip install -e '.[dev]'

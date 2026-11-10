@@ -1,0 +1,30 @@
+{
+  "job_id": "e33b41d00b6e4b16833e192ed1dd6b50",
+  "job_name": "kernel-envolve-native-r5-zp0k2f83u2",
+  "phase": "Completed",
+  "remaining_pods": 0,
+  "started_at": "2026-11-10T06:47:14Z",
+  "completed_at": null,
+  "image": "839084984246.dkr.ecr.ap-south-2.amazonaws.com/pretrain/megatron:verify_batch_invariant_deepep_v2_efa_sm100_20261030_124749_cb114@sha256:622816be6322690a0b9e0ebeafe8f8fa0833eca77544163280c26c794513139d",
+  "files": {
+    "src/kernel_envolve/worker.py": "903948ee75cc66973d614b1467aa11f5660d23246371e10a21c1e910d1f588c9",
+    "src/kernel_envolve/arrays.py": "9a051d089e513cd29e353ad1825898f251a0f321539336ba7baceaf375b00c75",
+    "src/kernel_envolve/native_worker.py": "986e40d9ef8e0685f736c6a913be1d40347bb01ff614c2380381e4a8fa4d2689",
+    "src/kernel_envolve/protocol.py": "99f382a9919cebec58149ad59a3463ac1c5b7c594d654e7ea85232a0941751fb",
+    "src/kernel_envolve/scoring.py": "6e074b7f91ba8ac569f7eb4f0fc2615e697cf97a06541b8ba394443141bb8d06",
+    "src/kernel_envolve/__init__.py": "eac6f1459035c85a76260002399f20d89b479b54cc3658ac07fcebdec7c54c0e",
+    "src/kernel_envolve/native.py": "e9261e318733dbb45eddafc8c6e8a9e69e4b3b2253056afa3469c6cf7ed811e1",
+    "src/kernel_envolve/runtime.py": "d8a394ecac407779e5a7ec31f198ca50cea2b4f9531145cdce87e19ab1675bf1",
+    "src/kernel_envolve/cli.py": "3ad748ebc2d30eb96c2d7aec4213699987e88c0a63c74b1ce45e2f49c796fe9f",
+    "src/kernel_envolve/storage.py": "bf5c789b64b866a5bde6f9172694beaf35dc56b71eade53a196aff0870639863",
+    "src/kernel_envolve/training.py": "2275ec95600b80096eb385dec6a7705913f46bfd115a0fbd25887efc290756f6",
+    "pyproject.toml": "20529dbb71c202df85814909d30f047b87bddccab9583636880b03f2fcd61215",
+    "tests/test_native.py": "60207279c8506ca41b59cbac2eb347a6ad93bb534f66ec9e9acb3f5a27752a0d",
+    "examples/apodex_probs_scale/adapter.py": "11c41456ebb04badd32eab7623704743c063ef26b5513c290bdc40162d920ba8",
+    "examples/apodex_probs_scale/native.json": "e9a10e1fb96350786d9d9d70a6d44c57fb75442b436e1729b520ccef7c16490b",
+    "validate_gpu.py": "053ab940546a597411101148f21d73b8229a3b658658eb7763ce58f360985e91"
+  },
+  "gpus": 1,
+  "model_calls": 0,
+  "active_deadline_seconds": 720
+}

@@ -275,8 +275,38 @@ def main(argv=None):
         "promote", help="Recheck evidence and atomically point best at its snapshot"
     )
     pr.add_argument("run", type=Path)
+    native = sub.add_parser("native-evaluate", help="Evaluate a frozen internal training task")
+    native.add_argument("--task", type=Path, required=True)
+    native.add_argument("--mode", choices=("quick", "full"), default="quick")
+    native.add_argument("--timeout", type=float, default=1800)
+    native_pr = sub.add_parser("native-promote", help="Verify native evidence and preserve best")
+    native_pr.add_argument("run", type=Path)
     args = parser.parse_args(argv)
     try:
+        if args.command == "native-promote":
+            from .native import promote_native
+
+            print(json.dumps(promote_native(args.run), indent=2))
+            return 0
+        if args.command == "native-evaluate":
+            from .native import evaluate_native
+
+            run, result = evaluate_native(args.task, args.mode, args.timeout)
+            print(
+                json.dumps(
+                    {
+                        "run": str(run),
+                        "execution": result["execution"],
+                        "correctness": result["correctness"],
+                        "error": result.get("error"),
+                        **result["decision"],
+                    },
+                    indent=2,
+                )
+            )
+            return (
+                2 if result["execution"] == "error" else 1 if result["correctness"] != "pass" else 0
+            )
         if args.command == "promote":
             print(json.dumps(promote(args.run), indent=2))
             return 0

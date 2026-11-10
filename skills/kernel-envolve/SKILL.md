@@ -69,7 +69,7 @@ skill 规定决策与恢复流程；跨会话持续运行还需要宿主执行�
 2. **最便宜的有效反馈。** 尚未写完的结构先做编译/局部检查；正确性失败先重现对应 case/seed；参数调优可以成批探索。进入性能比较前先通过任务正确性验证。
 3. **选择反馈范围。** 用代表用例筛选候选；若快速与完整评测耗时接近，直接完整评测。内部项目组合原生定向测试和 benchmark；通用 quick 自带正确性检查，无需先单独 check-only。只测候选的 signal 可以辅助选参数，但不能算 speedup。保留失败机制有价值的原型，不机械回滚所有未晋升的探索。
 4. **确认。** 有希望且可交付的候选做完整评测（内部项目使用下文原生验证，独立任务使用 full），与当前 best、固定 baseline 同轮实测。检查各尺寸/布局区间的覆盖、逐 case 增量与累计回退、fallback 表现、噪声、目标权重和计时范围；有疑问时查看原始样本，不自行改 PASS/分数。仅为解释瓶颈时才跑 profiler。
-5. **晋升或继续。** 完整证据满足任务目标后更新已验证版本；独立任务使用 promote，内部项目保留对应 Git 修订及验证记录。更快但未确认的代码仍是 candidate；正确但更慢的实现可以留下供组合。记录本轮假设、改动、run 路径、结论与下一步，维护一个简短 `notes.md` 即可。
+5. **晋升或继续。** 完整证据满足任务目标后更新已验证版本；独立任务使用 promote，内部任务使用 native-promote 保存已验证源码快照及原生证据。更快但未确认的代码仍是 candidate；正确但更慢的实现可以留下供组合。记录本轮假设、改动、run 路径、结论与下一步，维护一个简短 `notes.md` 即可。
 
 按阶段记录实际成本，通用 CLI 可读 phase_wall_seconds 和 worker_process_wall_seconds：setup 高时先区分导入与编译成本：减少无用启动，重复编译则优先使用工具链已有的、按源码和编译配置区分的缓存；correctness/measurement 高时用原生测试选择器（通用 CLI 用 --case/--seed）缩小探索范围。探索 trial 数在任务开始时约定；不因本轮结果修改契约或缩减正式 full 的固定覆盖。不要为省启动成本复用失败的 CUDA 进程，也不要跨候选复用正确性 PASS。
 
@@ -100,7 +100,7 @@ skill 规定决策与恢复流程；跨会话持续运行还需要宿主执行�
 - `test_fused_swiglu.py` 已有生产尺寸、BF16 位模式、FP16/FP32、特殊值、反向布局及 batch invariance；`test_embedding_wgrad.py` 已有累加、dtype、padding 和未出现 token 行检查；`test_router_gather.py` 已有真实 Graph 换值回放、checkpoint 和 stream 检查。先复用这些，不重新写一套相同测试。
 - Megatron `test_deepgemm_perf_gate.py` 的 `MODULE_SPEEDUP_FLOOR=0.85` 用于防严重退化，不证明更快；其模块基准分别生成两份输入，`mod.zero_grad()` 也不清空闭包中输入 `x.grad`。可复用计时方法，正式优化对比需对齐输入/初始状态，并明确梯度累加或重置语义。
 
-当前内部流程由 skill 调用原生命令，尚无自动完成这些覆盖核对、契约隔离和性能晋升判定的内部 runner。任务定制应落在少量 pytest/benchmark harness：补断言、补输入集合、补配对比较；无需重写 core 数值方法或搭建另一套训练平台。
+`native-evaluate` 已实现源码冻结、隔离执行、输入/输出与状态检查、原生测试报告核验及配对性能判定。任务定制集中在 `native.json` 的覆盖和测试入口，以及 `adapter.py` 的真实调用与状态声明；已有数值方法保持复用。
 
 ### 确定任务与环境
 
@@ -159,7 +159,7 @@ python -m apodex_core.verification.method.gate --source operations \
 
 验证结果须属于本轮源码：核对预期测试名称、非零通过数量和应有 rank 报告；意外 skip、缺报告、fallback 或旧记录不算通过。core `gate_history.json` 会保留以前的算子条目，只读取本轮预期名称且核对时间和版本；`--emit-observed` 是内部子进程接口，会跳过最终判定，不能作为验收命令。复用 Megatron `.ci/assert_no_pytest_skips.py` / `.ci/check_junit_results.py` 时仍保留 pytest 的退出码。
 
-通用 `evaluate/full/promote` 不会调用以上内部检查，且不直接接受带 `requires_grad` 的输入。内部 best 用 Git 修订与完整证据定位，不写成通用 `best.json`；只有局部实验时才将明确封装的计算交给通用评测器。
+内部任务使用 `native-evaluate/native-promote`，best 指向 `.kernel_native/` 内冻结的源码与完整证据；后续比较从快照加载，修改工作区不会改变旧 best。通用 `evaluate/promote` 保持独立，不承担内部训练验收。
 
 交付按 core 改动 → Megatron 接线和 pin 更新的依赖顺序进行；按两仓当前规范接入相关 CI。最终 pin 必须已进入 core main，核对实际导入路径与接线结果；新特性的 sweep 配置按 Megatron 规范更新。常规 GPU merge-queue 门禁仍由队列执行，review 不要求提前重跑整套 CI。
 
@@ -167,6 +167,27 @@ python -m apodex_core.verification.method.gate --source operations \
 
 - [core 开发规范](https://github.com/ApodexAI/apodex-core/blob/0b8b9b8da1624f8f994e4e54c9126f22c3b00361/DEVELOPMENT_GUIDELINES.md)、[数值 gate](https://github.com/ApodexAI/apodex-core/blob/0b8b9b8da1624f8f994e4e54c9126f22c3b00361/apodex_core/verification/method/gate.py)、[前反向 benchmark 示例](https://github.com/ApodexAI/apodex-core/blob/0b8b9b8da1624f8f994e4e54c9126f22c3b00361/benchmarks/bench_fused_hc_post.py)
 - [Megatron 开发规范](https://github.com/ApodexAI/Megatron-LM/blob/eb2c08444c46ad7bfca0f51c7554970cab6edf48/DEVELOPMENT_GUIDELINES.md)、[模块 gate](https://github.com/ApodexAI/Megatron-LM/blob/eb2c08444c46ad7bfca0f51c7554970cab6edf48/tests/unit_tests/apodex/test_local_modules.py)、[配对计时](https://github.com/ApodexAI/Megatron-LM/blob/eb2c08444c46ad7bfca0f51c7554970cab6edf48/tests/unit_tests/apodex/_paired_benchmark.py)
+
+## 使用内部 evaluator
+
+从 [probs_scale 示例](../../examples/apodex_probs_scale) 建立任务，在项目指定镜像内运行。先固定原始 core/Megatron checkout，配置候选 checkout，调整生产输入与测试集合；不要把 eager reference 当作原始性能基线。
+
+镜像从目标 Megatron 版本的 [`.ci/dlc/targets.yaml`](https://github.com/ApodexAI/Megatron-LM/blob/eb2c08444c46ad7bfca0f51c7554970cab6edf48/.ci/dlc/targets.yaml) 解析：HyperPod B300 使用 `aps2-b300` 的完整 image digest，并沿用该仓 `.ci/dlc/_image_env.sh` 的 Python/依赖初始化。镜像提供工具链，生产源码按固定 commit 单独准备；不要假设镜像已安装 apodex-core，也不要随意升级 Torch/Triton 来修补导入错误。
+
+```bash
+kernel-envolve native-evaluate --task <任务目录> --mode quick
+kernel-envolve native-evaluate --task <任务目录> --mode full --timeout 1800
+kernel-envolve native-promote <完整评测run目录>
+```
+
+- `native.json` 声明源码根目录、生产包与根目录对应关系、输入 case/seed/weight、精度、时间和显存门槛、原生测试。`full` 默认要求 operator、numerical、integration 三类证据；pytest 指定命令、每个 rank 的预期 JUnit 文件、必需测试名称模式及可选 `min_tests`，gate 指定完整算子名称。`devices` 可指定测试使用的可见 GPU 索引，默认单卡使用任务设备。
+- `adapter.py` 提供 `create(case, seed, device, oracle) -> Workload`。导入实际生产 API；oracle 使用固定基线源码中的独立参考。`Workload.tensors` 声明所有输入、参数、缓冲和更新状态，`run()` 返回前向、相关梯度等非空 tensor 结构；`mutable` 指定允许更新的状态，`validate(result)` 可断言后端实际执行。不能把依赖的张量状态藏在未声明的闭包中。
+- `forward_backward(fn, inputs, grad_outputs)` 直接执行真实 autograd，返回输出及所有 `requires_grad` 输入的梯度。涉及 `.grad`、`main_grad` 或优化器状态时，在适配器中显式执行完整更新并声明/返回相应状态。单次 run 可包含完整梯度累积序列；评测在序列之间恢复初始状态，不截断序列内部的训练语义。
+- 输入为目标设备上的 strided leaf tensor，可带 `requires_grad`；保持输入原有 stride/offset 和只读共享存储，复用同一对象换值检测旧值缓存。可写共享存储应声明单一 backing tensor，并在适配器中检查其视图契约；不能把互相覆盖的多个可写 view 当作独立状态重置。
+- 各角色在独立常驻进程加载自己的源码快照，同一评测内复用导入和编译缓存；先完成便宜的契约检查，再执行 full 的原生门禁和配对计时。计时采用设备同步后的 wall time，覆盖实际调用中的 host 开销。Graph/多卡语义由显式适配器或原生测试覆盖，不将 eager 测量当作其结果。
+- 快照包含 Git 跟踪及未忽略文件。所需 Git 子模块另列为源码根目录；被忽略的已编译扩展用 `artifacts` 按根目录声明相对 glob，文件缺失直接报错。准备扩展时只编译受影响部分；不在冻结后改写源码或扩展。依赖镜像、环境与实际导入路径随记录核对，缺 CUDA 不自动退回 CPU。
+- 输出结构、shape/dtype/device、只读输入和可写状态分别核验；与固定独立参考比较前向及梯度，必要时启用 bitwise。`required_outputs` 指定必需路径，例如 `output`、`gradients.0` 和 `gradients.1`，防止遗漏训练输出。完整收益判定沿用 `scoring.py`，同时检查原始基线与 best；`max_peak_bytes` 限制 CUDA 单进程峰值分配。跨进程常驻 CUDA context 的总占用不等于这一指标。
+- 退出码 0 表示评测执行正确，能否晋升看 `eligible_for_best`；1 为正确性拒绝，2 为执行/配置错误。`native-promote` 重验源码、配置、报告和当前 best，禁止 quick、旧报告、缺测试或过期对照晋升。阶段交付前仍需执行任务之外的新尺寸组合与适用的生产验收；full 覆盖的是所声明的任务集合。
 
 ## 使用本仓库 evaluator
 

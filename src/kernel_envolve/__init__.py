@@ -1,6 +1,6 @@
 """Agent-driven kernel iteration, with independently measured evidence."""
 
-__version__ = "0.5.0"
+__version__ = "0.6.0"
 
 
 def load_best(task):

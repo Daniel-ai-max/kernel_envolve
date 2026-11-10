@@ -1,0 +1,134 @@
+{
+  "name": "apodex-probs-scale-training",
+  "objective": "Equal-weight eager forward + backward latency over declared local-token sizes",
+  "device": "cuda:0",
+  "sources": {
+    "candidate": {
+      "core": "$APODEX_CORE_CANDIDATE",
+      "megatron": "$MEGATRON_CANDIDATE"
+    },
+    "baseline": {
+      "core": "$APODEX_CORE_BASELINE",
+      "megatron": "$MEGATRON_BASELINE"
+    }
+  },
+  "imports": {
+    "apodex_core": "core"
+  },
+  "bitwise": true,
+  "rtol": 0,
+  "atol": 0,
+  "cases": [
+    {
+      "id": "small",
+      "args": {
+        "tokens": 128,
+        "hidden": 1536,
+        "dtype": "bfloat16"
+      },
+      "weight": 1
+    },
+    {
+      "id": "typical",
+      "args": {
+        "tokens": 4096,
+        "hidden": 1536,
+        "dtype": "bfloat16"
+      },
+      "weight": 1
+    },
+    {
+      "id": "tail-padded-grad",
+      "args": {
+        "tokens": 4097,
+        "hidden": 1536,
+        "dtype": "bfloat16",
+        "grad_padding": 7
+      },
+      "weight": 1,
+      "quick": false
+    },
+    {
+      "id": "fp32-small",
+      "args": {
+        "tokens": 127,
+        "hidden": 1536,
+        "dtype": "float32",
+        "grad_padding": 3
+      },
+      "quick": false,
+      "measure": false
+    }
+  ],
+  "checks": [
+    {
+      "id": "core_contract",
+      "kind": "pytest",
+      "scope": "operator",
+      "root": "core",
+      "argv": [
+        "{python}",
+        "-m",
+        "pytest",
+        "tests/test_fused_probs_scale.py",
+        "-q",
+        "--junitxml={reports}/junit.xml"
+      ],
+      "reports": [
+        "junit.xml"
+      ],
+      "required_tests": [
+        "*::test_probs_scale_fwd_dx_dprobs_bitwise_bf16*",
+        "*::test_probs_scale_noncontiguous_grad_matches_native_expression*"
+      ]
+    },
+    {
+      "id": "core_numerics",
+      "kind": "gate",
+      "scope": "numerical",
+      "root": "core",
+      "operators": [
+        "local_fused_probs_scale_fwd",
+        "local_fused_probs_scale_dx",
+        "local_fused_probs_scale_dprobs"
+      ]
+    },
+    {
+      "id": "host_dispatch",
+      "kind": "pytest",
+      "scope": "integration",
+      "root": "megatron",
+      "argv": [
+        "{python}",
+        "-m",
+        "pytest",
+        "tests/unit_tests/apodex/test_moe_fused_probs_scale.py",
+        "-k",
+        "switch_dispatches_to_apodex_core_kernel or experts_bitwise",
+        "-q",
+        "--junitxml={reports}/junit.xml"
+      ],
+      "reports": [
+        "junit.xml"
+      ],
+      "required_tests": [
+        "*::test_switch_dispatches_to_apodex_core_kernel*",
+        "*::test_experts_bitwise*"
+      ],
+      "min_tests": 9
+    }
+  ],
+  "required_outputs": [
+    "output",
+    "gradients.0",
+    "gradients.1"
+  ],
+  "env": {
+    "NCCL_ALGO": "^NVLS",
+    "NCCL_NVLS_ENABLE": "0",
+    "NVTE_ALLOW_NONDETERMINISTIC_ALGO": "0",
+    "CUBLAS_WORKSPACE_CONFIG": ":4096:8",
+    "EP_SUPPRESS_NCCL_CHECK": "1",
+    "EP_DISABLE_GIN": "1"
+  }
+}

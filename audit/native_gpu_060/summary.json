@@ -1,0 +1,111 @@
+{
+  "date": "2026-11-10",
+  "version": "0.6.0",
+  "evaluator_hash": "1c454f12c1cf4195313a4c737b6be0d6cf602a0b7531d9cfe0069e0664e78439",
+  "source_scope": "Pinned apodex-core and Megatron-LM source archives; native full including production dispatch and module F+B tests. No training convergence claim or optimization search.",
+  "source_pins": {
+    "core": {
+      "sha": "0b8b9b8da1624f8f994e4e54c9126f22c3b00361"
+    },
+    "megatron": {
+      "sha": "eb2c08444c46ad7bfca0f51c7554970cab6edf48"
+    }
+  },
+  "image_source": {
+    "repo": "ApodexAI/Megatron-LM",
+    "commit": "eb2c08444c46ad7bfca0f51c7554970cab6edf48",
+    "path": ".ci/dlc/targets.yaml",
+    "target": "aps2-b300"
+  },
+  "image": "839084984246.dkr.ecr.ap-south-2.amazonaws.com/pretrain/megatron:verify_batch_invariant_deepep_v2_efa_sm100_20261030_124749_cb114@sha256:622816be6322690a0b9e0ebeafe8f8fa0833eca77544163280c26c794513139d",
+  "local_tests": {
+    "passed": 133,
+    "skipped": 8,
+    "skip_reason": "Existing GPU-only tests on local Mac",
+    "seconds": 40.97
+  },
+  "gpu_runner_tests": {
+    "passed": 18,
+    "skipped": 1,
+    "skip_reason": "No-CUDA rejection test requires a host without CUDA",
+    "seconds": 61.31,
+    "report": "r4-report.json.gz"
+  },
+  "production_tests": {
+    "core_pytest": 124,
+    "gate_operators": 3,
+    "gate_R_per_operator": 4096,
+    "megatron_pytest": 9,
+    "skipped": 0,
+    "megatron_variants": [
+      "TEGroupedMLP",
+      "SequentialMLP",
+      "DeepGemmGroupedMLP"
+    ],
+    "report": "r5-report.json.gz"
+  },
+  "performance_validation": {
+    "quick_seconds": 21.449804900679737,
+    "quick_cases": 2,
+    "quick_trials": 1,
+    "quick_seeds": [
+      0
+    ],
+    "full_seconds": 182.47225192002952,
+    "full_profile": "validation-profile.json",
+    "full_samples": 48,
+    "full_contract_checks": 32,
+    "full_native_check_seconds": {
+      "core_contract": 15.287762837018818,
+      "core_numerics": 25.40535248722881,
+      "host_dispatch": 63.90037903515622
+    },
+    "same_source_control": {
+      "eligible_for_best": false,
+      "performance": "inconclusive",
+      "gain_by_batch": [
+        0.005917786552955051,
+        0.00831892177160709
+      ]
+    },
+    "interpretation": "Observed workflow timings on one B300, not a kernel speedup comparison. Identical candidate/baseline correctly not promoted."
+  },
+  "resource_status": {
+    "gpus_per_job": 1,
+    "model_calls": 0,
+    "latest_job_id": "e33b41d00b6e4b16833e192ed1dd6b50",
+    "latest_phase": "Completed",
+    "remaining_pods": 0
+  },
+  "earlier_failures": [
+    {
+      "attempt": "initial / r3",
+      "stage": "submission",
+      "error": "Platform HTTP 500 for large inline source payload",
+      "job_created": false,
+      "resolution": "Small evaluator payload plus exact pinned source downloads; later retry reused staged sources."
+    },
+    {
+      "attempt": "r2",
+      "stage": "source setup",
+      "error": "Image did not install apodex_core",
+      "report": "r2-report.json.gz",
+      "resolution": "Resolve project image from targets.yaml and prepare exact source archives explicitly."
+    },
+    {
+      "attempt": "r4",
+      "stage": "Megatron test collection",
+      "error": "Missing deterministic NCCL_NVLS_ENABLE=0 setting",
+      "report": "r4-report.json.gz",
+      "resolution": "Example now declares project CI deterministic environment; r5 full passes."
+    }
+  ],
+  "source_verification": {
+    "snapshot_files_match_reviewed_upstream": true,
+    "files_per_role": {
+      "core": 673,
+      "megatron": 2905
+    },
+    "validation_profile_reproduces_recorded_contract": true
+  }
+}
