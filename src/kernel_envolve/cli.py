@@ -10,7 +10,7 @@ import time
 import uuid
 from pathlib import Path
 
-from .execution import lock, stop
+from .execution import lock, spawn, stop
 from .protocol import measured_cases, plan
 from .scoring import score
 from .storage import (
@@ -127,7 +127,7 @@ def evaluate(
         write_json(run / "request.json", request)
         started = time.perf_counter()
         with (run / "stdout.log").open("w") as stdout, (run / "stderr.log").open("w") as stderr:
-            process = subprocess.Popen(
+            process = spawn(
                 [sys.executable, "-m", "kernel_envolve.worker", str(run)],
                 cwd=run,
                 stdout=stdout,
@@ -221,13 +221,40 @@ def promote(run):
             "result_hash": digest(result),
             "previous": best[0]["run"] if best else None,
         }
+        write_json(
+            run / "promotion.json",
+            {
+                "pointer": pointer,
+                "previous_pointer": best[0] if best else None,
+                "at": time.time(),
+            },
+        )
         write_json(state / "best.json", pointer)
         return pointer
 
 
 def main(argv=None):
+    argv = sys.argv[1:] if argv is None else argv
+    from .updates import enter
+
+    result = enter(argv)
+    if result is not None:
+        return result
+    if argv and argv[0] == "manage":
+        from .manager.cli import main as manage
+
+        try:
+            return manage(argv[1:])
+        except (ValueError, OSError, KeyError, TypeError) as exc:
+            print(f"kernel-envolve manage: {exc}", file=sys.stderr)
+            return 2
     parser = argparse.ArgumentParser(description="Reproducible kernel iteration evidence")
     sub = parser.add_subparsers(dest="command", required=True)
+    sub.add_parser("update", help="Check main and print the current revision and Skill path")
+    sub.add_parser("session", help="Run an agent or shell with one fixed tool revision")
+    sub.add_parser(
+        "manage", help="Supervise persistent tasks, GPU queues and the progress dashboard"
+    )
     ev = sub.add_parser("evaluate", help="Check and measure a frozen task snapshot")
     ev.add_argument("--task", type=Path, required=True)
     ev.add_argument("--mode", choices=("quick", "full"), default="quick")

@@ -7,7 +7,7 @@ name = "kernel-envolve"
 version = "0.6.1"
 description = "A skill and a reproducible evaluator for agent-driven kernel iteration"
 requires-python = ">=3.11"
-dependencies = ["numpy>=1.26"]
+dependencies = ["numpy>=1.26", "packaging>=24"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.9", "pyyaml>=6"]

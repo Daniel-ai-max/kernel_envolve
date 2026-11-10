@@ -170,6 +170,12 @@ def load_config(task):
 def environment(cfg, roots):
     env = os.environ.copy()
     env.pop("PYTHONOPTIMIZE", None)
+    if env.get("KERNEL_ENVOLVE_GPU_JOB"):
+        for key, value in cfg["env"].items():
+            if (
+                key == "CUDA_VISIBLE_DEVICES" or key.startswith("KERNEL_ENVOLVE_")
+            ) and value != env.get(key):
+                raise ValueError(f"Managed GPU allocation cannot be overridden by task env: {key}")
     env.update(cfg["env"])
     env["PYTHONDONTWRITEBYTECODE"] = "1"
     env["PYTHONPATH"] = os.pathsep.join([str(Path(__file__).resolve().parents[1]), *roots.values()])

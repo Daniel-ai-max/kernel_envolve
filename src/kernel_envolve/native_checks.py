@@ -7,7 +7,7 @@ import time
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-from .execution import stop
+from .execution import spawn, stop
 from .native_config import environment
 from .storage import read_json, write_json
 
@@ -70,7 +70,7 @@ def native_checks(run, cfg, roots, deadline, records=None):
                 names[i] if names else str(i) for i in devices
             )
         with log.open("w") as stream:
-            process = subprocess.Popen(
+            process = spawn(
                 argv,
                 cwd=cwd,
                 env=check_env,

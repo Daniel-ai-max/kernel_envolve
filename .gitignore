@@ -10,3 +10,4 @@ dist/
 .env*
 
 .kernel_native/
+.kernel_manager/
