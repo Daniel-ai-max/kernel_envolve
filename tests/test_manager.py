@@ -926,3 +926,101 @@ def test_dashboard_polling_races_backoff_and_visibility():
     subprocess.run(
         [node, "--test", str(Path(__file__).with_name("manager_sync.mjs"))], check=True, timeout=15
     )
+
+
+@pytest.mark.parametrize("command", ["evaluate", "native-evaluate"])
+@pytest.mark.parametrize("descriptor", [None, "invalid", "-1"])
+def test_managed_lock_rejection_precedes_source_snapshot(
+    tmp_path, monkeypatch, capsys, command, descriptor
+):
+    from kernel_envolve.cli import main
+
+    monkeypatch.setenv("KERNEL_ENVOLVE_GPU_JOB", "managed-fixture")
+    if descriptor is None:
+        monkeypatch.delenv("KERNEL_ENVOLVE_LOCK_FD", raising=False)
+    else:
+        monkeypatch.setenv("KERNEL_ENVOLVE_LOCK_FD", descriptor)
+    # An absent task must not be read or created before diagnosing the broken adapter.
+    task = tmp_path / "not-created"
+    assert main([command, "--task", str(task)]) == 2
+    error = capsys.readouterr().err
+    assert "KERNEL_ENVOLVE_LOCK_FD is missing or invalid" in error
+    assert "os.execvpe" in error and "pass_fds" in error
+    assert not task.exists()
+
+
+def test_worker_spawn_rejects_closed_managed_lock(monkeypatch, tmp_path):
+    from kernel_envolve.execution import spawn
+
+    monkeypatch.setenv("KERNEL_ENVOLVE_GPU_JOB", "managed-fixture")
+    monkeypatch.setenv("KERNEL_ENVOLVE_LOCK_FD", "-1")
+    marker = tmp_path / "worker-started"
+    with pytest.raises(ValueError, match="pass_fds"):
+        spawn([sys.executable, "-c", f"from pathlib import Path; Path({str(marker)!r}).touch()"])
+    assert not marker.exists()
+
+
+@pytest.mark.parametrize("strategy", ["default_subprocess", "exec", "pass_fds"])
+def test_real_manager_evaluator_lock_inheritance(managed, strategy):
+    store, _, work = managed
+    evaluator = [
+        sys.executable,
+        "-m",
+        "kernel_envolve.cli",
+        "evaluate",
+        "--task",
+        str(work),
+        "--mode",
+        "quick",
+    ]
+    guard = f"import os,subprocess,sys; argv={evaluator!r}; "
+    if strategy == "exec":
+        guard += "os.execvpe(argv[0],argv,os.environ)"
+    elif strategy == "pass_fds":
+        guard += (
+            "sys.exit(subprocess.run(argv,pass_fds="
+            "(int(os.environ['KERNEL_ENVOLVE_LOCK_FD']),)).returncode)"
+        )
+    else:
+        guard += "sys.exit(subprocess.run(argv).returncode)"
+    gpu = [
+        sys.executable,
+        "-m",
+        "kernel_envolve.cli",
+        "manage",
+        "gpu-run",
+        "--",
+        sys.executable,
+        "-c",
+        guard,
+    ]
+    agent = (
+        "import json,os,pathlib,subprocess; "
+        f"reply=subprocess.run({gpu!r},capture_output=True,text=True); "
+        "pathlib.Path('reply.json').write_text(json.dumps("
+        "{'code':reply.returncode,'stdout':reply.stdout,'stderr':reply.stderr})); "
+        "pathlib.Path(os.environ['KERNEL_ENVOLVE_REPORT']).write_text("
+        "json.dumps({'next_action':'Inspect managed adapter results'}))"
+    )
+    replace_command(store, [sys.executable, "-c", agent], round_timeout_seconds=30)
+    key = store.schedule()[0]
+    process = launch(store, key)
+    try:
+        out, err = process.communicate(timeout=30)
+        assert process.returncode == 0, (out, err)
+        reply = json.loads((work / "reply.json").read_text())
+        jobs = store.rows("SELECT * FROM jobs WHERE kind='gpu' AND parent=?", (key,))
+        assert len(jobs) == 1
+        if strategy == "default_subprocess":
+            assert reply["code"] != 0
+            assert "KERNEL_ENVOLVE_LOCK_FD is missing or invalid" in reply["stdout"]
+            assert "os.execvpe" in reply["stdout"] and "pass_fds" in reply["stdout"]
+            assert not (work / ".kernel_envolve").exists()
+            assert jobs[0]["status"] == "failed"
+        else:
+            assert reply["code"] == 0, reply
+            result = json.loads(reply["stdout"])
+            assert result["execution"] == "completed" and result["correctness"] == "pass"
+            assert jobs[0]["status"] == "succeeded"
+    finally:
+        terminate(process)

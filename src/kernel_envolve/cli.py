@@ -10,7 +10,7 @@ import time
 import uuid
 from pathlib import Path
 
-from .execution import lock, spawn, stop
+from .execution import lock, managed_lock_fd, spawn, stop
 from .protocol import measured_cases, objective_cases, plan
 from .scoring import score
 from .storage import (
@@ -294,6 +294,9 @@ def main(argv=None):
     native_pr.add_argument("run", type=Path)
     args = parser.parse_args(argv)
     try:
+        if args.command in ("evaluate", "native-evaluate"):
+            # Detect broken adapters before copying sources or starting workers.
+            managed_lock_fd()
         if args.command == "native-promote":
             from .native import promote_native
 
