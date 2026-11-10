@@ -16,6 +16,7 @@ import uuid
 from pathlib import Path
 
 from . import __version__
+from .protocol import objective_cases, performance_role
 
 
 def digest(value):
@@ -98,8 +99,9 @@ def config(root):
         for flag in ("quick", "measure"):
             if flag in c and type(c[flag]) is not bool:
                 raise ValueError(f"case.{flag} must be a boolean")
-        if set(c) - {"id", "args", "weight", "quick", "max_us", "measure"}:
+        if set(c) - {"id", "args", "weight", "quick", "max_us", "measure", "performance_role"}:
             raise ValueError(f"Unknown case settings: {c['id']}")
+        role = performance_role(c)
         if not c.get("measure", True) and ({"weight", "max_us"} & set(c)):
             raise ValueError("Unmeasured cases cannot have weight or max_us")
         for key in ("weight", "max_us"):
@@ -107,10 +109,14 @@ def config(root):
                 type(c[key]) not in (int, float) or not math.isfinite(c[key]) or c[key] <= 0
             ):
                 raise ValueError(f"{key} must be finite and positive")
-        if c.get("measure", True) and "weight" not in c:
+        if c.get("measure", True) and role == "objective" and "weight" not in c:
             raise ValueError("Explicit case weights are required")
-    if not any(c.get("quick", True) and c.get("measure", True) for c in cases):
-        raise ValueError("At least one measured quick case is required")
+    for mode in ("quick", "full"):
+        selected = [c for c in cases if mode == "full" or c.get("quick", True)]
+        if not objective_cases(selected):
+            raise ValueError(
+                f"At least one measured {mode} case with performance_role=objective is required"
+            )
     for key in (
         "rtol",
         "atol",
