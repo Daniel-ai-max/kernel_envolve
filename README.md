@@ -85,6 +85,8 @@ kernel-envolve native-evaluate --task examples/apodex_probs_scale --mode full --
 kernel-envolve native-promote /path/to/run
 ```
 
+若优化目标是底层 kernel，可将完整 API 声明为计时保护用例，保留正确性和退化检查，同时单独计算目标 kernel 的收益，见[目标用例与保护用例](docs/generic-evaluator.md#目标用例与保护用例)。
+
 `native-promote` 的路径取自合格的 full 结果。数值 gate 或 CI 通过仅说明相应检查通过，性能收益仍需测量确认。配置与适配接口见 [内部项目评测](skills/kernel-envolve/SKILL.md#apodex-内部项目评测)及[内部 evaluator](skills/kernel-envolve/SKILL.md#使用内部-evaluator)。
 
 ## 持续优化

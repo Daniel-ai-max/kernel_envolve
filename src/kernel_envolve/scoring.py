@@ -3,7 +3,16 @@
 import math
 import statistics as stats
 
-from .protocol import measured_cases, order, plan, post_seed, roles, timing_seed
+from .protocol import (
+    measured_cases,
+    objective_cases,
+    order,
+    performance_role,
+    plan,
+    post_seed,
+    roles,
+    timing_seed,
+)
 
 
 def ratio(numerator, denominator):
@@ -74,6 +83,14 @@ def score(result, cfg):
         return decision
     if not timed_cases:
         raise ValueError("Performance evaluation requires measured cases")
+    objectives = objective_cases(timed_cases)
+    if not objectives:
+        raise ValueError("Performance evaluation requires measured objective cases")
+    if any(performance_role(c) == "guard" for c in timed_cases):
+        decision["coverage"]["objective_cases"] = [c["id"] for c in objectives]
+        decision["coverage"]["guard_cases"] = [
+            c["id"] for c in timed_cases if performance_role(c) == "guard"
+        ]
     expected = {
         (c["id"], b, t, timing_seed(c["id"], b, t, repeat, seeds), role, repeat)
         for c in timed_cases
@@ -116,6 +133,9 @@ def score(result, cfg):
         uncertainties = dict.fromkeys(contrasts, 0.0)
         for c in timed_cases:
             row = {"case": c["id"], "batch": b}
+            objective = performance_role(c) == "objective"
+            if "performance_role" in c:
+                row["performance_role"] = c["performance_role"]
             trial_medians = {}
             for role in implementations:
                 by_trial = grouped[(c["id"], b, role)]
@@ -124,7 +144,8 @@ def score(result, cfg):
                 row[role + "_us"] = median
                 row[role + "_mad_us"] = mad
                 row[role + "_iqr_us"] = iqr
-                totals[role] += c["weight"] * median
+                if objective:
+                    totals[role] += c["weight"] * median
                 if contrasts:
                     trial_medians[role] = [stats.median(pair) for pair in by_trial]
             for role in contrasts:
@@ -136,8 +157,9 @@ def score(result, cfg):
                 row[f"paired_{role}_delta_us"] = delta
                 row[f"paired_{role}_mad_us"] = mad
                 row[f"paired_{role}_iqr_us"] = iqr
-                contrasts[role] += c["weight"] * delta
-                uncertainties[role] += c["weight"] * spread
+                if objective:
+                    contrasts[role] += c["weight"] * delta
+                    uncertainties[role] += c["weight"] * spread
             if "max_us" in c and row["candidate_us"] > c["max_us"]:
                 decision["reasons"].append(f"{c['id']}: exceeds absolute latency cap in batch {b}")
             if not result["signal_only"]:
