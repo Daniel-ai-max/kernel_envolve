@@ -14,6 +14,7 @@ from .execution import lock, spawn, stop
 from .native_checks import junit as junit  # Preserve the existing native helper import.
 from .native_checks import native_checks
 from .native_config import environment, load_config
+from .native_harness import prepare_harness, validate_overlay
 from .protocol import order, plan, post_seed, timing_seed
 from .scoring import score
 from .storage import digest, evaluator_hash, file_hash, read_json, write_json
@@ -271,7 +272,17 @@ def _evaluate(task, state, cfg, mode, timeout):
         "adapter_hash": file_hash(run / "adapter.py"),
         "memory": [],
         "environments": {},
+        "phase_wall_seconds": {},
     }
+    phase, phase_started = "snapshot", start
+
+    def begin_phase(name):
+        nonlocal phase, phase_started
+        now = time.perf_counter()
+        result["phase_wall_seconds"][phase] = now - phase_started
+        phase, phase_started = name, now
+        return now
+
     workers = {}
     try:
         for role, roots in cfg["sources"].items():
@@ -279,6 +290,7 @@ def _evaluate(task, state, cfg, mode, timeout):
                 name: snapshot(path, run / "sources" / role / name, cfg["artifacts"].get(name, []))
                 for name, path in roots.items()
             }
+        begin_phase("setup")
         contract_cfg = {k: v for k, v in cfg.items() if k != "sources"}
         result["contract"] = digest(
             {
@@ -287,6 +299,7 @@ def _evaluate(task, state, cfg, mode, timeout):
                 "baseline": result["identities"]["baseline"],
             }
         )
+        validate_overlay(cfg, result["identities"])
         best = _best(state)
         result["initial_best_hash"] = digest(best[0]) if best else None
         if best and best[2]["contract"] != result["contract"]:
@@ -346,15 +359,22 @@ def _evaluate(task, state, cfg, mode, timeout):
                         }
                     )
 
+        begin_phase("correctness")
         kinds = ["fresh", "reuse", "repeat"] if cfg["deterministic"] else ["fresh", "reuse"]
         for case in cases:
             for seed in seeds:
                 check(case, seed, kinds)
         if mode == "full":
-            native_checks(run, cfg, roots, deadline, result["native_checks"])
+            begin_phase("native_checks")
+            validation, seconds = prepare_harness(run, cfg, result["identities"])
+            result["identities"]["validation"] = validation
+            result["harness_seconds"] = seconds
+            validation_roots = _roots(run, "validation", validation)
+            native_checks(run, cfg, validation_roots, deadline, result["native_checks"])
             scopes = {r["scope"] for r in result["native_checks"]}
             if set(cfg["required_scopes"]) - scopes:
                 raise ValueError("Missing required native validation scopes")
+        begin_phase("measurement")
         timed = [c for c in cases if c.get("measure", True)]
         for batch in range(batches):
             for case in timed if batch == 0 else reversed(timed):
@@ -394,8 +414,10 @@ def _evaluate(task, state, cfg, mode, timeout):
                                 }
                             )
                         repeats[role] += 1
+        begin_phase("postcheck")
         for case in timed:
             check(case, post_seed(case["id"], seeds), ["post"])
+        begin_phase("integrity")
         for role, identity in result["identities"].items():
             verify_roots(run, identity, role)
         if best:
@@ -407,13 +429,15 @@ def _evaluate(task, state, cfg, mode, timeout):
             raise ValueError("Evaluator/adapter changed during evaluation")
         result.update(execution="completed", correctness="pass")
     except Exception as exc:
+        result["failed_phase"] = phase
         result["error"] = {"type": type(exc).__name__, "message": str(exc)}
         if isinstance(exc, AssertionError):
             result.update(execution="completed", correctness="fail")
     finally:
+        begin_phase("cleanup")
         for worker in workers.values():
             worker.close()
-    result["seconds"] = time.perf_counter() - start
+    result["seconds"] = begin_phase(None) - start
     try:
         result["decision"] = native_decision(result, cfg)
     except (ValueError, KeyError, TypeError) as exc:

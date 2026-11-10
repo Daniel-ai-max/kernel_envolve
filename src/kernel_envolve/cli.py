@@ -10,8 +10,8 @@ import time
 import uuid
 from pathlib import Path
 
-from .execution import lock, spawn, stop
-from .protocol import measured_cases, plan
+from .execution import lock, managed_lock_fd, spawn, stop
+from .protocol import measured_cases, objective_cases, plan
 from .scoring import score
 from .storage import (
     bundle,
@@ -81,6 +81,10 @@ def evaluate(
     selected, _, _, _ = plan(cfg, mode, selection)
     if not check_only and not measured_cases(selected):
         raise ValueError("No measured cases selected; use --check-only for correctness diagnostics")
+    if not check_only and not objective_cases(selected):
+        raise ValueError(
+            "No objective cases selected; use --check-only for correctness diagnostics"
+        )
     if check_only and mode != "quick":
         raise ValueError("Check-only diagnostics require quick mode")
     if signal_only and mode != "quick":
@@ -290,6 +294,9 @@ def main(argv=None):
     native_pr.add_argument("run", type=Path)
     args = parser.parse_args(argv)
     try:
+        if args.command in ("evaluate", "native-evaluate"):
+            # Detect broken adapters before copying sources or starting workers.
+            managed_lock_fd()
         if args.command == "native-promote":
             from .native import promote_native
 
@@ -306,6 +313,9 @@ def main(argv=None):
                         "execution": result["execution"],
                         "correctness": result["correctness"],
                         "error": result.get("error"),
+                        "seconds": result["seconds"],
+                        "phase_wall_seconds": result.get("phase_wall_seconds", {}),
+                        "failed_phase": result.get("failed_phase"),
                         **result["decision"],
                     },
                     indent=2,

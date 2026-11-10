@@ -8,6 +8,22 @@ def measured_cases(cases):
     return [case for case in cases if case.get("measure", True)]
 
 
+def performance_role(case):
+    """A guard is measured and validated but never contributes to the objective."""
+    role = case.get("performance_role", "objective")
+    if role not in ("objective", "guard"):
+        raise ValueError("performance_role must be objective or guard")
+    if "performance_role" in case and not case.get("measure", True):
+        raise ValueError("Unmeasured cases cannot declare performance_role")
+    if role == "guard" and "weight" in case:
+        raise ValueError("Guard cases cannot have a weight")
+    return role
+
+
+def objective_cases(cases):
+    return [case for case in measured_cases(cases) if performance_role(case) == "objective"]
+
+
 def plan(cfg, mode, selection=None):
     selection = selection or {}
     if mode not in ("quick", "full"):

@@ -1,0 +1,9 @@
+{
+  "hardware": "local macOS filesystem; not remote FSx",
+  "baseline_revision": "33618014b7fd8a5a03d3e5f46746e2d495622715",
+  "files": 1273,
+  "bytes": 21755070,
+  "harness_seconds": 0.40154058299958706,
+  "verification": "unchanged view hashes verified",
+  "run": "/var/folders/1_/pg6y0vt5551__6957j13nzmc0000gn/T/ke-native-harness-io-gxr4xuqq"
+}

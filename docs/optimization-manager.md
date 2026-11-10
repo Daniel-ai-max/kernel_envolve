@@ -93,15 +93,29 @@ session wall 时间包含该轮的等待；GPU 时间是作业占用设备的时
 
 ```sh
 # GPU 上运行的所有命令均经该入口，包括局部正确性检查和 profiler。
-kernel-envolve manage gpu-run -- kernel-envolve native-evaluate --task ./task --mode quick
-kernel-envolve manage gpu-run -- kernel-envolve native-evaluate --task ./task --mode full
+kernel-envolve manage gpu-run --expected-seconds 300 -- kernel-envolve native-evaluate --task ./task --mode quick
+kernel-envolve manage gpu-run --expected-seconds 1200 -- kernel-envolve native-evaluate --task ./task --mode full
 kernel-envolve native-promote ./task/.kernel_native/runs/<run>
 kernel-envolve manage report --file progress.json
 ```
 
+`--expected-seconds` 声明本次命令的预计执行时长，建议使用命令超时作为保守上界。
+管理器在入队前和获得设备锁后分别检查父轮次、累计 wall/GPU 剩余额度，排队时间也会扣除。
+不足时返回退出码 `2` 和 `error_type: gpu_duration_admission`，不启动子命令、不自动重试或延长预算。
+Agent 应保存检查点并重新规划；剩余累计预算不会因换轮恢复。额度按实际经过时间记账，
+声明时长不预扣额度，也不替代命令自身超时。此参数可选，旧调用未声明时保留原行为，
+不会提前判断作业是否来得及完成。
+
 GPU wrapper 会转发命令输出的最后 64 KiB，完整日志在管理状态目录的 `jobs/<id>/`。
 Agent 主进程默认看不到 CUDA 设备；GPU wrapper 给子进程设置目标 UUID。不能再嵌套
 gpu-run。运行需要其他 GPU 的分布式验证不在单卡队列契约内，应单独安排并保存证据。
+
+GPU 命令优先直接执行 evaluator。若适配脚本需要先检查条件，再转交 CLI，使用
+`os.execvpe(argv[0], argv, os.environ)`；另起子进程时须传
+`pass_fds=(int(os.environ["KERNEL_ENVOLVE_LOCK_FD"]),)` 并等待退出。
+默认 `subprocess.run` 会关闭这个继承的设备锁描述符。CLI 会在复制源码前拒绝
+缺失或失效的描述符，并给出上述修复方式；创建 worker 时也再次检查。
+检查不会重新获取锁，也不能通过删除 manager 环境变量来恢复执行。
 
 报告示例：
 
@@ -136,6 +150,19 @@ kernel-envolve manage --state /work/manager-state refresh --force
 暂停会在下一次主管检查时终止当前轮次和 GPU 作业；必须等待作业退出后才能改额度或
 资源绑定。notes.md 只包含最后完成的 checkpoint，运行中的本地编辑保留供恢复核对。
 恢复不会清空累计用量。降低会话数只影响新调度，不强杀现有会话。
+
+评测契约升级时，先以独立工作区注册替代任务，再将旧任务转入历史：
+
+```sh
+kernel-envolve manage --state /work/manager-state supersede probs-scale-b300 --by probs-scale-b300-v2
+```
+
+旧任务必须已结束全部作业。替代任务保留同一资源、算子入口和固定源码基线，允许更新
+评测契约；其 wall/GPU 总额度分别不得超过旧任务未用额度，已消耗的额度不能用来抵扣
+这项检查。命令原子记录替代关系和双方账本快照，不搬移用量、不修改额度、不启动
+替代任务，也不解除资源隔离。已有 v2 迁移可直接补记关系，重复执行同一关系无副作用。
+旧任务继续保留日志、评测和实际用量；暂停旧任务是空操作，恢复及修改旧任务均被拒绝。
+替代链的累计用量是各版本实际用量之和；外部资源截止时间仍沿用原配置。
 
 协调器退出时，独立的轮次主管继续执行并检查预算；重启协调器会核对进程身份和锁，
 接管观察，而不重新运行活着的轮次。新主机不能仅复制 SQLite 后自动重放作业。

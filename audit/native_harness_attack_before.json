@@ -1,0 +1,54 @@
+{
+  "repository_revision": "392a758",
+  "root": "/var/folders/1_/pg6y0vt5551__6957j13nzmc0000gn/T/ke-harness-attack-before-ejtiardy",
+  "before": {
+    "run": "/private/var/folders/1_/pg6y0vt5551__6957j13nzmc0000gn/T/ke-harness-attack-before-ejtiardy/task/.kernel_native/runs/9597d6f04aba43f1aab24b9641d5ee31",
+    "correctness": "partial",
+    "error": {
+      "type": "ValueError",
+      "message": "Native check failed (1): operator; see /private/var/folders/1_/pg6y0vt5551__6957j13nzmc0000gn/T/ke-harness-attack-before-ejtiardy/task/.kernel_native/runs/9597d6f04aba43f1aab24b9641d5ee31/native_checks/operator/command.log"
+    },
+    "eligible": false
+  },
+  "candidate_test_only_changed": {
+    "run": "/private/var/folders/1_/pg6y0vt5551__6957j13nzmc0000gn/T/ke-harness-attack-before-ejtiardy/task/.kernel_native/runs/6b1e493ceec74fe38c560b1d02dae8ad",
+    "correctness": "pass",
+    "error": null,
+    "eligible": true,
+    "native_checks": [
+      {
+        "id": "operator",
+        "scope": "operator",
+        "status": "pass",
+        "seconds": 0.1328356249978242,
+        "detail": {
+          "junit.xml": [
+            "test_native_contract::test_contract"
+          ]
+        }
+      },
+      {
+        "id": "numerical",
+        "scope": "numerical",
+        "status": "pass",
+        "seconds": 0.14049179200083017,
+        "detail": {
+          "junit.xml": [
+            "test_native_contract::test_contract"
+          ]
+        }
+      },
+      {
+        "id": "integration",
+        "scope": "integration",
+        "status": "pass",
+        "seconds": 0.08686654200209887,
+        "detail": {
+          "junit.xml": [
+            "test_native_contract::test_contract"
+          ]
+        }
+      }
+    ]
+  }
+}
