@@ -7,6 +7,7 @@ deadline. Learned text cannot change the action schema, evaluator or budgets.
 
 import hashlib
 import json
+import os
 import signal
 import statistics
 import time
@@ -175,6 +176,7 @@ def run(
     source_validator=None,
     stop_on_decision_timeout=False,
     compact_history=False,
+    managed_evaluations=False,
 ):
     """Call decide(request, timeout) for operator-fixed actions; return a saved trace.
 
@@ -201,6 +203,11 @@ def run(
     compact_history optionally sends history observation references to the complete
     candidate observation table instead of duplicating its facts. Stored traces
     remain full. It does not summarize measurements, sources, failures or actions.
+
+    managed_evaluations explicitly admits each measurement through the current
+    Manager round. The decision callback runs without the GPU lock. The entire
+    search must never run inside gpu-run; final independent evaluation is still
+    the caller's responsibility. Standalone experiments keep the direct path.
     """
     if packet["kind"] != "generic":
         raise ValueError("The experimental research loop supports generic tasks only")
@@ -210,6 +217,12 @@ def run(
         raise ValueError("stop_on_decision_timeout must be boolean")
     if type(compact_history) is not bool:
         raise ValueError("compact_history must be boolean")
+    if type(managed_evaluations) is not bool:
+        raise ValueError("managed_evaluations must be boolean")
+    if os.environ.get("KERNEL_ENVOLVE_GPU_JOB"):
+        raise ValueError("Research decisions must run outside the Manager GPU job")
+    if os.environ.get("KERNEL_ENVOLVE_ROUND") and not managed_evaluations:
+        raise ValueError("Research in a Manager round requires managed_evaluations=True")
     for name, value in (
         ("seconds", packet["seconds"]),
         ("model", model_seconds),
@@ -217,6 +230,10 @@ def run(
     ):
         number(value, name)
     task = Path(packet["task"]).resolve()
+    if managed_evaluations:
+        from .managed import binding
+
+        binding(task)
     cfg = config(task)
     if cfg["candidate_files"] != ["candidate.py"] or len(packet["editable_files"]) != 1:
         raise ValueError("The research loop needs exactly candidate.py as editable source")
@@ -292,6 +309,7 @@ def run(
         "artifact_proposal_hash": proposal_hash,
         "stop_on_decision_timeout": stop_on_decision_timeout,
         "compact_history": compact_history,
+        "managed_evaluations": managed_evaluations,
     }
     previous = {}
 
@@ -329,7 +347,15 @@ def run(
             raise TimeoutError("Research budget exhausted before evaluation")
         protected()
         candidate.write_text(sources[identity])
-        directory, result = evaluate(task, mode, timeout=min(evaluation_seconds, remaining()))
+        timeout = min(evaluation_seconds, remaining())
+        if managed_evaluations:
+            from .managed import evaluate as evaluate_managed
+
+            directory, result = evaluate_managed(
+                task, mode, timeout, output / "managed-evaluations" / str(len(measured))
+            )
+        else:
+            directory, result = evaluate(task, mode, timeout=timeout)
         protected()
         value = observation(directory, result)
         measured[(identity, mode)] = value

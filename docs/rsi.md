@@ -134,7 +134,24 @@ kernel-envolve rsi --state /work/rsi-state run --interval 60
 
 ## 适配器协议
 
-两个适配器都是操作者配置的 argv，不通过 shell 拼接，也不会从候选内容生成可执行命令。脚本路径建议使用绝对路径。子进程固定使用当前 kernel_envolve 安装，禁用自动跟随 main，不继承生产 Manager 的任务/轮次环境变量。
+可选的 `research.run` 研究循环若在真实 Manager agent round 中使用，必须显式传入
+`managed_evaluations=True`。此时每次 initial/quick/full 都通过现有 `manage gpu-run`
+的同一准入实现排队，保留父轮次、累计预算、物理设备锁和子进程清理；决策回调不持有
+GPU 锁。不能把整段研究循环包在 `gpu-run` 内。默认独立实验仍沿用直接评测路径，
+Manager round 中误用直接路径会被拒绝。
+
+这个适配层只支持单文件 generic `candidate.py`，不自动收集或发布历史代码。
+返回前重新核对任务契约、实际源码、模式和 evaluator 收据，不从 stdout 读取成绩。
+排队和执行共用有界期限；超时保留失败并清理进程，不能变成有效观察或触发决策超时恢复。
+它使用 POSIX 主线程定时器，拒绝覆盖调用者已有的 `ITIMER_REAL`；其他超时框架应放在
+独立外层进程中。清理可能在期限后增加少量时间，父轮次与累计资源预算始终保留。
+
+搜索结束仍需要独立的最终 full：可信适配器可调用
+`rsi.managed.evaluate(task, "full", timeout, new_evidence_directory)`，然后按原流程检查及
+决定是否 promote。每次调用要求任务外的新证据目录。这个工程桥接没有替代最终 gate，
+也不是自动成果发布或已验证的生产收益闭环。
+
+RSI sidecar 的学习器和验证 solver 都是操作者配置的 argv，不通过 shell 拼接，也不会从候选内容生成可执行命令。脚本路径建议使用绝对路径。这两个隔离验证子进程固定使用当前 kernel_envolve 安装，禁用自动跟随 main，不继承生产 Manager 的任务/轮次环境变量；上面的 Manager 内评测桥接则保留当前轮次身份。
 
 学习器在独立目录运行，从 stdin 接收 JSON：说明、当前 scope/策略和一批证据。它写出 `proposals.json`（最多 64 KiB、三项，空列表合法）。每项格式：
 

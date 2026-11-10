@@ -1,0 +1,200 @@
+{
+  "arm_medians": {
+    "managed-research": 0.23518166649955674,
+    "ordinary-manager": 0.23069300000133808
+  },
+  "helper_sha256": "897902c75f2a3959ea435fe5636ea1b89cad9a5649544bde42fdd1bb8a686773",
+  "managed_source_sha256": "f33e5a2e04b3d702a4cccf7efd6b95c68e20ea984545e08701e4878573ce251e",
+  "max_extra_seconds": 0.012230250002176035,
+  "median_extra_seconds": 0.004255854491930222,
+  "min_extra_seconds": -0.009553249001328368,
+  "pairs": 12,
+  "platform": "macOS-26.5.2-arm64-arm-64bit",
+  "python": "3.12.14",
+  "rows": [
+    {
+      "arm": "managed-research",
+      "pair": -1,
+      "result_hash": "561fede1991a2d693a9cf9e0111a86429377982b5a7281fda1b564b285692e3b",
+      "run": "/Users/daniel/Documents/ChatGPT/\u7b97\u5b50\u4f18\u5316/rsi-managed-integration-20261111/measured/task/.kernel_envolve/runs/20261110T191323-ff7dc45f",
+      "seconds": 0.22880854200047906
+    },
+    {
+      "arm": "ordinary-manager",
+      "pair": -1,
+      "result_hash": "0372feaeb6f0b7431007add3d8c1d5130dd04e2f9fab37b4fc0202650a5ab3c1",
+      "run": "/Users/daniel/Documents/ChatGPT/\u7b97\u5b50\u4f18\u5316/rsi-managed-integration-20261111/measured/task/.kernel_envolve/runs/20261110T191324-112e68f8",
+      "seconds": 0.23134608400141587
+    },
+    {
+      "arm": "ordinary-manager",
+      "pair": 0,
+      "result_hash": "1dc4426a6d7f602df253cb9bef8782d1d72c995e0c34d955a511ae7f11f22a5a",
+      "run": "/Users/daniel/Documents/ChatGPT/\u7b97\u5b50\u4f18\u5316/rsi-managed-integration-20261111/measured/task/.kernel_envolve/runs/20261110T191324-435e7227",
+      "seconds": 0.23071891700237757
+    },
+    {
+      "arm": "managed-research",
+      "pair": 0,
+      "result_hash": "6b3bdb06a8b50468fd040a279ec571a075f181ee95a557ff4084e6adf25928dc",
+      "run": "/Users/daniel/Documents/ChatGPT/\u7b97\u5b50\u4f18\u5316/rsi-managed-integration-20261111/measured/task/.kernel_envolve/runs/20261110T191324-e519dff8",
+      "seconds": 0.24140083300153492
+    },
+    {
+      "arm": "managed-research",
+      "pair": 1,
+      "result_hash": "a52d81fab140c3ec9903fd12775c0e9a743aeb487b1088a377964f4163c29599",
+      "run": "/Users/daniel/Documents/ChatGPT/\u7b97\u5b50\u4f18\u5316/rsi-managed-integration-20261111/measured/task/.kernel_envolve/runs/20261110T191324-b2158697",
+      "seconds": 0.22778166700300062
+    },
+    {
+      "arm": "ordinary-manager",
+      "pair": 1,
+      "result_hash": "8ccf15b6c18290be0659ce65aabb1577b920f6c488110cef50b64e3e1c7e7168",
+      "run": "/Users/daniel/Documents/ChatGPT/\u7b97\u5b50\u4f18\u5316/rsi-managed-integration-20261111/measured/task/.kernel_envolve/runs/20261110T191325-159b82bc",
+      "seconds": 0.22986758400656981
+    },
+    {
+      "arm": "ordinary-manager",
+      "pair": 2,
+      "result_hash": "85f09ec7eda3449faca98700bc22423dc8144af45b613ef9eefccc2a82dc29df",
+      "run": "/Users/daniel/Documents/ChatGPT/\u7b97\u5b50\u4f18\u5316/rsi-managed-integration-20261111/measured/task/.kernel_envolve/runs/20261110T191325-7a39bfa0",
+      "seconds": 0.2306670830002986
+    },
+    {
+      "arm": "managed-research",
+      "pair": 2,
+      "result_hash": "cb002d5f4b9d48167d7b09bf9550378373a38d8452e32b203ca72fcfd21aaeef",
+      "run": "/Users/daniel/Documents/ChatGPT/\u7b97\u5b50\u4f18\u5316/rsi-managed-integration-20261111/measured/task/.kernel_envolve/runs/20261110T191325-6519682b",
+      "seconds": 0.23415870899771107
+    },
+    {
+      "arm": "managed-research",
+      "pair": 3,
+      "result_hash": "5a88a80709cfdae1808be5d7e81cb8c124800394225e5c029c816faa623d029b",
+      "run": "/Users/daniel/Documents/ChatGPT/\u7b97\u5b50\u4f18\u5316/rsi-managed-integration-20261111/measured/task/.kernel_envolve/runs/20261110T191325-79983bf6",
+      "seconds": 0.2322130839966121
+    },
+    {
+      "arm": "ordinary-manager",
+      "pair": 3,
+      "result_hash": "d8047bb7421da512d85736662088b444dc5610d1ebc0e0ce85ee931bceabee51",
+      "run": "/Users/daniel/Documents/ChatGPT/\u7b97\u5b50\u4f18\u5316/rsi-managed-integration-20261111/measured/task/.kernel_envolve/runs/20261110T191325-246e392f",
+      "seconds": 0.24176633299794048
+    },
+    {
+      "arm": "ordinary-manager",
+      "pair": 4,
+      "result_hash": "fc0b9ebd6a8bae3f43837bb96722d0c7e20e6c7517b27cd24fe60a3c213b9b86",
+      "run": "/Users/daniel/Documents/ChatGPT/\u7b97\u5b50\u4f18\u5316/rsi-managed-integration-20261111/measured/task/.kernel_envolve/runs/20261110T191326-ff29df72",
+      "seconds": 0.22422883399849525
+    },
+    {
+      "arm": "managed-research",
+      "pair": 4,
+      "result_hash": "d7db0717cdb0b5dc7b9355e2f3f36e136e5298b8cdd54128e7bb8f94a396d0ca",
+      "run": "/Users/daniel/Documents/ChatGPT/\u7b97\u5b50\u4f18\u5316/rsi-managed-integration-20261111/measured/task/.kernel_envolve/runs/20261110T191326-0c8c3eb8",
+      "seconds": 0.23645908400067128
+    },
+    {
+      "arm": "managed-research",
+      "pair": 5,
+      "result_hash": "2f431d2f969367ff857ba96b700261f8cd74326ee760f76488471f9ec766aa0d",
+      "run": "/Users/daniel/Documents/ChatGPT/\u7b97\u5b50\u4f18\u5316/rsi-managed-integration-20261111/measured/task/.kernel_envolve/runs/20261110T191326-3c4ddcde",
+      "seconds": 0.22838416699960362
+    },
+    {
+      "arm": "ordinary-manager",
+      "pair": 5,
+      "result_hash": "8effbcc6761fe2b8e2ef1dd9c074b0cdaa99129078a72c3d8e54f25e3c01fc35",
+      "run": "/Users/daniel/Documents/ChatGPT/\u7b97\u5b50\u4f18\u5316/rsi-managed-integration-20261111/measured/task/.kernel_envolve/runs/20261110T191326-ea4e234a",
+      "seconds": 0.23116166700492613
+    },
+    {
+      "arm": "ordinary-manager",
+      "pair": 6,
+      "result_hash": "595b9a9729813c81aab1c5aaa1976dd1bea01728f80468bb5e499f4068586763",
+      "run": "/Users/daniel/Documents/ChatGPT/\u7b97\u5b50\u4f18\u5316/rsi-managed-integration-20261111/measured/task/.kernel_envolve/runs/20261110T191327-7e4c5f6c",
+      "seconds": 0.23568441699899267
+    },
+    {
+      "arm": "managed-research",
+      "pair": 6,
+      "result_hash": "fa038223418d3126de3a696a55fa617ba29f2d32b48546ee84845cb975bfcac0",
+      "run": "/Users/daniel/Documents/ChatGPT/\u7b97\u5b50\u4f18\u5316/rsi-managed-integration-20261111/measured/task/.kernel_envolve/runs/20261110T191327-905d682d",
+      "seconds": 0.23421483299898682
+    },
+    {
+      "arm": "managed-research",
+      "pair": 7,
+      "result_hash": "3f1156641cefdd2906acccc822c7383a27bb1a857b3472132a1b5b0675ed1209",
+      "run": "/Users/daniel/Documents/ChatGPT/\u7b97\u5b50\u4f18\u5316/rsi-managed-integration-20261111/measured/task/.kernel_envolve/runs/20261110T191327-3b3e6095",
+      "seconds": 0.23614850000012666
+    },
+    {
+      "arm": "ordinary-manager",
+      "pair": 7,
+      "result_hash": "f72d859f838e617c9ce9ec45273eda6fcff7ba745ef73fb41f3259f48d05371e",
+      "run": "/Users/daniel/Documents/ChatGPT/\u7b97\u5b50\u4f18\u5316/rsi-managed-integration-20261111/measured/task/.kernel_envolve/runs/20261110T191327-78dbc79a",
+      "seconds": 0.22739166599785676
+    },
+    {
+      "arm": "ordinary-manager",
+      "pair": 8,
+      "result_hash": "8348f0a965cefbd16215d162e70bff48261b2897bab68a9f3040fb038b0e9904",
+      "run": "/Users/daniel/Documents/ChatGPT/\u7b97\u5b50\u4f18\u5316/rsi-managed-integration-20261111/measured/task/.kernel_envolve/runs/20261110T191328-b6b40ff7",
+      "seconds": 0.23110304200235987
+    },
+    {
+      "arm": "managed-research",
+      "pair": 8,
+      "result_hash": "636761a127c09e6effb091638457eab1f8e2bf0600e789b46aa5912da9b43bdd",
+      "run": "/Users/daniel/Documents/ChatGPT/\u7b97\u5b50\u4f18\u5316/rsi-managed-integration-20261111/measured/task/.kernel_envolve/runs/20261110T191328-00c3c09d",
+      "seconds": 0.23670941599993967
+    },
+    {
+      "arm": "managed-research",
+      "pair": 9,
+      "result_hash": "2eacc9010150b41af96e59582ec027f04ed208ca494f6e88ac2b6e90da1d5cf8",
+      "run": "/Users/daniel/Documents/ChatGPT/\u7b97\u5b50\u4f18\u5316/rsi-managed-integration-20261111/measured/task/.kernel_envolve/runs/20261110T191328-eab5c448",
+      "seconds": 0.2375892079944606
+    },
+    {
+      "arm": "ordinary-manager",
+      "pair": 9,
+      "result_hash": "a516972a46df4ca92710119c0c7f0870fd313ccb4834be14ed948a92555b6ef3",
+      "run": "/Users/daniel/Documents/ChatGPT/\u7b97\u5b50\u4f18\u5316/rsi-managed-integration-20261111/measured/task/.kernel_envolve/runs/20261110T191328-63d8b2b2",
+      "seconds": 0.2330703750048997
+    },
+    {
+      "arm": "ordinary-manager",
+      "pair": 10,
+      "result_hash": "9cb12b7451b83453827968702d695baeac04158204333336ce23b8649d7e1e21",
+      "run": "/Users/daniel/Documents/ChatGPT/\u7b97\u5b50\u4f18\u5316/rsi-managed-integration-20261111/measured/task/.kernel_envolve/runs/20261110T191329-110083a5",
+      "seconds": 0.22794170799897984
+    },
+    {
+      "arm": "managed-research",
+      "pair": 10,
+      "result_hash": "652b6c8848156ab6ccc44815981526ecec261171fc60d1a19252a45ba932dd61",
+      "run": "/Users/daniel/Documents/ChatGPT/\u7b97\u5b50\u4f18\u5316/rsi-managed-integration-20261111/measured/task/.kernel_envolve/runs/20261110T191329-aff8cfec",
+      "seconds": 0.23193458399327938
+    },
+    {
+      "arm": "managed-research",
+      "pair": 11,
+      "result_hash": "e3f12465264ce4191dcc54c14ed3cf204c2c716fffe9f5798cc39198c7181635",
+      "run": "/Users/daniel/Documents/ChatGPT/\u7b97\u5b50\u4f18\u5316/rsi-managed-integration-20261111/measured/task/.kernel_envolve/runs/20261110T191329-0d5df6d9",
+      "seconds": 0.236433041995042
+    },
+    {
+      "arm": "ordinary-manager",
+      "pair": 11,
+      "result_hash": "9e24a9127a1b6ef0ae1396359aae224103b2cd1206273db634297d4b55f681ac",
+      "run": "/Users/daniel/Documents/ChatGPT/\u7b97\u5b50\u4f18\u5316/rsi-managed-integration-20261111/measured/task/.kernel_envolve/runs/20261110T191329-cdb9118c",
+      "seconds": 0.22562370800005738
+    }
+  ],
+  "scope": "CPU/no-model engineering measurement. Existing Manager admission versus admitted research including extra receipt verification. Not cloud GPU usage or an RSI efficacy/production latency result.",
+  "warmup_pairs_recorded": 1
+}
