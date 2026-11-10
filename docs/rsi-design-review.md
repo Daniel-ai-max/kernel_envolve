@@ -304,3 +304,31 @@ RSI 分支合入 main 的 `8faa939`，保留新增的原生 harness、输入保�
 同时运行的四组 GPU 表示对照仍冻结在 `14a3e29`，不包含这项后续桥接。新接入的真实 GPU 成本、自动收集/发布/撤回和两代闭环仍待验证；任何已完成实验不能直接当作新版本生产收益证据。
 
 随后检查发现，设备空闲探测的 `OSError` 重试分支也可能吞掉一次性定时器的 `TimeoutError`。适配器改用独立异常退出准入/监督流程，在清理后才转换为明确的超时；没有修改通用 Manager 的重试逻辑。新增卡住的设备探测测试确认超时后不会启动子进程，10 项接入专项、72 项相关测试及全仓 533 passed / 10 skipped 通过。上述 CPU 开销样本属于修正前的 `f4be938`，未将它冒充异常分支修正后的新测量。详见 [截止时间修正收据](../audit/rsi_managed_deadline_20261111.json)。
+
+
+## 2026-11-11：补充最新原始资料与代码核对
+
+本次补查覆盖到 2026-11-09 首发的 SciMARS；这不是对全部新论文的穷尽检索。下表以 arXiv submission history 为公开日期依据，代码日期为固定 commit 的提交日期，不能把检索站收录日期、README 更新或论文修订当成首发。原始页面哈希和代码文件哈希见 [资料审计](../audit/rsi_reference_supplement_20261111.json)。仅阅读源码，没有运行这些项目或完成算法复现。
+
+| 工作 | 论文首发 / 本次核对版本 | 官方代码核对版本 | 对本项目的意义与限制 |
+| --- | --- | --- | --- |
+| [SciMARS](https://arxiv.org/abs/2611.12552) | 2026-11-09 / v1 | [befba7a](https://github.com/WeiminWu2000/SciMARS/tree/befba7a76667baa456227f94636920408da3c22a)，2026-11-10 | 分别修改角色、协作和记忆使用策略；观测事实不能由策略编辑器重写。组件各自有效仍须验证组合，执行、编辑、探测、选择与反思共用预算。任务内进化不能直接当成跨任务收益。 |
+| [Harness Updating Is Not Harness Benefit](https://arxiv.org/abs/2605.30621) | 2026-05-28 / v2 2026-11-04 | [96ed93b](https://github.com/A-EVO-Lab/a-evolve/tree/96ed93ba7ee0b9519fc55c963afb47a1975eb1ae)，2026-08-22 | 将“产生有用更新”和“solver 利用更新获益”分开测量；强模型也不必然受益。应分别记录经验被选中、引发动作、改善独立结果，不能用调用记忆次数作为收益指标。 |
+| [Artifact-to-Capability](https://arxiv.org/abs/2611.04952) | 2026-11-03 / v1 | 本次所读论文页面未找到官方代码入口 | 从产物形成到行为激活、任务改善、旧能力保留和新能力扩展逐层诊断。项目最终需要至少两代的新增收益与保留测试；单次成功复用源码不足以证明递归进化。 |
+| [SelfImprove-Bench](https://arxiv.org/abs/2611.02797) | 2026-11-02 / v1 | [5694387](https://github.com/theseus-labs-rsi/SelfImprove-Bench/tree/569438708d3de1989ba9cbcd0667bf79d2cc5d30)，2026-11-05 | 区分训练回放、新实例、更高难度、跨任务和跨能力的泛化层次。当前四个已知公式的新尺寸实验不能扩大解释成跨算子能力。重复运行和尺寸变体不增加独立算子数。 |
+| [REM](https://arxiv.org/abs/2610.27377) | 2026-10-19 / v1 | 本次所读论文页面未找到官方代码入口 | 研究经验的组织形式、按失败信号补充细节和一次曝光后撤出上下文。其成功率差异未达显著性，强模型单次比较还有退化；不能把论文的成本下降直接迁移到 gpt-6-astra 算子优化。 |
+| [PastForward](https://arxiv.org/abs/2609.32166) | 2026-09-26 / v1 | 本次只核对论文机制，未审计代码 | GUI 场景复用计算并用当前状态验证，可启发“复用实际成果”。它依赖屏幕、解码和 KV 状态，不能把其延迟倍数或验证条件套到 kernel。 |
+
+### 源码中值得保留的区别
+
+SciMARS 的 [successor.py](https://github.com/WeiminWu2000/SciMARS/blob/befba7a76667baa456227f94636920408da3c22a/mah2/successor.py) 只复用同一轮、完整 harness 相等且程序哈希匹配的可运行结果，并记录 `executed=false`；这避免把同一次测量算成第二份证据。本项目历史 kernel 面向新配置，仍须当前 full 验证，不能借此取消独立终验。[memory.md](https://github.com/WeiminWu2000/SciMARS/blob/befba7a76667baa456227f94636920408da3c22a/docs/memory.md) 说明每次评测从同一允许的种子库创建独立状态；这支持隔离各试验的经验写入，避免对照之间泄漏。
+
+A-Evolve 的 [StagnationRollback](https://github.com/A-EVO-Lab/a-evolve/blob/96ed93ba7ee0b9519fc55c963afb47a1975eb1ae/agent_evolve/algorithms/unified/verifiers/stagnation_rollback.py) 明确标为可选，未进入 Phase 1 loop recipes，缺少 pass_rate 时放行。因此“仓库存在回滚模块”不能证明每次运行都有有效回滚；也不宜将这种探索用门槛替代 kernel 的缺证据拒绝规则。
+
+SelfImprove-Bench 的 [成本回归测试](https://github.com/theseus-labs-rsi/SelfImprove-Bench/blob/569438708d3de1989ba9cbcd0667bf79d2cc5d30/tests/test_refinement_accounting.py) 保留失败编辑、候选验证及后续选择失败前的已知成本；[token ledger 测试](https://github.com/theseus-labs-rsi/SelfImprove-Bench/blob/569438708d3de1989ba9cbcd0667bf79d2cc5d30/tests/test_token_ledger.py) 还允许显式标记的同任务均值插补。本项目只吸收账目完整性的原则，实际准入继续要求真实 usage，未知成本不插补成已知。其 [恢复等价测试](https://github.com/theseus-labs-rsi/SelfImprove-Bench/blob/569438708d3de1989ba9cbcd0667bf79d2cc5d30/tests/test_resume_equivalence.py) 对比中断前后已提交分数和 token，保留废弃尝试，也值得用于将来的后台发布恢复验证。
+
+### 对设计的直接约束
+
+经验采集应由控制器从真实收据自动完成；agent 的解释另存为未经验证的假设。后台进化器可以整理、提出改动，前台只读取有界的版本化快照。经验内容、调用策略与验收门槛是三个独立对象，学习器不能改写测量结果或放宽自身通过条件。选择器需要当前运行环境观测；不能把历史设备记录冒充当前设备，也不能为了匹配经验偷偷增加一次前台 GPU 探测。
+
+先验证单个机制的净收益，再决定是否建立自动发布、撤回和两代闭环。增加记忆图、编辑器数量或反思频率都有成本；这些论文不能作为无条件扩大架构的依据。本次资料补充不改变正在执行的 `14a3e29` 四组冻结协议、预留确认集或验收规则，不宣称已优于任何参考算法。
