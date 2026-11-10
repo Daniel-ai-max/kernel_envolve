@@ -1,0 +1,14 @@
+{
+  "at": 1794344815.6867998,
+  "initial_failure": "Requested engineering/frozen-source/src did not exist; editable shared installation was imported. Frozen analyzer rejected evaluator hash. No successful summary was produced.",
+  "initial_log_sha256": "8b54a4cf74033553881a459f41bb6d7e6a745c7a3ea8bd01eb0a8b6f21dc1188",
+  "correct_absolute_pythonpath": "/Users/daniel/Documents/ChatGPT/\u7b97\u5b50\u4f18\u5316/rsi-compute-allocation-study-20261111/development/frozen-source/src",
+  "imported_storage": "/Users/daniel/Documents/ChatGPT/\u7b97\u5b50\u4f18\u5316/rsi-compute-allocation-study-20261111/development/frozen-source/src/kernel_envolve/storage.py",
+  "evaluator_hash": "a36a49281a74e704617935c5ef0c259d4b4bae81d7ce163162af1015ed50b267",
+  "observed_hashes": [
+    "a36a49281a74e704617935c5ef0c259d4b4bae81d7ce163162af1015ed50b267"
+  ],
+  "analyzer_changed": false,
+  "new_gpu_jobs": 0,
+  "scope": "Offline import path correction only; preserve original failed analysis. No changes to experiment or its acceptance checks."
+}

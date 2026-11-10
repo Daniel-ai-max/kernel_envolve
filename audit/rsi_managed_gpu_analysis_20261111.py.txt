@@ -1,0 +1,45 @@
+"""Verify the engineering evidence without executing historical candidate code."""
+import hashlib,json,statistics
+from pathlib import Path
+from kernel_envolve.manager.evidence import inspect_run
+from kernel_envolve.storage import evaluator_hash
+ROOT=Path(__file__).resolve().parent;E=ROOT/'evidence';V=E/'validation'
+def load(p):return json.loads(p.read_text())
+manifest=load(ROOT/'manifest.json');registration=load(ROOT/'analysis-registration.json')
+for name,h in registration['sha256'].items():assert hashlib.sha256((ROOT/name).read_bytes()).hexdigest()==h
+archive=load(ROOT/'evidence-receipt.json');assert hashlib.sha256((ROOT/'evidence.tar.gz').read_bytes()).hexdigest()==archive['sha256']
+worker=load(E/'worker-result.json');assert worker['reason']=='completed' and worker['driver_returncode']==0
+summary=load(V/'summary.json');jobs=load(V/'jobs.json');trace=load(V/'research/search-trace.json')
+assert summary['passed'] and summary['model_calls']==0 and summary['cpu_fixture'] is False
+assert summary['manager_round_status']=='succeeded' and summary['gpu_successful_jobs']==17 and summary['gpu_cancelled_jobs']==1
+assert trace['managed_evaluations'] is True and len(trace['steps'])==1
+assert not (V/'task/.kernel_envolve/best.json').exists()
+assert sum(j['kind']=='gpu' and j['status']=='succeeded'for j in jobs)==17
+assert sum(j['kind']=='gpu' and j['status']=='cancelled' and j['child_pid']is None for j in jobs)==1
+assert len(summary['decisions'])==1 and all(x['device_unlocked'] and x['no_running_gpu_job']for x in summary['decisions'])
+verified={}
+for receipt in V.rglob('receipt.json'):
+ if not(receipt.parent/'result.json').exists():continue
+ result=load(receipt.parent/'result.json');spec={'kind':'generic','task_dir':str(Path(result['task_root']).resolve()),'baseline':{'contract':result['identity']['contract']}}
+ value=inspect_run(receipt.parent,spec);assert value['evaluator_hash']==evaluator_hash()
+ assert value['mode']=='full' and value['correctness']=='pass' and value['execution']=='completed'
+ assert value['environment']['gpu'] and 'B300' in value['environment']['gpu']['name']
+ verified[receipt.parent.name]=value['result_hash']
+assert len(verified)==17
+search_runs=[trace['initial_observation']['run']]+[x['observation']['run']for x in trace['steps']]
+assert summary['independent_final']not in search_runs
+assert Path(summary['independent_final']).name in verified
+rows=summary['rows'];assert len(rows)==14
+for row in rows:assert verified[Path(row['run']).name]==row['result_hash']
+extras=[];relative=[]
+for pair in range(6):
+ arms={r['arm']:r['seconds']for r in rows if r['pair']==pair}
+ assert set(arms)=={'ordinary-manager','managed-research'}
+ extras.append(arms['managed-research']-arms['ordinary-manager'])
+ relative.append(arms['managed-research']/arms['ordinary-manager']-1)
+assert statistics.median(extras)==summary['median_extra_seconds']
+release=load(ROOT/'released.json');assert release['pods']==[] and release['live_read_status']['pods']=='available'
+allocation=release['at']-load(ROOT/'create-attempt.json')['at']
+summary.update(source_commit=manifest['source_commit'],job=release['id'],verification={'raw_full_receipts':len(verified),'six_pairs_and_warmup_bound':True,'distinct_independent_full':True,'queue_cancel_without_child':True,'decision_lock_free':True},median_paired_relative_overhead=statistics.median(relative),current_conservative_gpu_seconds=allocation,cumulative_gpu_seconds=load(ROOT/'approved-budget.json')['prior_confirmed_gpu_seconds']+allocation,evidence_sha256=archive['sha256'],scope='Engineering integration only: one trivial pointwise task, 6 paired measurements; no model, no learned policy, no kernel optimization, no production throughput evidence.')
+(ROOT/'summary.json').write_text(json.dumps(summary,indent=2))
+print(json.dumps({k:v for k,v in summary.items()if k!='rows'},indent=2))

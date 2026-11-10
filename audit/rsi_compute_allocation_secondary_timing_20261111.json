@@ -1,0 +1,325 @@
+{
+  "analyzed_at": 1794344869.482174,
+  "source_summary_sha256": "574d2a27f2ef71dc8987685bdda7c1643345c856ac68469bfc74bfce1fda7faf",
+  "scope": "Posthoc descriptive secondary statistic on a closed study; no registered gate changes, no significance or production throughput claim. Uses the already verified full-result paths and hashes. Candidate timings occurred at different trial times; drift/noise can affect their ratio. Each of16trials equal weight; within trial objective-case weights and both measurement batches retained; correctness-only cases have no latency weight.",
+  "comparisons": [
+    {
+      "comparison": "reuse-2-vs-control-4",
+      "geomean_measured_kernel_time_ratio": 0.9976373613107632,
+      "relative_kernel_time_reduction": -0.002368233970440503,
+      "geomean_fixed_baseline_speedup_ratio": 0.9951740194980707,
+      "worst_trial_kernel_time_ratio": 0.9515968156904187,
+      "best_trial_kernel_time_ratio": 1.0588379631188298,
+      "pairs": [
+        {
+          "repeat": 0,
+          "task": 0,
+          "case_weighted_geomean_control_over_candidate_time": 0.9719698511946946,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 0,
+          "task": 1,
+          "case_weighted_geomean_control_over_candidate_time": 1.0588379631188298,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 0,
+          "task": 2,
+          "case_weighted_geomean_control_over_candidate_time": 0.9515968156904187,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 0,
+          "task": 3,
+          "case_weighted_geomean_control_over_candidate_time": 0.9948854823107445,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 0,
+          "task": 4,
+          "case_weighted_geomean_control_over_candidate_time": 0.9777255746753771,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 0,
+          "task": 5,
+          "case_weighted_geomean_control_over_candidate_time": 0.978977629281038,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 0,
+          "task": 6,
+          "case_weighted_geomean_control_over_candidate_time": 1.0112962433536896,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 0,
+          "task": 7,
+          "case_weighted_geomean_control_over_candidate_time": 0.9787176363591138,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 1,
+          "task": 0,
+          "case_weighted_geomean_control_over_candidate_time": 0.988052081057878,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 1,
+          "task": 1,
+          "case_weighted_geomean_control_over_candidate_time": 0.9885832839994737,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 1,
+          "task": 2,
+          "case_weighted_geomean_control_over_candidate_time": 1.0172034433339356,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 1,
+          "task": 3,
+          "case_weighted_geomean_control_over_candidate_time": 1.0237116039506848,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 1,
+          "task": 4,
+          "case_weighted_geomean_control_over_candidate_time": 0.9950280432982505,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 1,
+          "task": 5,
+          "case_weighted_geomean_control_over_candidate_time": 1.0344420988815828,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 1,
+          "task": 6,
+          "case_weighted_geomean_control_over_candidate_time": 1.0014493679549998,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 1,
+          "task": 7,
+          "case_weighted_geomean_control_over_candidate_time": 0.9949020027019736,
+          "cases_batches": 24
+        }
+      ]
+    },
+    {
+      "comparison": "reuse-2-vs-control-2",
+      "geomean_measured_kernel_time_ratio": 1.1371867750193292,
+      "relative_kernel_time_reduction": 0.12063697717289878,
+      "geomean_fixed_baseline_speedup_ratio": 1.1548543548141181,
+      "worst_trial_kernel_time_ratio": 0.9832045152673,
+      "best_trial_kernel_time_ratio": 1.3813101719200753,
+      "pairs": [
+        {
+          "repeat": 0,
+          "task": 0,
+          "case_weighted_geomean_control_over_candidate_time": 0.9889580796930081,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 0,
+          "task": 1,
+          "case_weighted_geomean_control_over_candidate_time": 1.380664491851426,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 0,
+          "task": 2,
+          "case_weighted_geomean_control_over_candidate_time": 1.0064300815292266,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 0,
+          "task": 3,
+          "case_weighted_geomean_control_over_candidate_time": 0.9949047160915113,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 0,
+          "task": 4,
+          "case_weighted_geomean_control_over_candidate_time": 1.3001087794844695,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 0,
+          "task": 5,
+          "case_weighted_geomean_control_over_candidate_time": 1.3813101719200753,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 0,
+          "task": 6,
+          "case_weighted_geomean_control_over_candidate_time": 0.994952167051552,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 0,
+          "task": 7,
+          "case_weighted_geomean_control_over_candidate_time": 0.9937097146890309,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 1,
+          "task": 0,
+          "case_weighted_geomean_control_over_candidate_time": 1.3333306812111563,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 1,
+          "task": 1,
+          "case_weighted_geomean_control_over_candidate_time": 1.3733610017308935,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 1,
+          "task": 2,
+          "case_weighted_geomean_control_over_candidate_time": 1.0123363626470434,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 1,
+          "task": 3,
+          "case_weighted_geomean_control_over_candidate_time": 1.0260007417981236,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 1,
+          "task": 4,
+          "case_weighted_geomean_control_over_candidate_time": 1.2860529875726066,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 1,
+          "task": 5,
+          "case_weighted_geomean_control_over_candidate_time": 1.3087528680417309,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 1,
+          "task": 6,
+          "case_weighted_geomean_control_over_candidate_time": 1.0237397383750686,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 1,
+          "task": 7,
+          "case_weighted_geomean_control_over_candidate_time": 0.9832045152673,
+          "cases_batches": 24
+        }
+      ]
+    },
+    {
+      "comparison": "reuse-4-vs-control-4",
+      "geomean_measured_kernel_time_ratio": 1.0264083241009607,
+      "relative_kernel_time_reduction": 0.025728867820798307,
+      "geomean_fixed_baseline_speedup_ratio": 1.026815727839286,
+      "worst_trial_kernel_time_ratio": 0.9386393783022923,
+      "best_trial_kernel_time_ratio": 1.4683230679682306,
+      "pairs": [
+        {
+          "repeat": 0,
+          "task": 0,
+          "case_weighted_geomean_control_over_candidate_time": 1.0183078541406327,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 0,
+          "task": 1,
+          "case_weighted_geomean_control_over_candidate_time": 1.0461372497315935,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 0,
+          "task": 2,
+          "case_weighted_geomean_control_over_candidate_time": 0.9386393783022923,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 0,
+          "task": 3,
+          "case_weighted_geomean_control_over_candidate_time": 0.9967105727222378,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 0,
+          "task": 4,
+          "case_weighted_geomean_control_over_candidate_time": 0.9678022918024862,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 0,
+          "task": 5,
+          "case_weighted_geomean_control_over_candidate_time": 0.99634502596548,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 0,
+          "task": 6,
+          "case_weighted_geomean_control_over_candidate_time": 1.0230058100364128,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 0,
+          "task": 7,
+          "case_weighted_geomean_control_over_candidate_time": 0.9919768499436964,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 1,
+          "task": 0,
+          "case_weighted_geomean_control_over_candidate_time": 0.9872180665887238,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 1,
+          "task": 1,
+          "case_weighted_geomean_control_over_candidate_time": 0.9786958853216563,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 1,
+          "task": 2,
+          "case_weighted_geomean_control_over_candidate_time": 1.0043496998630401,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 1,
+          "task": 3,
+          "case_weighted_geomean_control_over_candidate_time": 1.017748733728832,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 1,
+          "task": 4,
+          "case_weighted_geomean_control_over_candidate_time": 0.9957585803709208,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 1,
+          "task": 5,
+          "case_weighted_geomean_control_over_candidate_time": 0.987508230702633,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 1,
+          "task": 6,
+          "case_weighted_geomean_control_over_candidate_time": 1.0912097235599068,
+          "cases_batches": 24
+        },
+        {
+          "repeat": 1,
+          "task": 7,
+          "case_weighted_geomean_control_over_candidate_time": 1.4683230679682306,
+          "cases_batches": 24
+        }
+      ]
+    }
+  ]
+}

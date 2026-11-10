@@ -1,0 +1,35 @@
+"""Descriptive diagnosis after the frozen study closed; no altered verdict or rerun."""
+import hashlib,json
+from pathlib import Path
+ROOT=Path(__file__).resolve().parent
+s=json.loads((ROOT/'summary.json').read_text());r=json.loads((ROOT/'evidence/pilot-result.json').read_text())
+assert s['job']=='d8a9d1bae69346e9b58b8544e4abf2c8' and s['acceptance_complete']
+assert hashlib.sha256((ROOT/'evidence.tar.gz').read_bytes()).hexdigest()==s['evidence_sha256']
+index={(t['repeat'],t['task'],t['arm']):t for t in s['trials']}
+rows=[]
+for t in r['trials']:
+ if t['arm']!='reuse-2':continue
+ key=(t['repeat'],t['task'],t['arm']);record=index[key]
+ def raw(run):return json.loads((ROOT/'evidence'/Path(run).relative_to('/tmp/kernel-rsi-pilot')/'result.json').read_text())
+ final=raw(t['result']['run']);artifact=t['trace']['steps'][0]['observation'];first=raw(artifact['run']);decision=final['decision']
+ assert final['identity']['files']['candidate.py']==t['trace']['selected']
+ failed_cases={reason.split(':',1)[0]for reason in decision.get('reasons',[])}
+ cfg=json.loads((ROOT/'evidence/comparison'/record['trial_id']/'workspace/task/task.json').read_text())
+ rows.append({'repeat':t['repeat'],'task':t['task'],'trial':record['trial_id'],
+  'quality':record['quality'],'control4_quality':index[t['repeat'],t['task'],'control-4']['quality'],
+  'final_correct':record['passed'],'final_promotable':record['promotable'],
+  'retained_original_artifact':t['trace']['selected']==artifact['candidate'],
+  'final_source':t['trace']['selected'],'initial_artifact_quality':artifact['quality'],
+  'final_fixed_baseline_gain_by_batch':decision['fixed_baseline_gain_by_batch'],
+  'final_reasons':decision['reasons'],'final_result_hash':record['result_hash'],
+  'failed_case_configuration':[c for c in cfg['cases']if c['id'] in failed_cases],
+  'failed_case_timings':[c for c in decision['cases']if c['case'] in failed_cases],
+  'original_artifact_same_case_timings':[c for c in first['decision']['cases']if c['case'] in failed_cases],
+  'stop_reason':record['stop_reason'],'wrong_candidate_evaluations':record['wrong_candidate_evaluations']})
+out={'job':s['job'],'summary_sha256':hashlib.sha256((ROOT/'summary.json').read_bytes()).hexdigest(),
+ 'rows':rows,'retained_artifacts':sum(x['retained_original_artifact']for x in rows),
+ 'correct':sum(x['final_correct']for x in rows),'promotable':sum(x['final_promotable']for x in rows),
+ 'scope':'Posthoc diagnosis only. Independent final refusal is retained, not replaced by the earlier search score. Different-time measurements cannot distinguish environmental drift from an implementation weakness. No remeasurement, exclusion or changed threshold.',
+ 'next_mechanism_constraint':'reuse-2 had zero incorrect candidate evaluations in this study; a negative correctness-memory addition does not directly address its observed performance-gate rejection. Do not launch that idea solely because the current method failed.'}
+(ROOT/'quality-diagnostic.json').write_text(json.dumps(out,indent=2))
+print(json.dumps({'retained_artifacts':out['retained_artifacts'],'correct':out['correct'],'promotable':out['promotable'],'rejected':[{'trial':x['trial'],'reasons':x['final_reasons'],'speedups':[(c['case'],c['batch'],c['speedup'])for c in x['failed_case_timings']]}for x in rows if not x['final_promotable']]},indent=2))
