@@ -37,6 +37,7 @@ def validator_identity():
                 "managed.py",
                 "allocation.py",
                 "artifact_snapshot.py",
+                "artifact_lineage.py",
             )
         }
     )

@@ -28,18 +28,8 @@ COMPATIBILITY = (
 )
 
 
-def materialize(task, artifacts, task_profile, directory, *, confirmation_run):
-    """Verify original receipts and save one immutable unexecuted candidate view.
-
-    This does not update an active pointer, rank episodes, or certify future gain.
-    A failed independent final cannot create a view, even if search once passed.
-    """
-    task, directory = Path(task).resolve(), Path(directory).resolve()
-    if directory.is_relative_to(task):
-        raise ValueError("Artifact snapshots must be outside the candidate workspace")
-    if confirmation_run is None:
-        raise ValueError("Artifact snapshot requires independent final confirmation")
-    episode = build(task, artifacts, task_profile, confirmation_run=confirmation_run)
+def _value(episode):
+    """Internal projection of an episode already rebuilt from original receipts."""
     final = episode["observations"][episode["final_confirmation"]]
     if (
         final["mode"] != "full"
@@ -74,6 +64,25 @@ def materialize(task, artifacts, task_profile, directory, *, confirmation_run):
         > MAX_SNAPSHOT_BYTES
     ):
         raise ValueError("Complete artifact snapshot exceeds foreground bound")
+    return value
+
+
+def materialize(task, artifacts, task_profile, directory, *, confirmation_run, origin_task=None):
+    """Verify original receipts and save one immutable unexecuted candidate view.
+
+    This does not update an active pointer, rank episodes, or certify future gain.
+    A failed independent final cannot create a view, even if search once passed.
+    origin_task is an explicit archive path mapping, as in episodes.build.
+    """
+    task, directory = Path(task).resolve(), Path(directory).resolve()
+    if directory.is_relative_to(task):
+        raise ValueError("Artifact snapshots must be outside the candidate workspace")
+    if confirmation_run is None:
+        raise ValueError("Artifact snapshot requires independent final confirmation")
+    episode = build(
+        task, artifacts, task_profile, confirmation_run=confirmation_run, origin_task=origin_task
+    )
+    value = _value(episode)
     # Keep complete success/failure observations behind the bounded view. An
     # interrupted write may leave an orphan data archive, never an active pointer.
     episode_id = save(directory / "episodes", episode)

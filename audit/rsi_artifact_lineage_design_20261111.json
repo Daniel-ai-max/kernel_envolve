@@ -1,0 +1,47 @@
+{
+  "written_at": 1794351759.1167748,
+  "status": "Engineering formation implementation under test; no new GPU/model run and no admission",
+  "motivation": {
+    "closed_study": "8774e952b4ff4276a213a8fb2f9ff0f8",
+    "primary": "adaptive allocation rejected: -5.85% quality score despite lower search cost",
+    "observed_issue": "12 correctness failures of the same frozen central-variance artifact across three arms and two configurations/repeats; not twelve independent learning/forgetting events",
+    "inference": "An old successful implementation can become invalid under fresh cases. Archive both failures and changed successful descendants; do not extrapolate failure to all inputs."
+  },
+  "scope": [
+    "Automatic formation from verified complete research episodes, including failed independent finals",
+    "Verified parent snapshot activation, initial result identity, actual first artifact action and changed agent-proposed source",
+    "Content-addressed records and snapshots; full raw ancestry re-audit, bounded to32 records",
+    "No promotion, active pointer, model calls or additional measurement in collection",
+    "Same parent/scope/source yields same proposal_key regardless of changed episode receipts; future admission must consume it once"
+  ],
+  "unchanged": [
+    "Oracle, fixed baseline, performance tolerance, evaluator protocol, action limits, source validator and GPU admission",
+    "Rejected adaptive m/n outcome and untouched closed o/p",
+    "Foreground one bounded snapshot read; no archive traversal or collector in foreground"
+  ],
+  "publication_and_value_remaining": [
+    "Controlled child-versus-parent validation on fresh configured cases with old-skill retention, original gates and complete costs",
+    "One-attempt admission keyed by proposal identity, atomic active transition, stale-parent protection, audit revocation and rollback",
+    "Actual automatically formed and admitted generation1 andgeneration2 compared to no-memory and frozen generation0 controls under a distinct frozen protocol",
+    "Independent final efficacy confirmation, no cherry-picked old winner, no threshold relaxation"
+  ],
+  "reference_mapping": [
+    {
+      "work": "DGM",
+      "first_publication": "2025-05-29",
+      "lesson": "Keep raw candidate outcomes and explicit parent-child archive; retain rejected candidates without granting adoption."
+    },
+    {
+      "work": "SciMARS",
+      "first_publication": "2026-11-09",
+      "lesson": "Bind executed evidence to source and harness; cached formation is not a new evaluation or gain."
+    },
+    {
+      "work": "Artifact-to-Capability",
+      "first_publication": "2026-11-03",
+      "lesson": "Formation, activation, improvement and retention are separate claims."
+    }
+  ],
+  "prior_design_sha256": "3e16d1ffb58f02c5b85dba4a6697e378b0aaa0628968d2b2f649f5c8ad1e1f74",
+  "amendment": "The previous conditional plan allowed production publisher consideration only after adaptive efficacy. That candidate failed and is closed. This is a different artifact-update mechanism motivated by frozen-library failures, developed as disabled research infrastructure. Production activation still requires independent efficacy evidence; no prerequisite is silently declared satisfied."
+}
