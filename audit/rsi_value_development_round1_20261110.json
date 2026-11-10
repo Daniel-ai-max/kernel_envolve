@@ -1,0 +1,217 @@
+{
+  "source_commit": "a77bad3a9f1079fecfc73e2c1d444fe037a7c9e8",
+  "job": "05f132f5106b4a32bb99a5d7b01cf4d8",
+  "aggregates": {
+    "control": {
+      "attempts": 8,
+      "completed_full": 8,
+      "correct_full": 8,
+      "promotable": 8,
+      "failed_attempts": 0,
+      "all_attempt_trial_seconds": 445.1851476007141,
+      "completed_solver_seconds": 412.2205404327251,
+      "model_requests": 25,
+      "missing_usage_calls": 0,
+      "known_tokens": 287864,
+      "wrong_candidate_evaluations": 5,
+      "duplicate_skipped": 0,
+      "actions": {
+        "propose": 17,
+        "stop": 8
+      },
+      "search_modes": {
+        "full": 25
+      }
+    },
+    "raw-memory": {
+      "attempts": 8,
+      "completed_full": 8,
+      "correct_full": 8,
+      "promotable": 8,
+      "failed_attempts": 0,
+      "all_attempt_trial_seconds": 451.5917308386415,
+      "completed_solver_seconds": 418.3252450199798,
+      "model_requests": 26,
+      "missing_usage_calls": 0,
+      "known_tokens": 302264,
+      "wrong_candidate_evaluations": 6,
+      "duplicate_skipped": 0,
+      "actions": {
+        "propose": 18,
+        "stop": 8
+      },
+      "search_modes": {
+        "full": 26
+      }
+    },
+    "rsi": {
+      "attempts": 8,
+      "completed_full": 8,
+      "correct_full": 8,
+      "promotable": 8,
+      "failed_attempts": 0,
+      "all_attempt_trial_seconds": 319.2894239705056,
+      "completed_solver_seconds": 286.17226237105206,
+      "model_requests": 20,
+      "missing_usage_calls": 0,
+      "known_tokens": 215879,
+      "wrong_candidate_evaluations": 2,
+      "duplicate_skipped": 0,
+      "actions": {
+        "propose": 12,
+        "stop": 8
+      },
+      "search_modes": {
+        "full": 20
+      }
+    }
+  },
+  "gate_comparisons": {
+    "raw-memory-vs-control": {
+      "accepted": false,
+      "reasons": [
+        "Aggregate quality regression",
+        "No reproducible whole-suite quality, correctness or cost benefit"
+      ],
+      "repeats": [
+        {
+          "candidate_passed": 4,
+          "candidate_quality": 0.4130586205767777,
+          "candidate_seconds": 224.1790813272819,
+          "candidate_solver_seconds": 207.54665975552052,
+          "control_passed": 4,
+          "control_quality": 0.41737175869144255,
+          "control_seconds": 226.62980052176863,
+          "control_solver_seconds": 209.84738258644938,
+          "quality_gain": -0.004313138114664827,
+          "repeat": 0
+        },
+        {
+          "candidate_passed": 4,
+          "candidate_quality": 0.4152653185194914,
+          "candidate_seconds": 227.41264951135963,
+          "candidate_solver_seconds": 210.77858526445925,
+          "control_passed": 4,
+          "control_quality": 0.416648326671361,
+          "control_seconds": 218.5553470789455,
+          "control_solver_seconds": 202.37315784627572,
+          "quality_gain": -0.0013830081518695914,
+          "repeat": 1
+        }
+      ],
+      "scope": "Equal-weight declared tasks only; wall time is not token cost or a significance test"
+    },
+    "rsi-vs-control": {
+      "accepted": false,
+      "reasons": [
+        "Aggregate quality regression",
+        "No reproducible whole-suite quality, correctness or cost benefit",
+        "Per-task quality regression"
+      ],
+      "repeats": [
+        {
+          "candidate_passed": 4,
+          "candidate_quality": 0.3700999235074482,
+          "candidate_seconds": 158.9369999524206,
+          "candidate_solver_seconds": 142.1546240770258,
+          "control_passed": 4,
+          "control_quality": 0.41737175869144255,
+          "control_seconds": 226.62980052176863,
+          "control_solver_seconds": 209.84738258644938,
+          "quality_gain": -0.04727183518399436,
+          "repeat": 0
+        },
+        {
+          "candidate_passed": 4,
+          "candidate_quality": 0.4091840862966323,
+          "candidate_seconds": 160.352424018085,
+          "candidate_solver_seconds": 144.01763829402626,
+          "control_passed": 4,
+          "control_quality": 0.416648326671361,
+          "control_seconds": 218.5553470789455,
+          "control_solver_seconds": 202.37315784627572,
+          "quality_gain": -0.007464240374728703,
+          "repeat": 1
+        }
+      ],
+      "scope": "Equal-weight declared tasks only; wall time is not token cost or a significance test"
+    },
+    "rsi-vs-raw-memory": {
+      "accepted": false,
+      "reasons": [
+        "Aggregate quality regression",
+        "No reproducible whole-suite quality, correctness or cost benefit",
+        "Per-task quality regression"
+      ],
+      "repeats": [
+        {
+          "candidate_passed": 4,
+          "candidate_quality": 0.3700999235074482,
+          "candidate_seconds": 158.9369999524206,
+          "candidate_solver_seconds": 142.1546240770258,
+          "control_passed": 4,
+          "control_quality": 0.4130586205767777,
+          "control_seconds": 224.1790813272819,
+          "control_solver_seconds": 207.54665975552052,
+          "quality_gain": -0.04295869706932953,
+          "repeat": 0
+        },
+        {
+          "candidate_passed": 4,
+          "candidate_quality": 0.4091840862966323,
+          "candidate_seconds": 160.352424018085,
+          "candidate_solver_seconds": 144.01763829402626,
+          "control_passed": 4,
+          "control_quality": 0.4152653185194914,
+          "control_seconds": 227.41264951135963,
+          "control_solver_seconds": 210.77858526445925,
+          "quality_gain": -0.006081232222859112,
+          "repeat": 1
+        }
+      ],
+      "scope": "Equal-weight declared tasks only; wall time is not token cost or a significance test"
+    }
+  },
+  "known_total_tokens": 836957,
+  "missing_usage_calls": 0,
+  "ledger": [
+    {
+      "charged": 30.145004858262837,
+      "ended": 1794322652.6574183,
+      "error": null,
+      "id": "f4f365b995d549b8a305459c73b10209",
+      "kind": "learn",
+      "reserved": 90.0,
+      "started": 1794322622.5094228
+    },
+    {
+      "charged": 1219.3638963489793,
+      "ended": 1794323872.0343933,
+      "error": null,
+      "id": "40725f5ad8d84eb39ae48ba612330a37",
+      "kind": "validation",
+      "reserved": 4900.0,
+      "started": 1794322652.670539
+    }
+  ],
+  "current_conservative_gpu_seconds": 1312.3303558826447,
+  "cumulative_gpu_seconds": 3853.5305376052856,
+  "verification": {
+    "raw_receipts": 111,
+    "source_bindings": 71,
+    "call_to_arm_and_prompt_verified": true,
+    "declared_gates_recomputed": true
+  },
+  "evidence_sha256": "fc181a4a09a30b820a92b4ab217cdd676c47535d7840926144c348f4e714fa03",
+  "date": "2026-11-10",
+  "scope": "Development round 1, not independent final audit",
+  "conclusion": "RSI reduces measured trial time but reduces mean quality; rejected, not adopted",
+  "mean_quality": {
+    "control": 0.4170100427,
+    "raw-memory": 0.4141619695,
+    "rsi": 0.3896420049
+  },
+  "failure_recurrence": "Zero within-trajectory category/dtype recurrence in each arm; fewer wrong candidates is not proof of fewer repeated mistakes",
+  "mechanism_hypothesis": "One standardize RSI trajectory extends BF16 fallback to FP16 and stops. Observational diagnosis, not established causality.",
+  "raw_directory": "/Users/daniel/Documents/ChatGPT/\u7b97\u5b50\u4f18\u5316/rsi-value-study-20261110/dev-round1-transport2"
+}
