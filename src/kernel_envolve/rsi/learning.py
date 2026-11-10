@@ -69,6 +69,7 @@ def collect(store):
                         "task": row["task"],
                         "path": row["path"],
                         "result_hash": data["result_hash"],
+                        "source_digest": digest(data["source"]) if data.get("source") else None,
                         "mode": data["mode"],
                         "correctness": data["correctness"],
                         "execution": data["execution"],

@@ -235,3 +235,5 @@ python /checkout/examples/rsi/research_solver.py --actions 2 --model-seconds 55 
 `search-trace.json` 保存每个假设、动作、源码身份、真实结果路径、成本和最终选择，保留失败与停止，不覆盖已有实验目录。模型输入最多 128 KiB；动作数、源码大小、每步与总预算受限。超时或中断恢复已确认候选并清理 evaluator 子进程；硬杀仍依赖外层进程监督和平台资源期限。这不是 OS 沙箱，模型传输回调也须由外层强制限时。
 
 这是对 GEPA 等轨迹反馈机制的局部借鉴，同时为后续检验搜索记录能否用于回放建立可追溯数据；目前没有实现 GEPA 搜索或 Dream-RSI 的反事实回放。它能观察停止、无效重复、quick/full 安排，但仅两次动作不足以代表长期自主研究能力。与单次生成相比，它增加了测量成本，必须让所有对照使用相同工具与预算，不能把执行器本身的改进归因于 RSI。
+
+多步适配器额外生成 `research-reports.json`：每条假设从对应 evaluator 的冻结源码取样，校验结果收据、任务契约、源码哈希与归档候选的一致性，分别记录 `attempted_candidate_id` 和 `final_selected_candidate_id`。停止动作不伪造评测或源码归属。不要把工作目录中已经恢复的最佳候选内容，作为某次失败尝试的源码上传；这会产生不真实的诊断线索。收集器保留 evaluator 来源的 `source_digest`，以区分同一源码的重复结果与真正不同的尝试。

@@ -492,6 +492,7 @@ def test_real_evaluator_records_collected_and_invalidated(rsi):
             rsi.db.execute("SELECT data FROM evidence WHERE id=?", (ref,)).fetchone()[0]
         )
         indexed = json.loads(manager.one("SELECT data FROM runs WHERE path=?", (str(run),))["data"])
+        assert evidence["source_digest"] == digest(indexed["source"])
         assert evidence["metrics"]["baseline_speedup"] == indexed["baseline_speedup"]
         assert evidence["metrics"]["incremental_speedup"] == indexed["incremental_speedup"]
         assert (

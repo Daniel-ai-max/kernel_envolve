@@ -265,3 +265,40 @@ Path('decision.json').write_text(json.dumps(a))
     trace = json.loads((destination / "search-trace.json").read_text())
     assert trace["steps"][0]["observation"]["mode"] == "quick"
     assert trace["steps"][1]["observation"]["mode"] == "full"
+
+
+def test_reports_bind_attempted_source_not_restored_finalist(research):
+    from kernel_envolve.rsi.research import report_records
+
+    packet, out, initial = research
+    wrong = "def run(x): return x-1\r\n"
+    trace = run(
+        packet,
+        out,
+        lambda *a: {
+            "action": "propose",
+            "source": wrong,
+            "mode": "full",
+            "hypothesis": "Deliberate failing attempt",
+        },
+        max_actions=1,
+    )
+    assert Path(packet["editable_files"][0]).read_text() == initial
+    record = report_records(packet["task"], trace, out)[0]
+    assert record["attempted_candidate_id"] == source_id(wrong)
+    assert record["final_selected_candidate_id"] == source_id(initial)
+    assert record["tested_source_excerpt"] == wrong
+    assert record["evaluator_correctness"] == "fail"
+    (out / f"candidate-{source_id(wrong)}.py").write_text(initial)
+    with pytest.raises(ValueError, match="identity mismatch"):
+        report_records(packet["task"], trace, out)
+
+
+def test_stop_reports_do_not_attribute_final_source_to_an_experiment(research):
+    from kernel_envolve.rsi.research import report_records
+
+    packet, out, _ = research
+    trace = run(packet, out, lambda *a: {"action": "stop", "hypothesis": "No useful experiment"})
+    record = report_records(packet["task"], trace, out)[0]
+    assert record["action"] == "stop"
+    assert "tested_source_excerpt" not in record and "evaluator_run" not in record

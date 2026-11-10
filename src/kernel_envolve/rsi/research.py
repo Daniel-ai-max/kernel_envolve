@@ -13,7 +13,8 @@ import time
 from pathlib import Path
 
 from ..cli import evaluate
-from ..storage import config, write_json
+from ..manager.evidence import inspect_run
+from ..storage import config, contract, write_json
 from .learning import numeric_metrics
 from .model import keys, number, text
 from .trials import files
@@ -47,6 +48,59 @@ def observation(run, result):
         "reasons": [str(reason)[:400] for reason in decision.get("reasons", [])[:8]],
         "error": str(result.get("error"))[:1200],
     }
+
+
+def report_records(task, trace, artifacts):
+    """Bind each research hypothesis to the exact evaluated source, not the finalist.
+
+    Returned records can be submitted as Manager report events. Stop/duplicate
+    actions make no new measurement claim. They are still reports, not substitutes
+    for the independently indexed evaluator facts.
+    """
+    task, artifacts = Path(task).resolve(), Path(artifacts).resolve()
+    spec = {
+        "kind": "generic",
+        "task_dir": str(task),
+        "baseline": {"contract": contract(task, config(task))},
+    }
+    records = []
+    for step in trace["steps"]:
+        record = {
+            "action": step.get("action"),
+            "hypothesis": step.get("hypothesis"),
+            "final_selected_candidate_id": trace["selected"],
+        }
+        observed = step.get("observation")
+        if observed and observed["status"] == "evaluated":
+            path = Path(observed["run"])
+            if path.is_symlink() or not path.resolve().is_relative_to(
+                task / ".kernel_envolve/runs"
+            ):
+                raise ValueError("Research report references a different task's evaluation")
+            verified = inspect_run(path, spec)
+            source = (path / "source/candidate.py").read_bytes().decode("utf-8")
+            identity = source_id(source)
+            artifact = artifacts / f"candidate-{identity}.py"
+            if (
+                identity != observed["candidate"]
+                or observed["mode"] != verified["mode"]
+                or artifact.is_symlink()
+                or artifact.read_bytes().decode("utf-8") != source
+            ):
+                raise ValueError("Research hypothesis/source/evaluation identity mismatch")
+            record.update(
+                attempted_candidate_id=identity,
+                evaluator_run=str(path),
+                evaluator_result_hash=verified["result_hash"],
+                evaluator_mode=verified["mode"],
+                evaluator_correctness=verified["correctness"],
+                tested_source_excerpt=source[:1000],
+                tested_source_complete=len(source) <= 1000,
+            )
+        elif observed:
+            record["measurement_status"] = observed["status"]
+        records.append(record)
+    return records
 
 
 def run(packet, output, decide, *, max_actions=2, model_seconds=55, evaluation_seconds=30):

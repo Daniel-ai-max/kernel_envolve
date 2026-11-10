@@ -11,7 +11,8 @@ from pathlib import Path
 
 from kernel_envolve.rsi.model import read
 from kernel_envolve.rsi.process import invoke
-from kernel_envolve.rsi.research import run
+from kernel_envolve.rsi.research import report_records, run
+from kernel_envolve.storage import write_json
 
 
 def main():
@@ -35,13 +36,16 @@ def main():
         invoke(args.model_command, destination, request, timeout, device="cpu")
         return read(destination / "decision.json", 65536)
 
-    run(
+    trace = run(
         packet,
         directory,
         decide,
         max_actions=args.actions,
         model_seconds=args.model_seconds,
         evaluation_seconds=args.evaluation_seconds,
+    )
+    write_json(
+        directory / "research-reports.json", report_records(packet["task"], trace, directory)
     )
 
 
