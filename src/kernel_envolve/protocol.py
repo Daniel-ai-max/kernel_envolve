@@ -4,6 +4,10 @@ import hashlib
 import json
 
 
+def measured_cases(cases):
+    return [case for case in cases if case.get("measure", True)]
+
+
 def plan(cfg, mode, selection=None):
     selection = selection or {}
     if mode not in ("quick", "full"):

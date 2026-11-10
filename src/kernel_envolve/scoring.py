@@ -3,7 +3,7 @@
 import math
 import statistics as stats
 
-from .protocol import order, plan, post_seed, roles, timing_seed
+from .protocol import measured_cases, order, plan, post_seed, roles, timing_seed
 
 
 def ratio(numerator, denominator):
@@ -36,6 +36,11 @@ def score(result, cfg):
         return decision
     mode = result["mode"]
     cases, seeds, trials, batches = plan(cfg, mode, result.get("selection"))
+    timed_cases = [] if result.get("check_only") else measured_cases(cases)
+    decision["coverage"] = {
+        "correctness_cases": [case["id"] for case in cases],
+        "timed_cases": [case["id"] for case in timed_cases],
+    }
     implementations = roles(result)
     expected_checks = {
         (c["id"], seed, kind, role)
@@ -49,12 +54,12 @@ def score(result, cfg):
     if not result.get("check_only"):
         expected_checks |= {
             (c["id"], post_seed(c["id"], seeds), "post", role)
-            for c in cases
+            for c in timed_cases
             for role in implementations
         }
         expected_checks |= {
             (c["id"], timing_seed(c["id"], batches - 1, trials - 1, 1, seeds), "timed_output", role)
-            for c in cases
+            for c in timed_cases
             for role in implementations
         }
     checks = [(r["case"], r["seed"], r["kind"], r["role"]) for r in result["checks"]]
@@ -67,9 +72,11 @@ def score(result, cfg):
             raise ValueError("Check-only diagnostics cannot supply full/timing evidence")
         decision["reasons"] = ["Correctness-only diagnostic cannot update best"]
         return decision
+    if not timed_cases:
+        raise ValueError("Performance evaluation requires measured cases")
     expected = {
         (c["id"], b, t, timing_seed(c["id"], b, t, repeat, seeds), role, repeat)
-        for c in cases
+        for c in timed_cases
         for b in range(batches)
         for t in range(trials)
         for role in implementations
@@ -81,7 +88,7 @@ def score(result, cfg):
         raise ValueError("Incomplete or duplicate timing coverage")
     ordered_keys = []
     for b in range(batches):
-        for c in cases if b == 0 else reversed(cases):
+        for c in timed_cases if b == 0 else reversed(timed_cases):
             for t in range(trials):
                 repeats = dict.fromkeys(implementations, 0)
                 for role in order(implementations, b, t):
@@ -107,7 +114,7 @@ def score(result, cfg):
         totals = {role: 0.0 for role in implementations}
         contrasts = {role: 0.0 for role in implementations if role != "candidate"}
         uncertainties = dict.fromkeys(contrasts, 0.0)
-        for c in cases:
+        for c in timed_cases:
             row = {"case": c["id"], "batch": b}
             trial_medians = {}
             for role in implementations:

@@ -95,19 +95,22 @@ def config(root):
     if not ids or len(set(ids)) != len(ids) or any(not isinstance(x, str) for x in ids):
         raise ValueError("Cases require unique string ids")
     for c in cases:
-        if "quick" in c and type(c["quick"]) is not bool:
-            raise ValueError("case.quick must be a boolean")
-        if set(c) - {"id", "args", "weight", "quick", "max_us"}:
+        for flag in ("quick", "measure"):
+            if flag in c and type(c[flag]) is not bool:
+                raise ValueError(f"case.{flag} must be a boolean")
+        if set(c) - {"id", "args", "weight", "quick", "max_us", "measure"}:
             raise ValueError(f"Unknown case settings: {c['id']}")
+        if not c.get("measure", True) and ({"weight", "max_us"} & set(c)):
+            raise ValueError("Unmeasured cases cannot have weight or max_us")
         for key in ("weight", "max_us"):
             if key in c and (
                 type(c[key]) not in (int, float) or not math.isfinite(c[key]) or c[key] <= 0
             ):
                 raise ValueError(f"{key} must be finite and positive")
-        if "weight" not in c:
+        if c.get("measure", True) and "weight" not in c:
             raise ValueError("Explicit case weights are required")
-    if not any(c.get("quick", True) for c in cases):
-        raise ValueError("At least one quick case is required")
+    if not any(c.get("quick", True) and c.get("measure", True) for c in cases):
+        raise ValueError("At least one measured quick case is required")
     for key in (
         "rtol",
         "atol",

@@ -48,6 +48,7 @@ kernel-envolve promote <full输出的run目录>
 
 - 先确认部署是 eager 还是 CUDA Graph。内置 CUDA event 测量可能包含 host 发射间隙，不能视为纯 kernel 时长；Graph 目标使用覆盖捕获、回放和换值语义的专用 evaluator，不混用 eager 分数。
 - 在 task.json 明确 timer 和是否要求 deterministic；初始化精度/线程等公共设置放在 task.py，不让 candidate 持久改动其他实现的运行条件。误差敏感任务可参考仓库 reduction 示例增加独立 golden gate。
+- 扩大正确性覆盖时可将补充 case 设为 `measure: false, quick: false`，省去反复计时；它仍是 full 的硬门槛。性能集合必须覆盖关键区间、dispatch 边界和 fallback，不能借此移除慢 case。分别查看 CLI 的 `coverage.correctness_cases` / `coverage.timed_cases`，未计时区域不能宣称已验证加速。
 - quick 永不晋升；full 合格由 evaluator 计算。失败应修复或诊断，不能编辑结果绕过检查。
 - 对照对象 best 来自保存的快照，不从可变工作目录读取。full 自动核对原始 baseline；`--baseline` 可单独诊断原始实现，不能用它绕过当前 best。
 - 不在候选里按固定随机种子、输入地址、评测次数或评测状态投机。允许按公开 shape/dtype/layout 做合法 dispatch。

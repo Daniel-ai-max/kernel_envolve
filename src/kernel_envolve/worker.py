@@ -22,7 +22,7 @@ from .arrays import (
     unchanged,
     validate_inputs,
 )
-from .protocol import order, plan, post_seed, roles, timing_seed
+from .protocol import measured_cases, order, plan, post_seed, roles, timing_seed
 from .runtime import RuntimeGuard
 from .scoring import score
 from .storage import config, digest, load_module, read_json, verify_source, write_json
@@ -284,9 +284,10 @@ def execute(run):
 
         phase_start = time.perf_counter()
         result["measurement_wall_seconds"] = 0.0
+        timed_cases = measured_cases(cases)
         for batch in range(batches):
             # Reverse case order in confirmation to reduce monotonic run-order bias.
-            for case in cases if batch == 0 else reversed(cases):
+            for case in timed_cases if batch == 0 else reversed(timed_cases):
                 for role, function in functions.items():
                     for warm in range(cfg["warmup"]):
                         args = inputs(case, seeds[warm % len(seeds)])

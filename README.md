@@ -34,7 +34,7 @@ Agent 负责读硬件文档、研究参考实现、提出假设、写代码和�
 
 这些是覆盖的用途，不是每次修改都要串行执行的三个阶段。最终泛化验证提供新的覆盖，不是重复跑相同 full。若真实业务只使用少数固定 shape，可以针对它们优化并如实交付固定 workload 的结果；默认通用任务不能自行缩成这种目标。
 
-**当前实现对应什么：** `task.json` 的 `cases` 声明尺寸、dtype 和布局参数，`quick: false` 的 case 只参加 full；full 对所有声明 case 执行正确性与计时，并限制逐项退化。evaluator 不会根据三个 shape 自动推断整个范围，也不会自动生成未见尺寸。需要在任务开始时构造广域 case，并在交付时用独立验证任务或项目已有测试补充未见尺寸；保存其结果与最终源码哈希。只通过内置 full 的 best，表示它通过了该固定任务的覆盖，不自动表示完成泛化验收。
+**当前实现对应什么：** `task.json` 的 `cases` 声明尺寸、dtype 和布局参数，`quick: false` 的 case 只参加 full；full 对所有声明 case 执行正确性检查；默认还计时并限制逐项退化，`measure: false` 可增加只做正确性检查的补充 case。evaluator 不会根据三个 shape 自动推断整个范围，也不会自动生成未见尺寸。需要在任务开始时构造广域 case，并在交付时用独立验证任务或项目已有测试补充未见尺寸；保存其结果与最终源码哈希。只通过内置 full 的 best，表示它通过了该固定任务的覆盖，不自动表示完成泛化验收。
 
 下面的 vector-add 示例以及此前三任务预实验仍是小型接口/可行性示例，未完成上述广域和未见尺寸验收；已有结果不作为通用性证明。
 
@@ -125,7 +125,17 @@ def baseline(*inputs):
 }
 ```
 
-case 权重由任务明确给出。没有真实调用分布时，可以声明等权 benchmark 目标。`quick: false` 表示该 case 只在 full 中运行；正确性规则在两个模式中相同。
+计时 case 的权重由任务明确给出。没有真实调用分布时，可以声明等权 benchmark 目标。`quick: false` 表示正常 quick 不选该 case；可通过 `--case` 定点诊断。正确性规则在两个模式中相同。
+
+0.5 支持在同一个任务中加入只做正确性检查的 case：
+
+```json
+{"id": "tail-neighbor", "args": {"n": 4097}, "measure": false, "quick": false}
+```
+
+它仍是 full 的硬门槛，执行 fresh、同地址换值及任务要求的确定性检查，但不预热、不反复计时，也不参与加速比。此类 case 不填 `weight` 或 `max_us`；任务至少保留一个会计时的 quick case。CLI 的 `coverage.correctness_cases` 与 `coverage.timed_cases` 分开列出实际验证范围。单独诊断它时使用 `--case tail-neighbor --check-only`。
+
+这是扩大正确性覆盖的低成本方式。性能覆盖仍需包含各关键尺寸区间、dispatch 边界和 fallback；不能把可能变慢的区域全部设为 `measure: false`，再声称全域更快。计时选择属于固定任务契约，不能在观察到结果后删除慢 case 或取消其计时。
 
 可选设置：
 
@@ -140,13 +150,14 @@ case 权重由任务明确给出。没有真实调用分布时，可以声明等
 | `equal_nan` | `false` | 是否允许同位置 NaN 相等 |
 | `mutable_inputs` | `[]` | 允许原地更新的输入索引；更新后的值仍须与 oracle 一致 |
 | `quick_seeds` / `full_seeds` | `[0]` / `[0,1,2]` | fresh 检查种子；每个种子还有一次同对象换值检查 |
-| `quick_trials` / `full_trials` | `3` / `10` | 每个 case、每批的配对轮数 |
-| `warmup` | `3` | 每个实现、每批、每个 case 的预热次数 |
+| `quick_trials` / `full_trials` | `3` / `10` | 每个计时 case、每批的配对轮数 |
+| `warmup` | `3` | 每个实现、每批、每个计时 case 的预热次数 |
 | `min_gain` | `0.01` | 加权延迟下降比例必须超过该值 |
 | `noise_multiplier` | `2.0` | 配对差值的 MAD/IQR 噪声门槛倍数 |
-| `max_regression` | `0.05` | 任一 case 相对当前 comparator 的最大允许延迟增长 |
-| `max_baseline_regression` | `0.05` | 任一 case 相对固定起始 baseline 的累计延迟增长上限 |
-| case 的 `max_us` | 无 | 该 case 候选延迟的绝对上限，微秒 |
+| `max_regression` | `0.05` | 任一计时 case 相对当前 comparator 的最大允许延迟增长 |
+| `max_baseline_regression` | `0.05` | 任一计时 case 相对固定起始 baseline 的累计延迟增长上限 |
+| case 的 `measure` | `true` | `false` 时只验证正确性；不得带权重或延迟上限 |
+| case 的 `max_us` | 无 | 该计时 case 候选延迟的绝对上限，微秒 |
 
 这些默认值用于起步，不是所有算子的精度或收益标准。任务建立时确定它们，迭代候选时保持不变。修改固定任务契约后，使用新的任务目录重新建立 best。
 
@@ -164,7 +175,7 @@ case 权重由任务明确给出。没有真实调用分布时，可以声明等
 - `deterministic=true` 时，在相同值、相同对象上复位并重跑，要求结果逐元素一致；普通误差容差仍单独检查。
 - 检查未声明的输入修改、输入布局/存储绑定改变和 alias 关系改变（含零 stride 广播视图）；声明的原地更新须与 oracle 更新后的输入一致。
 - 保留原输入对象，用任务工厂按 `seed + 1000003` 生成的新值覆盖其内容，再执行并验证，捕获按对象地址缓存旧输出的问题。换值仍遵守任务取值域，例如 sqrt 的正数输入、合法索引；不统一换成正态随机数。
-- 对每个 case/实现，直接检查最后一个实际计时调用的返回值及输入状态（`timed_output`），而非重新调用候选来代替它；这是抽查，不是所有计时输出的全量验证。随后在同一输入对象上换值验证，捕获预热/计时后才出现的错误。`--check-only` 没有计时阶段，只做前面的检查。
+- 对每个计时 case/实现，直接检查最后一个实际计时调用的返回值及输入状态（`timed_output`），而非重新调用候选来代替它；这是抽查，不是所有计时输出的全量验证。随后在同一输入对象上换值验证，捕获预热/计时后才出现的错误。`--check-only` 和 `measure: false` 的 case 没有计时阶段，只做前面的检查。
 
 任何数值失败都会停止该轮计时，得到 `execution=completed, correctness=fail`。导入、编译、运行异常或超时得到 `execution=error`。每轮使用新子进程，超时终止其进程组；失败的 CUDA context 不复用。失败记录包含 case、seed、fresh/reuse/timed_output/post、实现角色及误差，日志保留异常栈。
 
@@ -172,7 +183,7 @@ case 权重由任务明确给出。没有真实调用分布时，可以声明等
 
 默认 comparator 是任务当前 best，没有 best 时使用固定 baseline。full 有 best 时还在同一轮重新测固定 baseline，分别检查增量收益和累计回退。没有 best 时两个对照是同一个实现，只测一次。每次都重新测对照，不把历史 timing 当分母。`--baseline` 可专门测原始 baseline，但已有 best 时，这种结果不能替换 best。
 
-quick 测所选 case，一批样本；full 测全部 case，两批样本，第二批倒序遍历 case。两个实现采用 A–B–B–A 并轮换起始角色；三个实现采用 A–B–C–C–B–A，并在各轮循环改变起始角色。每个角色的两次调用使用不同的值，同一 repeat 的各角色使用匹配的值。输入种子由 case、batch、trial、repeat 和任务 seeds 确定，每个测量样本都更新，可从记录复现。判定时同时核对样本身份、数量和实际执行顺序。
+quick 对所选且 `measure: true` 的 case 计时，一批样本；full 对全部 `measure: true` 的 case 计时，两批样本，第二批倒序遍历 case。两个实现采用 A–B–B–A 并轮换起始角色；三个实现采用 A–B–C–C–B–A，并在各轮循环改变起始角色。每个角色的两次调用使用不同的值，同一 repeat 的各角色使用匹配的值。输入种子由 case、batch、trial、repeat 和任务 seeds 确定，每个测量样本都更新，可从记录复现。判定时同时核对样本身份、数量和实际执行顺序。
 
 CPU 使用 `perf_counter_ns`，测完整函数调用；CUDA 默认使用当前流上的 event。**event 记录的是 eager 调用的事件区间：GPU 提前执行了 start event 时，等待 Python 发射 kernel 的空闲时间也可能计入，不能称为纯 kernel 时长。** 设置 `timer=wall` 时，CUDA 计时在调用前后做设备同步，包含 CPU launch 和完成等待；它与 event 指标是不同的任务契约，不能混比。输入构造/复位、预热和计时前同步在区间外；wall 的完成同步在区间内，event 的主机等待在区间外。实际 `run` 内的布局转换、临时缓冲和 kernel 工作保留在调用中。每次测量前重新生成输入，适用于声明的原地更新；测得的是该输入准备方式下的延迟。
 
@@ -188,7 +199,7 @@ dispersion   = max(MAD(D), IQR(D) / 2)
 noise_guard  = noise_multiplier × Σ weight(case) × dispersion(case) / T_comparator
 ```
 
-两批相对 best 都须满足 **`gain > min_gain` 且 `paired_gain > max(min_gain, noise_guard)`**；相对固定 baseline 也单独计算并满足相同条件。前者保留声明的加权总延迟目标，后者要求配对结果也支持收益，不能拿配对差值的低波动为不一致的总体中位数收益背书。所有 case 仍须满足两套回退限制和绝对延迟上限。这避免逐轮 4% 的局部退化越积越大，也避免只赢过一个已经退化的 best。MAD/IQR 门槛仍是保守筛选规则，不是统计置信区间。结果接近门槛时，先检查环境竞争；确需调整协议时记录原因、保留旧结果，重新建立对应契约和对照。不要重复抽样直到出现有利结果；profiling 用于解释瓶颈，不与正式计时混跑。
+两批相对 best 都须满足 **`gain > min_gain` 且 `paired_gain > max(min_gain, noise_guard)`**；相对固定 baseline 也单独计算并满足相同条件。前者保留声明的加权总延迟目标，后者要求配对结果也支持收益，不能拿配对差值的低波动为不一致的总体中位数收益背书。所有计时 case 仍须满足两套回退限制和绝对延迟上限。这避免逐轮 4% 的局部退化越积越大，也避免只赢过一个已经退化的 best。MAD/IQR 门槛仍是保守筛选规则，不是统计置信区间。结果接近门槛时，先检查环境竞争；确需调整协议时记录原因、保留旧结果，重新建立对应契约和对照。不要重复抽样直到出现有利结果；profiling 用于解释瓶颈，不与正式计时混跑。
 
 `--case`、`--seed`、`--check-only` 仅限 quick，可定位 full 中才运行的 case，不修改固定任务契约，也不能产生晋升资格。`worker_process_wall_seconds` 记录子进程启动到退出的等待耗时；`worker_wall_seconds` 还包含父进程的结果核查。CLI 同时输出 `phase_wall_seconds`：setup（CUDA/模块初始化）、correctness、measurement（预热、输入生成、计时及后检查）、finalize（证据检查与评分）。阶段计时不进入算子计时区间，失败时保留已完成及当前阶段耗时；子进程耗时与阶段和的差值还包括 Python/NumPy 导入、退出及父进程唤醒，不能全部称为模型或 kernel 时间。兼容字段 `measurement_wall_seconds` 继续表示测量阶段总耗时。
 
@@ -569,6 +580,20 @@ host sleep 不改变加法 kernel，却明显增加普通 event 区间；Graph �
 总耗时仍约 2 秒，大输入中位数增加约 50 毫秒，本轮没有证明 evaluate 更快。实际流程继续根据成本选择：已接近交付且 quick/full 成本相近时直接 full；有已知错误时先定点检查；不要强制每个候选依次走完 check、quick、full。0.4 的价值主要是减少噪声下漏掉有效候选的情况，不是增加一个评测阶段。
 
 [实机摘要与资源记录](audit/paired_policy_gpu.json)、[完整结果、旧规则重算及复现脚本](audit/paired_policy_gpu_raw.json.gz)已保存。任务 `4eae86bad7144349a0f86925bd36b6de` 已 Completed，最终实时查询 Pods=0。本地 96 项测试通过、8 项 CUDA 测试跳过；[实际 smoke 记录](audit/local_validation.json)验证了定点检查、signal、quick、首次 full 晋升，以及相同源码不能再次晋升。参考仓库对照已证明若干具体检查和判定差异；完整 agent 搜索的速度与最终优化效果，仍需前述同模型、同预算对照。
+
+### 0.5：把广域正确性覆盖与反复计时分开
+
+这次补齐一个来自参考设计的明确缺口：[BackendBench 的 `eval_one_op`][backend-eval] 已分别接收 `correctness_tests` 与 `performance_tests`。本仓库此前把两种集合绑定在一起，增加正确性尺寸就必须增加整套计时。现在通过 case 的 `measure` 字段分开，并保留一个固定契约和一个 full 入口。
+
+| 参考设计中的做法 | 本版吸收与保留的要求 | 仍未完成的能力 |
+|---|---|---|
+| BackendBench 分别传入正确性与性能测试集 | 补充正确性 case 不必重复计时；所有计时 case 同时接受正确性验证 | 不把分离覆盖算作独有优势，也未证明比它执行更快 |
+| [kernel-lab 的验证要求][kl-eval] 覆盖边缘情况、dispatch 边界，逐项预算不能被总体收益抵消 | 所有声明 case 必须正确；所有计时 case 仍受增量/累计回退限制 | 梯度、batch-invariance、多指标约束仍应接项目专用验证器 |
+| [Atrex 的 shape 分批验证](https://github.com/alibaba/atrex-kernel-agent/blob/bab3218768baea30ba56a87851705d60d64ebbf3/src/aka/light/acceptance/verifier.py#L87) 枚举 `shapes.json`，检查返回覆盖 | 保留完整 case 身份核查，缺少补充正确性证据也拒绝晋升 | 本版尚无 shape 分批恢复、自动采样未见尺寸能力 |
+
+[可复现检查](audit/probe_coverage_scope.py)使用 48 个尺寸/stride/dtype 组合：全部计时与仅 12 个代表组合计时都完成 576 条 fresh/reuse 检查，计时样本从 1152 减为 288；实际计时输出及计时后检查随计时集合变化，分别为 192 与 48 条。一个仅在长度 1025 出错的候选，在补充正确性 case 被拒绝，尚未开始计时。[摘要](audit/coverage_scope_validation.json)和[原始记录](audit/coverage_scope_validation.raw.json.gz)保留配置、源码身份和样本。该检查验证 evaluator 的控制流程，不代表 GPU 算子已泛化或 GPU 总耗时下降。
+
+正确性与性能覆盖在 CLI 中分别显示；删除正确性记录、伪造补充 case 的计时、修改任务覆盖后复用旧晋升均被拒绝。本地 109 项测试通过，8 项 CUDA 测试跳过。现有配置默认全部计时，行为不变。这一改动降低扩大正确性覆盖的计时成本；真实 workload 的尺寸泛化及不同 agent 流程的效果仍需 GPU 实验验证。
 
 ## 开发检查
 

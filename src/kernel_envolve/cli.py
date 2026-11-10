@@ -14,7 +14,7 @@ import time
 import uuid
 from pathlib import Path
 
-from .protocol import plan
+from .protocol import measured_cases, plan
 from .scoring import score
 from .storage import (
     bundle,
@@ -94,7 +94,9 @@ def evaluate(
         selection["cases"] = cases
     if seeds:
         selection["seeds"] = seeds
-    plan(cfg, mode, selection)
+    selected, _, _, _ = plan(cfg, mode, selection)
+    if not check_only and not measured_cases(selected):
+        raise ValueError("No measured cases selected; use --check-only for correctness diagnostics")
     if check_only and mode != "quick":
         raise ValueError("Check-only diagnostics require quick mode")
     if signal_only and mode != "quick":
