@@ -77,6 +77,7 @@ def collect(store):
                         "metrics": numeric_metrics(data),
                         "reasons": data["decision"].get("reasons", [])[:8],
                         "error": str(data.get("error"))[:1200],
+                        "failed_checks": data.get("failed_checks"),
                         "contract": data["contract"],
                     }
                     store.add_evidence(payload)

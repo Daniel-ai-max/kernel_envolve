@@ -13,7 +13,7 @@ import time
 from pathlib import Path
 
 from ..cli import evaluate
-from ..manager.evidence import inspect_run
+from ..manager.evidence import failed_checks, inspect_run
 from ..storage import config, contract, write_json
 from .learning import numeric_metrics
 from .model import keys, number, text
@@ -47,6 +47,7 @@ def observation(run, result):
         "case_count": len(decision.get("cases", [])),
         "reasons": [str(reason)[:400] for reason in decision.get("reasons", [])[:8]],
         "error": str(result.get("error"))[:1200],
+        "failed_checks": failed_checks(result, config(Path(run) / "source")),
     }
 
 

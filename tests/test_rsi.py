@@ -493,6 +493,7 @@ def test_real_evaluator_records_collected_and_invalidated(rsi):
         )
         indexed = json.loads(manager.one("SELECT data FROM runs WHERE path=?", (str(run),))["data"])
         assert evidence["source_digest"] == digest(indexed["source"])
+        assert evidence["failed_checks"] == indexed["failed_checks"]
         assert evidence["metrics"]["baseline_speedup"] == indexed["baseline_speedup"]
         assert evidence["metrics"]["incremental_speedup"] == indexed["incremental_speedup"]
         assert (
@@ -509,6 +510,31 @@ def test_real_evaluator_records_collected_and_invalidated(rsi):
         write_json(run / "result.json", result)
         with pytest.raises(ValueError, match="receipt mismatch"):
             stage(rsi, {**value, "hypothesis": "Another explanation"})
+    finally:
+        manager.close()
+
+
+def test_failed_check_conditions_reach_background_learner(rsi):
+    from kernel_envolve.cli import evaluate
+    from kernel_envolve.manager.evidence import refresh
+
+    manager = Manager(rsi.config["manager"])
+    try:
+        task = Path(manager.task("demo")["spec"]["task_dir"])
+        (task / "candidate.py").write_text("def run(x): return x+2\n")
+        _, result = evaluate(task, "full")
+        assert result["correctness"] == "fail"
+        refresh(manager)
+        collect(rsi)
+        outcome = learn(rsi)
+        packet = read(rsi.root / "learning" / outcome["operation"] / "input.json")
+        observed = next(row for row in packet["evidence"] if row["type"] == "run")
+        assert observed["failed_checks"]["count"] == 1
+        check = observed["failed_checks"]["checks"][0]
+        assert check["role"] == "candidate"
+        assert check["case"] == result["checks"][-1]["case"]
+        assert check["args"] is not None
+        assert "unlisted cases are unknown" in observed["failed_checks"]["scope"]
     finally:
         manager.close()
 
