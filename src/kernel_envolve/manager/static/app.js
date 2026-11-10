@@ -1,4 +1,5 @@
 import { patch, poller } from "/sync.js";
+import { executionLabel, jobLabel, benefitLabel, noteSnippet, executionLabelFor, visibleTask } from "/summary.js";
 /* All external text passes through textContent or escaping. No HTML from agent reports. */
 const $ = (id) => document.getElementById(id);
 const escape = (s) =>
@@ -59,7 +60,7 @@ function metric(label, value) {
 function evidenceSummary(t) {
   const r = t.latest_evaluation;
   if (t.evidence_error || r?.evidence_error) return "证据异常";
-  if (!r) return "—";
+  if (!r) return "当前契约尚无评测记录";
   const status = r.execution === "error" ? "执行失败"
     : r.correctness === "fail" ? "正确性失败"
     : r.correctness === "pass" ? "正确性通过" : "未完成";
@@ -72,7 +73,7 @@ function render() {
   const tasks = state.tasks;
   patch(
     $("metrics"),
-    metric("任务", tasks.filter((t) => !["paused", "superseded", "budget"].includes(t.desired)).length) +
+    metric("任务", tasks.filter((t) => t.desired !== "superseded").length) +
       metric(
         "GPU 执行",
         tasks.filter((t) => t.phase === "gpu_running").length,
@@ -89,8 +90,8 @@ function render() {
   const query = $("search").value.toLowerCase();
   const filtered = tasks.filter(
     (t) =>
-      ($("show-history").checked || !["paused", "superseded", "budget"].includes(t.desired)) &&
-      JSON.stringify([t.id, t.spec.name, t.spec.baseline, phases[t.phase]])
+      visibleTask(t, $("show-history").checked) &&
+      JSON.stringify([t.id, t.spec.name, t.spec.baseline, t.research_record, executionLabel(t.execution_state)])
         .toLowerCase()
         .includes(query),
   );
@@ -98,8 +99,17 @@ function render() {
     $("tasks"),
     filtered
       .map((t) => {
-        const updated = Math.max(t.report_as_of || 0, t.latest_evaluation?.recorded_at || 0, t.last_promotion || 0);
-        return `<tr data-key="${escape(t.id)}"><td><button class="name" data-task="${escape(t.id)}">${escape(t.spec.name)}</button></td><td>${escape(phaseLabel(t))}</td><td>${evidenceSummary(t)}</td><td class="${t.best ? "good" : ""}">${speed(t.best?.baseline_speedup)}</td><td title="${escape(stamp(updated))}">${shortTime(updated)}</td></tr>`;
+        const record = t.research_record, recent = t.recent_execution, counts = t.history_counts;
+        const outcome = noteSnippet(record?.outcome || record?.hypothesis, "尚无研究结论");
+        const next = noteSnippet(record?.next_action, "尚未记录下一步");
+        return `<tr data-key="${escape(t.id)}">
+          <td><button class="name" data-task="${escape(t.id)}">${escape(t.spec.name)}</button><small>${executionLabel(t.execution_state)}${t.desired === "paused" ? " · 实验已停止" : t.desired === "budget" ? " · 预算结束" : ""}</small></td>
+          <td class="execution"><div>${escape(executionLabelFor(recent))}</div>${recent ? `<small title="${escape(stamp(recent.recorded_at))}">${recent.kind === "evaluation" ? "记录于 " : "执行于 "}${shortTime(recent.recorded_at)}${recent.inherited ? " · 历史任务" : ""}</small><button class="source-link" data-task="${escape(recent.task)}">${escape((recent.id || recent.run?.split("/").pop() || recent.task).slice(0, 12))}</button>` : ""}</td>
+          <td class="research"><div class="snippet">${escape(outcome)}</div>${record ? `<small>${record.inherited ? "历史 Agent 记录" : "Agent 记录"} · ${shortTime(record.recorded_at)}</small>` : ""}</td>
+          <td class="research"><div class="snippet">${escape(next)}</div></td>
+          <td class="record-count"><button class="source-link" data-task="${escape(t.id)}">评测记录 当前 ${counts.current_runs}<br>${t.history_complete ? `历史 ${counts.previous_runs}` : "历史链异常"}</button><small>GPU 作业 ${counts.gpu_jobs} 次</small></td>
+          <td class="benefit ${t.best ? "good" : "muted"}">${escape(benefitLabel(t.best))}</td>
+        </tr>`;
       })
       .join(""),
   );
@@ -120,7 +130,7 @@ function renderStatus() {
   const live =
     state?.coordinator && state.as_of - state.coordinator.heartbeat < 5;
   $("updated").textContent = connected
-    ? `${live ? "在线" : "离线"} · ${shortTime(state.as_of)}`
+    ? (live ? `在线 · ${shortTime(state.as_of)}` : `离线 · 最后观测 ${stamp(state?.coordinator?.heartbeat)}`)
     : `连接中断 · ${shortTime(state?.as_of)}`;
   $("updated").classList.toggle("warn", !connected || !live);
   const problem = state?.coordinator?.error || state?.coordinator?.evidence_error;
@@ -153,20 +163,22 @@ function chart(history) {
 }
 function renderDetail(t) {
   if (!t || t.id !== selected) return;
-  const b = t.spec.baseline, r = t.latest_evaluation;
+  const b = t.spec.baseline, r = t.latest_evaluation, record = t.research_record;
   const rows = t.best?.decision?.cases || [];
   const fields = (pairs) => pairs.filter(([, value]) => value).map(([label, value]) => `<dt>${label}</dt><dd>${escape(value)}</dd>`).join("");
-  const diagnoses = {reason: t.reason, evidence_error: t.evidence_error, latest: r, recovery: t.recovery};
+  const diagnoses = {session: phaseLabel(t), reason: t.reason, evidence_error: t.evidence_error, latest: r, recovery: t.recovery};
   patch($("detail"), `
     <div class="section-head"><h2>${escape(t.spec.name)}</h2><button id="close-detail">返回</button></div>
-    <div class="detail-summary"><span>${escape(phaseLabel(t))}</span><span>${evidenceSummary(t)}</span><span>已验证加速 ${speed(t.best?.baseline_speedup)}</span></div>
-    ${t.superseded_by ? `<p>后续任务：${escape(t.superseded_by)}</p>` : ""}
-    <article class="card"><h3>研究记录</h3><dl>${fields([["方向", t.report.hypothesis], ["结论", t.report.outcome], ["下一步", t.report.next_action]])}${t.report.pr_urls?.length ? `<dt>PR</dt><dd>${t.report.pr_urls.map(u => link(u, u.replace("https://github.com/", "").replace("/pull/", "#"))).join("<br>")}</dd>` : ""}</dl></article>
+    <div class="detail-summary"><span>${executionLabel(t.execution_state)}</span><span>${evidenceSummary(t)}</span><span>${escape(benefitLabel(t.best))}</span></div>
+    ${t.superseded_by ? `<p>历史契约 · 后续任务：<button class="source-link" data-task="${escape(t.superseded_by)}">${escape(t.superseded_by)}</button></p>` : ""}
+    <article class="card"><h3>研究记录 · Agent 报告</h3>${record?.inherited ? `<p>来源：<button class="source-link" data-task="${escape(record.task)}">${escape(record.task)}</button>（历史契约）</p>` : ""}<dl>${fields([["记录时间", record ? stamp(record.recorded_at) : ""], ["方向", record?.hypothesis], ["结论", record?.outcome], ["下一步", record?.next_action]])}${t.report.pr_urls?.length ? `<dt>PR</dt><dd>${t.report.pr_urls.map(u => link(u, u.replace("https://github.com/", "").replace("/pull/", "#"))).join("<br>")}</dd>` : ""}</dl></article>
     ${t.best ? `<article class="card"><h3>加速趋势</h3>${chart(t.history)}</article><details><summary>逐用例性能</summary><div class="scroll"><table><thead><tr><th>用例</th><th>批次</th><th>基线 μs</th><th>上一版 μs</th><th>最优 μs</th><th>加速</th></tr></thead><tbody>${rows.map(c => {
       const base = c.baseline_us ?? c.comparator_us;
       return `<tr><td>${escape(c.case)}${c.performance_role === "guard" ? '<small title="不计入总收益">护栏</small>' : ""}</td><td>${c.batch + 1}</td><td>${base?.toFixed(3) ?? "—"}</td><td>${c.comparator_us?.toFixed(3) ?? "—"}</td><td>${c.candidate_us?.toFixed(3) ?? "—"}</td><td>${base ? speed(base / c.candidate_us) : "—"}</td></tr>`;
     }).join("")}</tbody></table></div></details>` : ""}
-    <article class="card"><h3>评测记录</h3><div class="scroll"><table><thead><tr><th>记录</th><th>模式</th><th>正确性</th><th>性能</th><th>详情</th></tr></thead><tbody>${t.runs.map(run => `<tr data-key="${escape(run.path)}"><td>${escape(run.path.split("/").pop().slice(0, 8))}</td><td>${escape(mode(run.data.mode))}</td><td>${escape(({pass: "通过", fail: "失败", partial: "未完成"})[run.data.correctness] || "—")}</td><td>${escape(({faster: "更快", slower: "更慢", inconclusive: "不确定", not_measured: "未测量"})[run.data.decision?.performance] || run.data.decision?.performance || "—")}</td><td><details><summary>查看</summary><pre>${escape(run.error || run.data.decision?.reasons?.join("\n") || "通过")}\n${escape(run.path)}</pre></details></td></tr>`).join("") || '<tr><td colspan="5">—</td></tr>'}</tbody></table></div></article>
+    <article class="card"><h3>评测记录</h3><div class="scroll"><table><thead><tr><th>记录</th><th>模式</th><th>正确性</th><th>性能</th><th>详情</th></tr></thead><tbody>${t.runs.map(run => `<tr data-key="${escape(run.path)}"><td>${escape(run.path.split("/").pop().slice(0, 8))}</td><td>${escape(mode(run.data.mode))}</td><td>${escape(({pass: "通过", fail: "失败", partial: "未完成"})[run.data.correctness] || "—")}</td><td>${escape(({faster: "更快", slower: "更慢", inconclusive: "不确定", not_measured: "未测量"})[run.data.decision?.performance] || run.data.decision?.performance || "—")}</td><td><details><summary>查看</summary><pre>${escape(run.error || run.data.decision?.reasons?.join("\n") || "通过")}\n${escape(run.path)}</pre></details></td></tr>`).join("") || '<tr><td colspan="5">当前契约尚无评测记录，可在历史来源查看此前记录</td></tr>'}</tbody></table></div></article>
+    <article class="card"><h3>历史来源</h3>${t.history_complete ? "" : '<p>迁移链异常，已停止追溯无法确认归属的历史记录。</p>'}<div class="lineage">${t.lineage.map(row => `<div><button class="source-link" data-task="${escape(row.task)}">${escape(row.task)}</button><span>${row.inherited ? "历史契约" : "当前契约"} · ${row.run_count} 条评测记录 · ${row.gpu_job_count} 次 GPU 作业</span></div>`).join("")}</div></article>
+    <article class="card"><h3>GPU 作业记录</h3><div class="scroll"><table><thead><tr><th>作业</th><th>来源任务</th><th>状态</th><th>开始 / 结束</th><th>用时</th></tr></thead><tbody>${t.gpu_history.map(job => `<tr data-key="${escape(job.id)}"><td><code>${escape(job.id)}</code>${job.error ? `<small>${escape(job.error)}</small>` : ""}</td><td><button class="source-link" data-task="${escape(job.task)}">${escape(job.task)}</button></td><td>${escape(jobLabel(job.status))}</td><td>${stamp(job.started)}<br>${job.ended ? stamp(job.ended) : "尚未结束"}</td><td>${duration(job.seconds)}</td></tr>`).join("") || '<tr><td colspan="5">尚无已启动的 GPU 作业</td></tr>'}</tbody></table></div></article>
     <details><summary>基线与配置</summary><dl>${fields([["仓库", b.repository], ["版本", b.revision], ["入口", b.entrypoint], ["提出日期", b.introduced_on], ["冻结日期", b.frozen_on], ["硬件", b.hardware], ["契约", b.contract], ["已集成", t.report.integrated_revision]])}<dt>会话</dt><dd>${link(t.report.session_url, t.report.session_url || "—")}</dd></dl></details>
     <details><summary>用量与预算</summary><p>会话 ${duration(t.wall_seconds)} / ${duration(t.spec.wall_budget_seconds)} · GPU 作业 ${duration(t.gpu_seconds)} / ${duration(t.spec.gpu_budget_seconds)}</p></details>
     <details><summary>诊断信息</summary><pre>${escape(JSON.stringify(diagnoses, null, 2))}</pre></details>

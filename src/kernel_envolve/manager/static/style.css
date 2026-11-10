@@ -314,5 +314,18 @@ summary {
   }
 }
 
-#overview td { vertical-align: middle; white-space: nowrap; }
+#overview table { min-width: 1120px; table-layout: fixed; font-family: var(--sans); }
+#overview th:nth-child(1) { width: 13%; }
+#overview th:nth-child(2) { width: 13%; }
+#overview th:nth-child(3) { width: 27%; }
+#overview th:nth-child(4) { width: 25%; }
+#overview th:nth-child(5) { width: 11%; }
+#overview th:nth-child(6) { width: 11%; }
+#overview td { vertical-align: top; white-space: normal; }
+#overview .snippet { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.65; }
+#overview .research { font-size: 12px; }
+#overview .benefit { font-size: 12px; }
+.source-link { padding: 0; border: 0; background: transparent; color: var(--accent); text-align: left; }
+.lineage > div { display: flex; gap: 20px; padding: 6px 0; }
+.lineage span { color: var(--muted); }
 .detail-summary { display: flex; flex-wrap: wrap; gap: 24px; color: var(--muted); margin: 16px 0; }
