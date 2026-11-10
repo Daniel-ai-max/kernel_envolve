@@ -717,6 +717,9 @@ def test_http_selected_detail_and_compact_summary(managed):
         assert data["detail"]["best"]["decision"]["cases"]
         assert "cases" not in data["tasks"][0]["best"]["decision"]
         assert "source" not in data["tasks"][0]["best"]
+        assert "decision" not in data["detail"]["history"][0]
+        assert "cases" not in data["detail"]["runs"][0]["data"]["decision"]
+        assert data["detail"]["runs"][0]["data"]["source"]
         assert data["detail"]["evidence_as_of"] == data["tasks"][0]["evidence_as_of"]
     finally:
         http.shutdown()

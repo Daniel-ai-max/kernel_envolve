@@ -66,6 +66,7 @@ def overview(store, *, compact=False, now=None):
     ]
     if compact:
         for task in tasks:
+            task["report"] = {k: task["report"].get(k, "") for k in ("phase", "hypothesis")}
             if task["best"]:
                 data = task["best"]
                 task["best"] = {
@@ -133,4 +134,21 @@ def snapshot(store, selected=None):
         now = time.time()
         data = overview(store, compact=True, now=now)
         data["detail"] = detail(store, selected, now) if selected else None
+        if data["detail"]:
+            task = data["detail"]
+            task.pop("rounds")
+            task["history"] = [
+                {k: h.get(k) for k in ("run", "promoted_at", "baseline_speedup", "evidence_error")}
+                for h in task["history"]
+            ]
+            for index, run in enumerate(task["runs"]):
+                record = run["data"]
+                run["data"] = {
+                    "mode": record.get("mode"),
+                    "correctness": record.get("correctness"),
+                    "decision": {
+                        k: record.get("decision", {}).get(k) for k in ("performance", "reasons")
+                    },
+                    "source": record.get("source") if index == 0 else None,
+                }
     return data
