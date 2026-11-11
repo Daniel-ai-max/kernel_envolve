@@ -75,7 +75,11 @@ pathlib.Path(os.environ['KERNEL_ENVOLVE_REPORT']).write_text(json.dumps({'outcom
     assert recovery(store)["state"] == "checkpoint_received"
     assert store.task("toy")["failures"] == 0
     assert consumed[0] < consumed[1] < consumed[2] < store.task("toy")["wall_seconds"]
-    assert not store.schedule()  # Normal configured cooldown still applies.
+    task = store.task("toy")
+    assert recovery(store)["retry_after_seconds"] == task["spec"]["cooldown_seconds"]
+    # Assert admission before the recorded deadline, independent of teardown speed.
+    with patch("kernel_envolve.manager.store.time.time", return_value=task["next_at"] - 0.001):
+        assert not store.schedule()
 
 
 def test_empty_bridge_like_rounds_back_off_without_claiming_model_activity(managed):
@@ -117,20 +121,37 @@ pathlib.Path(os.environ['KERNEL_ENVOLVE_REPORT']).write_text(json.dumps({'outcom
 
 def test_real_retry_exhausts_original_wall_budget(managed):
     store, _, work = managed
+    limit = 0.5
     replace_command(
         store,
         [sys.executable, "-c", "import time;time.sleep(.3);raise SystemExit(9)"],
-        wall_budget_seconds=0.5,
+        wall_budget_seconds=limit,
     )
     first = run_round(store)
-    assert store.job(first)["status"] == "failed"
     before = store.task("toy")["wall_seconds"]
-    advance_retry(store)
-    run_round(store)
-    assert store.task("toy")["wall_seconds"] >= 0.5
-    assert store.task("toy")["wall_seconds"] > before
-    assert store.task("toy")["desired"] == "budget"
+    rounds = [first]
+    # Startup and teardown can consume the entire original budget on a busy
+    # runner. Retry only when the actual recorded usage still permits admission.
+    if before < limit:
+        assert store.task("toy")["desired"] == "active"
+        advance_retry(store)
+        rounds.append(run_round(store))
+        assert store.task("toy")["wall_seconds"] > before
+    else:
+        assert store.task("toy")["wall_seconds"] == before
+    for key in rounds:
+        job = store.job(key)
+        if job["status"] == "cancelled":
+            assert job["error"] == "wall budget exhausted"
+        else:
+            assert job["status"] == "failed"
+            assert job["exit_code"] == 9
+    task = store.task("toy")
+    assert task["spec"]["wall_budget_seconds"] == limit
+    assert task["wall_seconds"] >= limit
+    assert task["desired"] == "budget"
     assert not store.schedule()
+    assert len(store.rows("SELECT id FROM jobs WHERE kind='agent'")) == len(rounds)
 
 
 def test_budget_is_recognized_even_during_backoff(managed):

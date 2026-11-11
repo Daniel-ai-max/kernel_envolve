@@ -1,0 +1,147 @@
+{
+  "devices": [
+    "GPU-47fbd7ec-a927-1456-829f-686ad3271ca0",
+    "GPU-c61df1d3-e5b3-76d6-d653-64a10148c024"
+  ],
+  "samples": [
+    {
+      "pair": 0,
+      "arm": "serial",
+      "seconds": 0.13392761163413525
+    },
+    {
+      "pair": 0,
+      "arm": "batch",
+      "seconds": 0.09119980596005917
+    },
+    {
+      "pair": 1,
+      "arm": "batch",
+      "seconds": 0.15984575264155865
+    },
+    {
+      "pair": 1,
+      "arm": "serial",
+      "seconds": 0.12690495420247316
+    },
+    {
+      "pair": 2,
+      "arm": "serial",
+      "seconds": 0.44297754392027855
+    },
+    {
+      "pair": 2,
+      "arm": "batch",
+      "seconds": 0.06720321299508214
+    },
+    {
+      "pair": 3,
+      "arm": "batch",
+      "seconds": 0.06123254867270589
+    },
+    {
+      "pair": 3,
+      "arm": "serial",
+      "seconds": 0.12470141565427184
+    },
+    {
+      "pair": 4,
+      "arm": "serial",
+      "seconds": 0.1269005392678082
+    },
+    {
+      "pair": 4,
+      "arm": "batch",
+      "seconds": 0.06227326998487115
+    },
+    {
+      "pair": 5,
+      "arm": "batch",
+      "seconds": 0.06046569673344493
+    },
+    {
+      "pair": 5,
+      "arm": "serial",
+      "seconds": 0.13219937030225992
+    },
+    {
+      "pair": 6,
+      "arm": "serial",
+      "seconds": 0.13248039362952113
+    },
+    {
+      "pair": 6,
+      "arm": "batch",
+      "seconds": 0.05993689224123955
+    },
+    {
+      "pair": 7,
+      "arm": "batch",
+      "seconds": 0.05815014522522688
+    },
+    {
+      "pair": 7,
+      "arm": "serial",
+      "seconds": 0.1265276987105608
+    },
+    {
+      "pair": 8,
+      "arm": "serial",
+      "seconds": 0.13052270095795393
+    },
+    {
+      "pair": 8,
+      "arm": "batch",
+      "seconds": 0.06042866222560406
+    },
+    {
+      "pair": 9,
+      "arm": "batch",
+      "seconds": 0.06437915423884988
+    },
+    {
+      "pair": 9,
+      "arm": "serial",
+      "seconds": 0.12138234078884125
+    },
+    {
+      "pair": 10,
+      "arm": "serial",
+      "seconds": 0.12482485454529524
+    },
+    {
+      "pair": 10,
+      "arm": "batch",
+      "seconds": 0.060511867981404066
+    },
+    {
+      "pair": 11,
+      "arm": "batch",
+      "seconds": 0.06295029306784272
+    },
+    {
+      "pair": 11,
+      "arm": "serial",
+      "seconds": 0.12993831792846322
+    }
+  ],
+  "busy_checks": [
+    {
+      "device": "GPU-47fbd7ec-a927-1456-829f-686ad3271ca0",
+      "rejected": true
+    },
+    {
+      "device": "GPU-c61df1d3-e5b3-76d6-d653-64a10148c024",
+      "rejected": true
+    }
+  ],
+  "passed": true,
+  "median_seconds": {
+    "serial": 0.1284216360654682,
+    "batch": 0.06175290932878852
+  },
+  "framework_parent": "afeeb88287c854bb076b02fc302efda183441179",
+  "candidate_commit": "584e7e08c79f1a929fc76c5e615613921d3701ce",
+  "platform_job": "f149e62922b24c3aa41c410c977d5d06",
+  "scope": "Actual 2 B300 UUID group, 12 alternating serial/batch pairs; per-device CUDA busy rejection and post-exit cleanup"
+}

@@ -79,6 +79,19 @@ CPU 传输，并缩短 Skill；这些改动尚未完成同条件 GPU 效率对�
 复现脚本见 [benchmark_manager_feedback.py](../tools/benchmark_manager_feedback.py)，
 全部原始样本与源码指纹见 [manager_feedback.json](../audit/manager_feedback.json)。
 
+### 多卡准入开销（B300 实测）
+
+设备空闲检查原先对每张卡分别查询 UUID 和计算进程。健康路径现对整个指定设备组
+查询两次，准入和清理各自读取实时状态，不缓存结果；驱动返回顺序不改变 rank 顺序。
+任一查询失败仍拒绝放行并逐卡诊断，后续诊断成功不能覆盖原失败。
+
+在同一组 2 张 B300 上做 12 对交替 serial/batch 测量，保留冷启动与全部样本，单次
+检查中位数从 128.42ms 降到 61.75ms。两张卡分别创建真实 CUDA 进程时都被拒绝，
+进程退出后检查恢复，官方 main 管理器的准入及清理正常结束。原始记录见
+[device_probe_b300.json](../audit/device_probe_b300.json)。这是设备检查收益，不是模型
+搜索或最终算子收益；8 卡调用次数从 16 减至 2，8 卡实际耗时尚未测量。
+
+
 ## 能力映射
 
 | 关注点 | Super-agent 公开原型 | 本实现 |

@@ -16,7 +16,6 @@ from kernel_envolve.manager.gpu import DurationAdmissionError, require_duration
 from kernel_envolve.manager.process import (
     alive,
     exclusive,
-    gpu_group_idle,
     gpu_locks,
     identity,
     lock_path,
@@ -243,18 +242,21 @@ def test_admission_converts_card_budget_and_unreported_usage(managed, devices, m
     store.finish(parent, "cancelled")
 
 
-def test_probe_checks_every_uuid_and_reports_all_failures(devices, monkeypatch):
-    probed = []
+def mock_group_probe(monkeypatch, probe):
+    """Lifecycle tests replace driver I/O, retaining per-device failure cases."""
 
-    def probe(device):
-        probed.append(device)
-        raise ValueError("occupied")
+    def group(devices):
+        errors = []
+        for device in devices:
+            try:
+                probe(device)
+            except ValueError as exc:
+                errors.append(f"{device}: {exc}")
+        if errors:
+            raise ValueError("; ".join(errors))
 
-    monkeypatch.setattr("kernel_envolve.manager.process.gpu_idle", probe)
-    with pytest.raises(ValueError) as error:
-        gpu_group_idle(devices)
-    assert probed == devices
-    assert all(device in str(error.value) for device in devices)
+    for module in ("process", "worker", "service", "gpu"):
+        monkeypatch.setattr(f"kernel_envolve.manager.{module}.gpu_group_idle", group)
 
 
 @pytest.mark.parametrize("fail_cleanup", [False, True])
@@ -283,7 +285,7 @@ def test_supervisor_inherits_all_locks_and_checks_every_card(
         if fail_cleanup:
             raise ValueError("busy after command")
 
-    monkeypatch.setattr("kernel_envolve.manager.process.gpu_idle", probe)
+    mock_group_probe(monkeypatch, probe)
     with gpu_locks(devices) as handles:
         result = supervise(store, child, handles)
     assert result == (2 if fail_cleanup else 0)
@@ -307,7 +309,7 @@ def test_cleanup_probe_continues_after_child_reap_error(managed, devices, monkey
     child = store.enqueue(store.task("toy"), "gpu", [sys.executable, "-c", "pass"], parent)
     assert store.claim(child, os.getpid(), identity(os.getpid()))
     probed = []
-    monkeypatch.setattr("kernel_envolve.manager.process.gpu_idle", probed.append)
+    mock_group_probe(monkeypatch, probed.append)
 
     def fail(*_):
         raise OSError("cleanup failed")
@@ -334,7 +336,7 @@ def test_reconcile_charges_frozen_group_and_quarantines_all_failures(managed, de
         probed.append(device)
         raise ValueError("still occupied")
 
-    monkeypatch.setattr("kernel_envolve.manager.process.gpu_idle", probe)
+    mock_group_probe(monkeypatch, probe)
     reconcile(store)
     assert probed == devices
     assert store.job(child)["status"] == "interrupted"
@@ -348,7 +350,7 @@ def test_group_quarantine_clear_checks_every_card_and_lock(managed, devices, mon
     group_resource(store, devices)
     store.db.execute("UPDATE resources SET problem='orphan' WHERE id='local'")
     probed = []
-    monkeypatch.setattr("kernel_envolve.manager.process.gpu_idle", probed.append)
+    mock_group_probe(monkeypatch, probed.append)
     with gpu_locks(devices[1:]) as handles:
         assert handles is not None
         with pytest.raises(ValueError, match="lock"):
@@ -381,7 +383,7 @@ def test_crashed_group_supervisor_keeps_every_lock_until_children_reaped(
     fake.mkdir()
     smi = fake / "nvidia-smi"
     smi.write_text(
-        f"#!{sys.executable}\nimport sys\nif '--query-gpu=uuid' in sys.argv: print(sys.argv[-1])\n"
+        f"#!{sys.executable}\nimport sys\nif '--query-gpu=uuid' in sys.argv: print(sys.argv[-1].replace(',', chr(10)))\n"
     )
     smi.chmod(0o755)
     monkeypatch.setenv("PATH", str(fake) + os.pathsep + os.environ["PATH"])
@@ -450,7 +452,7 @@ def test_any_busy_card_prevents_entire_command_launch(managed, devices, monkeypa
             store.control("toy", "pause")
             raise ValueError("device busy")
 
-    monkeypatch.setattr("kernel_envolve.manager.process.gpu_idle", probe)
+    mock_group_probe(monkeypatch, probe)
     marker = work / "must-not-launch"
     assert (
         run(
@@ -526,7 +528,7 @@ def test_cleanup_errors_preserve_locks_owned_by_surviving_descendant(managed, de
     child = store.enqueue(store.task("toy"), "gpu", [sys.executable, "-c", script], parent)
     assert store.claim(child, os.getpid(), identity(os.getpid()))
     probed = []
-    monkeypatch.setattr("kernel_envolve.manager.process.gpu_idle", probed.append)
+    mock_group_probe(monkeypatch, probed.append)
 
     def fail_terminate(*_):
         raise OSError("injected terminate failure")
@@ -567,7 +569,7 @@ def test_reconcile_keeps_probing_after_first_cleanup_error(managed, devices, mon
     assert store.claim(child, 99999999, "absent")
     probed = []
     reaped = []
-    monkeypatch.setattr("kernel_envolve.manager.process.gpu_idle", probed.append)
+    mock_group_probe(monkeypatch, probed.append)
     monkeypatch.setattr(
         "kernel_envolve.manager.service.reap_registered", lambda *args: reaped.append(args[1])
     )
