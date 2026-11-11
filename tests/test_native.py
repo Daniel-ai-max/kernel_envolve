@@ -615,3 +615,23 @@ def test_explicit_gate_entry_cannot_be_overlaid_to_fake_pass(native_task, entry)
     assert "overlaps declared check" in result["error"]["message"]
     assert not (run / "workers").exists()
     assert not result["decision"]["eligible_for_best"]
+
+
+def test_native_assertion_rejection_is_completed_failure(native_task):
+    task, candidate = native_task
+    for root in (candidate, candidate.parent / "baseline"):
+        (root / "test_native_contract.py").write_text(
+            "def test_contract():\n raise AssertionError('native gradient threshold exceeded')\n"
+        )
+    run, result = evaluate_native(task, "full", timeout=60)
+    assert result["execution"] == "completed"
+    assert result["correctness"] == "fail"
+    assert result["failed_phase"] == "native_checks"
+    assert result["native_checks"][0]["status"] == "fail"
+    assert result["native_checks"][0]["failures"][0]["test"].endswith("::test_contract")
+    assert not result["samples"]
+    assert not result["decision"]["eligible_for_best"]
+    receipt = json.loads((run / "receipt.json").read_text())
+    assert "native_checks/operator/junit.xml" in receipt["evidence"]
+    with pytest.raises(ValueError, match="Not eligible"):
+        promote_native(run)
