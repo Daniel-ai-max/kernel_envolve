@@ -635,3 +635,33 @@ def test_native_assertion_rejection_is_completed_failure(native_task):
     assert "native_checks/operator/junit.xml" in receipt["evidence"]
     with pytest.raises(ValueError, match="Not eligible"):
         promote_native(run)
+
+
+@pytest.mark.parametrize("rejected", [False, True])
+def test_native_cleanup_error_never_becomes_correctness_verdict(native_task, monkeypatch, rejected):
+    import kernel_envolve.native_checks as checks
+
+    task, candidate = native_task
+    if rejected:
+        for root in (candidate, candidate.parent / "baseline"):
+            (root / "test_native_contract.py").write_text(
+                "def test_contract():\n raise AssertionError('gradient threshold exceeded')\n"
+            )
+    real_stop = checks.stop
+
+    def cleanup(process):
+        real_stop(process)
+        raise AssertionError("cleanup confirmation failed")
+
+    monkeypatch.setattr(checks, "stop", cleanup)
+    run, result = evaluate_native(task, "full", timeout=60)
+    assert result["execution"] == "error" and result["correctness"] == "partial"
+    assert result["failed_phase"] == "native_checks"
+    check = result["native_checks"][0]
+    assert check["status"] == "error" and check["returncode"] == int(rejected)
+    assert check["cleanup_error"]["type"] == "AssertionError"
+    assert len(check["failures"]) == int(rejected)
+    assert check["seconds"] > 0
+    assert not result["samples"] and not result["decision"]["eligible_for_best"]
+    receipt = json.loads((run / "receipt.json").read_text())
+    assert "native_checks/operator/junit.xml" in receipt["evidence"]

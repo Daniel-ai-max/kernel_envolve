@@ -24,6 +24,11 @@ def junit(directory, reports, required, min_tests=1, *, failures=None):
         if root.tag not in {"testsuite", "testsuites"}:
             raise ValueError(f"Invalid JUnit root: {name}")
         cases = root.findall(".//testcase")
+        parents = {child: parent for parent in root.iter() for child in parent}
+        if not list(root.iter("testsuite")) or any(
+            parents[case].tag != "testsuite" for case in cases
+        ):
+            raise ValueError(f"JUnit testcases must belong to a testsuite: {name}")
         failure_count = sum(len(c.findall("failure")) for c in cases)
         if failure_count != len(root.findall(".//failure")) or any(
             len(c.findall("failure")) > 1 for c in cases
@@ -80,59 +85,64 @@ def junit(directory, reports, required, min_tests=1, *, failures=None):
 def native_checks(run, cfg, roots, deadline, records=None):
     records = records if records is not None else []
     for check in cfg["checks"]:
-        if time.monotonic() >= deadline:
-            raise TimeoutError("Native evaluation time budget exhausted")
-        folder = run / "native_checks" / check["id"]
-        folder.mkdir(parents=True)
-        cwd = Path(roots[check["root"]])
-        if check["kind"] == "gate":
-            history = cwd / "apodex_core/verification/results/gate_history.json"
-            history.unlink(missing_ok=True)
-            argv = [
-                sys.executable,
-                "-m",
-                "apodex_core.verification.method.gate",
-                "--source",
-                "operations",
-                "--only",
-                ",".join(check["operators"]),
-            ]
-        else:
-            replacements = {"python": sys.executable, "reports": str(folder), **roots}
-            argv = [part.format_map(replacements) for part in check["argv"]]
-        log = folder / "command.log"
-        write_json(folder / "command.json", {"argv": argv, "cwd": str(cwd)})
         started = time.perf_counter()
-        check_env = environment(cfg, roots)
-        if cfg.get("device", "cpu").startswith("cuda"):
-            devices = check.get("devices", [int(cfg["device"].split(":")[1])])
-            visible = check_env.get("CUDA_VISIBLE_DEVICES")
-            names = visible.split(",") if visible else None
-            check_env["CUDA_VISIBLE_DEVICES"] = ",".join(
-                names[i] if names else str(i) for i in devices
-            )
-        with log.open("w") as stream:
-            process = spawn(
-                argv,
-                cwd=cwd,
-                env=check_env,
-                stdout=stream,
-                stderr=subprocess.STDOUT,
-                start_new_session=True,
-            )
-            try:
-                code = process.wait(timeout=max(0.01, deadline - time.monotonic()))
-            finally:
-                stop(process)
         record = {
             "id": check["id"],
             "scope": check["scope"],
             "status": "error",
-            "seconds": time.perf_counter() - started,
-            "returncode": code,
+            "returncode": None,
         }
         records.append(record)
+        cleanup_error = None
         try:
+            if time.monotonic() >= deadline:
+                raise TimeoutError("Native evaluation time budget exhausted")
+            folder = run / "native_checks" / check["id"]
+            folder.mkdir(parents=True)
+            cwd = Path(roots[check["root"]])
+            if check["kind"] == "gate":
+                history = cwd / "apodex_core/verification/results/gate_history.json"
+                history.unlink(missing_ok=True)
+                argv = [
+                    sys.executable,
+                    "-m",
+                    "apodex_core.verification.method.gate",
+                    "--source",
+                    "operations",
+                    "--only",
+                    ",".join(check["operators"]),
+                ]
+            else:
+                replacements = {"python": sys.executable, "reports": str(folder), **roots}
+                argv = [part.format_map(replacements) for part in check["argv"]]
+            log = folder / "command.log"
+            write_json(folder / "command.json", {"argv": argv, "cwd": str(cwd)})
+            check_env = environment(cfg, roots)
+            if cfg.get("device", "cpu").startswith("cuda"):
+                devices = check.get("devices", [int(cfg["device"].split(":")[1])])
+                visible = check_env.get("CUDA_VISIBLE_DEVICES")
+                names = visible.split(",") if visible else None
+                check_env["CUDA_VISIBLE_DEVICES"] = ",".join(
+                    names[i] if names else str(i) for i in devices
+                )
+            with log.open("w") as stream:
+                process = spawn(
+                    argv,
+                    cwd=cwd,
+                    env=check_env,
+                    stdout=stream,
+                    stderr=subprocess.STDOUT,
+                    start_new_session=True,
+                )
+                try:
+                    code = process.wait(timeout=max(0.01, deadline - time.monotonic()))
+                    record["returncode"] = code
+                finally:
+                    try:
+                        stop(process)
+                    except Exception as exc:
+                        cleanup_error = exc
+                        record["cleanup_error"] = {"type": type(exc).__name__, "message": str(exc)}
             if check["kind"] == "gate":
                 observed = read_json(history)
                 write_json(folder / "observed.json", observed)
@@ -178,4 +188,14 @@ def native_checks(run, cfg, roots, deadline, records=None):
         except Exception as exc:
             record["error"] = {"type": type(exc).__name__, "message": str(exc)}
             raise
+        finally:
+            record["seconds"] = time.perf_counter() - started
+            if cleanup_error is not None:
+                record["status"] = "error"
+                record.setdefault("error", record["cleanup_error"])
+                # Cleanup overrides classification, while retaining the command's
+                # original failure detail and traceback evidence for diagnosis.
+                raise RuntimeError(
+                    f"Native check cleanup failed: {cleanup_error}"
+                ) from cleanup_error
     return records
