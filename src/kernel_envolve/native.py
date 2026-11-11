@@ -112,6 +112,7 @@ def verify_roots(run, identities, role, checkpoint=None):
                         ".pyo",
                     }:
                         raise ValueError(f"Unrecorded executable source: {name}")
+        checkpoint()
         missing = expected.keys() - seen
         if missing:
             raise ValueError(f"Frozen source changed: {role}/{root}/{min(missing)}")

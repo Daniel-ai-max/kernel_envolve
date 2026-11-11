@@ -156,6 +156,24 @@ def test_scan_errors_propagate(frozen, monkeypatch):
         native.verify_roots(run, identities, "candidate")
 
 
+def test_cancellation_after_last_hash_is_not_lost(frozen, monkeypatch):
+    run, _, identities = frozen
+    count = 0
+
+    def traced(path):
+        nonlocal count
+        count += 1
+        return file_hash(path)
+
+    def checkpoint():
+        if count == len(identities["core"]["files"]):
+            raise InterruptedError("cancelled after final hash")
+
+    monkeypatch.setattr(native, "file_hash", traced)
+    with pytest.raises(InterruptedError, match="final hash"):
+        native.verify_roots(run, identities, "candidate", checkpoint)
+
+
 def test_source_symlinks_and_missing_required_artifacts_rejected(source, tmp_path):
     (source / "new.py").unlink()
     (source / "new.py").symlink_to(source / "src/op.py")
