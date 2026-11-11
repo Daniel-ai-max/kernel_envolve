@@ -665,3 +665,82 @@ def test_native_cleanup_error_never_becomes_correctness_verdict(native_task, mon
     assert not result["samples"] and not result["decision"]["eligible_for_best"]
     receipt = json.loads((run / "receipt.json").read_text())
     assert "native_checks/operator/junit.xml" in receipt["evidence"]
+
+
+@pytest.mark.parametrize("wrong_output", [False, True])
+def test_worker_cleanup_failure_keeps_receipt_and_reaps_all(native_task, monkeypatch, wrong_output):
+    import kernel_envolve.native as native
+
+    task, candidate = native_task
+    if wrong_output:
+        (candidate / "toyop.py").write_text("def run(x): return x*3\n")
+    processes = []
+    real_spawn, real_stop = native.spawn, native.stop
+
+    def tracked_spawn(*args, **kwargs):
+        process = real_spawn(*args, **kwargs)
+        processes.append(process)
+        return process
+
+    stopped = []
+
+    def failed_cleanup(process):
+        real_stop(process)
+        stopped.append(process.pid)
+        if len(stopped) == 1:
+            raise OSError("worker cleanup receipt probe")
+
+    monkeypatch.setattr(native, "spawn", tracked_spawn)
+    monkeypatch.setattr(native, "stop", failed_cleanup)
+    try:
+        run, result = native.evaluate_native(task, "quick", timeout=60)
+        assert result["execution"] == "error"
+        assert result["correctness"] == "partial"
+        assert result["failed_phase"] == "cleanup"
+        assert result["cleanup_errors"][0]["role"] == "oracle"
+        assert result["cleanup_errors"][0]["type"] == "OSError"
+        assert result["error"]["type"] == "WorkerCleanupError"
+        if wrong_output:
+            assert result["prior_error"]["type"] == "Mismatch"
+            assert result["prior_failed_phase"] == "correctness"
+        assert len(stopped) == len(processes) == 3
+        assert all(p.poll() is not None and p.stdin.closed for p in processes)
+        assert (run / "receipt.json").is_file()
+        assert result["phase_wall_seconds"]["cleanup"] > 0
+        assert not result["decision"]["eligible_for_best"]
+    finally:
+        for process in processes:
+            real_stop(process)
+
+
+def test_worker_launch_failure_closes_log(native_task, monkeypatch):
+    import time
+    from pathlib import Path
+
+    import kernel_envolve.native as native
+
+    task, _ = native_task
+    cfg = native.load_config(task)
+    logs = []
+    real_open = Path.open
+
+    def tracked_open(path, *args, **kwargs):
+        handle = real_open(path, *args, **kwargs)
+        if path.name == "worker.log":
+            logs.append(handle)
+        return handle
+
+    def failed_spawn(*args, **kwargs):
+        raise FileNotFoundError("worker executable not available")
+
+    monkeypatch.setattr(Path, "open", tracked_open)
+    monkeypatch.setattr(native, "spawn", failed_spawn)
+    with pytest.raises(FileNotFoundError, match="worker executable"):
+        native.Worker(
+            task / "launch-probe",
+            cfg,
+            cfg["sources"]["candidate"],
+            "candidate",
+            time.monotonic() + 10,
+        )
+    assert len(logs) == 1 and logs[0].closed

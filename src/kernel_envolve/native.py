@@ -133,20 +133,24 @@ class Worker:
         self.count = 0
         self.log = (self.folder / "worker.log").open("w")
         request = self.folder / "request.json"
-        write_json(
-            request,
-            {"config": cfg, "roots": roots, "role": role, "adapter": str(run / "adapter.py")},
-        )
-        self.process = spawn(
-            [sys.executable, "-m", "kernel_envolve.native_worker", str(request)],
-            stdin=subprocess.PIPE,
-            stdout=self.log,
-            stderr=subprocess.STDOUT,
-            text=True,
-            cwd=run,
-            env=environment(cfg, roots),
-            start_new_session=True,
-        )
+        try:
+            write_json(
+                request,
+                {"config": cfg, "roots": roots, "role": role, "adapter": str(run / "adapter.py")},
+            )
+            self.process = spawn(
+                [sys.executable, "-m", "kernel_envolve.native_worker", str(request)],
+                stdin=subprocess.PIPE,
+                stdout=self.log,
+                stderr=subprocess.STDOUT,
+                text=True,
+                cwd=run,
+                env=environment(cfg, roots),
+                start_new_session=True,
+            )
+        except BaseException:
+            self.log.close()
+            raise
 
     def call(self, kind, case, seed):
         import torch
@@ -183,9 +187,16 @@ class Worker:
         return result, observations
 
     def close(self):
-        stop(self.process)
-        self.process.stdin.close()
-        self.log.close()
+        errors = []
+        for cleanup in (lambda: stop(self.process), self.process.stdin.close, self.log.close):
+            try:
+                cleanup()
+            except Exception as exc:
+                errors.append(exc)
+        if errors:
+            for other in errors[1:]:
+                errors[0].add_note(f"Additional cleanup error: {type(other).__name__}: {other}")
+            raise errors[0]
 
 
 def compare(actual, expected, cfg):
@@ -461,8 +472,30 @@ def _evaluate(task, state, cfg, mode, timeout):
             result.update(execution="completed", correctness="fail")
     finally:
         begin_phase("cleanup")
-        for worker in workers.values():
-            worker.close()
+        cleanup_errors = []
+        for role, worker in workers.items():
+            try:
+                worker.close()
+            except Exception as exc:
+                cleanup_errors.append(
+                    {
+                        "role": role,
+                        "type": type(exc).__name__,
+                        "message": str(exc),
+                        "notes": getattr(exc, "__notes__", []),
+                    }
+                )
+        if cleanup_errors:
+            if "error" in result:
+                result["prior_error"] = result["error"]
+                result["prior_failed_phase"] = result["failed_phase"]
+            result.update(
+                execution="error",
+                correctness="partial",
+                failed_phase="cleanup",
+                cleanup_errors=cleanup_errors,
+                error={"type": "WorkerCleanupError", "message": "Native worker cleanup failed"},
+            )
     result["seconds"] = begin_phase(None) - start
     try:
         result["decision"] = native_decision(result, cfg)
