@@ -335,17 +335,25 @@ kernel-envolve manage --state /work/manager-state import-usage --file allocation
 ## 最新实现
 
 总览“最新实现”显示已验证 best 对应的实现 PR 和 GitHub `updatedAt`，
-不再单列提出时间或晋升时间。Agent 每次发布或更新 PR 后，先核对 diff 确实包含
-本次晋升实现，再执行（`--run` 使用 Manager 状态中的 best.run）：
+不再单列提出时间或晋升时间。Agent 每次发布或更新 PR 后执行
+（`--run` 使用 Manager 状态中的 best.run）：
 
 ```sh
-kernel-envolve manage --state /work/manager-state sync-pr operator-a --run /work/task/state/runs/id --url https://github.com/org/repo/pull/123
+kernel-envolve manage --state /work/manager-state sync-pr operator-a --run /work/task/state/runs/id --source-root core --base-branch dsa-dense-warmup-integration --url https://github.com/org/repo/pull/123
 ```
 
-命令使用已认证的 `gh` 获取 PR 真实更新时间与 head，保存与 best run 的明确关联。
-关联由发布者确认；命令不把 PR head 当成源码等价证明。没有 best、best 证据失效或
-新 best 尚未关联 PR 时显示“—”，不会从 Agent 的候选 PR 列表中猜测。
-页面读取已保存的 GitHub 观察，不在每次刷新时调用 GitHub；外部更新 PR 后须重新同步。
+命令重新验证完整评测及已声明的确认收据，再通过已认证的 `gh` 比对 PR 的不可变
+Git tree 与冻结源码。`--source-root` 指定本次交付的 native 源码根；generic 任务使用
+`task`。PR 仓库、目标分支、所有 `implementation_paths` 文件（含辅助文件、增删文件）
+及固定生产依赖都必须匹配；范围外的 PR 改动会被拒绝。多仓评测中，其他源码根和
+可信测试覆盖文件仍作为评测条件保存，不要求塞入本次实现 PR。本地 Git 镜像须能
+沿最多 8 层、无环的 origin 链追溯到对应 GitHub 仓库。Git 元数据不作为交付源码。
+
+绑定保存 result、确认收据和源码摘要。没有 best、证据失效或新 best 尚未关联 PR 时
+显示“—”。现有协调器每 60 秒检查到期的关联，每轮最多检查一个 PR；页面只读本地
+状态。PR head 或目标变化后须重新执行 `sync-pr`，重新核验源码才能视为当前实现。
+GitHub 暂时不可用或观察超过 240 秒时，保留最后验证的 PR、更新时间和固定提交链接；
+接口中的 `current_head_verified=false` 区分历史证明与当前 head，避免网络故障抹掉成果。
 
 ## 前台宿主接续
 
