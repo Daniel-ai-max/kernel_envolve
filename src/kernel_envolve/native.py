@@ -460,7 +460,7 @@ def _evaluate(task, state, cfg, mode, timeout, selection, check_only):
                 check(case, seed, kinds)
         if mode == "full":
             begin_phase("native_checks")
-            validation, seconds = prepare_harness(run, cfg, result["identities"])
+            validation, seconds = prepare_harness(run, cfg, result["identities"], checkpoint)
             result["identities"]["validation"] = validation
             result["harness_seconds"] = seconds
             validation_roots = _roots(run, "validation", validation)
