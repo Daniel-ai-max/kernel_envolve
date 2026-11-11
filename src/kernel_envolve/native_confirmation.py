@@ -107,6 +107,11 @@ def verify_confirmation(run, result, cfg, checkpoint=None):
         or held["mode"] != "full"
     ):
         raise ValueError("Confirmation provenance changed")
+    if any(
+        environment != result.get("environments", {}).get(role)
+        for role, environment in held["environments"].items()
+    ):
+        raise ValueError("Confirmation runtime environments differ from the original full run")
     if {role: source_contents(identity) for role, identity in held["identities"].items()} != {
         role: source_contents(identity) for role, identity in result["identities"].items()
     }:

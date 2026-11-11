@@ -1,3 +1,4 @@
+import copy
 from pathlib import Path
 
 import pytest
@@ -6,7 +7,7 @@ from test_native import native_task as native_task
 from kernel_envolve.native import evaluate_native, promote_native
 from kernel_envolve.native_config import load_config
 from kernel_envolve.native_confirmation import confirm_native, verify_confirmation
-from kernel_envolve.storage import read_json, write_json
+from kernel_envolve.storage import digest, file_hash, read_json, write_json
 
 
 @pytest.fixture
@@ -124,6 +125,29 @@ def test_real_full_confirmation_promotion_and_integrity(confirmation_task):
                 inspect_run(run, spec)
         finally:
             target.write_bytes(saved)
+
+    # Even internally consistent receipts cannot confirm on another runtime.
+    env_targets = [child / "result.json", child / "receipt.json", run / "confirmation/receipt.json"]
+    saved_env = {path: path.read_bytes() for path in env_targets}
+    changed_held = copy.deepcopy(held)
+    for environment in changed_held["environments"].values():
+        environment["gpu"] = "another-device"
+    child_receipt = read_json(child / "receipt.json")
+    child_receipt["result_hash"] = digest(changed_held)
+    write_json(child / "result.json", changed_held)
+    write_json(child / "receipt.json", child_receipt)
+    changed_confirmation = read_json(run / "confirmation/receipt.json")
+    changed_confirmation["result_hash"] = digest(changed_held)
+    changed_confirmation["receipt_hash"] = file_hash(child / "receipt.json")
+    write_json(run / "confirmation/receipt.json", changed_confirmation)
+    try:
+        with pytest.raises(ValueError, match="runtime environments differ"):
+            verify_confirmation(run, result, cfg)
+        with pytest.raises(ValueError, match="runtime environments differ"):
+            promote_native(run)
+    finally:
+        for path, data in saved_env.items():
+            path.write_bytes(data)
 
     pointer = promote_native(run)
     assert pointer["confirmation"] == confirmation

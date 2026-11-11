@@ -59,7 +59,7 @@ kernel-envolve native-confirm ./task/.kernel_native/runs/<full-run> --timeout 18
 kernel-envolve native-promote ./task/.kernel_native/runs/<full-run>
 ```
 
-管理器内通过 `manage gpu-run --expected-seconds ... -- kernel-envolve native-confirm ...` 分配资源。确认复用冻结 adapter、全部原生 checks、正确性和性能阈值，执行独立 full；独立收据绑定父 full、子 raw evidence、源码、配置及 evaluator。声明确认的任务缺失或未通过确认时不能晋升，已晋升证据被篡改也不能继续显示为有效 best。
+管理器内通过 `manage gpu-run --expected-seconds ... -- kernel-envolve native-confirm ...` 分配资源。确认复用冻结 adapter、全部原生 checks、正确性和性能阈值，执行独立 full；独立收据绑定父 full、子 raw evidence、源码、配置及 evaluator，并要求各角色的 GPU、PyTorch/CUDA 版本和数学开关与父 full 一致。声明确认的任务缺失或未通过确认时不能晋升，已晋升证据被篡改也不能继续显示为有效 best。
 
 开发 full 仍比较当前 best 和固定基线；确认阶段独立比较固定基线，不宣称已在预留输入上胜过旧 best。确认集每个任务只能消费一次，失败、中断、换候选或重跑 full 都不重用。继续迭代时建立新版本任务，把已见确认输入并入开发回归，预先声明新的确认集；不能删除消费记录来重抽。工具核验参数组合与收据，agent 仍负责选择真实生产维度并保留跨任务的已见输入记录。
 
