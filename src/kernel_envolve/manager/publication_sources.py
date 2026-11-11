@@ -47,7 +47,21 @@ def checkout(path):
                 source = Path(origin)
             else:
                 raise ValueError("Local mirrors must lead to a GitHub source repository") from None
-            path = (path / source).resolve()
+            if not source.is_absolute():
+                # Git resolves local remotes from the checkout root, even when the
+                # evaluator selects a package subdirectory as its source root.
+                try:
+                    root = subprocess.check_output(
+                        ["git", "rev-parse", "--show-toplevel"],
+                        cwd=path,
+                        text=True,
+                        stderr=subprocess.DEVNULL,
+                        timeout=10,
+                    ).strip()
+                except subprocess.CalledProcessError:
+                    root = identity  # Bare mirror: the Git directory is its root.
+                source = Path(root) / source
+            path = source.resolve()
             if not path.is_dir():
                 raise ValueError("Missing local source repository provenance")
     raise ValueError("Local repository provenance exceeds 8 hops")

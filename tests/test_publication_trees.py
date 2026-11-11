@@ -275,3 +275,9 @@ def test_generic_frozen_candidate_and_fixed_dependencies_bind(source_case):
     (run / "source/task.json").write_text("{}")
     with pytest.raises(ValueError, match="configuration changed"):
         bind_source(spec, run, "task", pr, fetch, {"result_hash": digest(result)})
+
+
+def test_relative_mirror_origin_resolves_from_repository_root(source_case):
+    _, candidate, _, _, _, _, _, _, _ = source_case
+    git(candidate, "remote", "set-url", "origin", "../baseline")
+    assert checkout(candidate / "pkg") == (REPO, "pkg/")
