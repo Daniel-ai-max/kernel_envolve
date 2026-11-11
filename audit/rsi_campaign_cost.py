@@ -26,6 +26,10 @@ CLOSED = (
     "rsi-compute-allocation-study-20261111/development",
     "rsi-managed-gpu-validation-20261111",
     "rsi-adaptive-budget-study-20261111/development",
+    "rsi-generational-study-20261111/learning1",
+    "rsi-seed-revalidation-20261111/run",
+    "rsi-revalidated-evolution-study-20261111/learning1",
+    "rsi-revalidated-evolution-study-20261111/admission1",
 )
 
 
@@ -89,7 +93,7 @@ def reconcile(workspace):
     incident_path = workspace / "kernel_envolve-rsi/audit/rsi_pilot_incident_20261110.json"
     incident = read(incident_path)
     return {
-        "scope": "Closed jobs only, including the rejected adaptive development study; no active GPU job.",
+        "scope": "All 19 closed campaign jobs, including failed and user-stopped studies; GPU use ended.",
         "entries": entries,
         "released_gpu_seconds_under_extended_ledger": running_total,
         "incident_separately_recorded_gpu_seconds": incident["conservative_resource_seconds"],
@@ -108,7 +112,7 @@ def reconcile(workspace):
             "All failed studies and infrastructure attempts remain; reused training is counted once.",
             "Conservative allocation seconds are not active GPU kernel time or provider billing.",
             "Future per-task savings would not by themselves recover campaign acquisition/validation costs.",
-            "No current active trial output or interim arm outcomes were read.",
+            "Admission was user-stopped with incomplete evaluator evidence; transport calls are not completed final evaluations.",
         ],
     }
 
