@@ -1,0 +1,24 @@
+{
+  "at": 1794335885.441696,
+  "base_commit": "e44474d",
+  "change": "Default-off lossless linked history observations for decision input, preserving raw full traces and all candidate/source facts.",
+  "validation": {
+    "focused": "50passed in24.05s",
+    "full": "523passed,10skipped in160.65s",
+    "log": "/tmp/rsi-linked-history-full-tests-20261111.log",
+    "real_packet_replay": "129/129 exact roundtrip;includesfailedrequests;no model/GPU calls",
+    "ruff": "passed",
+    "diff_check": "passed"
+  },
+  "sha256": {
+    "src/kernel_envolve/rsi/research.py": "ac1b1fb8bd07e5fd4b3b067492263535861dea976a61c1e7593a81e6342124bc",
+    "tests/test_rsi_research.py": "052d2dd40de5656c90d6fa308e1074ab2af889800c11edd6d509ad23f1f4cfc0",
+    "audit/rsi_linked_history_replay.py": "f6cdf899781ba1a1e4558dd01899f179b62d90190b397feea3df616f4872e550"
+  },
+  "limitations": [
+    "Only size and local view-construction time measured; no inference/token/quality or RSI efficacy evidence.",
+    "Future comparisons must apply view consistently to matched arms and distinguish representation from memory effects.",
+    "Closed prior protocols/results and their reserved confirmation cases remain closed.",
+    "Automatic artifact collection/versioned publication/rollback and real Manager flow remain unfinished."
+  ]
+}

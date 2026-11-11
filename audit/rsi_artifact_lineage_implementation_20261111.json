@@ -1,0 +1,52 @@
+{
+  "at": 1794352604.7328892,
+  "implementation": "Background artifact formation and ancestry audit only; no admission/publication yet",
+  "source_sha256": {
+    "src/kernel_envolve/rsi/artifact_lineage.py": "2129a370633a8ef22ed58ee6e221c57a49335aea9e0ed56a2cfe5ba135cff637",
+    "src/kernel_envolve/rsi/artifact_snapshot.py": "942c64e71781b7afece1c6c68138cba270f62c18545cbbbb8326f120e0d33be7",
+    "src/kernel_envolve/rsi/trials.py": "541410947e2717f3f41ad698d70d588c252298e71ffb0c8870b2daafe064c1d3",
+    "tests/test_rsi_artifact_lineage.py": "62fe436c99c547a6d0d90d086b1613c8b8096df02f376d4be3d5407f061247c1"
+  },
+  "focused_tests": {
+    "passed": 92,
+    "seconds": 62.73,
+    "log_sha256": "ae0a6f49cbfc1d8f9b1a7f7eca824512c52e27692ebb149513e7811f25fbcd7a"
+  },
+  "full_suite": {
+    "passed": 619,
+    "skipped": 10,
+    "seconds": 205.55,
+    "source_inventory_unchanged": true,
+    "receipt": "rsi_artifact_lineage_full_tests_20261111.json"
+  },
+  "static_checks": "Ruff check, format131files and diff check passed",
+  "race_probe": {
+    "kind": "Deterministic inspection-reader mutation, not a production incident",
+    "before": "One failing regression test reproduced false parent activation",
+    "before_source_sha256": "9150578d1c9fe1f30abb7986f05cda27120734260ce3bd3ddb455534405180b8",
+    "after": "Verified episode first action and source must match parent; later trace metadata cannot replace it",
+    "log": "rsi_artifact_lineage_trace_race_20261111.txt"
+  },
+  "closed_gpu_archive": {
+    "records": 64,
+    "seed_views": 61,
+    "failed_final_observations": 3,
+    "wrong_candidate_observations_retained": 28,
+    "seconds": 4.166305250008008,
+    "new_gpu_seconds": 0,
+    "new_model_requests": 0,
+    "receipt": "rsi_artifact_lineage_archive_20261111.json"
+  },
+  "two_descendants": "Actual CPU synthetic sleep-removal engineering fixture; no learning/efficacy claim",
+  "production_activated": false,
+  "evolution_value_proven": false,
+  "remaining": [
+    "Controlled child-vs-parent admission and retention",
+    "Durable one-attempt publication with stale-parent guard",
+    "Audit revocation and rollback",
+    "Automatic learning/validation orchestration",
+    "Two actual admitted generations and independent utility confirmation"
+  ],
+  "intermediate_tests": "Earlier full runs were superseded because implementation review added context/action/version binding; only unchanged final-source full suite is used here. Earlier logs preserved outside repository.",
+  "ci": "Pending source commit"
+}

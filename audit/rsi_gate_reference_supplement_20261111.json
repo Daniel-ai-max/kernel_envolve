@@ -1,0 +1,200 @@
+{
+  "checked_at": "2026-11-10T20:22:27.865937+00:00",
+  "primary_sources": [
+    {
+      "id": "2611.10787",
+      "files": [
+        {
+          "url": "https://arxiv.org/abs/2611.10787",
+          "file": "2611.10787-abs.html",
+          "sha256": "ad9b9745cc4b2894d3cc0789b226108c553f960ededb19c7a92ae9d4095e08b1",
+          "bytes": 42005
+        },
+        {
+          "url": "https://arxiv.org/html/2611.10787v1",
+          "file": "2611.10787-html.html",
+          "sha256": "6265aab8f8bd265eb944cf9d8b0cc4c276e60363e31b20c6cab915d425224d88",
+          "bytes": 1292774
+        }
+      ],
+      "submission_history": [
+        "Sat, 7 Nov 2026 15:12:01 UTC"
+      ]
+    },
+    {
+      "id": "2611.10382",
+      "files": [
+        {
+          "url": "https://arxiv.org/abs/2611.10382",
+          "file": "2611.10382-abs.html",
+          "sha256": "c72c05ed9bd4e86c2a2060083395d795e0c14909cdd757d6bef0241bdfa89853",
+          "bytes": 41986
+        },
+        {
+          "url": "https://arxiv.org/html/2611.10382v1",
+          "file": "2611.10382-html.html",
+          "sha256": "b5e9a82db888fa71fa42b3c3445ade853f5f225ce53348df7c69ecdb676df3eb",
+          "bytes": 737033
+        }
+      ],
+      "submission_history": [
+        "Sat, 7 Nov 2026 01:37:42 UTC"
+      ]
+    },
+    {
+      "id": "2611.08946",
+      "files": [
+        {
+          "url": "https://arxiv.org/abs/2611.08946",
+          "file": "2611.08946-abs.html",
+          "sha256": "701af83f175f4021bad3df3ff921793f999d3688835b1972bae84df279b20fe5",
+          "bytes": 45028
+        },
+        {
+          "url": "https://arxiv.org/html/2611.08946v1",
+          "file": "2611.08946-html.html",
+          "sha256": "85f7e20db24c8b747a2ac09484cea13e28a7a18f958ea003b89004f7dbe8e0ed",
+          "bytes": 1750919
+        }
+      ],
+      "submission_history": [
+        "Fri, 6 Nov 2026 03:51:20 UTC"
+      ]
+    },
+    {
+      "id": "2611.07624",
+      "files": [
+        {
+          "url": "https://arxiv.org/abs/2611.07624",
+          "file": "2611.07624-abs.html",
+          "sha256": "8f87a5c7f5338761f28226e40292bf27c5660471bdd2fe279d11e204f0974177",
+          "bytes": 42982
+        },
+        {
+          "url": "https://arxiv.org/html/2611.07624v1",
+          "file": "2611.07624-html.html",
+          "sha256": "8e77cc46956b1372f0a6c44aeb1abb6b914f5b3933849babadc8ee03436cd3ba",
+          "bytes": 712521
+        }
+      ],
+      "submission_history": [
+        "Thu, 5 Nov 2026 08:06:37 UTC"
+      ]
+    }
+  ],
+  "code": [
+    {
+      "repo": "simple-agent-lab/RSIHub",
+      "commit": "d6554299c58bf0fe2db04ddda0277f9db67ea680",
+      "commit_date": "2026-10-27T21:37:05Z",
+      "files": [
+        {
+          "path": "library/gate/hillclimb.py",
+          "url": "https://raw.githubusercontent.com/simple-agent-lab/RSIHub/d6554299c58bf0fe2db04ddda0277f9db67ea680/library/gate/hillclimb.py",
+          "file": "rsihub-library--gate--hillclimb.py",
+          "sha256": "24ccab3031506facedc4df991d11e942e735a896b5d3529b08cbec71da567d8e",
+          "bytes": 1776
+        },
+        {
+          "path": "library/gate/parent_eligible.py",
+          "url": "https://raw.githubusercontent.com/simple-agent-lab/RSIHub/d6554299c58bf0fe2db04ddda0277f9db67ea680/library/gate/parent_eligible.py",
+          "file": "rsihub-library--gate--parent_eligible.py",
+          "sha256": "566cf6df1c5763eea472c1c500bb0241fa8b62cb2189e2d2d07b1b4b4db9bf7b",
+          "bytes": 928
+        },
+        {
+          "path": "library/select/score_child_prop.py",
+          "url": "https://raw.githubusercontent.com/simple-agent-lab/RSIHub/d6554299c58bf0fe2db04ddda0277f9db67ea680/library/select/score_child_prop.py",
+          "file": "rsihub-library--select--score_child_prop.py",
+          "sha256": "eca9cfb36be3c720781b855b193c7fedc6ca6ac5a6d3eca97f22ca2dbca83d84",
+          "bytes": 1700
+        },
+        {
+          "path": "docs/reference/operators/gate.md",
+          "url": "https://raw.githubusercontent.com/simple-agent-lab/RSIHub/d6554299c58bf0fe2db04ddda0277f9db67ea680/docs/reference/operators/gate.md",
+          "file": "rsihub-docs--reference--operators--gate.md",
+          "sha256": "a30180f43b3898edd346289cb35d9a6203ee3bf49897bcf1d5e52ce82baedfea",
+          "bytes": 1218
+        }
+      ],
+      "scope": "Targeted source inspection only; no external code executed or installed"
+    },
+    {
+      "repo": "flex-rsi/rsi-bench",
+      "commit": "ebff61558d15dfd0ad64f636ca8318aec0386adb",
+      "commit_date": "2026-11-04T23:44:02Z",
+      "files": [
+        {
+          "path": "protocol/default.toml",
+          "url": "https://raw.githubusercontent.com/flex-rsi/rsi-bench/ebff61558d15dfd0ad64f636ca8318aec0386adb/protocol/default.toml",
+          "file": "flex-protocol--default.toml",
+          "bytes": 4528,
+          "sha256": "dce1e4be65a4bd5973af21f3d7633a59c9929e9448ee6538d3e5c0acc6f43dd2"
+        },
+        {
+          "path": "docs/harness.md",
+          "url": "https://raw.githubusercontent.com/flex-rsi/rsi-bench/ebff61558d15dfd0ad64f636ca8318aec0386adb/docs/harness.md",
+          "file": "flex-docs--harness.md",
+          "bytes": 35225,
+          "sha256": "7a73a7b88ae5e4eb9e6e27ac54afdf1bab064b123f7dfd485c6bc228860d6a82"
+        },
+        {
+          "path": "harness/improver/accept.py",
+          "url": "https://raw.githubusercontent.com/flex-rsi/rsi-bench/ebff61558d15dfd0ad64f636ca8318aec0386adb/harness/improver/accept.py",
+          "file": "flex-harness--improver--accept.py",
+          "bytes": 1118,
+          "sha256": "87f0deb459a63afe19bced0b50849d90883c3c9509997724d3a30623159a53b5"
+        },
+        {
+          "path": "src/rsibench/orchestrator/policy.py",
+          "url": "https://raw.githubusercontent.com/flex-rsi/rsi-bench/ebff61558d15dfd0ad64f636ca8318aec0386adb/src/rsibench/orchestrator/policy.py",
+          "file": "flex-src--rsibench--orchestrator--policy.py",
+          "bytes": 2088,
+          "sha256": "391ddbcd218ae49d1e84db6027131d796ff8152c078018d9cd613bdc335279ea"
+        }
+      ],
+      "scope": "Read-only targeted code inspection; not installed or reproduced"
+    }
+  ],
+  "review": [
+    {
+      "work": "TRUST",
+      "paper": "2611.10787",
+      "first_publication": "2026-11-07",
+      "revision": "v1 only on inspected primary page",
+      "official_code": "No implementation link identified in inspected abstract and main HTML; do not infer absence from all sites.",
+      "finding": "Online false-evolution-rate allocation uses context before current validation; e-values require an explicit conditional overlap-bias bound. Paper does not solve exact beta identification.",
+      "decision": "Consider persistent cross-generation error/exposure accounting in a future separately calibrated gate; no unvalidated formula or LLM-selected loosened threshold in the current experiment. Existing 4-cluster bootstrap is not a proof of TRUST-style guarantees."
+    },
+    {
+      "work": "Anchor",
+      "paper": "2611.10382",
+      "first_publication": "2026-11-07",
+      "revision": "v1 only on inspected primary page",
+      "official_code": "No Anchor implementation link identified in inspected abstract and main HTML; ALFWorld/WebShop links are benchmark dependencies, not Anchor code.",
+      "finding": "Paired same-context replay checks shift magnitude and whether the source success/failure action is reinforced or suppressed. Full candidate action strings/probes are frozen; appendix uses teacher-forced token log probabilities.",
+      "decision": "Useful memory-admission diagnostic, not proof of future kernel payoff. Current gpt-6-astra response adapter has no verified teacher-forcing scoring interface, so do not replace its measurement with model self-ratings or add repeated per-action reflections."
+    },
+    {
+      "work": "Flex-RSI",
+      "paper": "2611.08946",
+      "first_publication": "2026-11-06",
+      "revision": "v1 only on inspected primary page",
+      "official_code": "flex-rsi/rsi-bench@ebff61558d15dfd0ad64f636ca8318aec0386adb",
+      "code_date": "2026-11-04T23:44:02Z",
+      "finding": "Frozen protocol, separate solution/executor/improver scopes, base/fixed-I/RSI modes and hidden test; inspected code includes noise-margin acceptance, phase/model/budget caps, crash rollback, best-dev selection after unfinished executor.",
+      "decision": "Keep a frozen-artifact baseline to distinguish continued solution search from harness evolution. Do not transplant mutable acceptance code into correctness/GPU admission or use fallback/early-stop without independent full and known costs."
+    },
+    {
+      "work": "Beneath the Surface / EvoAudit",
+      "paper": "2611.07624",
+      "first_publication": "2026-11-05",
+      "revision": "v1 only on inspected primary page",
+      "official_code": "simple-agent-lab/RSIHub@d6554299c58bf0fe2db04ddda0277f9db67ea680",
+      "code_date": "2026-10-27T21:37:05Z",
+      "finding": "Coverage gain can coexist with loss and extra deployment cost; stricter gates can lower best-candidate retention. Linked repository exposes separate selectable gates; inspected hillclimb defaults nondecreasing with optional strict comparison.",
+      "decision": "Keep rejected alternatives/evidence without making them production incumbents. Test interactions and parent choice, not merely top score. Targeted four-file review does not certify a complete reproduction of the paper-specific EvoAudit operator revisions."
+    }
+  ],
+  "limitations": "Read-only primary-source and pinned-code inspection, not algorithm reproduction or evidence our method outperforms these systems. Current GPU study unchanged."
+}

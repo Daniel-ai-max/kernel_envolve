@@ -1,0 +1,91 @@
+"""Run actual controller CLI entrypoints with fake platform transport; no network/GPU/model."""
+import contextlib,hashlib,io,json,runpy,sys,tempfile,time,types
+from pathlib import Path
+ROOT=Path(__file__).resolve().parent
+WORK=ROOT.parent
+controllers=[WORK/'rsi-compute-allocation-study-20261111/conditional-confirmation',WORK/'rsi-managed-gpu-validation-20261111']
+rows=[]
+for original in controllers:
+ engineering=original.name=='rsi-managed-gpu-validation-20261111'
+ source=original if engineering else original.parent/'development'
+ for scenario in ('duplicate-submission','duplicate-reservation','ambiguous-post','owned-completed','owned-save-failure','owned-running-save-failure','owned-run-failure'):
+  with tempfile.TemporaryDirectory(prefix='rsi-submit-fixture-')as tmp:
+   parent=Path(tmp);root=parent/'controller';root.mkdir();q=json.loads((source/'request.json').read_text());h=hashlib.sha256(json.dumps(q,sort_keys=True).encode()).hexdigest()
+   def write(name,value):(root/name).write_text(json.dumps(value))
+   write('request.json',q);write('manifest.json',{'request_sha256':h});write('preview-verification.json',{'passed':True,'request_sha256':h})
+   write('analysis-registration.json',{'sha256':{}})
+   write('approved-budget.json',{'explicitly_approved':True,'window_extension_approved':True,'gpu_count':1,'priority':80,'platform_seconds':900 if engineering else 7200,'max_model_requests':0 if engineering else 160,'total_gpu_budget_seconds':86400,'absolute_expires_at':1794407502.345601,'prior_confirmed_gpu_seconds':14283.06168437004,'submit_not_after':time.time()+120,'request_sha256':h,'predecessor_job':'a'*32})
+   write('predecessor-release-recheck.json',{'id':'a'*32,'phase':'Completed','pods':[],'live_read_status':{'pods':'available'},'at':time.time()})
+   (parent/'rsi-active-continuation.json').write_text(json.dumps({'active_job':None}))
+   if scenario=='duplicate-submission':write('submission.json',{'id':'e'*32})
+   if scenario=='duplicate-reservation':write('create-attempt.json',{'reserved':'another invocation'})
+   calls=[];state={'stopped':False,'live_reads':0}
+   def call(method,path,body=None):
+    calls.append((method,path))
+    if method=='POST'and path.endswith('/training-jobs'):
+     if scenario=='ambiguous-post':raise TimeoutError('Synthetic ambiguous POST; no remote call occurred')
+     if scenario in {'owned-save-failure','owned-running-save-failure'}:(root/'submission.json').mkdir()
+     return {'id':'b'*32}
+    if method=='POST'and path.endswith('/stop'):
+     assert path.endswith('/'+('b'*32)+'/stop');state['stopped']=True;return None
+    if method=='GET'and '?live=true' in path:
+     state['live_reads']+=1
+     if scenario=='owned-run-failure'and state['live_reads']==1:raise RuntimeError('Synthetic run observation failure')
+     assert '/'+('b'*32)+'?' in path,'Must not clean another invocation job'
+     return {'id':'b'*32,'creator_user_id':'daniel','workspace_id':'4b070c1a-398d-4fb3-847c-fd9e5a318707','phase':'Running'if scenario in {'owned-running-save-failure','owned-run-failure'} and not state['stopped'] else 'Completed','pods':[{'fixture':True}]if scenario in {'owned-running-save-failure','owned-run-failure'}and not state['stopped']else[],'live_read_status':{'pods':'available','cr':'available'}}
+    if method=='GET'and path.endswith('/log-streams'):return []
+    raise AssertionError(('Unexpected platform operation',method,path))
+   platform=types.ModuleType('jupyter_remote');platform.ROOT=root;platform.call=call
+   model=types.ModuleType('model_client')
+   def no_model(*a,**kw):raise AssertionError('No model allowed')
+   model.request=no_model
+   relay=types.ModuleType('relay');relay.Client=no_model
+   activation=types.ModuleType('activation');activation.ensure_allowed=lambda path:None
+   replacements={'jupyter_remote':platform,'model_client':model,'relay':relay,'activation':activation}
+   saved={k:sys.modules.get(k)for k in replacements};argv=sys.argv[:];error=None;stream=io.StringIO()
+   try:
+    sys.modules.update(replacements);sys.argv=[str(original/'controller.py'),'--submit']
+    with contextlib.redirect_stdout(stream):
+     try:runpy.run_path(str(original/'controller.py'),run_name='__main__')
+     except BaseException as exc:error=type(exc).__name__
+   finally:
+    sys.argv=argv
+    for name,value in saved.items():
+     if value is None:sys.modules.pop(name,None)
+     else:sys.modules[name]=value
+   posts=[x for x in calls if x[0]=='POST'];release=root/'released.json'
+   if scenario.startswith('duplicate-'):
+    assert error=='AssertionError'and calls==[] and not release.exists(),(scenario,error,calls)
+   elif scenario=='ambiguous-post':
+    assert error=='TimeoutError'and len(calls)==1 and len(posts)==1 and not release.exists()
+    assert(root/'create-attempt.json').exists()and not(root/'submission.json').exists()
+   else:
+    assert len(posts)==(2 if scenario in {'owned-running-save-failure','owned-run-failure'}else 1) and release.exists()and json.loads(release.read_text())['id']=='b'*32
+    assert error==('IsADirectoryError'if scenario in {'owned-save-failure','owned-running-save-failure'}else 'RuntimeError'if scenario=='owned-run-failure'else None),(scenario,error,calls)
+   rows.append({'controller':original.name,'scenario':scenario,'passed':True,'fake_platform_calls':len(calls),'fake_creation_posts':sum(path.endswith('/training-jobs')for method,path in posts),'fake_stop_posts':sum(path.endswith('/stop')for method,path in posts),'owned_release_receipt':release.exists(),'error':error,'controller_sha256':hashlib.sha256((original/'controller.py').read_bytes()).hexdigest()})
+# Exercise the actual exclusive filesystem reservation from both launchers.
+from concurrent.futures import ThreadPoolExecutor
+from threading import Barrier
+for original in controllers:
+ with tempfile.TemporaryDirectory(prefix='rsi-reservation-race-')as tmp:
+  root=Path(tmp);platform=types.ModuleType('jupyter_remote');platform.ROOT=root;platform.call=no_model
+  replacements={'jupyter_remote':platform,'model_client':model,'relay':relay,'activation':activation}
+  saved={k:sys.modules.get(k)for k in replacements}
+  try:
+   sys.modules.update(replacements)
+   namespace=runpy.run_path(str(original/'controller.py'),run_name='reservation_fixture')
+   barrier=Barrier(2)
+   def attempt(index):
+    barrier.wait(timeout=5)
+    try:namespace['reserve_submission']({'owner':index});return 'reserved'
+    except FileExistsError:return 'rejected'
+   with ThreadPoolExecutor(max_workers=2)as pool:results=list(pool.map(attempt,[0,1]))
+   assert sorted(results)==['rejected','reserved']
+   value=json.loads((root/'create-attempt.json').read_text());assert value['owner'] in {0,1}
+   rows.append({'controller':original.name,'scenario':'concurrent-exclusive-reservation','passed':True,'results':results,'controller_sha256':hashlib.sha256((original/'controller.py').read_bytes()).hexdigest()})
+  finally:
+   for name,value in saved.items():
+    if value is None:sys.modules.pop(name,None)
+    else:sys.modules[name]=value
+report={'checked_at':time.time(),'passed':True,'cases':rows,'real_network_calls':0,'real_model_calls':0,'gpu_allocations':0,'scope':'Actual CLI try/finally exercised with deterministic fake platform, including duplicate rejection, ambiguous response and disk-save failure. Activation itself tested separately; this does not validate real GPU behavior.'}
+(ROOT/'controller-ownership-smoke.json').write_text(json.dumps(report,indent=2));print(json.dumps(report,indent=2))

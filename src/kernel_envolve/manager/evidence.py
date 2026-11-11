@@ -31,6 +31,46 @@ def within(root, relative):
     return path
 
 
+def failed_checks(result, cfg):
+    """Bounded observed failures, never an inference about unreported cases.
+
+    Call only with the verified result and its frozen generic task configuration.
+    Native adapters have different check contracts and leave this field unknown.
+    """
+    cases = {case["id"]: case.get("args", {}) for case in cfg["cases"]}
+    failures = [check for check in result.get("checks", []) if check.get("status") == "fail"]
+    values = []
+    for check in failures[:8]:
+        case_id = check.get("case")
+        args = cases.get(case_id)
+        truncated = False
+        if args is not None:
+            try:
+                encoded = json.dumps(args, ensure_ascii=False, allow_nan=False).encode()
+                truncated = len(encoded) > 512
+            except (ValueError, TypeError):
+                truncated = True
+            if truncated:
+                args = None
+        values.append(
+            {
+                "case": str(case_id)[:160],
+                "case_id_truncated": len(str(case_id)) > 160,
+                "role": str(check.get("role", ""))[:80],
+                "kind": str(check.get("kind", ""))[:80],
+                "seed": check.get("seed") if type(check.get("seed")) is int else None,
+                "args": args,
+                "args_truncated": truncated,
+            }
+        )
+    return {
+        "checks": values,
+        "count": len(failures),
+        "truncated": len(failures) > 8,
+        "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown.",
+    }
+
+
 def inspect_run(path, spec, checkpoint=None):
     checkpoint = checkpoint or (lambda: None)
     checkpoint()
@@ -86,6 +126,7 @@ def inspect_run(path, spec, checkpoint=None):
         "native_checks": result.get("native_checks", []),
         "memory": result.get("memory", []),
         "error": result.get("error"),
+        "failed_checks": failed_checks(result, cfg) if spec["kind"] == "generic" else None,
         "recorded_at": (path / "receipt.json").stat().st_mtime,
         "passed_checks": sum(c.get("status") == "pass" for c in result.get("checks", [])),
         "verified_at": time.time(),

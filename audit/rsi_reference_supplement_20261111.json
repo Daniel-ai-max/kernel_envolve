@@ -1,0 +1,218 @@
+{
+  "checked_at": "2026-11-10T19:37:59.530830+00:00",
+  "sources": [
+    {
+      "paper": "2611.12552",
+      "url": "https://arxiv.org/abs/2611.12552",
+      "sha256": "ad1fb48a8d4f5a176f5fc1cd5de9a353775536e449cf2300a132e9aac50d3272",
+      "submission_history_utc": [
+        "Mon, 9 Nov 2026 15:20:32 UTC"
+      ]
+    },
+    {
+      "paper": "2605.30621",
+      "url": "https://arxiv.org/abs/2605.30621",
+      "sha256": "ceec52146eb433c2dd4497e1825ad2e573eecc32e6eee7fb4a4ab446e7cfb991",
+      "submission_history_utc": [
+        "Thu, 28 May 2026 22:16:14 UTC",
+        "Wed, 4 Nov 2026 20:26:58 UTC"
+      ]
+    },
+    {
+      "paper": "2611.04952",
+      "url": "https://arxiv.org/abs/2611.04952",
+      "sha256": "52953e17b9e4712e51150097d6066c1f68d3bc31843cca1bfcafe2eb65762c71",
+      "submission_history_utc": [
+        "Tue, 3 Nov 2026 14:12:22 UTC"
+      ]
+    },
+    {
+      "paper": "2611.02797",
+      "url": "https://arxiv.org/abs/2611.02797",
+      "sha256": "77814d45d926024358f75edfe8ced0999a2828a51ca3b7b977efb4fe00ed8502",
+      "submission_history_utc": [
+        "Mon, 2 Nov 2026 09:08:12 UTC"
+      ]
+    },
+    {
+      "paper": "2610.27377",
+      "url": "https://arxiv.org/abs/2610.27377",
+      "sha256": "991db21418bd7279c22d6b356975aee6c3941479e3046e568e1b0aa430bbe5d0",
+      "submission_history_utc": [
+        "Mon, 19 Oct 2026 22:59:56 UTC"
+      ]
+    },
+    {
+      "paper": "2609.32166",
+      "url": "https://arxiv.org/abs/2609.32166",
+      "sha256": "6d55d436bbe7cf7e68d1e5265414e13644d1d0c799b8d72492aa3a44cf853df1",
+      "submission_history_utc": [
+        "Sat, 26 Sep 2026 02:41:56 UTC"
+      ]
+    },
+    {
+      "repo": "WeiminWu2000/SciMARS",
+      "commit": "befba7a76667baa456227f94636920408da3c22a",
+      "committer_date": "2026-11-10T15:15:22Z",
+      "author_date": "2026-11-10T15:15:22Z",
+      "message": "Update README.md",
+      "url": "https://api.github.com/repos/WeiminWu2000/SciMARS/commits/befba7a76667baa456227f94636920408da3c22a",
+      "sha256": "6910128c14a5ca956024c55799277942ba0c1430a0812e33cf97701c0adc83b6"
+    },
+    {
+      "repo": "A-EVO-Lab/a-evolve",
+      "commit": "96ed93ba7ee0b9519fc55c963afb47a1975eb1ae",
+      "committer_date": "2026-08-22T14:55:48Z",
+      "author_date": "2026-08-22T14:55:48Z",
+      "message": "Update README with EMNLP 2026 citation details",
+      "url": "https://api.github.com/repos/A-EVO-Lab/a-evolve/commits/96ed93ba7ee0b9519fc55c963afb47a1975eb1ae",
+      "sha256": "8e79cd60c4493d428df59328d58806ef2d2ed9cd557f3de2b2733b9428d572e5"
+    },
+    {
+      "repo": "theseus-labs-rsi/SelfImprove-Bench",
+      "commit": "569438708d3de1989ba9cbcd0667bf79d2cc5d30",
+      "committer_date": "2026-11-05T11:43:38Z",
+      "author_date": "2026-11-05T11:43:38Z",
+      "message": "Update index.html",
+      "url": "https://api.github.com/repos/theseus-labs-rsi/SelfImprove-Bench/commits/569438708d3de1989ba9cbcd0667bf79d2cc5d30",
+      "sha256": "cdffef88c5acf2a89fe573ad8dabb6ea756c1d21fa29df482365307a5a016b2d"
+    }
+  ],
+  "code_files": [
+    {
+      "repo": "WeiminWu2000/SciMARS",
+      "commit": "befba7a76667baa456227f94636920408da3c22a",
+      "path": "docs/architecture.md",
+      "url": "https://raw.githubusercontent.com/WeiminWu2000/SciMARS/befba7a76667baa456227f94636920408da3c22a/docs/architecture.md",
+      "sha256": "19061e503569d992f82a23bc6910386f67ab83cec5e4ec06f1d8a8076c31f30a",
+      "bytes": 4229
+    },
+    {
+      "repo": "WeiminWu2000/SciMARS",
+      "commit": "befba7a76667baa456227f94636920408da3c22a",
+      "path": "docs/memory.md",
+      "url": "https://raw.githubusercontent.com/WeiminWu2000/SciMARS/befba7a76667baa456227f94636920408da3c22a/docs/memory.md",
+      "sha256": "b456dea8ee0add501c63ae7b435af1e128a93b174101a9d1e4b7251fdcfbc248",
+      "bytes": 4328
+    },
+    {
+      "repo": "WeiminWu2000/SciMARS",
+      "commit": "befba7a76667baa456227f94636920408da3c22a",
+      "path": "docs/reproduction.md",
+      "url": "https://raw.githubusercontent.com/WeiminWu2000/SciMARS/befba7a76667baa456227f94636920408da3c22a/docs/reproduction.md",
+      "sha256": "8ba260d954ea1636fe8266738fec5941fab63be25510b83345899c39f8df3ab3",
+      "bytes": 5365
+    },
+    {
+      "repo": "WeiminWu2000/SciMARS",
+      "commit": "befba7a76667baa456227f94636920408da3c22a",
+      "path": "mah2/dsstar/optimizer.py",
+      "url": "https://raw.githubusercontent.com/WeiminWu2000/SciMARS/befba7a76667baa456227f94636920408da3c22a/mah2/dsstar/optimizer.py",
+      "sha256": "6f86bfba30a2963b4a088f3744f8f9ad810b6cc19efa1f6878a6e4b0406959d6",
+      "bytes": 53428
+    },
+    {
+      "repo": "WeiminWu2000/SciMARS",
+      "commit": "befba7a76667baa456227f94636920408da3c22a",
+      "path": "mah2/successor.py",
+      "url": "https://raw.githubusercontent.com/WeiminWu2000/SciMARS/befba7a76667baa456227f94636920408da3c22a/mah2/successor.py",
+      "sha256": "26e192ad02bd56bfea01da2622ae5f9616069f658c442a72370d339b4963d78d",
+      "bytes": 1174
+    },
+    {
+      "repo": "WeiminWu2000/SciMARS",
+      "commit": "befba7a76667baa456227f94636920408da3c22a",
+      "path": "tests/test_successor_reuse.py",
+      "url": "https://raw.githubusercontent.com/WeiminWu2000/SciMARS/befba7a76667baa456227f94636920408da3c22a/tests/test_successor_reuse.py",
+      "sha256": "7d11c888d58764b1d85e59b1abd0d10e62fd4ebf6b29fbec727a8af3562eef4e",
+      "bytes": 6573
+    },
+    {
+      "repo": "A-EVO-Lab/a-evolve",
+      "commit": "96ed93ba7ee0b9519fc55c963afb47a1975eb1ae",
+      "path": "docs/algorithms/unified.md",
+      "url": "https://raw.githubusercontent.com/A-EVO-Lab/a-evolve/96ed93ba7ee0b9519fc55c963afb47a1975eb1ae/docs/algorithms/unified.md",
+      "sha256": "a0a9978a03f2336454aaad7e03a4684cd585b8bb613e3afd6bf0e72fa93ed1bc",
+      "bytes": 21095
+    },
+    {
+      "repo": "A-EVO-Lab/a-evolve",
+      "commit": "96ed93ba7ee0b9519fc55c963afb47a1975eb1ae",
+      "path": "agent_evolve/algorithms/unified/verifiers/stagnation_rollback.py",
+      "url": "https://raw.githubusercontent.com/A-EVO-Lab/a-evolve/96ed93ba7ee0b9519fc55c963afb47a1975eb1ae/agent_evolve/algorithms/unified/verifiers/stagnation_rollback.py",
+      "sha256": "c00feef2bdc9698652d8f47b55a7e1337e58477cbd3b18b559d198a931991f7d",
+      "bytes": 3123
+    },
+    {
+      "repo": "A-EVO-Lab/a-evolve",
+      "commit": "96ed93ba7ee0b9519fc55c963afb47a1975eb1ae",
+      "path": "examples/harness-evolution/hfr_analysis/matched_set.py",
+      "url": "https://raw.githubusercontent.com/A-EVO-Lab/a-evolve/96ed93ba7ee0b9519fc55c963afb47a1975eb1ae/examples/harness-evolution/hfr_analysis/matched_set.py",
+      "sha256": "65a08ca1780d9f8c2a71a8f9f19171a1de76a87ce6daa0565497470c5f589c4d",
+      "bytes": 8208
+    },
+    {
+      "repo": "theseus-labs-rsi/SelfImprove-Bench",
+      "commit": "569438708d3de1989ba9cbcd0667bf79d2cc5d30",
+      "path": "tests/test_refinement_accounting.py",
+      "url": "https://raw.githubusercontent.com/theseus-labs-rsi/SelfImprove-Bench/569438708d3de1989ba9cbcd0667bf79d2cc5d30/tests/test_refinement_accounting.py",
+      "sha256": "b33bab909a0935fdc8a310d8701593430fb9bf47f9cad90124589ea54c7f1b47",
+      "bytes": 8282
+    },
+    {
+      "repo": "theseus-labs-rsi/SelfImprove-Bench",
+      "commit": "569438708d3de1989ba9cbcd0667bf79d2cc5d30",
+      "path": "tests/test_token_ledger.py",
+      "url": "https://raw.githubusercontent.com/theseus-labs-rsi/SelfImprove-Bench/569438708d3de1989ba9cbcd0667bf79d2cc5d30/tests/test_token_ledger.py",
+      "sha256": "0173a8d34da62715d0cd3862f7e767a0da205bf56aac453326df6c75987afc49",
+      "bytes": 3318
+    },
+    {
+      "repo": "theseus-labs-rsi/SelfImprove-Bench",
+      "commit": "569438708d3de1989ba9cbcd0667bf79d2cc5d30",
+      "path": "tests/test_resume_equivalence.py",
+      "url": "https://raw.githubusercontent.com/theseus-labs-rsi/SelfImprove-Bench/569438708d3de1989ba9cbcd0667bf79d2cc5d30/tests/test_resume_equivalence.py",
+      "sha256": "4575e15460c2c21188d759d343b5f9a64b66a9736e9d0db00405caae194b4a6c",
+      "bytes": 3885
+    },
+    {
+      "repo": "theseus-labs-rsi/SelfImprove-Bench",
+      "commit": "569438708d3de1989ba9cbcd0667bf79d2cc5d30",
+      "path": "rsi_methods/checkpoint.py",
+      "url": "https://raw.githubusercontent.com/theseus-labs-rsi/SelfImprove-Bench/569438708d3de1989ba9cbcd0667bf79d2cc5d30/rsi_methods/checkpoint.py",
+      "sha256": "c73026d360b25edb1024139f577e0511bb136d33cbd7dc481fe500e92f1ea443",
+      "bytes": 10568
+    }
+  ],
+  "scope": "Read-only primary literature/code inspection; no code executed or algorithm reproduction; date fields distinguish submission from revision and code commit.",
+  "implementation_effect": "Documentation only. No active experiment, acceptance threshold, source snapshot or model prompt changed.",
+  "code_inspection_findings": [
+    {
+      "repo": "WeiminWu2000/SciMARS",
+      "paths": [
+        "mah2/successor.py",
+        "docs/memory.md",
+        "mah2/dsstar/optimizer.py"
+      ],
+      "finding": "Same-round identical complete harness + runnable outcome + saved-program hash may reuse a probe; receipt records executed=false. Memory graph and memory policy are distinct. Composition must be tested. Kernel transfer across new configs still needs current full evaluation."
+    },
+    {
+      "repo": "A-EVO-Lab/a-evolve",
+      "paths": [
+        "agent_evolve/algorithms/unified/verifiers/stagnation_rollback.py",
+        "examples/harness-evolution/hfr_analysis/matched_set.py"
+      ],
+      "finding": "Rollback verifier is opt-in, not in Phase1 loop recipes, and accepts missing pass_rate. Matched diagnostic records loaded skills separately from final_passed. Do not claim gate always executes or use it as a fail-closed kernel correctness gate."
+    },
+    {
+      "repo": "theseus-labs-rsi/SelfImprove-Bench",
+      "paths": [
+        "tests/test_refinement_accounting.py",
+        "tests/test_token_ledger.py",
+        "tests/test_resume_equivalence.py",
+        "rsi_methods/checkpoint.py"
+      ],
+      "finding": "Tests retain failed refinement/validation costs and distinguish unknown from explicit zero. Token ledger also permits labelled within-task mean imputation; kernel acceptance continues to require actual usage, no imputation. Resume tests compare committed score/token records and retain abandoned attempts."
+    }
+  ]
+}

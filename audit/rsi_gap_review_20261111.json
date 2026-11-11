@@ -1,0 +1,250 @@
+{
+  "date": "2026-11-11",
+  "scope": "Follow-up RSI code gap review; no rollout or external experiments",
+  "parent_commit": "3656a0a703c51ab9c8f63d5271debefb22aeec09",
+  "branch": "feature/rsi-evolution",
+  "files_sha256": {
+    "src/kernel_envolve/rsi/artifact_registry.py": "4ee738c7dd52176c4d3a0d48e19ff7a146a784a0e7af23fb218c8566065042cf",
+    "src/kernel_envolve/rsi/config.py": "fda40297fb90530ae7e3a46ca9f076f4fff6bad0d0f257998cd0a15725c87274",
+    "src/kernel_envolve/rsi/store.py": "a9c6c898e3acf29ddbeef7cb76df9630b703fa77ca901efd172aaba8f686d000",
+    "tests/test_rsi.py": "b453113c10d81ff7f6ee37bb6ef849db0a9d0c0f103762025cd4666c1251ab7b",
+    "tests/test_rsi_artifact_registry.py": "8081d3680295f0fa61a3d734222827bb0c31d9f14d67bd357ae98a6cc3e77e23",
+    "docs/rsi-readiness.md": "b13ad77039d7c7dcf5bc474d624775385310cb92cff70098ce16c67e54ca94d8",
+    "docs/rsi.md": "4cd540e8b55cad579a17bb5b67000e84e644a05244b9fc12b29547e568375945"
+  },
+  "full_tests": {
+    "exit_code": 0,
+    "elapsed_seconds": 316.0251086670032,
+    "unchanged_source_and_tests": true,
+    "python": "3.12.14 (main, Sep  1 2026, 14:09:38) [Clang 22.1.3 ]",
+    "pythonpath": "/Users/daniel/Documents/ChatGPT/算子优化/kernel_envolve-rsi/src",
+    "passed": 729,
+    "skipped": 10,
+    "pytest_seconds": 315.62
+  },
+  "new_regression_cases": 24,
+  "pre_fix_failures": {
+    "rsi-gap-before.log": 12,
+    "rsi-gap-budget-before.log": 9
+  },
+  "focused_runs": {
+    "rsi-gap-focused.log": "144 passed after initial fixes",
+    "rsi-gap-extra.log": "12 passed after additional budget/input fixes"
+  },
+  "installed_wheel": {
+    "status": "passed",
+    "elapsed_seconds": 3.168531894683838,
+    "module_path": "/Users/daniel/Documents/ChatGPT/算子优化/rsi-gap-validation-20261111/install-env/lib/python3.12/site-packages/kernel_envolve/__init__.py",
+    "python": "3.12.14 (main, Sep  1 2026, 14:09:38) [Clang 22.1.3 ]",
+    "wheel_sha256": "0bc6dd4b02d3a72e6bdccfdbf5c7eeb79840b423ffc023fc6d6d6c58657a10e0",
+    "source_files_matched": 48,
+    "commands": [
+      {
+        "command": "init",
+        "returncode": 0
+      },
+      {
+        "command": "register",
+        "returncode": 0
+      },
+      {
+        "command": "prepare",
+        "returncode": 0
+      },
+      {
+        "command": "observe",
+        "returncode": 0
+      },
+      {
+        "command": "observe",
+        "returncode": 0
+      },
+      {
+        "command": "status",
+        "returncode": 0
+      },
+      {
+        "command": "disable",
+        "returncode": 0
+      },
+      {
+        "command": "prepare",
+        "returncode": 0
+      },
+      {
+        "command": "enable",
+        "returncode": 0
+      },
+      {
+        "command": "status",
+        "returncode": 0
+      }
+    ],
+    "feedback_status": "helpful",
+    "fixed_max_actions": 4,
+    "external_model_requests": 0,
+    "gpu_jobs": 0,
+    "cpu_full_evaluations": 6,
+    "deterministic_callbacks": 2,
+    "entry": "1feec7159b9d5fa2e379dd220f82cd5d43373b0eccc966d0b04a3a21961a2ffa",
+    "scope": "Isolated installed wheel, real CPU receipts, no editable/source PYTHONPATH fallback"
+  },
+  "installed_text_controller": {
+    "status": "passed",
+    "module_path": "/Users/daniel/Documents/ChatGPT/算子优化/rsi-gap-validation-20261111/install-env/lib/python3.12/site-packages/kernel_envolve/__init__.py",
+    "commands": [
+      {
+        "args": [
+          "init",
+          "/Users/daniel/Documents/ChatGPT/算子优化/rsi-gap-validation-20261111/text-package-smoke-v2/rsi.json"
+        ],
+        "exit_code": 0
+      },
+      {
+        "args": [
+          "status"
+        ],
+        "exit_code": 0
+      },
+      {
+        "args": [
+          "collect"
+        ],
+        "exit_code": 0
+      },
+      {
+        "args": [
+          "disable"
+        ],
+        "exit_code": 0
+      },
+      {
+        "args": [
+          "status"
+        ],
+        "exit_code": 0
+      },
+      {
+        "args": [
+          "enable"
+        ],
+        "exit_code": 0
+      },
+      {
+        "args": [
+          "disable"
+        ],
+        "exit_code": 0
+      },
+      {
+        "args": [
+          "status"
+        ],
+        "exit_code": 2
+      },
+      {
+        "args": [
+          "status"
+        ],
+        "exit_code": 0
+      }
+    ],
+    "budget_persisted_across_reopen": true,
+    "missing_database_not_recreated": true,
+    "new_gpu_jobs": 0,
+    "external_model_requests": 0
+  },
+  "static_checks": [
+    "ruff check .",
+    "ruff format --check .: 141 files",
+    "git diff --check",
+    "changed documentation links"
+  ],
+  "fixed_boundaries": [
+    "Snapshot rechecks enabled/active in a short transaction after slow evidence work",
+    "Automatic rollback compares the audited active identity before and after ancestor audit; bounded retries",
+    "Malformed JSON shape receives rejected status and conservative reserved charge; non-archivable input rejected before checking",
+    "Only initialize creates text RSI schema; reopening missing/empty/incomplete state cannot reset budget or metadata",
+    "Disabled state rejects learn/validation reservations in transaction",
+    "Elapsed accounting requires finite nonnegative numbers; enable requires a boolean"
+  ],
+  "evidence_files": [
+    {
+      "workspace_relative_path": "rsi-gap-validation-20261111/full-tests.json",
+      "sha256": "942f159f42935e81e157d27fc8978fdabbe4053b628cdbc5e9a2c67de366c600"
+    },
+    {
+      "workspace_relative_path": "rsi-gap-validation-20261111/full-tests.log",
+      "sha256": "ed9ff934d709bbf9e0def067f1a7e334df90a54e25cbd7da8ed7ce23d9a5cb6d"
+    },
+    {
+      "workspace_relative_path": "rsi-gap-validation-20261111/package-smoke.json",
+      "sha256": "3d8f4104eb7be23a606b7452ff0b2928b8357a0af0fbd4608e6b183ec244305b"
+    },
+    {
+      "workspace_relative_path": "rsi-gap-validation-20261111/package-smoke.log",
+      "sha256": "3d8f4104eb7be23a606b7452ff0b2928b8357a0af0fbd4608e6b183ec244305b"
+    },
+    {
+      "workspace_relative_path": "rsi-gap-validation-20261111/package-smoke.py",
+      "sha256": "a401b499b474e8b950d25775ce3b6880215b7c93cc5fd1a11e3dffdc8fcb695e"
+    },
+    {
+      "workspace_relative_path": "rsi-gap-validation-20261111/rsi-gap-before.log",
+      "sha256": "3f85a73829fdc8264907e7589e4f2d11a8199f1f79aa39c479846a4ef6edd5bb"
+    },
+    {
+      "workspace_relative_path": "rsi-gap-validation-20261111/rsi-gap-budget-before.log",
+      "sha256": "fd9ecf407654470b08568d0c6bac0d0c833d92ea0f2f8f59b54ad64ac1111640"
+    },
+    {
+      "workspace_relative_path": "rsi-gap-validation-20261111/rsi-gap-extra.log",
+      "sha256": "10f21639dea576b8bc6b5671560f56265421ec261e7c7cd15aab7b2c90a712a9"
+    },
+    {
+      "workspace_relative_path": "rsi-gap-validation-20261111/rsi-gap-focused.log",
+      "sha256": "dc5d9816084695333d114974341c6994e5f65702ca030f8a12265829b301bcd2"
+    },
+    {
+      "workspace_relative_path": "rsi-gap-validation-20261111/run-full.py",
+      "sha256": "5347889de70b169f9bcd3da843206c7fef5b1093e97d69a91a771145139efd74"
+    },
+    {
+      "workspace_relative_path": "rsi-gap-validation-20261111/text-package-smoke-argument-error.log",
+      "sha256": "ba82c601add3281f3f6c89c3e14e152ddbb300840d6eaa140e48558bdfc14572"
+    },
+    {
+      "workspace_relative_path": "rsi-gap-validation-20261111/text-package-smoke-argument-error.py",
+      "sha256": "fc8090f4dcc439bc8e2a432ecdbf836d85b18f5f656ceed286f94c785a5b767a"
+    },
+    {
+      "workspace_relative_path": "rsi-gap-validation-20261111/text-package-smoke.json",
+      "sha256": "17ef502fb5f27273d6be7eb09933f85d0c5cfdcbad4b0ea84950b65c08233d3e"
+    },
+    {
+      "workspace_relative_path": "rsi-gap-validation-20261111/text-package-smoke.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "workspace_relative_path": "rsi-gap-validation-20261111/text-package-smoke.py",
+      "sha256": "22276e81640a83eb790932187516059a22b06783599c8cc890f41172a8ee694f"
+    }
+  ],
+  "harness_correction": "First text wheel smoke passed an unsupported --config option to the existing positional init interface; log/script retained separately. Corrected positional invocation passed in a fresh synthetic workspace. No product change required.",
+  "compatibility": "Healthy text RSI schema 1 states remain compatible. Missing/incomplete state requires restoration from a consistent backup, not an empty rebuild. Registry changes validator identity; preserve frozen historical code/evidence, no hash rewriting.",
+  "unchanged": [
+    "evaluator and kernel quality gates",
+    "research hot loop and action budget",
+    "production main branch and deployment",
+    "historical experiment results and cost ledger"
+  ],
+  "new_gpu_jobs": 0,
+  "external_model_requests": 0,
+  "production_enabled": false,
+  "limitations": [
+    "CPU engineering evidence only; 10 environment-dependent tests skipped",
+    "Already reserved/running work requires external lifecycle control; disable does not terminate it",
+    "No silent state repair and no universal absence-of-bugs or new ROI claim"
+  ],
+  "ci": "Exact resulting commit push/PR CPU matrix checked after commit; workspace ci-final.json will contain the final bound results."
+}

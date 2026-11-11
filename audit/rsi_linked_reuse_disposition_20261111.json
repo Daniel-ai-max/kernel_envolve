@@ -1,0 +1,11 @@
+{
+  "at": 1794340751.548717,
+  "status": "closed_not_qualified",
+  "source_commit": "14a3e29fd5ba8cf04e3c0fd92b0488c1c9dd3c21",
+  "job": "ef46cf6e2cc74cbfb469f0bbc4850963",
+  "summary_sha256": "7d4d93430edc4fcfeaedd8955f7ed0f3c84f1313897ab1172d3fc6610b2b3769",
+  "evidence_sha256": "bf379d61fc421031887dcf89c6c354d176572df0e3bf76905df24e99f7432f4e",
+  "reason": "All64fullcorrect/promotable and177callscomplete, but no method passes preregistered practical gate. Artifact vscontrol original gate accepts, +7.23percent quality/5.59percent wall saving below10percentpracticalcriterion; vscompactsource trial5.21percentslower andoriginalgatefails. Full-viewartifactablationnoteligible.",
+  "conditional_confirmation": "g/h closed_not_launched; no task/source/criterion rerun",
+  "next": "Previously registered i/j 2x2 computeallocation may proceed under existing24hbudget; no gate change."
+}

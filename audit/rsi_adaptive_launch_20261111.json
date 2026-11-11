@@ -1,0 +1,208 @@
+{
+  "at": 1794346671.82356,
+  "source_commit": "6e97cddbfcc1e19bfda8a8f84d1ba8a9306f4fa6",
+  "job": "8774e952b4ff4276a213a8fb2f9ff0f8",
+  "status": "running;no interim outcomes inspected",
+  "gpus": 1,
+  "priority": 80,
+  "space": "flexible",
+  "platform_deadline_seconds": 7200,
+  "max_model_requests": 176,
+  "prior_released_gpu_seconds": 17954.384977579117,
+  "cap_gpu_seconds": 86400,
+  "absolute_expires_at": 1794407502.345601,
+  "request_sha256": "340740be8588baced68865125f80c9414ce2840ec378cc4b652330df5100f301",
+  "checks": {
+    "cpu-adapter-smoke.json": {
+      "passed": true,
+      "rows": [
+        {
+          "arm": "control-4",
+          "passed": true,
+          "episode_id": null,
+          "steps": 4,
+          "remaining_actions_first_model": 4,
+          "independent_full_passed": true
+        },
+        {
+          "arm": "reuse-2",
+          "passed": true,
+          "episode_id": "3e91119e56569eb3022c693337d37d10645d36bc26202e7ee935b9d424523fe2",
+          "steps": 2,
+          "remaining_actions_first_model": 1,
+          "independent_full_passed": true
+        },
+        {
+          "arm": "reuse-4",
+          "passed": true,
+          "episode_id": "3e91119e56569eb3022c693337d37d10645d36bc26202e7ee935b9d424523fe2",
+          "steps": 4,
+          "remaining_actions_first_model": 3,
+          "independent_full_passed": true
+        },
+        {
+          "arm": "adaptive-reuse",
+          "passed": true,
+          "episode_id": "3e91119e56569eb3022c693337d37d10645d36bc26202e7ee935b9d424523fe2",
+          "steps": 2,
+          "remaining_actions_first_model": 1,
+          "independent_full_passed": true
+        }
+      ],
+      "model_calls": 0,
+      "gpu_allocations": 0,
+      "scope": "Real adapter, source guard, research and independent full evaluator; synthetic CPU episode and local deterministic duplicate-evaluation responder exhausting each action cap, not efficacy evidence."
+    },
+    "controller-guard-check.json": {
+      "passed": true,
+      "checks": [
+        "expired",
+        "absolute-expiry",
+        "over-budget",
+        "wrong-hash",
+        "duplicate-submission",
+        "model-cap-before-credentials"
+      ],
+      "network_calls": 0,
+      "gpu_allocations": 0
+    },
+    "model-process-smoke.json": {
+      "passed": true,
+      "checks": [
+        "success-bound-to-original-packet",
+        "duplicate-before-worker",
+        "real-process-timeout",
+        "timed-out-child-reaped",
+        "unknown-usage-retained",
+        "call-cap-before-worker"
+      ],
+      "model_calls": 0,
+      "network_calls": 0,
+      "gpu_allocations": 0
+    },
+    "workload-smoke.json": {
+      "at": 1794346464.4991941,
+      "passed": true,
+      "rows": [
+        {
+          "task": "artifact-retune-swish-gate-m",
+          "cases": 15,
+          "source_sha256": "65d75a6e1dfe95a9cdd6a43df490e98f373926c16e801a2f79b4038d07dcf03f",
+          "historical_selector_fixture_only": true
+        },
+        {
+          "task": "artifact-retune-swish-gate-n",
+          "cases": 15,
+          "source_sha256": "65d75a6e1dfe95a9cdd6a43df490e98f373926c16e801a2f79b4038d07dcf03f",
+          "historical_selector_fixture_only": true
+        },
+        {
+          "task": "artifact-retune-smooth-l1-m",
+          "cases": 15,
+          "source_sha256": "0e9880064cdce8ac37e1460784d69c3295ec127c7d933c0a3697591cd6d60c81",
+          "historical_selector_fixture_only": true
+        },
+        {
+          "task": "artifact-retune-smooth-l1-n",
+          "cases": 15,
+          "source_sha256": "0e9880064cdce8ac37e1460784d69c3295ec127c7d933c0a3697591cd6d60c81",
+          "historical_selector_fixture_only": true
+        },
+        {
+          "task": "artifact-retune-rms-normalize-m",
+          "cases": 15,
+          "source_sha256": "6499c04c2660969f8fe9829372bfa2e48ce2757324454e2e80064077f497fe09",
+          "historical_selector_fixture_only": true
+        },
+        {
+          "task": "artifact-retune-rms-normalize-n",
+          "cases": 15,
+          "source_sha256": "6499c04c2660969f8fe9829372bfa2e48ce2757324454e2e80064077f497fe09",
+          "historical_selector_fixture_only": true
+        },
+        {
+          "task": "artifact-retune-central-variance-m",
+          "cases": 15,
+          "source_sha256": "5bf06bb778eb529ca339222f76de328adefb6968f82191641d059dcb8355edd2",
+          "historical_selector_fixture_only": true
+        },
+        {
+          "task": "artifact-retune-central-variance-n",
+          "cases": 15,
+          "source_sha256": "5bf06bb778eb529ca339222f76de328adefb6968f82191641d059dcb8355edd2",
+          "historical_selector_fixture_only": true
+        }
+      ],
+      "cases": 120,
+      "scope": "Small CPU shapes and CPU-rewritten device fixture only. Historical runtime used solely to test selector, not evidence of current GPU environment. Actual driver must observe fresh runtime. No candidate GPU execution or model calls."
+    }
+  },
+  "activation_smoke": {
+    "at": 1794346528.457016,
+    "passed": true,
+    "checks": [
+      [
+        "development",
+        "valid-fixture"
+      ],
+      [
+        "development",
+        "stale"
+      ],
+      [
+        "development",
+        "wrong-job"
+      ],
+      [
+        "development",
+        "active-pods"
+      ],
+      [
+        "development",
+        "missing-pod-status"
+      ],
+      [
+        "development",
+        "active-job"
+      ],
+      [
+        "conditional-confirmation",
+        "valid-fixture"
+      ],
+      [
+        "conditional-confirmation",
+        "stale"
+      ],
+      [
+        "conditional-confirmation",
+        "wrong-job"
+      ],
+      [
+        "conditional-confirmation",
+        "active-pods"
+      ],
+      [
+        "conditional-confirmation",
+        "missing-pod-status"
+      ],
+      [
+        "conditional-confirmation",
+        "active-job"
+      ],
+      [
+        "conditional-confirmation",
+        "negative-primary-gate"
+      ]
+    ],
+    "network_calls": 0,
+    "gpu_allocations": 0
+  },
+  "cpu_preparation_correction": {
+    "at": 1794346502.311129,
+    "failed": "CPU adapter exited1 in synthetic smoke;temp stderr removed with fixture",
+    "identified_issue": "Copied task_profile still accepts i/j, while new test uses m/n. No model or GPU calls.",
+    "correction": "Bind exact suffixes m/n development and o/p conditional confirmation before registration."
+  },
+  "production_enabled": false,
+  "efficacy": "unproven"
+}

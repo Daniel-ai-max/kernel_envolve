@@ -1,0 +1,46 @@
+{
+  "date": "2026-11-10",
+  "source_commit": "e42f16fc67bca742656184342e243578a9d4e27f",
+  "job": "233e527a133a4a11858b668d568252b0",
+  "status": "deliberately_aborted_development_comparison",
+  "reason": "Each report incorrectly attached the final retained source to the earlier attempted hypothesis. Learner noticed the inconsistency; human/agent review confirmed it against actual candidate archives.",
+  "completed_training_tasks": 2,
+  "completed_comparison_trials": 6,
+  "comparisons_are_not_clean_effect_estimates": true,
+  "model_attempts": 17,
+  "model_statuses": {
+    "completed": 16,
+    "failed": 1
+  },
+  "unaccounted_usage_attempts": 1,
+  "usage_note": "One in-flight request was interrupted by the deliberate controller pause; its final provider usage is unavailable, not zero. No automatic retry.",
+  "known_total_tokens": 96492,
+  "worker_exit": {
+    "reason": "TimeoutError: Controller contact lost",
+    "seconds": 382.30801461078227,
+    "driver_returncode": 1
+  },
+  "release": {
+    "id": "233e527a133a4a11858b668d568252b0",
+    "phase": "Stopped",
+    "live_read_status": {
+      "cr": "not_found",
+      "pods": "available"
+    },
+    "pods": [],
+    "at": 1794316873.518978
+  },
+  "conservative_gpu_seconds": 415.7899980545044,
+  "controller_pause_seconds": 85.42908072471619,
+  "evidence_sha256": "142719917edbcf1a84282cf1ac5c5a57a9ffbc3cf7a67872c65f00985859e889",
+  "active_after": "base",
+  "fix": "Generate source-bound report_records from evaluator receipts and archived candidates; preserve a distinct final-selected identity. Preserve source digests in collected evidence.",
+  "followup": "Reuse exact historical learning runs, rebuild reports; compare on fresh development templates, no final-audit claim",
+  "preflight": {
+    "passed": true,
+    "raw_evaluator_receipts_recomputed": 7,
+    "hypothesis_source_bindings_checked": 3,
+    "new_gpu_or_model_calls": 0,
+    "archive_sha256": "f1500443dd7e13f265ce336a4ae924b596f6ff4489f51c8aeaa522355ab22926"
+  }
+}

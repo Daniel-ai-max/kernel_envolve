@@ -1,0 +1,282 @@
+{
+  "registered_at": 1794338871.122108,
+  "status": "conditional_protocol_before_current_results_no_submission",
+  "phase": "development",
+  "source_commit": "4894926cb0538d2f641d63e8d881c08f6d517617",
+  "activation": "Only if current linked-history comparison closes without qualifying method; its g/h confirmation takes precedence if qualified. This protocol cannot reinterpret or rerun old experiments.",
+  "arms": [
+    "control-4",
+    "control-2",
+    "reuse-4",
+    "reuse-2"
+  ],
+  "max_actions_by_arm": {
+    "control-4": 4,
+    "control-2": 2,
+    "reuse-4": 4,
+    "reuse-2": 2
+  },
+  "max_model_calls_by_arm": {
+    "control-4": 4,
+    "control-2": 2,
+    "reuse-4": 3,
+    "reuse-2": 1
+  },
+  "trials": 64,
+  "repeats": 2,
+  "operator_clusters": 4,
+  "tasks": 8,
+  "max_model_requests": 160,
+  "model": "gpt-6-astra",
+  "reasoning": "medium",
+  "max_output_tokens": 4096,
+  "platform_seconds": 7200,
+  "worker_seconds": 7050,
+  "validation_total_seconds": 6600,
+  "solver_seconds": 600,
+  "decision_seconds": 125,
+  "local_model_process_seconds": 115,
+  "evaluation_seconds": 90,
+  "catalog": {
+    "data": {
+      "cases": {
+        "i": {
+          "pointwise": [
+            [
+              524309
+            ],
+            [
+              8388637
+            ]
+          ],
+          "row-reduction": [
+            [
+              421,
+              2053
+            ],
+            [
+              811,
+              4099
+            ]
+          ],
+          "strides": [
+            1,
+            5
+          ],
+          "seeds": [
+            541,
+            547
+          ]
+        },
+        "j": {
+          "pointwise": [
+            [
+              262171
+            ],
+            [
+              10485767
+            ]
+          ],
+          "row-reduction": [
+            [
+              347,
+              1039
+            ],
+            [
+              613,
+              8191
+            ]
+          ],
+          "strides": [
+            1,
+            7
+          ],
+          "seeds": [
+            557,
+            563
+          ]
+        }
+      },
+      "episodes": [
+        {
+          "id": "f4d08a34c9dc48c2b919fc470129cb556b3e259d21dc644399e7ecf2321d482b",
+          "task": "value-train-swish-gate"
+        },
+        {
+          "id": "8e7f3e6f024917bcb6a2cc01fca05b1fb5892111bfe3efdbec50dbf85867befd",
+          "task": "value-train-smooth-l1"
+        },
+        {
+          "id": "575207e89a57d44fe9ba07704ed6d5c700abf3b05862617154949fc959caa51b",
+          "task": "value-train-rms-normalize"
+        },
+        {
+          "id": "30328cf08106c3390296659a93dd2c324a571260f554ef4712b98f3802a8a557",
+          "task": "value-train-central-variance"
+        }
+      ],
+      "scope": "Same exact task/reference/input-generator source; new case configuration only."
+    },
+    "sha256": "aab91915e3c8d0f1d52453788fd18aa354e3786f45b327eef1e101b780c85585"
+  },
+  "validation_tasks": [
+    "artifact-retune-swish-gate-i",
+    "artifact-retune-swish-gate-j",
+    "artifact-retune-smooth-l1-i",
+    "artifact-retune-smooth-l1-j",
+    "artifact-retune-rms-normalize-i",
+    "artifact-retune-rms-normalize-j",
+    "artifact-retune-central-variance-i",
+    "artifact-retune-central-variance-j"
+  ],
+  "training_manifest_sha256": "dbb5fced15ed50cfa39204dad97b0d51212b2e540b7fc00f3de36cbd6e7b4d25",
+  "order": [
+    [
+      "control-4",
+      "control-2",
+      "reuse-2",
+      "reuse-4"
+    ],
+    [
+      "control-2",
+      "reuse-4",
+      "control-4",
+      "reuse-2"
+    ],
+    [
+      "reuse-4",
+      "reuse-2",
+      "control-2",
+      "control-4"
+    ],
+    [
+      "reuse-2",
+      "control-4",
+      "reuse-4",
+      "control-2"
+    ],
+    [
+      "control-4",
+      "control-2",
+      "reuse-2",
+      "reuse-4"
+    ],
+    [
+      "control-2",
+      "reuse-4",
+      "control-4",
+      "reuse-2"
+    ],
+    [
+      "reuse-4",
+      "reuse-2",
+      "control-2",
+      "control-4"
+    ],
+    [
+      "reuse-2",
+      "control-4",
+      "reuse-4",
+      "control-2"
+    ],
+    [
+      "control-4",
+      "control-2",
+      "reuse-2",
+      "reuse-4"
+    ],
+    [
+      "control-2",
+      "reuse-4",
+      "control-4",
+      "reuse-2"
+    ],
+    [
+      "reuse-4",
+      "reuse-2",
+      "control-2",
+      "control-4"
+    ],
+    [
+      "reuse-2",
+      "control-4",
+      "reuse-4",
+      "control-2"
+    ],
+    [
+      "control-4",
+      "control-2",
+      "reuse-2",
+      "reuse-4"
+    ],
+    [
+      "control-2",
+      "reuse-4",
+      "control-4",
+      "reuse-2"
+    ],
+    [
+      "reuse-4",
+      "reuse-2",
+      "control-2",
+      "control-4"
+    ],
+    [
+      "reuse-2",
+      "control-4",
+      "reuse-4",
+      "control-2"
+    ]
+  ],
+  "comparisons": [
+    [
+      "control-4",
+      "reuse-2"
+    ],
+    [
+      "control-2",
+      "reuse-2"
+    ],
+    [
+      "reuse-4",
+      "reuse-2"
+    ],
+    [
+      "control-4",
+      "control-2"
+    ]
+  ],
+  "acceptance_comparisons": [
+    "reuse-2-vs-control-4",
+    "reuse-2-vs-control-2"
+  ],
+  "primary_criteria": {
+    "screen": "Existing .02 per-task quality allowance, nondecreasing aggregate quality in each repeat, <=5% solver/trial overhead and original .01 quality or .1 cost benefit conditions. All attempts and independent full outcomes required.",
+    "practical": "For BOTH acceptance comparisons, >=10% relative quality gain at <=5% wall overhead OR >=10% wall saving at protected quality, plus <=5% token overhead. Unknown usage forbids acceptance.",
+    "uncertainty": "Exhaustive paired resampling of 4 operator clusters (both variants/repeats stay together),256 draws,alpha .05/8 across 4 comparisons x2 metrics. Development exploratory only; independent confirmation requires a positive one-sided lower bound for the corresponding accepted benefit in BOTH acceptance comparisons.",
+    "cost": "Keep all prior acquisition, development failure, infrastructure and validation resources; missing cost is unknown, not zero. No observed full-campaign ROI without actual recovery of costs."
+  },
+  "selection": "Only reuse-2 is a candidate method here. control-2 and reuse-4 are factorial ablations, not alternate winners to select after seeing results. Both reuse arms receive exactly the same approved full source and current-runtime/exact-task selection. All four arms use linked_history and default-off bounded decision timeout recovery with independent final full.",
+  "stopping": "Action cap fixed by arm before any result; prompt states actual remaining_actions. No learned stop-text, no softened evaluator or extra action for artifact. No model/job retries, no resampling.",
+  "manager_scope": "Package contains new managed bridge but this efficacy comparison uses the same standalone research path in all arms; no claim of measured Manager/GPU production integration.",
+  "limitations": [
+    "Four known formulas with fresh shapes/strides/seeds only, not eight independent operators or native production training.",
+    "Reduced search may lose worthwhile refinements; this is why both no-memory references and separate final full remain.",
+    "Content identity and approved manifests are not an OS sandbox or universal compatibility proof.",
+    "This is a separate explicit budget-allocation mechanism, not a repeat of closed advice/memory/retuning studies."
+  ],
+  "prior_diagnostic": {
+    "closed_source": "590f155",
+    "file": "rsi-managed-integration-20261111/old-search-marginal-diagnostic.json",
+    "sha256": "4814f3668d03ba001d870717580a756cb486fe3b98fa1bbea58458174e56a917",
+    "interpretation": "Search-score marginal observation only; does not prove a counterfactual early-stop result or utility."
+  },
+  "authorization": {
+    "absolute_expires_at": 1794407502.345601,
+    "total_gpu_seconds": 86400,
+    "single_gpu_serial": true,
+    "priority": 80,
+    "space": "flexible",
+    "execution_budget_receipt": "Must bind fresh prior released total and request hash before any submission; no reserved GPU now."
+  }
+}

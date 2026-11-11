@@ -1,0 +1,1017 @@
+{
+  "source_commit": "649c8b004532fb23f8bcbcc654ebc8a50b106b56",
+  "job": "46b545490fad461bb2ede817a24583f0",
+  "completed": true,
+  "comparison_performed": true,
+  "aggregates": {
+    "control": {
+      "attempts": 8,
+      "completed_full": 8,
+      "correct_full": 8,
+      "promotable": 8,
+      "failed_attempts": 0,
+      "all_attempt_trial_seconds": 267.6492381533608,
+      "completed_solver_seconds": 239.11667587980628,
+      "model_requests": 16,
+      "missing_usage_calls": 0,
+      "known_tokens": 89896,
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "actions": {
+        "propose": 11,
+        "stop": 5
+      },
+      "search_modes": {
+        "full": 19
+      }
+    },
+    "broadcast": {
+      "attempts": 8,
+      "completed_full": 8,
+      "correct_full": 8,
+      "promotable": 7,
+      "failed_attempts": 0,
+      "all_attempt_trial_seconds": 240.80210924707353,
+      "completed_solver_seconds": 212.61924437060952,
+      "model_requests": 16,
+      "missing_usage_calls": 0,
+      "known_tokens": 93533,
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "actions": {
+        "propose": 10,
+        "stop": 6
+      },
+      "search_modes": {
+        "full": 18
+      }
+    },
+    "routed": {
+      "attempts": 8,
+      "completed_full": 8,
+      "correct_full": 8,
+      "promotable": 8,
+      "failed_attempts": 0,
+      "all_attempt_trial_seconds": 236.84655359573662,
+      "completed_solver_seconds": 208.11733848322183,
+      "model_requests": 16,
+      "missing_usage_calls": 0,
+      "known_tokens": 91628,
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "actions": {
+        "propose": 10,
+        "stop": 6
+      },
+      "search_modes": {
+        "full": 18
+      }
+    }
+  },
+  "gate_comparisons": {
+    "broadcast-vs-control": {
+      "accepted": false,
+      "reasons": [
+        "Aggregate quality regression",
+        "No reproducible whole-suite quality, correctness or cost benefit",
+        "Per-task quality regression"
+      ],
+      "repeats": [
+        {
+          "candidate_passed": 4,
+          "candidate_quality": 0.21319779947255407,
+          "candidate_seconds": 116.59277622867376,
+          "candidate_solver_seconds": 102.25364188663661,
+          "control_passed": 4,
+          "control_quality": 0.24813296262409867,
+          "control_seconds": 143.57842850498855,
+          "control_solver_seconds": 129.28950721863657,
+          "quality_gain": -0.0349351631515446,
+          "repeat": 0
+        },
+        {
+          "candidate_passed": 4,
+          "candidate_quality": 0.19170758148335565,
+          "candidate_seconds": 124.20933301839978,
+          "candidate_solver_seconds": 110.3656024839729,
+          "control_passed": 4,
+          "control_quality": 0.21394049467437412,
+          "control_seconds": 124.07080964837223,
+          "control_solver_seconds": 109.82716866116971,
+          "quality_gain": -0.022232913191018472,
+          "repeat": 1
+        }
+      ],
+      "scope": "Equal-weight declared tasks only; wall time is not token cost or a significance test"
+    },
+    "routed-vs-broadcast": {
+      "accepted": false,
+      "reasons": [
+        "No reproducible whole-suite quality, correctness or cost benefit"
+      ],
+      "repeats": [
+        {
+          "candidate_passed": 4,
+          "candidate_quality": 0.21624353548623348,
+          "candidate_seconds": 115.38728766795248,
+          "candidate_solver_seconds": 101.09858224354684,
+          "control_passed": 4,
+          "control_quality": 0.21319779947255407,
+          "control_seconds": 116.59277622867376,
+          "control_solver_seconds": 102.25364188663661,
+          "quality_gain": 0.003045736013679412,
+          "repeat": 0
+        },
+        {
+          "candidate_passed": 4,
+          "candidate_quality": 0.2286866413084328,
+          "candidate_seconds": 121.45926592778414,
+          "candidate_solver_seconds": 107.01875623967499,
+          "control_passed": 4,
+          "control_quality": 0.19170758148335565,
+          "control_seconds": 124.20933301839978,
+          "control_solver_seconds": 110.3656024839729,
+          "quality_gain": 0.036979059825077154,
+          "repeat": 1
+        }
+      ],
+      "scope": "Equal-weight declared tasks only; wall time is not token cost or a significance test"
+    },
+    "routed-vs-control": {
+      "accepted": false,
+      "reasons": [
+        "Aggregate quality regression",
+        "No reproducible whole-suite quality, correctness or cost benefit",
+        "Per-task quality regression"
+      ],
+      "repeats": [
+        {
+          "candidate_passed": 4,
+          "candidate_quality": 0.21624353548623348,
+          "candidate_seconds": 115.38728766795248,
+          "candidate_solver_seconds": 101.09858224354684,
+          "control_passed": 4,
+          "control_quality": 0.24813296262409867,
+          "control_seconds": 143.57842850498855,
+          "control_solver_seconds": 129.28950721863657,
+          "quality_gain": -0.03188942713786519,
+          "repeat": 0
+        },
+        {
+          "candidate_passed": 4,
+          "candidate_quality": 0.2286866413084328,
+          "candidate_seconds": 121.45926592778414,
+          "candidate_solver_seconds": 107.01875623967499,
+          "control_passed": 4,
+          "control_quality": 0.21394049467437412,
+          "control_seconds": 124.07080964837223,
+          "control_solver_seconds": 109.82716866116971,
+          "quality_gain": 0.014746146634058682,
+          "repeat": 1
+        }
+      ],
+      "scope": "Equal-weight declared tasks only; wall time is not token cost or a significance test"
+    }
+  },
+  "advice_assignment": [
+    {
+      "arms": {
+        "broadcast": {
+          "advice_bytes": 1463,
+          "selected_rules": [
+            "pointwise-parity-experiment-gate",
+            "reduction-selective-next-experiment"
+          ],
+          "text_sha256": "8261d886cc5f89629d848bd850bc0d911ba14d580de53575e7196022d1fbc01c"
+        },
+        "control": {
+          "advice_bytes": 0,
+          "selected_rules": [],
+          "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "routed": {
+          "advice_bytes": 820,
+          "selected_rules": [
+            "pointwise-parity-experiment-gate"
+          ],
+          "text_sha256": "fc2b609c8855ad5f6c3c276477d344560b067c825615f6160a1a121238e378df"
+        }
+      },
+      "profile": {
+        "capabilities": [
+          "full-evaluate",
+          "propose-candidate",
+          "quick-evaluate",
+          "stop"
+        ],
+        "tags": [
+          "pointwise"
+        ]
+      },
+      "template_hash": "2ddbf932def4205466649a11e6f190db6113ac75c253acaa0e6cabd3e51fae7c"
+    },
+    {
+      "arms": {
+        "broadcast": {
+          "advice_bytes": 1463,
+          "selected_rules": [
+            "pointwise-parity-experiment-gate",
+            "reduction-selective-next-experiment"
+          ],
+          "text_sha256": "8261d886cc5f89629d848bd850bc0d911ba14d580de53575e7196022d1fbc01c"
+        },
+        "control": {
+          "advice_bytes": 0,
+          "selected_rules": [],
+          "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "routed": {
+          "advice_bytes": 820,
+          "selected_rules": [
+            "pointwise-parity-experiment-gate"
+          ],
+          "text_sha256": "fc2b609c8855ad5f6c3c276477d344560b067c825615f6160a1a121238e378df"
+        }
+      },
+      "profile": {
+        "capabilities": [
+          "full-evaluate",
+          "propose-candidate",
+          "quick-evaluate",
+          "stop"
+        ],
+        "tags": [
+          "pointwise"
+        ]
+      },
+      "template_hash": "a63042a8b401d23a67b7a36def9a79972e5c38ec2888ab40f52df4327f162a7f"
+    },
+    {
+      "arms": {
+        "broadcast": {
+          "advice_bytes": 1463,
+          "selected_rules": [
+            "pointwise-parity-experiment-gate",
+            "reduction-selective-next-experiment"
+          ],
+          "text_sha256": "8261d886cc5f89629d848bd850bc0d911ba14d580de53575e7196022d1fbc01c"
+        },
+        "control": {
+          "advice_bytes": 0,
+          "selected_rules": [],
+          "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "routed": {
+          "advice_bytes": 822,
+          "selected_rules": [
+            "reduction-selective-next-experiment"
+          ],
+          "text_sha256": "1bbe281bdbfd783face60de3b0783668d59e88efa52ff9c9d43cfc05372d5686"
+        }
+      },
+      "profile": {
+        "capabilities": [
+          "full-evaluate",
+          "propose-candidate",
+          "quick-evaluate",
+          "stop"
+        ],
+        "tags": [
+          "row-reduction"
+        ]
+      },
+      "template_hash": "79ab84ad7def9817e54a7cc9ebd4c28334e3b2f3837f92226fe93f490bd70a86"
+    },
+    {
+      "arms": {
+        "broadcast": {
+          "advice_bytes": 1463,
+          "selected_rules": [
+            "pointwise-parity-experiment-gate",
+            "reduction-selective-next-experiment"
+          ],
+          "text_sha256": "8261d886cc5f89629d848bd850bc0d911ba14d580de53575e7196022d1fbc01c"
+        },
+        "control": {
+          "advice_bytes": 0,
+          "selected_rules": [],
+          "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "routed": {
+          "advice_bytes": 822,
+          "selected_rules": [
+            "reduction-selective-next-experiment"
+          ],
+          "text_sha256": "1bbe281bdbfd783face60de3b0783668d59e88efa52ff9c9d43cfc05372d5686"
+        }
+      },
+      "profile": {
+        "capabilities": [
+          "full-evaluate",
+          "propose-candidate",
+          "quick-evaluate",
+          "stop"
+        ],
+        "tags": [
+          "row-reduction"
+        ]
+      },
+      "template_hash": "4a098727a2476f324643db913517657c17f2293a292ca40688a7fe10c31742f5"
+    }
+  ],
+  "strategies": {
+    "broadcast": [
+      {
+        "action": "Stop unless a distinct candidate hypothesis predicts a specific case-level contrast. If one exists, use propose-candidate then full-evaluate for the two decisions; avoid spending them on an unchanged rerun or a quick/full sequence that leaves no room to propose.",
+        "evidence": [
+          "55ee833ed310b33023673cdfa3e6dc5f487010f8a3beff1feff51de3b670c369",
+          "e061752064369ad5c8f947746376a9593f3e76cd8df94072b699a7b5d532c42d",
+          "5a83cbffcaaa5d422c92542bf74b9182a1dca5ccf617e12a0b250f51e8d632a2",
+          "49d6bd7cdcfe29e1943a858ac1fea6639a6e603d0a309d1ef118c22c545ceb94"
+        ],
+        "id": "pointwise-parity-experiment-gate",
+        "unless": "Existing results identify a repeatable shape/layout-specific benefit worth isolating in the next candidate.",
+        "when": "A fused stride-aware pointwise candidate passes correctness but remains near parity, and repeated evaluations of unchanged source also show small gains or losses without a stable winning shape/layout pattern."
+      },
+      {
+        "action": "Use decision 1 to propose-candidate restricting the promising strategy to the winning shape/layout region and retaining the selected implementation elsewhere. Use decision 2 to full-evaluate; compare the targeted gains and fallback cases. Treat this combination as untested.",
+        "evidence": [
+          "faf8acce137c81df4fad8f160bbba36421b11b5daf8ffade3a7a98b8836cbaff",
+          "a6a6e6471ab1b3c4e79d257881428a53dabb2331e503d5a48b00143bf95f3da7",
+          "42b9fe2e4c25cd8eed026c9c66601c5c60440664b8ea4a66e4dbe11425bb7f2d"
+        ],
+        "id": "reduction-selective-next-experiment",
+        "unless": "No observable shape/layout distinction supports selective use; stop rather than repeat an all-layout replacement.",
+        "when": "Row-reduction results show a candidate winning on wider contiguous rows in both batches but losing on narrower or stride-2 rows, while another candidate regresses across all tested layouts."
+      }
+    ],
+    "control": [],
+    "routed": [
+      {
+        "action": "Stop unless a distinct candidate hypothesis predicts a specific case-level contrast. If one exists, use propose-candidate then full-evaluate for the two decisions; avoid spending them on an unchanged rerun or a quick/full sequence that leaves no room to propose.",
+        "applies_to": [
+          "pointwise"
+        ],
+        "evidence": [
+          "55ee833ed310b33023673cdfa3e6dc5f487010f8a3beff1feff51de3b670c369",
+          "e061752064369ad5c8f947746376a9593f3e76cd8df94072b699a7b5d532c42d",
+          "5a83cbffcaaa5d422c92542bf74b9182a1dca5ccf617e12a0b250f51e8d632a2",
+          "49d6bd7cdcfe29e1943a858ac1fea6639a6e603d0a309d1ef118c22c545ceb94"
+        ],
+        "id": "pointwise-parity-experiment-gate",
+        "requires": [
+          "propose-candidate",
+          "full-evaluate",
+          "stop"
+        ],
+        "unless": "Existing results identify a repeatable shape/layout-specific benefit worth isolating in the next candidate.",
+        "when": "A fused stride-aware pointwise candidate passes correctness but remains near parity, and repeated evaluations of unchanged source also show small gains or losses without a stable winning shape/layout pattern."
+      },
+      {
+        "action": "Use decision 1 to propose-candidate restricting the promising strategy to the winning shape/layout region and retaining the selected implementation elsewhere. Use decision 2 to full-evaluate; compare the targeted gains and fallback cases. Treat this combination as untested.",
+        "applies_to": [
+          "row-reduction"
+        ],
+        "evidence": [
+          "faf8acce137c81df4fad8f160bbba36421b11b5daf8ffade3a7a98b8836cbaff",
+          "a6a6e6471ab1b3c4e79d257881428a53dabb2331e503d5a48b00143bf95f3da7",
+          "42b9fe2e4c25cd8eed026c9c66601c5c60440664b8ea4a66e4dbe11425bb7f2d"
+        ],
+        "id": "reduction-selective-next-experiment",
+        "requires": [
+          "propose-candidate",
+          "full-evaluate",
+          "stop"
+        ],
+        "unless": "No observable shape/layout distinction supports selective use; stop rather than repeat an all-layout replacement.",
+        "when": "Row-reduction results show a candidate winning on wider contiguous rows in both batches but losing on narrower or stride-2 rows, while another candidate regresses across all tested layouts."
+      }
+    ]
+  },
+  "known_total_tokens": 285862,
+  "missing_usage_calls": 0,
+  "ledger": [
+    {
+      "charged": 26.2958588283509,
+      "ended": 1794321137.056969,
+      "error": null,
+      "id": "01669df72e8f4e88a4d6fb4cf8859992",
+      "kind": "learn",
+      "reserved": 90.0,
+      "started": 1794321110.754029
+    },
+    {
+      "charged": 747.415793065913,
+      "ended": 1794321884.479465,
+      "error": null,
+      "id": "f82c153bcb6440b8be080a7e29fff189",
+      "kind": "validation",
+      "reserved": 1980.0,
+      "started": 1794321137.063711
+    }
+  ],
+  "driver_seconds": 775.4237997531891,
+  "current_conservative_gpu_seconds": 847.3489999771118,
+  "cumulative_gpu_seconds": 2306.5070526599884,
+  "live_pods_empty": true,
+  "policy_not_adopted": true,
+  "verification": {
+    "raw_receipts": 86,
+    "source_bindings": 55,
+    "call_to_arm_and_prompt_verified": true,
+    "declared_gates_recomputed": true
+  },
+  "evidence_sha256": "7513e9538ecd19481e59e5ff7329021dd977e481887bd0233f7d1b99a84544f9",
+  "limitations": [
+    "Development ablation, not independent final audit",
+    "No ACE/GEPA implementation baseline; cannot establish superiority over reference works",
+    "Two templates per declared family and two stochastic repeats do not establish statistical superiority",
+    "The same frozen historical learning trajectories are reused; hardware provenance remains recorded",
+    "Profiles are operator declarations, not authority to execute new tools",
+    "Advice routing differences affect input length; wall time and token cost must both be retained",
+    "One learning draw does not estimate learner variability"
+  ],
+  "observed_on": "2026-11-10",
+  "model": "gpt-6-astra",
+  "reasoning": "medium",
+  "environment": {
+    "count": 1,
+    "gpu": "NVIDIA B300 SXM6 AC",
+    "torch": "2.12.1+cu130",
+    "triton": "3.7.1"
+  },
+  "trials": [
+    {
+      "repeat": 0,
+      "task": 0,
+      "arm": "control",
+      "error": null,
+      "trial_id": "0-0-control",
+      "actions": {
+        "propose": 2
+      },
+      "search_modes": {
+        "full": 3
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "action_budget_exhausted",
+      "passed": true,
+      "quality": 0.28738530817009816,
+      "promotable": true,
+      "baseline_speedup": 1.4032828840956535,
+      "solver_seconds": 45.27229911647737,
+      "trial_seconds": 49.94906811602414,
+      "result_hash": "e48160a64ebac3c080e67a79f6eea2c27efeee2312829356ce7a254c6ae8abd3"
+    },
+    {
+      "repeat": 0,
+      "task": 0,
+      "arm": "broadcast",
+      "error": null,
+      "trial_id": "0-0-broadcast",
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.15698001865870986,
+      "promotable": true,
+      "baseline_speedup": 1.1862115040368868,
+      "solver_seconds": 25.784301662817597,
+      "trial_seconds": 30.460313249379396,
+      "result_hash": "0bb4f02a5d1ec7e36c8a58e3a657ad4a6ec8d4921b6e472992faecb911912070"
+    },
+    {
+      "repeat": 0,
+      "task": 0,
+      "arm": "routed",
+      "error": null,
+      "trial_id": "0-0-routed",
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.16287255405572088,
+      "promotable": true,
+      "baseline_speedup": 1.1945612401609897,
+      "solver_seconds": 23.075784266926348,
+      "trial_seconds": 27.751667762175202,
+      "result_hash": "8caf91b450e6ebb53c4833972d39d57e9dd4f412676a7ebafe706024be20c421"
+    },
+    {
+      "repeat": 0,
+      "task": 1,
+      "arm": "routed",
+      "error": null,
+      "trial_id": "0-1-routed",
+      "actions": {
+        "propose": 2
+      },
+      "search_modes": {
+        "full": 3
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "action_budget_exhausted",
+      "passed": true,
+      "quality": 0.10283460960749619,
+      "promotable": true,
+      "baseline_speedup": 1.1146216859329656,
+      "solver_seconds": 28.26505600195378,
+      "trial_seconds": 31.586654686369002,
+      "result_hash": "ed955f30003006ba205ff9d6bf4e3107370e01ddbbf51f86614d22a590c0081a"
+    },
+    {
+      "repeat": 0,
+      "task": 1,
+      "arm": "control",
+      "error": null,
+      "trial_id": "0-1-control",
+      "actions": {
+        "propose": 2
+      },
+      "search_modes": {
+        "full": 3
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "action_budget_exhausted",
+      "passed": true,
+      "quality": 0.09618455029717066,
+      "promotable": true,
+      "baseline_speedup": 1.1064205644291605,
+      "solver_seconds": 34.96118758060038,
+      "trial_seconds": 38.33271379955113,
+      "result_hash": "c0b4b705d44c9cceaafac0a8c254a6d813e4737f7e88f8cb6c06f200f9018ea7"
+    },
+    {
+      "repeat": 0,
+      "task": 1,
+      "arm": "broadcast",
+      "error": null,
+      "trial_id": "0-1-broadcast",
+      "actions": {
+        "propose": 2
+      },
+      "search_modes": {
+        "full": 3
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "action_budget_exhausted",
+      "passed": true,
+      "quality": 0.10067539515677326,
+      "promotable": true,
+      "baseline_speedup": 1.111945558494225,
+      "solver_seconds": 31.072815857827663,
+      "trial_seconds": 34.44445989560336,
+      "result_hash": "8b570f129032ee10f18e7f1ee05814bb8478287579c208cf116bdfa9e2417a66"
+    },
+    {
+      "repeat": 0,
+      "task": 2,
+      "arm": "routed",
+      "error": null,
+      "trial_id": "0-2-routed",
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.26954148788806864,
+      "promotable": true,
+      "baseline_speedup": 1.3690031444890132,
+      "solver_seconds": 27.88908812496811,
+      "trial_seconds": 31.109961666166782,
+      "result_hash": "9ef29941e1585a888e322ed477af957e48fbe09d34685deb11fc2a14210899fc"
+    },
+    {
+      "repeat": 0,
+      "task": 2,
+      "arm": "broadcast",
+      "error": null,
+      "trial_id": "0-2-broadcast",
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.2564655753640845,
+      "promotable": true,
+      "baseline_speedup": 1.3449276413659896,
+      "solver_seconds": 21.268805767409503,
+      "trial_seconds": 24.489678830839694,
+      "result_hash": "b0b170033378cadc6707bc63793e065961df76bfef8499e00d0634cbbc84957e"
+    },
+    {
+      "repeat": 0,
+      "task": 2,
+      "arm": "control",
+      "error": null,
+      "trial_id": "0-2-control",
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.2755568155526072,
+      "promotable": true,
+      "baseline_speedup": 1.3803704989823358,
+      "solver_seconds": 23.6256217751652,
+      "trial_seconds": 26.84624979365617,
+      "result_hash": "e7ced754f2c07a99723f38abe026526a6d9a8418f4b140495546abc97bcd55e7"
+    },
+    {
+      "repeat": 0,
+      "task": 3,
+      "arm": "broadcast",
+      "error": null,
+      "trial_id": "0-3-broadcast",
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.3386702087106487,
+      "promotable": true,
+      "baseline_speedup": 1.5121048728961168,
+      "solver_seconds": 24.12771859858185,
+      "trial_seconds": 27.198324252851307,
+      "result_hash": "ea4e4e6ce7f7025afd373e4bc69dbf76df0167098ab9a5af7592ff1d7a933f3e"
+    },
+    {
+      "repeat": 0,
+      "task": 3,
+      "arm": "routed",
+      "error": null,
+      "trial_id": "0-3-routed",
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.3297254903936482,
+      "promotable": true,
+      "baseline_speedup": 1.4919260477133376,
+      "solver_seconds": 21.868653849698603,
+      "trial_seconds": 24.93900355324149,
+      "result_hash": "15babb3b420ed73494f9c3073cee23659ce235c6b8a633e4bcdc7d7fd310b7f7"
+    },
+    {
+      "repeat": 0,
+      "task": 3,
+      "arm": "control",
+      "error": null,
+      "trial_id": "0-3-control",
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.33340517647651874,
+      "promotable": true,
+      "baseline_speedup": 1.500161664493895,
+      "solver_seconds": 25.43039874639362,
+      "trial_seconds": 28.450396795757115,
+      "result_hash": "c4eb5e264e938a0158cc5939b5936b2d17865f1599f80af80b22bbd1114d5ce5"
+    },
+    {
+      "repeat": 1,
+      "task": 0,
+      "arm": "control",
+      "error": null,
+      "trial_id": "1-0-control",
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.16177517663646046,
+      "promotable": true,
+      "baseline_speedup": 1.192997358378515,
+      "solver_seconds": 24.92919419799,
+      "trial_seconds": 29.50455357786268,
+      "result_hash": "78cc406530b65bf82c25746a7c0beaab6717b164e47b1a3a9d542ef699d85221"
+    },
+    {
+      "repeat": 1,
+      "task": 0,
+      "arm": "routed",
+      "error": null,
+      "trial_id": "1-0-routed",
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.18047037909623986,
+      "promotable": true,
+      "baseline_speedup": 1.2202121491316213,
+      "solver_seconds": 26.684158985503018,
+      "trial_seconds": 31.309651931747794,
+      "result_hash": "b9e99ef187fc50a4fb5b849947d795bf60353f4706bdeeacde427dffc542e442"
+    },
+    {
+      "repeat": 1,
+      "task": 0,
+      "arm": "broadcast",
+      "error": null,
+      "trial_id": "1-0-broadcast",
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.162180441429231,
+      "promotable": true,
+      "baseline_speedup": 1.1935744275365134,
+      "solver_seconds": 20.918229224160314,
+      "trial_seconds": 25.448334950953722,
+      "result_hash": "a7466c2c1eb016f7e2808c3f6e6c3ceb7035cde2e703e0493be32831bc45cbc7"
+    },
+    {
+      "repeat": 1,
+      "task": 1,
+      "arm": "broadcast",
+      "error": null,
+      "trial_id": "1-1-broadcast",
+      "actions": {
+        "propose": 2
+      },
+      "search_modes": {
+        "full": 3
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "action_budget_exhausted",
+      "passed": true,
+      "quality": 0,
+      "promotable": false,
+      "baseline_speedup": 0.9984598592844901,
+      "solver_seconds": 28.865718506276608,
+      "trial_seconds": 31.685533756390214,
+      "result_hash": "02c65d553205f53a0f3612b9c0882a4fa475798f36bdd4a03bd1a109c1189bda"
+    },
+    {
+      "repeat": 1,
+      "task": 1,
+      "arm": "control",
+      "error": null,
+      "trial_id": "1-1-control",
+      "actions": {
+        "propose": 2
+      },
+      "search_modes": {
+        "full": 3
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "action_budget_exhausted",
+      "passed": true,
+      "quality": 0.09984903424628078,
+      "promotable": true,
+      "baseline_speedup": 1.1109247648950469,
+      "solver_seconds": 33.80852099880576,
+      "trial_seconds": 37.18020268250257,
+      "result_hash": "41f5bfa16c20cd983765891202ed8f4cdfb347e8ddd35c7c4b4c0db60582978e"
+    },
+    {
+      "repeat": 1,
+      "task": 1,
+      "arm": "routed",
+      "error": null,
+      "trial_id": "1-1-routed",
+      "actions": {
+        "propose": 2
+      },
+      "search_modes": {
+        "full": 3
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "action_budget_exhausted",
+      "passed": true,
+      "quality": 0.09721946624592542,
+      "promotable": true,
+      "baseline_speedup": 1.1076889261686371,
+      "solver_seconds": 30.170539243146777,
+      "trial_seconds": 33.592935864813626,
+      "result_hash": "61a5fb87717917048427243b03cad30822a0268885e09e8d5e12be076a9dbb95"
+    },
+    {
+      "repeat": 1,
+      "task": 2,
+      "arm": "control",
+      "error": null,
+      "trial_id": "1-2-control",
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.25818122729242865,
+      "promotable": true,
+      "baseline_speedup": 1.3480381419171836,
+      "solver_seconds": 29.92057261429727,
+      "trial_seconds": 33.14232177659869,
+      "result_hash": "f8a22257c2deb79e93d43bbfe0219173bcbc620a6e1ffc0ca01e2644a7135263"
+    },
+    {
+      "repeat": 1,
+      "task": 2,
+      "arm": "broadcast",
+      "error": null,
+      "trial_id": "1-2-broadcast",
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.26542407140176744,
+      "promotable": true,
+      "baseline_speedup": 1.3613296611941363,
+      "solver_seconds": 25.03838230110705,
+      "trial_seconds": 28.260108899325132,
+      "result_hash": "62badf65482ed1f4b506b2f1def52287933b5a151f00a3bff7d74acc9225dd57"
+    },
+    {
+      "repeat": 1,
+      "task": 2,
+      "arm": "routed",
+      "error": null,
+      "trial_id": "1-2-routed",
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.2742735474941702,
+      "promotable": true,
+      "baseline_speedup": 1.3779296545511643,
+      "solver_seconds": 25.53268015384674,
+      "trial_seconds": 28.804261940531433,
+      "result_hash": "7c72337c7253661f7890b0f72e0f8a64d60051da0a76203f1a24c828137ad402"
+    },
+    {
+      "repeat": 1,
+      "task": 3,
+      "arm": "routed",
+      "error": null,
+      "trial_id": "1-3-routed",
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.3627831723973957,
+      "promotable": true,
+      "baseline_speedup": 1.569324532376667,
+      "solver_seconds": 24.63137785717845,
+      "trial_seconds": 27.752416190691292,
+      "result_hash": "e832884e987ba51dbabc1074d7206681a0ab77bfe03d55752b058ada0b3d386d"
+    },
+    {
+      "repeat": 1,
+      "task": 3,
+      "arm": "control",
+      "error": null,
+      "trial_id": "1-3-control",
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.3359565405223266,
+      "promotable": true,
+      "baseline_speedup": 1.505925532022535,
+      "solver_seconds": 21.168880850076675,
+      "trial_seconds": 24.243731611408293,
+      "result_hash": "7b98165bdfd35237c86b28296479058009b1a552104d076d072edee79b7c01c7"
+    },
+    {
+      "repeat": 1,
+      "task": 3,
+      "arm": "broadcast",
+      "error": null,
+      "trial_id": "1-3-broadcast",
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.3392258131024241,
+      "promotable": true,
+      "baseline_speedup": 1.5133763089250432,
+      "solver_seconds": 35.54327245242894,
+      "trial_seconds": 38.81535541173071,
+      "result_hash": "a0ae26ae252ba3d40c89f1014290988878b8b7cc646a7711ce47609b006f1b9b"
+    }
+  ],
+  "conclusion": "No policy passed predeclared gates. Lower routed trial time did not establish net benefit: quality regressed in one repeat and learning/validation costs remain.",
+  "controller_warning": "Local controller exited with TLS EOF during relay shutdown/export race; remote driver completed all 24 trials, all 49 model calls completed, archive verified and empty Pods confirmed. No rerun.",
+  "future_work": "Separate richer-trajectory study authorized under 24h budget; no new result from it belongs to this comparison."
+}

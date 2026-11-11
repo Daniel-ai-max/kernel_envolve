@@ -1,0 +1,18 @@
+{
+  "at": 1794344627.449785,
+  "job": "d8a9d1bae69346e9b58b8544e4abf2c8",
+  "status": "closed_not_qualified",
+  "summary_sha256": "574d2a27f2ef71dc8987685bdda7c1643345c856ac68469bfc74bfce1fda7faf",
+  "candidate": "reuse-2",
+  "required_comparisons": [
+    "reuse-2-vs-control-4",
+    "reuse-2-vs-control-2"
+  ],
+  "reason": "Passes limited-action control2 but fails control4 due quality regressions. Both required; no alternate winner, no relaxed gate.",
+  "confirmation_status": "closed_not_launched",
+  "gpu_seconds": 3580.0410652160645,
+  "cumulative_gpu_seconds": 17863.102749586105,
+  "released": true,
+  "policy_adopted": false,
+  "evidence_sha256": "18017d1cac84696c09cc923aebd652ea6cabfd9427b5c8a42067ed49131b0daa"
+}
