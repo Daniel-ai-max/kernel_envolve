@@ -2,6 +2,7 @@
 
 import json
 import math
+import os
 import shutil
 import statistics
 import subprocess
@@ -22,6 +23,7 @@ from .storage import digest, evaluator_hash, file_hash, read_json, write_json
 
 def snapshot(root, dest, artifacts=()):
     root = Path(root)
+    resolved_root = root.resolve()
     head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
     listed = (
         subprocess.check_output(
@@ -44,6 +46,7 @@ def snapshot(root, dest, artifacts=()):
             raise ValueError(f"Required compiled artifact missing: {pattern}")
         names.update(str(p.relative_to(root)) for p in matches)
     dest.mkdir(parents=True)
+    directories = {dest}
     files, total = {}, 0
     for name in sorted(names):
         src = root / name
@@ -51,7 +54,7 @@ def snapshot(root, dest, artifacts=()):
             continue
         if not src.is_file():
             continue  # A tracked local deletion is part of this source revision.
-        if src.is_symlink() or not src.resolve().is_relative_to(root.resolve()):
+        if src.is_symlink() or not src.resolve().is_relative_to(resolved_root):
             raise ValueError(f"Source symlink/outside-root file: {src}")
         if src.suffix in {".pyc", ".pyo"}:
             continue
@@ -59,7 +62,9 @@ def snapshot(root, dest, artifacts=()):
         if total > 512 * 1024 * 1024:
             raise ValueError("Source snapshot exceeds 512 MiB")
         dst = dest / name
-        dst.parent.mkdir(parents=True, exist_ok=True)
+        if dst.parent not in directories:
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            directories.add(dst.parent)
         shutil.copy2(src, dst)
         files[name] = file_hash(dst)
     if not files:
@@ -72,28 +77,45 @@ def verify_roots(run, identities, role, checkpoint=None):
     checkpoint()
     for root, identity in identities.items():
         base = run / "sources" / role / root
-        for name, expected in identity["files"].items():
+        if base.is_symlink():
+            raise ValueError("Symlink introduced in snapshot")
+        expected, seen = identity["files"], set()
+        pending = [(base, "")]
+        while pending:
             checkpoint()
-            path = base / name
-            if not path.is_file() or path.is_symlink() or file_hash(path) != expected:
-                raise ValueError(f"Frozen source changed: {role}/{root}/{name}")
-        # Report outputs and Python caches are permitted; newly injected executable sources are not.
-        for path in base.rglob("*"):
-            checkpoint()
-            if path.is_symlink():
-                raise ValueError("Symlink introduced in snapshot")
-            if path.is_file() and path.suffix in {
-                ".py",
-                ".so",
-                ".cu",
-                ".cuh",
-                ".cpp",
-                ".pyc",
-                ".pyo",
-            }:
-                name = str(path.relative_to(base))
-                if name not in identity["files"]:
-                    raise ValueError(f"Unrecorded executable source: {name}")
+            directory, prefix = pending.pop()
+            with os.scandir(directory) as entries:
+                for entry in entries:
+                    checkpoint()
+                    name = prefix + entry.name
+                    if entry.is_symlink():
+                        raise ValueError("Symlink introduced in snapshot")
+                    if entry.is_dir(follow_symlinks=False):
+                        if name in expected:
+                            raise ValueError(f"Frozen source changed: {role}/{root}/{name}")
+                        pending.append((Path(entry.path), name + "/"))
+                    elif name in expected:
+                        if (
+                            not entry.is_file(follow_symlinks=False)
+                            or file_hash(Path(entry.path)) != expected[name]
+                        ):
+                            raise ValueError(f"Frozen source changed: {role}/{root}/{name}")
+                        seen.add(name)
+                    # Report outputs are permitted; new source or bytecode is not.
+                    elif entry.is_file(follow_symlinks=False) and Path(name).suffix in {
+                        ".py",
+                        ".so",
+                        ".cu",
+                        ".cuh",
+                        ".cpp",
+                        ".pyc",
+                        ".pyo",
+                    }:
+                        raise ValueError(f"Unrecorded executable source: {name}")
+        checkpoint()
+        missing = expected.keys() - seen
+        if missing:
+            raise ValueError(f"Frozen source changed: {role}/{root}/{min(missing)}")
 
 
 def source_contents(identities):
