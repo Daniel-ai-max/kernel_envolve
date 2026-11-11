@@ -318,12 +318,11 @@ summary {
 #overview th:nth-child(1) { width: 12%; }
 #overview th:nth-child(2) { width: 7%; }
 #overview th:nth-child(3) { width: 9%; }
-#overview th:nth-child(4) { width: 7%; }
-#overview th:nth-child(5) { width: 8%; }
-#overview th:nth-child(6) { width: 10%; }
-#overview th:nth-child(7) { width: 10%; }
-#overview th:nth-child(8) { width: 18%; }
-#overview th:nth-child(9) { width: 19%; }
+#overview th:nth-child(4) { width: 9%; }
+#overview th:nth-child(5) { width: 12%; }
+#overview th:nth-child(6) { width: 9%; }
+#overview th:nth-child(7) { width: 21%; }
+#overview th:nth-child(8) { width: 21%; }
 #overview td { vertical-align: top; white-space: normal; }
 #overview .snippet { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.65; }
 #overview .research { font-size: 12px; }

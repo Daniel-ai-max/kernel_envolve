@@ -4,6 +4,9 @@ import json
 import time
 from pathlib import Path
 
+from .publication import publication_view
+from .usage import allocations, usage_view
+
 PROGRESS_NOTICE_SECONDS = 300
 
 
@@ -135,7 +138,7 @@ def research_summary(store, task, predecessors):
     }
 
 
-def task_view(store, key, now=None, predecessors=None):
+def task_view(store, key, now=None, predecessors=None, usage=None):
     now = time.time() if now is None else now
     task = store.task(key)
     recovery = store.one("SELECT data FROM metadata WHERE key=?", ("recovery:" + key,))
@@ -152,7 +155,16 @@ def task_view(store, key, now=None, predecessors=None):
             store, task, lineage_index(store) if predecessors is None else predecessors
         )
     )
+    task["allocation_usage"] = (
+        usage_view(
+            allocations(store) if usage is None else usage,
+            {row["task"] for row in task["lineage"]},
+        )
+        if task["history_complete"]
+        else None
+    )
     task["best"] = best(store, task)
+    task["implementation_pr"] = publication_view(store, key, task["best"])
     evidence = store.one("SELECT data FROM metadata WHERE key=?", (f"evidence:{key}",))
     task["evidence_as_of"] = json.loads(evidence["data"])["observed_at"] if evidence else None
     task["evidence_stale"] = task["evidence_as_of"] is None or now - task["evidence_as_of"] > 15
@@ -228,8 +240,9 @@ def overview(store, *, compact=False, now=None):
     coordinator = store.one("SELECT data FROM metadata WHERE key='coordinator'")
     coordinator = json.loads(coordinator["data"]) if coordinator else None
     predecessors = lineage_index(store)
+    usage = allocations(store)
     tasks = [
-        task_view(store, r["id"], now, predecessors)
+        task_view(store, r["id"], now, predecessors, usage)
         for r in store.rows("SELECT id FROM tasks ORDER BY created,id")
     ]
     if compact:
@@ -260,6 +273,7 @@ def overview(store, *, compact=False, now=None):
         resources.append(resource)
     return {
         "coordinator": coordinator,
+        "allocation_usage": usage_view(usage),
         "as_of": now,
         "tasks": tasks,
         "resources": resources,
