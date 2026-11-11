@@ -126,7 +126,7 @@ kernel-envolve manage --state /tmp/kernel-envolve-demo/state run
 kernel-envolve manage --state /tmp/kernel-envolve-demo/state serve --port 8787
 ```
 
-打开 [http://127.0.0.1:8787](http://127.0.0.1:8787)。演示使用模拟 Agent、CPU 和合成等待，展示调度及评测流程；其中的加速比不代表真实训练算子收益。重新查看时直接运行 `run` / `serve`，无需重新生成目录。停止任务时先在面板暂停；关闭页面或退出协调器不会立即终止已启动轮次。
+打开 [http://127.0.0.1:8787](http://127.0.0.1:8787)。演示使用模拟 Agent、CPU 和合成等待，展示调度及评测流程；其中的加速比不代表真实训练算子收益。重新查看时直接运行 `run` / `serve`，无需重新生成目录。停止任务时先运行 `manage pause <task>`；关闭页面或退出协调器不会立即终止已启动轮次。
 
 **接入真实任务。** 按[管理层配置指南](docs/optimization-manager.md#启动)准备独立工作区、物理 GPU UUID、固定 baseline、评测契约及 Agent 命令，然后启动：
 

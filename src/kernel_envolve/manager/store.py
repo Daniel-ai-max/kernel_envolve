@@ -154,7 +154,7 @@ class Store:
                 if self.root.is_relative_to(task["workspace"]):
                     raise ValueError("Manager state must be outside all task workspaces")
                 old = self.one("SELECT spec FROM tasks WHERE id=?", (task["id"],))
-                if old and json.loads(old["spec"]) != task:
+                if old and {"host_driven": False, **json.loads(old["spec"])} != task:
                     raise ValueError("Existing task differs; create a new identity or use controls")
                 for other in self.rows("SELECT id,spec FROM tasks WHERE id<>?", (task["id"],)):
                     a, b = Path(task["workspace"]), Path(json.loads(other["spec"])["workspace"])
@@ -331,7 +331,28 @@ class Store:
                 ).fetchone()[0]
                 if resource["problem"] or count >= resource["spec"]["sessions"]:
                     continue
-                scheduled.append(self.enqueue(task, "agent", task["spec"]["command"]))
+                permit = None
+                if task["spec"].get("host_driven"):
+                    ready = self.one(
+                        "SELECT data FROM metadata WHERE key=?", ("host-ready:" + task["id"],)
+                    )
+                    if not ready or json.loads(ready["data"])["expires_at"] <= time.time():
+                        continue
+                    permit = json.loads(ready["data"])
+                job = self.enqueue(task, "agent", task["spec"]["command"])
+                if permit:
+                    permit["round"] = job
+                    self.db.execute(
+                        "DELETE FROM metadata WHERE key=?", ("host-ready:" + task["id"],)
+                    )
+                    self.db.execute(
+                        "INSERT INTO metadata VALUES(?,?)", ("host-round:" + job, encode(permit))
+                    )
+                    self.db.execute(
+                        "UPDATE metadata SET data=? WHERE key=?",
+                        (encode(permit), f"host-claim:{task['id']}:{permit['claim']}"),
+                    )
+                scheduled.append(job)
         return scheduled
 
     def job(self, key):

@@ -317,3 +317,43 @@ kernel-envolve manage --state /work/manager-state sync-pr operator-a --run /work
 关联由发布者确认；命令不把 PR head 当成源码等价证明。没有 best、best 证据失效或
 新 best 尚未关联 PR 时显示“—”，不会从 Agent 的候选 PR 列表中猜测。
 页面读取已保存的 GitHub 观察，不在每次刷新时调用 GitHub；外部更新 PR 后须重新同步。
+
+## 前台宿主接续
+
+若当前 coding agent 通过命令工具操作远端工作区，使用内置 bridge，不再复制实验中的
+转接脚本。配置该任务 `"host_driven": true`，并把 `command` 设为
+`["kernel-envolve", "manage", "bridge", "--root", "/work/bridge"]`。bridge 产物目录必须位于
+所有任务 workspace 之外，避免日志被计作实现变更。普通非交互
+coding-agent 命令仍使用默认 `host_driven: false`。
+
+前台宿主亲自执行一次接续循环：
+
+1. `manage bridge-open TASK --owner HOST --claim-id UNIQUE` 声明准备启动一轮。
+   协调器消费一次许可后才启动；相同 claim 重放只返回原收据，不产生新轮。
+2. 从 `manage status` 获取当前 round，读取
+   `/work/bridge/TASK/ROUND/prompt.txt` 和任务 checkpoint。
+3. 写请求 JSON，例如
+   `{"kind":"gpu","argv":["kernel-envolve","native-evaluate","--task","/work/task","--mode","quick"],"expected_seconds":300}`。
+   调用 `manage bridge-request --root /work/bridge --task TASK --round ROUND --owner HOST
+   --id REQUEST --file request.json --wait-seconds 60`。
+4. 返回 `pending` 时，用相同参数去掉 `--file` 继续等待。返回完成收据时，当前 coding agent
+   阅读 stdout/stderr、核对产物并决定下一步，然后调用
+   `manage bridge-consume --root /work/bridge --task TASK --round ROUND --owner HOST
+   --id REQUEST --sha256 RECEIPT_SHA256 --outcome '本次发现' --next-action '具体下一步'`。
+5. 完成消费后才能提交下一条请求。结束本轮时提交
+   `{"kind":"finish","report":{"outcome":"本轮结论","next_action":"下一轮具体实验"}}`。
+   新轮需要新 claim，不会因等待进程退出而自动重复开启。
+
+所有命令使用相同 `manage --state /work/manager-state`。`gpu` 请求由本轮固定版本的
+`manage gpu-run` 执行并声明时长；排队受 manager 的父轮次和累计预算控制，不把预计执行时长
+当作排队超时。`cpu` 仅供源码检查等无 GPU 命令，`expected_seconds` 同时作为其超时上限。
+CPU 请求在独立的已登记进程组中执行，正常退出也会清理派生进程，清理完成后才返回收据。
+桥进程失联时由轮次主管回收；未获得完整收据的执行不会写成成功。单次等待最多 60 秒，
+返回包含有限长度日志和收据哈希；完整日志留在本轮目录。每个请求 ID 只执行一次，
+不同内容不可复用 ID，旧结果未消费不可提交新工作。进程崩溃后已领取但没有完成收据的
+请求返回 `interrupted_without_receipt`；先核对产物，不自动重试。
+
+宿主等待按 `min(5秒, idle_seconds/3)` 续租，消费时立即更新接续时间；读取已完成结果不续租。没有在途命令且宿主离开超过 120 秒（可配置 1–300 秒），
+bridge 退出，保留任务和预算，不自动开启空轮。当前 coding agent 必须持续读取结果并
+提交下一步；bridge 不提供模型或后台模型调度。用户停止、预算用尽和任务替换始终生效，
+事后补记结果消费也不会恢复任务。

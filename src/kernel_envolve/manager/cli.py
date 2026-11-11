@@ -93,6 +93,29 @@ def parser():
     gpu.add_argument("command", nargs=argparse.REMAINDER)
     report = commands.add_parser("report", help="Update the current round's research checkpoint")
     report.add_argument("--file", type=Path, required=True)
+    bridge = commands.add_parser(
+        "bridge", help="One-shot foreground host bridge (not a model runner)"
+    )
+    bridge.add_argument("--root", type=Path, required=True)
+    bridge.add_argument("--idle-seconds", type=float, default=120)
+    opening = commands.add_parser("bridge-open", help="Authorize one foreground-host round")
+    opening.add_argument("task")
+    opening.add_argument("--owner", required=True)
+    opening.add_argument("--claim-id", required=True)
+    for name in ("bridge-request", "bridge-consume"):
+        command = commands.add_parser(name)
+        command.add_argument("--root", type=Path, required=True)
+        command.add_argument("--task", required=True)
+        command.add_argument("--round", required=True)
+        command.add_argument("--owner", required=True)
+        command.add_argument("--id", required=True)
+        if name == "bridge-request":
+            command.add_argument("--file", type=Path)
+            command.add_argument("--wait-seconds", type=float, default=0)
+        else:
+            command.add_argument("--sha256", required=True)
+            command.add_argument("--outcome", required=True)
+            command.add_argument("--next-action", required=True)
     return root
 
 
@@ -118,7 +141,38 @@ def main(argv=None):
             return 2
     store = Store(args.state)
     try:
-        if args.action == "init":
+        if args.action.startswith("bridge"):
+            from . import bridge
+
+            if args.action == "bridge":
+                return bridge.run_bridge(store, args.root, args.idle_seconds)
+            if args.action == "bridge-open":
+                value = bridge.open_host(store, args.task, args.owner, args.claim_id)
+            elif args.action == "bridge-request":
+                value = bridge.request(
+                    store,
+                    args.root,
+                    args.task,
+                    args.round,
+                    args.owner,
+                    args.id,
+                    read_json(args.file) if args.file else None,
+                    args.wait_seconds,
+                )
+            else:
+                value = bridge.consume(
+                    store,
+                    args.root,
+                    args.task,
+                    args.round,
+                    args.owner,
+                    args.id,
+                    args.sha256,
+                    args.outcome,
+                    args.next_action,
+                )
+            print(json.dumps(value, ensure_ascii=False, indent=2))
+        elif args.action == "init":
             deployment = validate(read_json(args.config), args.config.resolve().parent)
             for task in deployment["tasks"]:
                 if task["kind"] == "native":

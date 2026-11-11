@@ -63,6 +63,7 @@ def validate(raw, base):
             "wall_budget_seconds",
             "gpu_budget_seconds",
             "cooldown_seconds",
+            "host_driven",
         }
         if set(item) - allowed:
             raise ValueError("Unknown task setting")
@@ -71,8 +72,11 @@ def validate(raw, base):
             "wall_budget_seconds": None,
             "gpu_budget_seconds": None,
             "cooldown_seconds": 10,
+            "host_driven": False,
             **item,
         }
+        if type(task["host_driven"]) is not bool:
+            raise ValueError("host_driven must be boolean")
         identifier(task["id"])
         if not isinstance(task["name"], str) or not task["name"].strip():
             raise ValueError("Task name is required")
