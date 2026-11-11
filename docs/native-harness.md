@@ -36,7 +36,15 @@ kernel-envolve native-evaluate --task ./task --case tail --seed 17 --check-only 
 kernel-envolve native-evaluate --task ./task --case small --case tail --timeout 120
 ```
 
-case/seed 选择和 check-only 仅用于 quick，配置与完整源码仍冻结，实际覆盖保存在结果中，不能晋升。check-only 只启动候选与独立 oracle；其余 quick 保留同轮性能对照。full 禁止缩小覆盖，独立确认的规则不变。
+case/seed 选择仅用于 quick。check-only 只启动候选与独立 oracle；其余 quick 保留同轮性能对照。配置与完整源码仍冻结，实际覆盖保存在结果中；quick 与 check-only 均不能晋升。full 禁止缩小覆盖，独立确认的规则不变。
+
+长时间对照搜索前，先确认固定基线的独立数值门合格。可建立独立资格任务，将 candidate 指向固定 baseline 的副本，复用原 adapter、开发输入、原生检查和阈值，然后执行：
+
+```sh
+kernel-envolve native-evaluate --task ./baseline-check --mode full --check-only
+```
+
+该模式执行全部 full case/seed 和受信原生门，保留源码、运行环境及原始证据，省去性能计时；不测峰值显存，不消费确认集，也不代表完整性能验收。独立门 FAIL 仍为失败，不能用两份基线输出一致替代。复用源码、契约和环境匹配的资格证据，不在局部迭代中重复全套检查。基线失败时先诊断实现或契约，再启动新版本对照，旧结果保留。
 
 quick 默认执行预算 120 秒、full 1800 秒，可显式覆盖；源码快照与最终完整性遍历也检查预算。系统 I/O 返回和进程清理仍需时间，超时保留失败阶段与收据。首次冷编译单独记录，不把重复超时当作自动延长预算的理由。
 

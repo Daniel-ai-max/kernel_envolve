@@ -295,7 +295,9 @@ def main(argv=None):
         "--seed", action="append", dest="seeds", type=int, help="Diagnostic seed; quick only"
     )
     native.add_argument(
-        "--check-only", action="store_true", help="Check selected inputs without timing; quick only"
+        "--check-only",
+        action="store_true",
+        help="Skip timing; quick checks selected inputs, full checks all inputs and native gates",
     )
     confirmation = sub.add_parser(
         "native-confirm", help="Consume the frozen independent confirmation set once"

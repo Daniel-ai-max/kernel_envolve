@@ -77,8 +77,8 @@ def score(result, cfg):
     if any(r["status"] != "pass" for r in result["checks"]):
         raise ValueError("Correctness status contradicts individual checks")
     if result.get("check_only"):
-        if mode != "quick" or result["samples"]:
-            raise ValueError("Check-only diagnostics cannot supply full/timing evidence")
+        if result["samples"]:
+            raise ValueError("Check-only diagnostics cannot supply timing evidence")
         decision["reasons"] = ["Correctness-only diagnostic cannot update best"]
         return decision
     if not timed_cases:

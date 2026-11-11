@@ -792,7 +792,8 @@ def test_native_selected_check_only_and_timing_keep_full_contract(native_task):
     [
         {"mode": "full", "cases": ["padded"]},
         {"mode": "full", "seeds": [0]},
-        {"mode": "full", "check_only": True},
+        {"mode": "full", "check_only": True, "cases": ["padded"]},
+        {"mode": "full", "check_only": True, "seeds": [0]},
         {"cases": ["unknown"]},
         {"cases": ["padded", "padded"]},
         {"cases": []},
@@ -807,7 +808,8 @@ def test_native_bad_selection_fails_before_snapshot(native_task, kwargs):
     assert not (task / ".kernel_native").exists()
 
 
-def test_native_cli_selection_reaches_evaluator(native_task, monkeypatch, capsys):
+@pytest.mark.parametrize("mode", ["quick", "full"])
+def test_native_cli_selection_reaches_evaluator(native_task, monkeypatch, capsys, mode):
     from kernel_envolve import cli, native
 
     task, _ = native_task
@@ -829,10 +831,9 @@ def test_native_cli_selection_reaches_evaluator(native_task, monkeypatch, capsys
                 "native-evaluate",
                 "--task",
                 str(task),
-                "--case",
-                "padded",
-                "--seed",
-                "17",
+                "--mode",
+                mode,
+                *(["--case", "padded", "--seed", "17"] if mode == "quick" else []),
                 "--check-only",
                 "--timeout",
                 "30",
@@ -841,7 +842,14 @@ def test_native_cli_selection_reaches_evaluator(native_task, monkeypatch, capsys
         == 0
     )
     assert received == [
-        ((task, "quick", 30), {"cases": ["padded"], "seeds": [17], "check_only": True})
+        (
+            (task, mode, 30),
+            {
+                "cases": ["padded"] if mode == "quick" else None,
+                "seeds": [17] if mode == "quick" else None,
+                "check_only": True,
+            },
+        )
     ]
     assert not json.loads(capsys.readouterr().out)["eligible_for_best"]
 
@@ -911,3 +919,85 @@ def test_native_harness_expiration_keeps_failure_and_closes_workers(native_task,
     assert len(closed) == 3 and all(code is not None for code in closed)
     assert (run / "receipt.json").is_file()
     assert not (run / "sources/validation").exists()
+
+
+@pytest.mark.parametrize("with_best", [False, True])
+def test_native_full_check_only_complete_without_measurement(native_task, monkeypatch, with_best):
+    from copy import deepcopy
+
+    from kernel_envolve import native
+    from kernel_envolve.native_config import load_config
+    from kernel_envolve.scoring import score
+
+    task, _ = native_task
+    config = json.loads((task / "native.json").read_text())
+    config["cases"].append({"id": "full-only", "args": {}, "quick": False, "measure": False})
+    config["full_seeds"] = [0, 19]
+    (task / "native.json").write_text(json.dumps(config))
+    if with_best:
+        full, result = evaluate_native(task, "full", timeout=90)
+        assert result["decision"]["eligible_for_best"], result
+        promote_native(full)
+    best_path = task / ".kernel_native/best.json"
+    best_before = best_path.read_bytes() if with_best else None
+    original_call = native.Worker.call
+
+    def correctness_only(self, kind, *args, **kwargs):
+        assert kind != "measure", "check-only must never run timing"
+        return original_call(self, kind, *args, **kwargs)
+
+    monkeypatch.setattr(native.Worker, "call", correctness_only)
+    run, result = evaluate_native(task, "full", timeout=90, check_only=True)
+    assert result["execution"] == "completed", result.get("error")
+    assert result["correctness"] == "pass"
+    assert result["samples"] == result["memory"] == []
+    assert set(result["environments"]) == {"candidate", "oracle"}
+    assert {c["scope"] for c in result["native_checks"] if c["status"] == "pass"} == {
+        "operator",
+        "numerical",
+        "integration",
+    }
+    assert {(c["case"], c["seed"], c["kind"], c["role"]) for c in result["checks"]} == {
+        (case, seed, kind, "candidate")
+        for case in ("padded", "full-only")
+        for seed in (0, 19)
+        for kind in ("fresh", "reuse", "repeat")
+    }
+    assert not result["decision"]["eligible_for_best"]
+    assert result["decision"]["performance"] == "not_measured"
+    with pytest.raises(ValueError, match="Not eligible"):
+        promote_native(run)
+    assert (best_path.read_bytes() if with_best else None) == best_before
+    cfg = load_config(task)
+    for malformed in (result["checks"][:-1], result["checks"] + [result["checks"][0]]):
+        bad = deepcopy(result)
+        bad["checks"] = malformed
+        with pytest.raises(ValueError, match="correctness coverage"):
+            score(bad, cfg)
+    bad = deepcopy(result)
+    bad["samples"] = [{"us": 1}]
+    with pytest.raises(ValueError, match="cannot supply timing evidence"):
+        score(bad, cfg)
+
+
+def test_native_full_check_only_baseline_parity_cannot_replace_independent_gate(native_task):
+    task, candidate = native_task
+    cfg = json.loads((task / "native.json").read_text())
+    from pathlib import Path
+
+    baseline = Path(cfg["sources"]["baseline"]["core"])
+    # Both implementations agree with the adapter, but fail an independent native gate.
+    for root in (baseline, candidate):
+        (root / "toyop.py").write_text("def run(x): return x*2\n")
+        (root / "test_native_contract.py").write_text(
+            "from toyop import run\nimport torch\n"
+            "def test_contract():\n assert torch.equal(run(torch.ones(2)), torch.ones(2)*3)\n"
+        )
+    run, result = evaluate_native(task, "full", timeout=90, check_only=True)
+    assert result["checks"] and all(c["status"] == "pass" for c in result["checks"])
+    assert result["execution"] == "completed", result.get("error")
+    assert result["correctness"] == "fail"
+    assert result["native_checks"][0]["status"] == "fail"
+    assert not result["samples"] and not result["decision"]["eligible_for_best"]
+    with pytest.raises(ValueError, match="Not eligible"):
+        promote_native(run)

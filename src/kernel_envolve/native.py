@@ -320,8 +320,6 @@ def evaluate_native(task, mode="quick", timeout=None, *, cases=None, seeds=None,
     selected, _, _, _ = plan(cfg, mode, selection)
     if seeds is not None and set(seeds) & set(cfg.get("confirmation", {}).get("seeds", [])):
         raise ValueError("Diagnostic seeds must not use reserved confirmation seeds")
-    if check_only and mode != "quick":
-        raise ValueError("Check-only diagnostics require quick mode")
     if not selected:
         raise ValueError("No cases selected")
     if not check_only and not objective_cases(selected):
@@ -414,7 +412,7 @@ def _evaluate(task, state, cfg, mode, timeout, selection, check_only):
                 if best
                 else role_roots["oracle"]
             )
-        if best and mode == "full":
+        if best and mode == "full" and not check_only:
             role_roots["baseline"] = role_roots["oracle"]
         for role, sources in role_roots.items():
             workers[role] = Worker(run, cfg, sources, role, deadline)
