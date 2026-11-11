@@ -280,3 +280,40 @@ quick 通过不代表完整验收通过，没有晋升也不代表没有做过�
 证据扫描显示“正在校验”“排队校验”及上次观测时间；超过 15 秒未更新不再直接标为故障。
 扫描出错或单项扫描超过 5 分钟才提示检查。API 保留 `evidence_stale` 作为观测年龄信息，
 不据此判断 GPU、Agent 或评测失败。升级时旧缓存会重新校验一次以补齐最近评测摘要。
+
+## 消耗卡时
+
+总览显示平台分配的 GPU 数量 × 占用时长（卡时），包含准备、诊断和空闲占卡。
+GPU 命令运行时间仍在作业详情保留，不用于替代占卡消耗。缺少用量记录时显示“—”。
+
+平台接入端在获取作业分配、运行或释放状态后，将带来源的观察结果导入：
+
+```sh
+kernel-envolve manage --state /work/manager-state import-usage --file allocation-usage.json
+```
+
+```json
+{"version":1,"allocations":[{"id":"platform-job-id","started_at":1794304800,"observed_at":1794308400,"ended":true,"gpus":2,"tasks":{"operator-a":1,"operator-b":1},"source":"platform-receipt.json"}]}
+```
+
+时间为 UTC Unix 秒。`observed_at` 是已计费到的观察时间；释放后设 `ended=true`，
+不会随着面板刷新继续累加。运行中由平台接入端更新观察，不根据模型报告推算。
+共享 GPU 须显式分配份额（如各 0.5），份额之和等于总卡数；分配或归属变化时
+结束旧区间并创建新的唯一 ID。重复导入同一观察不累加；已结束记录不可覆盖，
+运行中记录不能减少消耗或改变归属。迁移后的任务沿 supersede 链继承卡时，
+总量按唯一分配记录计算，避免重复计数。此账本用于展示，既有执行预算保持原口径。
+
+## 最新实现
+
+总览“最新实现”显示已验证 best 对应的实现 PR 和 GitHub `updatedAt`，
+不再单列提出时间或晋升时间。Agent 每次发布或更新 PR 后，先核对 diff 确实包含
+本次晋升实现，再执行（`--run` 使用 Manager 状态中的 best.run）：
+
+```sh
+kernel-envolve manage --state /work/manager-state sync-pr operator-a --run /work/task/state/runs/id --url https://github.com/org/repo/pull/123
+```
+
+命令使用已认证的 `gh` 获取 PR 真实更新时间与 head，保存与 best run 的明确关联。
+关联由发布者确认；命令不把 PR head 当成源码等价证明。没有 best、best 证据失效或
+新 best 尚未关联 PR 时显示“—”，不会从 Agent 的候选 PR 列表中猜测。
+页面读取已保存的 GitHub 观察，不在每次刷新时调用 GitHub；外部更新 PR 后须重新同步。

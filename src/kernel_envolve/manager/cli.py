@@ -55,6 +55,14 @@ def parser():
     )
     serve.add_argument("--port", type=int, default=8787)
     commands.add_parser("status")
+    publication = commands.add_parser(
+        "sync-pr", help="Bind a verified best to its implementation PR"
+    )
+    publication.add_argument("task")
+    publication.add_argument("--run", required=True)
+    publication.add_argument("--url", required=True)
+    usage = commands.add_parser("import-usage", help="Import scheduler GPU allocation receipts")
+    usage.add_argument("--file", type=Path, required=True)
     audit = commands.add_parser("refresh", help="Recheck and index evaluator evidence")
     audit.add_argument("--force", action="store_true")
     for action in ("pause", "resume"):
@@ -169,6 +177,14 @@ def main(argv=None):
             from .web import serve
 
             serve(store.root, args.port)
+        elif args.action == "sync-pr":
+            from .publication import sync_pr
+
+            sync_pr(store, args.task, args.run, args.url)
+        elif args.action == "import-usage":
+            from .usage import import_usage
+
+            import_usage(store, read_json(args.file))
         elif args.action == "status":
             from .views import overview
 

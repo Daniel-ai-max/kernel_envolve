@@ -19,6 +19,7 @@ const duration = (s) =>
       : s < 3600
         ? `${(s / 60).toFixed(1)} min`
         : `${(s / 3600).toFixed(2)} h`;
+const cardHours = (usage) => usage ? `${usage.gpu_hours.toFixed(2)} 卡时` : "—";
 const speed = (n) => (n == null ? "—" : `${n.toFixed(3)}×`);
 const shortTime = (t) => t ? new Date(t * 1000).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"}) : "—";
 const mode = (value) => ({quick: "初筛", full: "完整评测"})[value] || value || "—";
@@ -83,8 +84,8 @@ function render() {
         tasks.filter((t) => t.phase === "waiting_gpu").length,
       ) +
       metric(
-        "GPU 作业用时",
-        duration(tasks.reduce((s, t) => s + t.gpu_seconds, 0)),
+        "消耗卡时",
+        cardHours(state.allocation_usage),
       ),
   );
   const query = $("search").value.toLowerCase();
@@ -107,10 +108,9 @@ function render() {
           <td data-label="算子"><button class="name" data-task="${escape(t.id)}">${escape(t.spec.name)}</button></td>
           <td data-label="阶段">${escape(phaseLabel(t))}</td>
           <td data-label="基线"><div title="${escape(baseline.revision)}"><code>${escape(baseline.revision.slice(0, 8))}</code></div><small>${link(baseline.repository, baseline.repository.split("/").filter(Boolean).pop())}</small></td>
-          <td data-label="提出时间">${link(baseline.introduction_url, baseline.introduced_on || "—")}</td>
           <td class="benefit ${t.best ? "good" : "muted"}" data-label="已验证加速">${escape(benefitLabel(t.best))}</td>
-          <td data-label="最近晋升">${escape(stamp(t.last_promotion))}</td>
-          <td data-label="GPU / 资源">${escape(baseline.hardware)}<small>${escape(t.spec.resource)}</small></td>
+          <td data-label="最新实现">${t.implementation_pr ? `${link(t.implementation_pr.url, "PR #" + t.implementation_pr.url.split("/").pop())}<small>${escape(stamp(t.implementation_pr.updated_at))}</small>` : "—"}</td>
+          <td data-label="消耗卡时" title="${escape(t.allocation_usage ? `含准备与空闲占卡 · 截至 ${stamp(t.allocation_usage.observed_at)}` : "尚无占卡用量记录")}">${cardHours(t.allocation_usage)}</td>
           <td class="research" data-label="优化方向"><div class="snippet" title="${escape(record?.hypothesis || "")}">${escape(direction)}</div>${next ? `<small class="snippet" title="${escape(record.next_action)}">下一步：${escape(next)}</small>` : ""}</td>
           <td class="research" data-label="最近结果"><div class="snippet" title="${escape(record?.outcome || record?.hypothesis || "")}">${escape(outcome)}</div>${recent ? `<small><button class="source-link execution-link" data-task="${escape(recent.task)}" title="${escape(stamp(recent.recorded_at))}">${escape(executionLabelFor(recent))} · ${shortTime(recent.recorded_at)}${recent.inherited ? " · 历史" : ""}</button></small>` : ""}</td>
         </tr>`;
