@@ -67,6 +67,7 @@ def parser():
     usage.add_argument("--file", type=Path, required=True)
     audit = commands.add_parser("refresh", help="Recheck and index evaluator evidence")
     audit.add_argument("--force", action="store_true")
+    audit.add_argument("--task", help="Index only this task, for example after promotion")
     for action in ("pause", "resume"):
         control = commands.add_parser(action)
         control.add_argument("task")
@@ -227,7 +228,7 @@ def main(argv=None):
         elif args.action == "refresh":
             from .evidence import refresh
 
-            if not refresh(store, args.force):
+            if not refresh(store, args.force, task_id=args.task):
                 raise ValueError("Evidence scan already running; retry after it finishes")
         elif args.action == "serve":
             from .web import serve

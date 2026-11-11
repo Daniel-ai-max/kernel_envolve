@@ -358,10 +358,32 @@ def refresh_task(store, task, force=False, checkpoint=None):
         )
 
 
-def refresh(store, force=False, stop=None):
+def gpu_work_pending(store):
+    return (
+        store.one("SELECT id FROM jobs WHERE kind='gpu' AND status IN ('queued','running') LIMIT 1")
+        is not None
+    )
+
+
+def refresh(store, force=False, stop=None, yield_to_gpu=False, task_id=None):
+    if task_id is not None:
+        store.task(task_id)  # Reject an unknown target before changing scan metadata.
+    # Background history audits must not compete with experiments. Explicit refresh
+    # and promotion verification retain their full checks, independent of this policy.
+    if yield_to_gpu and gpu_work_pending(store):
+        return False
+    next_gpu_check = 0.0
+
     def checkpoint():
+        nonlocal next_gpu_check
         if stop is not None and stop.is_set():
             raise ScanCancelled
+        if yield_to_gpu:
+            now = time.monotonic()
+            if now >= next_gpu_check:
+                next_gpu_check = now + 0.25
+                if gpu_work_pending(store):
+                    raise ScanCancelled
 
     # A manual reindex and the coordinator must not publish out of order.
     with exclusive(store.root / "evidence.lock") as handle:
@@ -383,7 +405,8 @@ def refresh(store, force=False, stop=None):
 
         try:
             checkpoint()
-            for row in store.rows("SELECT id FROM tasks"):
+            tasks = [{"id": task_id}] if task_id is not None else store.rows("SELECT id FROM tasks")
+            for row in tasks:
                 checkpoint()
                 scan["task"] = row["id"]
                 publish()

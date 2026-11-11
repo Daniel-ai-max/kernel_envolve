@@ -54,7 +54,10 @@ just 'continue'. Performance and coverage are read from evaluator evidence, not
 this report. Report an integrated revision only after verifying it; it remains an
 agent-reported field. Use `kernel-envolve manage report --file <json>` for live updates.
 After creating or updating the implementation PR for the current verified best,
-check that its diff contains that exact promoted implementation, then run:
+check that its diff contains that exact promoted implementation. At this delivery
+boundary, index this task explicitly; do not wait for the background dashboard audit:
+  kernel-envolve manage refresh --task {task["id"]}
+Then bind the verified implementation:
   kernel-envolve manage sync-pr {task["id"]} --run <verified-best-run> --source-root <native-root-or-task> --base-branch <target-branch> --url <PR-URL>
 Use the selected native source root, or 'task' for a generic task. The command
 verifies frozen implementation/helper contents and declared confirmation evidence
@@ -105,7 +108,7 @@ def supervise(store, key, handle, stdin=None):
             env = environment(version["release"], env)
             stdin = (stdin or "") + (
                 f"\nTool revision for this round: {version['revision']}\n"
-                f"Read the Skill at {version['skill']} (including its relative references).\n"
+                f"Read the Skill at {version['skill']}; load references only as needed.\n"
                 f"Use {version['executable']} for this entire round; keep its inherited environment.\n"
             )
     devices = store.job_devices(job)

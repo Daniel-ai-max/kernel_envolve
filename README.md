@@ -115,7 +115,7 @@ CUDA 原生评测在计时外缓存只读输入的精确字节副本，减少反
 | 基线溯源 | 展示仓库、版本、实现提出日期及来源；单独记录本任务的冻结日期，未知日期保持未知 |
 | 进展展示 | 提供算子总览、任务详情、best 历史、逐用例延迟、验证范围及资源队列 |
 | 证据来源 | 区分候选、已验证 best 与报告的已集成版本；性能数据来自 evaluator 校验结果 |
-| 自动更新 | 页面可见时约每 3 秒读取一致快照，后台约每 5 秒检查证据；保留编辑状态，断线退避重连 |
+| 自动更新 | 页面可见时约每 3 秒读取一致快照；历史证据扫描避让 GPU 作业，保留原观测时间；断线退避重连 |
 
 **先体验面板。** 完成基础安装后，在尚不存在的目录创建 CPU 演示：
 
@@ -200,7 +200,7 @@ PyTorch 路径需要安装兼容的 PyTorch；CUDA 测试需在空闲 GPU 上设
 更多资料：
 
 - [Agent 优化流程与 PR 规范](skills/kernel-envolve/SKILL.md)
-- [Super-agent 设计对比与管理层验证范围](docs/super-agent-comparison.md)
+- [裸 Agent 研究流程、框架价值与参考设计对比](docs/super-agent-comparison.md)
 - [硬件文档与参考实现](skills/kernel-envolve/references/hardware.md)
 - [参考架构来源](audit/reference_sources.json)与[评测设计来源](audit/evaluator_sources.json)
 - [原生 evaluator B300 验证](audit/native_gpu_061/summary.json)、[通用 evaluator B300 验证](audit/general_contract_gpu/verified/summary.json)与[输入泛化验证](audit/generality_gpu_050/summary.json)

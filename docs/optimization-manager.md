@@ -19,9 +19,8 @@ kernel-envolve manage --state /work/manager-state run
 kernel-envolve manage --state /work/manager-state serve --port 8787
 ```
 
-启动后完成三项实际验收：在使用者电脑打开面板，确认任务和协调器状态持续刷新；
-确认 Agent 收到恢复提示并提交了真实工作；确认 GPU 命令出现在队列、结束后能读到
-评测记录。远程节点的 `127.0.0.1:8787` 不能直接作为本机入口，先建立 SSH 转发：
+启动后确认 Agent 收到恢复提示并提交真实工作，GPU 命令能进入队列且结果可读。
+面板可选，不作为实验启动或继续的前置条件；启用时再检查显示与实际作业一致。远程节点的 `127.0.0.1:8787` 不能直接作为本机入口，先建立 SSH 转发：
 `ssh -N -L 8787:127.0.0.1:8787 <GPU主机>`，再打开本机的 `http://127.0.0.1:8787`。
 平台没有 SSH 时使用其认证端口转发，保持面板只监听 loopback。
 
@@ -123,6 +122,8 @@ wall 额度单位为墙钟秒，GPU 额度单位为卡秒（设备数 × 占用�
 kernel-envolve manage gpu-run --expected-seconds 300 -- kernel-envolve native-evaluate --task ./task --mode quick
 kernel-envolve manage gpu-run --expected-seconds 1200 -- kernel-envolve native-evaluate --task ./task --mode full
 kernel-envolve native-promote ./task/.kernel_native/runs/<run>
+# 交付时主动索引当前算子，再 sync-pr；局部候选不需要这一步。
+kernel-envolve manage refresh --task probs-scale-b300
 kernel-envolve manage report --file progress.json
 ```
 
@@ -138,7 +139,8 @@ GPU wrapper 会转发命令输出的最后 64 KiB，完整日志在管理状态�
 Agent 主进程默认看不到 CUDA 设备；GPU wrapper 给子进程设置固定顺序的目标 UUID。不能再嵌套
 gpu-run。分布式验证必须使用已声明的资源组，不得自行扩展到组外 GPU。
 
-GPU 命令优先直接执行 evaluator。若适配脚本需要先检查条件，再转交 CLI，使用
+GPU 命令可直接执行原生测试、benchmark 或 profiler；有依据的候选再进入 evaluator。
+若适配脚本需要先检查条件，再转交 CLI，使用
 `os.execvpe(argv[0], argv, os.environ)`；另起子进程时须传
 `pass_fds=tuple(json.loads(os.environ["KERNEL_ENVOLVE_LOCK_FDS"]))` 并等待退出。
 `KERNEL_ENVOLVE_LOCK_FDS` 包含全部锁描述符；旧的 `KERNEL_ENVOLVE_LOCK_FD` 保留第一项，
@@ -257,11 +259,17 @@ python examples/manager/demo.py /tmp/kernel-manager-demo
 
 本节描述面板数据刷新。工具代码跟随 main 的机制见[自动更新指南](auto-update.md)：每轮 Agent 启动前检查，轮次内固定 Skill、CLI 和评测器版本。
 
-更新分为采集、发布、读取和显示四步。协调器约每 5 秒尝试一次增量证据扫描；
+更新分为采集、发布、读取和显示四步。协调器在上次扫描结束至少 5 秒后尝试下一次扫描；
 同一部署只允许一个扫描执行。源码/收据的读取、指纹检查和判定计算在写事务之外
 完成，每个算子的 runs、best、晋升历史、错误和观测时间再一次性提交。新实验先落盘、
 校验，再进入面板；面板展示最近一次已发布的证据，不直接拼接正在变化的结果文件。
-扫描耗时较长时不重叠启动，也不保证固定的 5 秒端到端延迟。
+扫描不重叠执行。存在排队或运行中的 GPU 作业时不开始历史文件扫描；扫描期间
+每隔至少 0.25 秒在文件校验检查点查询一次队列，有新 GPU 作业则退出，保留上一份
+完整发布的结果和原观测时间。单次文件读取不可中断，0.25 秒不是硬实时停止保证。
+持续繁忙时证据索引可能延后，作业、研究报告和用量仍独立更新；实验不等面板刷新。
+正式 evaluate/confirm/promote/sync-pr 的验证与此调度策略无关，仍完整执行。
+晋升后 Agent 执行 `manage refresh --task <id>` 主动核对该算子的证据，再绑定 PR，
+不依赖后台空闲窗口；此入口不会扫描其他算子的历史。不带 `--task` 时仍核对全部任务。
 
 面板采用短轮询，适合当前单主机、少量观察者的工作方式：
 
