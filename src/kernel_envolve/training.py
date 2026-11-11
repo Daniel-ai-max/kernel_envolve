@@ -251,21 +251,28 @@ class Session:
         finally:
             self.input_check_seconds += time.perf_counter() - started
 
-    def observe(self, output):
+    def observe(self, output, *, capture=True):
         self.check_state()
         self.workload.validate(output)
         self.check_state()
+        output_metadata = tensor_tree(output, metadata)
+        output_aliases = tensor_tree(
+            output,
+            lambda x: [name for name, y in self.workload.tensors.items() if same_storage(x, y)],
+        )
+        # Intermediate timing observations were discarded. Retain every state,
+        # runtime, dispatch and tensor-tree check without copying unused outputs
+        # or mutable state to CPU. The final observation is still compared exactly.
+        if not capture:
+            return None
         return {
             "inputs": self.values,
             "input_metadata": self.specs,
             "input_aliases": self.aliases,
             "mutable": list(self.workload.mutable),
             "output": tensor_tree(output, host),
-            "output_metadata": tensor_tree(output, metadata),
-            "output_aliases": tensor_tree(
-                output,
-                lambda x: [name for name, y in self.workload.tensors.items() if same_storage(x, y)],
-            ),
+            "output_metadata": output_metadata,
+            "output_aliases": output_aliases,
             "state": {k: host(self.workload.tensors[k]) for k in self.workload.mutable},
         }
 

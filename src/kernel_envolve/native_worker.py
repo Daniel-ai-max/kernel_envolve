@@ -103,7 +103,9 @@ def serve(request_path):
                     if device.startswith("cuda"):
                         measured_peak -= guard_allocation
                     # Checking and state reset are outside the measured F+B call.
-                    observation = session.observe(output)
+                    observation = session.observe(
+                        output, capture=index == cfg["warmup"] + cfg["iterations"] - 1
+                    )
                     if index >= cfg["warmup"]:
                         samples.append(elapsed)
                         if device.startswith("cuda"):
@@ -118,6 +120,8 @@ def serve(request_path):
                     "peak_bytes": peak,
                     "peak_bytes_including_input_guards": raw_peak,
                     "private_input_guard_bytes_by_iteration": private_guard_bytes,
+                    "validated_iterations": cfg["warmup"] + cfg["iterations"],
+                    "captured_observations": 1,
                 }
             result.update(
                 input_metadata=session.specs,

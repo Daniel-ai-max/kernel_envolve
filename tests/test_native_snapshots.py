@@ -68,6 +68,19 @@ def test_snapshot_preserves_all_contents_and_role_isolation(source, tmp_path):
     assert file_hash(source / "src/op.py") == original["src/op.py"]
 
 
+def test_snapshot_git_uses_remaining_budget(source, tmp_path, monkeypatch):
+    real = subprocess.check_output
+    limits = []
+
+    def tracked(*args, **kwargs):
+        limits.append(kwargs.get("timeout"))
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "check_output", tracked)
+    native.snapshot(source, tmp_path / "budgeted", checkpoint=lambda: 20)
+    assert limits == [20, 20]
+
+
 @pytest.fixture
 def frozen(source, tmp_path):
     run = tmp_path / "run"

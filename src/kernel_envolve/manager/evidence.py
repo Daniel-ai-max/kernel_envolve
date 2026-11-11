@@ -45,6 +45,7 @@ def inspect_run(path, spec, checkpoint=None):
     confirmation = None
     confirmation_status = "not_required"
     full_eligible = None
+    contract_verified = True
     if spec["kind"] == "native":
         from ..native import native_decision, verify_roots
 
@@ -76,7 +77,17 @@ def inspect_run(path, spec, checkpoint=None):
                 decision["eligible_for_best"] = False
                 decision["reasons"].append("Independent confirmation " + confirmation_status)
         contract = result.get("contract")
-        source = result["identities"].get("candidate")
+        # A failed snapshot has no complete source contract. Its authenticated
+        # receipt is useful diagnosis, but cannot establish source or best proof.
+        snapshot_failure = (
+            result["execution"] == "error"
+            and result["correctness"] == "partial"
+            and result.get("failed_phase") == "snapshot"
+            and contract is None
+            and all(result.get(name) == [] for name in ("checks", "samples", "native_checks"))
+        )
+        contract_verified = not snapshot_failure
+        source = result["identities"].get("candidate") if contract_verified else None
     else:
         from ..cli import audit_result
 
@@ -86,19 +97,22 @@ def inspect_run(path, spec, checkpoint=None):
         contract = result["identity"]["contract"]
         source = result["identity"]["files"]
     checkpoint()
-    if contract != spec["baseline"]["contract"]:
+    if contract_verified and contract != spec["baseline"]["contract"]:
         raise ValueError("Evidence contract differs from the task's frozen baseline contract")
     fixed = decision.get("fixed_baseline_gain_by_batch", [])
     incremental = decision.get("gain_by_batch", [])
     return {
         "run": str(path),
         "result_hash": receipt["result_hash"],
-        "initial_best_hash": result["initial_best_hash"],
+        "initial_best_hash": (
+            result["initial_best_hash"] if contract_verified else result.get("initial_best_hash")
+        ),
         "mode": result["mode"],
         "execution": result["execution"],
         "correctness": result["correctness"],
         "decision": decision,
         "contract": contract,
+        "contract_verified": contract_verified,
         "source": source,
         "environment": result.get("environments", result.get("environment")),
         "native_checks": result.get("native_checks", []),
@@ -107,6 +121,8 @@ def inspect_run(path, spec, checkpoint=None):
         "full_eligible_for_best": full_eligible,
         "memory": result.get("memory", []),
         "error": result.get("error"),
+        "failed_phase": result.get("failed_phase"),
+        "phase_wall_seconds": result.get("phase_wall_seconds", {}),
         "recorded_at": (path / "receipt.json").stat().st_mtime,
         "passed_checks": sum(c.get("status") == "pass" for c in result.get("checks", [])),
         "verified_at": time.time(),
@@ -286,6 +302,9 @@ def refresh_task(store, task, force=False, checkpoint=None):
                         "correctness",
                         "passed_checks",
                         "error",
+                        "failed_phase",
+                        "phase_wall_seconds",
+                        "contract_verified",
                     )
                 },
                 "native_checks": [
