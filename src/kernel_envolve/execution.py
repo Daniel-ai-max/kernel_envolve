@@ -2,35 +2,71 @@
 
 import contextlib
 import fcntl
+import json
 import os
 import signal
+import sqlite3
 import subprocess
 
 
-def managed_lock_fd():
-    """Validate inherited ownership without acquiring or replacing the device lock."""
+def managed_lock_fds():
+    """Validate every inherited device lock without acquiring replacements."""
     if not os.environ.get("KERNEL_ENVOLVE_GPU_JOB"):
-        return None
+        return ()
     try:
-        descriptor = int(os.environ["KERNEL_ENVOLVE_LOCK_FD"])
-        os.fstat(descriptor)
-    except (KeyError, ValueError, OverflowError, OSError) as exc:
+        first = int(os.environ["KERNEL_ENVOLVE_LOCK_FD"])
+        descriptors = json.loads(os.environ.get("KERNEL_ENVOLVE_LOCK_FDS", f"[{first}]"))
+        if (
+            not isinstance(descriptors, list)
+            or not descriptors
+            or descriptors[0] != first
+            or any(type(fd) is not int for fd in descriptors)
+            or len(set(descriptors)) != len(descriptors)
+        ):
+            raise ValueError("Invalid device lock set")
+        state = os.environ.get("KERNEL_ENVOLVE_STATE")
+        if state:
+            from .manager.store import Store
+
+            store = Store(state, readonly=True)
+            try:
+                job = store.job(os.environ["KERNEL_ENVOLVE_GPU_JOB"])
+                device_count = job.get("gpu_count", 1)
+            finally:
+                store.close()
+        else:
+            # Legacy direct callers have no job snapshot. Real managed work uses
+            # the frozen count: native checks may expose only a subset of the group.
+            visible = os.environ.get("CUDA_VISIBLE_DEVICES", "")
+            device_count = len(visible.split(",")) if visible else 1
+        if len(descriptors) != device_count:
+            raise ValueError("Device group count does not match inherited lock count")
+        for descriptor in descriptors:
+            os.fstat(descriptor)
+    except (KeyError, TypeError, ValueError, OverflowError, OSError, sqlite3.Error) as exc:
         raise ValueError(
             "Managed GPU lock descriptor KERNEL_ENVOLVE_LOCK_FD is missing or invalid. "
+            "All KERNEL_ENVOLVE_LOCK_FDS must also remain inherited. "
             "Launch the evaluator directly, transfer control with os.execvpe, or preserve "
-            "this descriptor with pass_fds in intermediary subprocesses. Do not remove "
-            "the manager environment or acquire a replacement lock."
+            "these descriptors with pass_fds in intermediary subprocesses. Do not remove "
+            "the manager environment or acquire replacement locks."
         ) from exc
-    return descriptor
+    return tuple(descriptors)
+
+
+def managed_lock_fd():
+    """Backward-compatible first descriptor, after validating the entire group."""
+    descriptors = managed_lock_fds()
+    return descriptors[0] if descriptors else None
 
 
 def spawn(*args, **kwargs):
     """Register managed evaluator children so supervisor recovery can reap separate groups."""
-    descriptor = managed_lock_fd()
-    if descriptor is not None:
+    descriptors = managed_lock_fds()
+    if descriptors:
         # All evaluator process groups retain the device lock through supervisor crashes,
         # even while importing/compiling before they have a visible CUDA context.
-        kwargs["pass_fds"] = tuple(set(kwargs.get("pass_fds", ())) | {descriptor})
+        kwargs["pass_fds"] = tuple(set(kwargs.get("pass_fds", ())) | set(descriptors))
     process = subprocess.Popen(*args, **kwargs)
     if os.environ.get("KERNEL_ENVOLVE_GPU_JOB"):
         try:

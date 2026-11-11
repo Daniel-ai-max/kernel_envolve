@@ -9,7 +9,17 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 
-from .process import alive, exclusive, gpu_idle, identity, lock_path, reap_registered, stop_recorded
+from .config import resource_devices
+from .process import (
+    alive,
+    exclusive,
+    gpu_group_idle,
+    gpu_locks,
+    identity,
+    lock_path,
+    reap_registered,
+    stop_recorded,
+)
 from .store import Store, encode
 
 
@@ -23,44 +33,60 @@ def reconcile(store):
         if job["status"] == "queued" and job["pid"] is None and time.time() - job["created"] < 30:
             continue
         task = store.task(job["task"])
-        name = (
-            task["spec"]["workspace"]
+        devices = store.job_devices(job)
+        guard = (
+            exclusive(lock_path("task", task["spec"]["workspace"]))
             if job["kind"] == "agent"
-            else store.resource(job["resource"])["spec"]["device"]
+            else gpu_locks(devices)
         )
-        kind = "task" if job["kind"] == "agent" else "gpu"
-        stop_recorded(job["child_pid"], job["child_identity"])
-        reap_registered(store, job["id"])
-        with exclusive(lock_path(kind, name)) as handle:
+        errors = []
+        try:
+            stop_recorded(job["child_pid"], job["child_identity"])
+        except (OSError, ValueError, subprocess.SubprocessError) as exc:
+            errors.append(f"Command cleanup: {exc}")
+        try:
+            reap_registered(store, job["id"])
+        except (OSError, ValueError, subprocess.SubprocessError) as exc:
+            errors.append(f"Child cleanup: {exc}")
+        with guard as handle:
             if handle is None:
                 # A surviving child inherited the lock. Do not declare the job terminal.
-                store.db.execute(
-                    "UPDATE jobs SET error=? WHERE id=?",
-                    ("Supervisor absent; owned lock still held; inspect descendants", job["id"]),
+                error = "; ".join(
+                    ["Supervisor absent; owned lock still held; inspect descendants", *errors]
                 )
+                store.db.execute("UPDATE jobs SET error=? WHERE id=?", (error, job["id"]))
+                if errors and job["kind"] == "gpu":
+                    store.db.execute(
+                        "UPDATE resources SET problem=? WHERE id=?", (error, job["resource"])
+                    )
                 continue
             if job["kind"] == "gpu" and job["status"] == "running":
                 try:
-                    gpu_idle(name)
+                    gpu_group_idle(devices)
                 except (OSError, ValueError, subprocess.SubprocessError) as exc:
-                    store.db.execute(
-                        "UPDATE resources SET problem=? WHERE id=?",
-                        (f"Orphan GPU work; inspect before clearing: {exc}", job["resource"]),
-                    )
+                    errors.append(str(exc))
+            if errors and job["kind"] == "gpu":
+                store.db.execute(
+                    "UPDATE resources SET problem=? WHERE id=?",
+                    ("Orphan GPU cleanup unconfirmed: " + "; ".join(errors), job["resource"]),
+                )
             if job["started"]:
                 # Conservative charge for the unobserved interval, never free budget on a crash.
                 store.heartbeat(job["id"], max(job["seconds"], time.time() - job["started"]))
             store.finish(
-                job["id"], "interrupted", "Supervisor exited; recovered without replaying the job"
+                job["id"],
+                "interrupted",
+                "; ".join(["Supervisor exited; recovered without replaying the job", *errors]),
             )
 
 
 def clear_resource(store, key):
     resource = store.resource(key)
-    with exclusive(lock_path("gpu", resource["spec"]["device"])) as handle:
+    devices = resource_devices(resource["spec"])
+    with gpu_locks(devices) as handle:
         if handle is None:
             raise ValueError("Device lock is still held")
-        gpu_idle(resource["spec"]["device"])
+        gpu_group_idle(devices)
         with store.transaction():
             if store.one(
                 "SELECT id FROM jobs WHERE resource=? AND kind='gpu' AND status='running'", (key,)

@@ -259,6 +259,8 @@ def overview(store, *, compact=False, now=None):
                 }
                 task["best"]["decision"] = {"coverage": data["decision"].get("coverage")}
     resources = []
+    columns = {r[1] for r in store.db.execute("PRAGMA table_info(jobs)")}
+    count = "gpu_count" if "gpu_count" in columns else "1"
     for row in store.rows("SELECT id FROM resources ORDER BY id"):
         resource = store.resource(row["id"])
         resource["jobs"] = store.rows(
@@ -267,7 +269,7 @@ def overview(store, *, compact=False, now=None):
         )
         resource["tasks"] = [t["id"] for t in tasks if t["spec"]["resource"] == row["id"]]
         resource["gpu_seconds"] = store.db.execute(
-            "SELECT COALESCE(SUM(seconds),0) FROM jobs WHERE resource=? AND kind='gpu'",
+            f"SELECT COALESCE(SUM(seconds * {count}),0) FROM jobs WHERE resource=? AND kind='gpu'",
             (row["id"],),
         ).fetchone()[0]
         resources.append(resource)

@@ -5,7 +5,7 @@ import os
 import subprocess
 import time
 
-from .process import alive, exclusive, gpu_idle, identity, lock_path
+from .process import alive, gpu_group_idle, gpu_locks, identity
 from .store import Store
 from .worker import supervise
 
@@ -30,12 +30,16 @@ def require_duration(store, task, parent, expected_seconds):
         # Heartbeats account usage periodically; also include time since the last one.
         unreported = sum(
             max(0.0, now - job["started"] - job["seconds"])
+            * (job["gpu_count"] if job_kind == "gpu" else 1)
             for job in store.rows(
-                "SELECT started,seconds FROM jobs WHERE task=? AND kind=? AND status='running'",
+                "SELECT started,seconds,gpu_count FROM jobs WHERE task=? AND kind=? AND status='running'",
                 (task["id"], job_kind),
             )
         )
-        remaining["cumulative " + kind + " budget"] = limit - task[kind + "_seconds"] - unreported
+        seconds = limit - task[kind + "_seconds"] - unreported
+        remaining["cumulative " + kind + " budget"] = (
+            seconds / parent["gpu_count"] if kind == "gpu" else seconds
+        )
     for name, seconds in remaining.items():
         if expected_seconds > seconds:
             raise DurationAdmissionError(
@@ -72,13 +76,20 @@ def run(root, task_id, round_id, command, *, expected_seconds=None):
             key = store.enqueue(task, "gpu", command, round_id)
             if expected_seconds is not None:
                 store.event(
-                    task_id, "gpu_duration_declared", {"job": key, "seconds": expected_seconds}
+                    task_id,
+                    "gpu_duration_declared",
+                    {
+                        "job": key,
+                        "seconds": expected_seconds,
+                        "gpu_count": parent["gpu_count"],
+                        "gpu_seconds": expected_seconds * parent["gpu_count"],
+                    },
                 )
             store.db.execute(
                 "UPDATE jobs SET pid=?,identity=?,heartbeat=? WHERE id=?",
                 (os.getpid(), identity(os.getpid()), time.time(), key),
             )
-        device = store.resource(parent["resource"])["spec"]["device"]
+        devices = store.job_devices(store.job(key))
         while True:
             task = store.task(task_id)
             parent = store.job(round_id)
@@ -92,10 +103,10 @@ def run(root, task_id, round_id, command, *, expected_seconds=None):
             ):
                 store.finish(key, "cancelled", "Parent ended, task paused, or budget exhausted")
                 return 2
-            with exclusive(lock_path("gpu", device)) as handle:
-                if handle is not None:
+            with gpu_locks(devices) as handles:
+                if handles is not None:
                     try:
-                        gpu_idle(device)
+                        gpu_group_idle(devices)
                     except (OSError, ValueError, subprocess.SubprocessError) as exc:
                         store.db.execute("UPDATE jobs SET error=? WHERE id=?", (str(exc), key))
                     else:
@@ -108,7 +119,7 @@ def run(root, task_id, round_id, command, *, expected_seconds=None):
                                     store.job(round_id),
                                     expected_seconds,
                                 )
-                            result = supervise(store, key, handle)
+                            result = supervise(store, key, handles)
                             directory = store.root / "jobs" / key
                             # Forward bounded tails; full output remains in durable job logs.
                             for name in ("stdout.log", "stderr.log"):

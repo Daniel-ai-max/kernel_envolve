@@ -8,7 +8,7 @@ import time
 import uuid
 from pathlib import Path
 
-from .config import positive
+from .config import positive, resource_devices
 
 
 def encode(value):
@@ -30,11 +30,23 @@ class Store:
         self.db = sqlite3.connect(path, timeout=15, isolation_level=None)
         self.db.row_factory = sqlite3.Row
         path.chmod(0o600)
-        self.db.executescript("PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;")
         version = self.db.execute("PRAGMA user_version").fetchone()[0]
-        if version not in (0, 1):
+        if version not in (0, 1, 2):
             self.db.close()
             raise ValueError(f"Unsupported manager schema: {version}")
+        try:
+            if self.one("SELECT name FROM sqlite_master WHERE type='table' AND name='metadata'"):
+                previous = self.one("SELECT data FROM metadata WHERE key='host'")
+                if previous and json.loads(previous["data"]) != socket.gethostname():
+                    raise ValueError(
+                        "Manager state belongs to another host; reconcile jobs before migration"
+                    )
+            if version == 1:
+                self._upgrade_legacy()
+        except BaseException:
+            self.db.close()
+            raise
+        self.db.executescript("PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;")
         self.db.executescript("""
             CREATE TABLE IF NOT EXISTS resources (
                 id TEXT PRIMARY KEY, spec TEXT NOT NULL, problem TEXT);
@@ -68,16 +80,10 @@ class Store:
             CREATE TABLE IF NOT EXISTS promotions (
                 task TEXT NOT NULL, run TEXT NOT NULL, at REAL NOT NULL, gpu_seconds REAL NOT NULL,
                 data TEXT NOT NULL, PRIMARY KEY(task, run));
-            PRAGMA user_version=1;
         """)
-        columns = {r[1] for r in self.db.execute("PRAGMA table_info(jobs)")}
-        if "cancel_requested" not in columns:
+        if version == 0:
             with self.transaction():
-                columns = {r[1] for r in self.db.execute("PRAGMA table_info(jobs)")}
-                if "cancel_requested" not in columns:
-                    self.db.execute(
-                        "ALTER TABLE jobs ADD COLUMN cancel_requested INTEGER NOT NULL DEFAULT 0"
-                    )
+                self._upgrade_columns()
         try:
             with self.transaction():
                 host = socket.gethostname()
@@ -90,6 +96,45 @@ class Store:
         except BaseException:
             self.db.close()
             raise
+
+    def _upgrade_legacy(self):
+        from .process import alive, exclusive
+
+        message = "Stop the schema 1 coordinator and finish existing jobs before upgrading"
+        with exclusive(self.root / "coordinator.lock") as handle:
+            if handle is None:
+                raise ValueError(message + ": coordinator lock is held")
+            with self.transaction():
+                # Check and migrate in one write transaction; no old writer can
+                # enqueue work between the quiet-state check and the schema change.
+                if self.one("SELECT id FROM jobs WHERE status IN ('queued','running') LIMIT 1"):
+                    raise ValueError(message + ": queued or running jobs remain")
+                for child in self.rows("SELECT pid,identity FROM processes"):
+                    if alive(child["pid"], child["identity"]):
+                        raise ValueError(message + ": a registered descendant is still alive")
+                self._upgrade_columns()
+
+    def _upgrade_columns(self):
+        """Caller holds the schema transaction and, for legacy state, coordinator lock."""
+        columns = {r[1] for r in self.db.execute("PRAGMA table_info(jobs)")}
+        if "cancel_requested" not in columns:
+            self.db.execute(
+                "ALTER TABLE jobs ADD COLUMN cancel_requested INTEGER NOT NULL DEFAULT 0"
+            )
+        if "devices" not in columns:
+            self.db.execute("ALTER TABLE jobs ADD COLUMN devices TEXT")
+        if "gpu_count" not in columns:
+            # Historical single-card charges are never recomputed from new resources.
+            self.db.execute("ALTER TABLE jobs ADD COLUMN gpu_count INTEGER NOT NULL DEFAULT 1")
+        for row in self.rows(
+            "SELECT jobs.id,resources.spec FROM jobs JOIN resources ON jobs.resource=resources.id "
+            "WHERE jobs.devices IS NULL"
+        ):
+            self.db.execute(
+                "UPDATE jobs SET devices=? WHERE id=?",
+                (encode(resource_devices(json.loads(row["spec"]))), row["id"]),
+            )
+        self.db.execute("PRAGMA user_version=2")
 
     def close(self):
         self.db.close()
@@ -141,7 +186,9 @@ class Store:
                 for existing in self.rows(
                     "SELECT id,spec FROM resources WHERE id<>?", (resource["id"],)
                 ):
-                    if json.loads(existing["spec"])["device"] == resource["device"]:
+                    if set(resource_devices(json.loads(existing["spec"]))) & set(
+                        resource_devices(resource)
+                    ):
                         raise ValueError("Physical device already registered under another ID")
                 old = self.one("SELECT spec FROM resources WHERE id=?", (resource["id"],))
                 if old and json.loads(old["spec"]) != resource:
@@ -293,9 +340,25 @@ class Store:
 
     def enqueue(self, task, kind, command, parent=None):
         key = uuid.uuid4().hex
+        resource = task["spec"]["resource"]
+        devices = resource_devices(self.resource(resource)["spec"])
+        if parent:
+            frozen = self.job(parent)
+            resource, devices = frozen["resource"], self.job_devices(frozen)
         self.db.execute(
-            "INSERT INTO jobs(id,task,kind,resource,parent,command,created) VALUES(?,?,?,?,?,?,?)",
-            (key, task["id"], kind, task["spec"]["resource"], parent, encode(command), time.time()),
+            "INSERT INTO jobs(id,task,kind,resource,parent,command,created,devices,gpu_count) "
+            "VALUES(?,?,?,?,?,?,?,?,?)",
+            (
+                key,
+                task["id"],
+                kind,
+                resource,
+                parent,
+                encode(command),
+                time.time(),
+                encode(devices),
+                len(devices),
+            ),
         )
         self.event(task["id"], "queued", {"job": key, "kind": kind})
         return key
@@ -361,6 +424,9 @@ class Store:
             raise ValueError(f"Unknown job: {key}")
         return row
 
+    def job_devices(self, job):
+        return json.loads(job["devices"])
+
     def claim(self, key, pid, identity):
         with self.transaction():
             job = self.job(key)
@@ -398,7 +464,8 @@ class Store:
             delta = max(0, seconds - job["seconds"])
             column = "wall_seconds" if job["kind"] == "agent" else "gpu_seconds"
             self.db.execute(
-                f"UPDATE tasks SET {column}={column}+? WHERE id=?", (delta, job["task"])
+                f"UPDATE tasks SET {column}={column}+? WHERE id=?",
+                (delta * (job["gpu_count"] if job["kind"] == "gpu" else 1), job["task"]),
             )
             self.db.execute(
                 "UPDATE jobs SET seconds=MAX(seconds,?),heartbeat=? WHERE id=?",

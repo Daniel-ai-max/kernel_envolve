@@ -7,7 +7,7 @@ import tempfile
 from pathlib import Path
 
 from ..storage import config, contract, digest, file_hash, read_json
-from .config import validate
+from .config import resource_devices, validate
 from .store import Store
 
 
@@ -189,7 +189,7 @@ def main(argv=None):
                 else:
                     cfg = config(Path(task["task_dir"]))
                 resource = next(r for r in deployment["resources"] if r["id"] == task["resource"])
-                allowed = ("cpu",) if resource["device"] == "cpu" else ("cuda", "cuda:0")
+                allowed = ("cpu",) if resource_devices(resource) == ["cpu"] else ("cuda", "cuda:0")
                 if cfg["device"] not in allowed:
                     raise ValueError(
                         "Managed tasks use cpu on CPU resources or cuda:0 on the assigned GPU"

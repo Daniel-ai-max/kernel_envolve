@@ -7,7 +7,15 @@ import subprocess
 import sys
 import time
 
-from .process import alive, exclusive, gpu_idle, identity, lock_path, reap_registered, terminate
+from .process import (
+    alive,
+    exclusive,
+    gpu_group_idle,
+    identity,
+    lock_path,
+    reap_registered,
+    terminate,
+)
 from .store import Store
 
 
@@ -56,7 +64,7 @@ If this command is only an external bridge, its host must deliver an actual agen
 request; until then diagnosis is pending, not automatically being performed.
 Previous structured checkpoint: {json.dumps(task["report"], ensure_ascii=False)}
 Recent lifecycle events: {json.dumps(store.rows("SELECT kind,data FROM events WHERE task=? ORDER BY seq DESC LIMIT 6", (task["id"],)), ensure_ascii=False)}
-Consumed active session wall seconds: {task["wall_seconds"]:.1f}; GPU job seconds:
+Consumed active session wall seconds: {task["wall_seconds"]:.1f}; GPU card-seconds:
 {task["gpu_seconds"]:.1f}. Cumulative budgets: wall={spec["wall_budget_seconds"]},
 gpu={spec["gpu_budget_seconds"]}. This round is limited to {spec["round_timeout_seconds"]}s.
 """
@@ -92,11 +100,16 @@ def supervise(store, key, handle, stdin=None):
                 f"Read the Skill at {version['skill']} (including its relative references).\n"
                 f"Use {version['executable']} for this entire round; keep its inherited environment.\n"
             )
-    device = store.resource(job["resource"])["spec"]["device"]
-    env["CUDA_VISIBLE_DEVICES"] = "" if job["kind"] == "agent" or device == "cpu" else device
+    devices = store.job_devices(job)
+    handles = handle if isinstance(handle, tuple) else (handle,)
+    descriptors = tuple(h.fileno() for h in handles)
+    env["CUDA_VISIBLE_DEVICES"] = (
+        "" if job["kind"] == "agent" or devices == ["cpu"] else ",".join(devices)
+    )
     if job["kind"] == "gpu":
         env["KERNEL_ENVOLVE_GPU_JOB"] = key
-        env["KERNEL_ENVOLVE_LOCK_FD"] = str(handle.fileno())
+        env["KERNEL_ENVOLVE_LOCK_FD"] = str(descriptors[0])
+        env["KERNEL_ENVOLVE_LOCK_FDS"] = json.dumps(descriptors)
     stopped = False
 
     def on_signal(signum, frame):
@@ -124,7 +137,7 @@ def supervise(store, key, handle, stdin=None):
                     stdout=out,
                     stderr=err,
                     start_new_session=True,
-                    pass_fds=(handle.fileno(),),
+                    pass_fds=descriptors,
                 )
             birth = identity(process.pid)
             with store.transaction():
@@ -176,24 +189,29 @@ def supervise(store, key, handle, stdin=None):
     except (OSError, ValueError, subprocess.SubprocessError) as exc:
         error = str(exc)
     finally:
+        cleanup_errors = []
         if process is not None:
-            terminate(process)
-        if job["kind"] == "agent":
             try:
-                reap_registered(store, key)
+                terminate(process)
             except (OSError, ValueError, subprocess.SubprocessError) as exc:
-                status, error = "failed", f"Agent child cleanup unconfirmed: {exc}"
+                cleanup_errors.append(f"Command cleanup: {exc}")
+        try:
+            reap_registered(store, key)
+        except (OSError, ValueError, subprocess.SubprocessError) as exc:
+            cleanup_errors.append(f"Child cleanup: {exc}")
         if job["kind"] == "gpu":
             try:
-                reap_registered(store, key)
-                gpu_idle(device)
+                gpu_group_idle(devices)
             except (OSError, ValueError, subprocess.SubprocessError) as exc:
+                cleanup_errors.append(str(exc))
+        if cleanup_errors:
+            status = "failed"
+            error = f"{job['kind'].upper()} cleanup unconfirmed: " + "; ".join(cleanup_errors)
+            if job["kind"] == "gpu":
                 with store.transaction():
                     store.db.execute(
-                        "UPDATE resources SET problem=? WHERE id=?",
-                        (f"Cleanup needs inspection: {exc}", job["resource"]),
+                        "UPDATE resources SET problem=? WHERE id=?", (error, job["resource"])
                     )
-                status, error = "failed", f"GPU cleanup unconfirmed: {exc}"
         if job["kind"] == "agent" and report.exists():
             try:
                 if report.stat().st_size > 65536:

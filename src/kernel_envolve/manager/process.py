@@ -55,10 +55,24 @@ def exclusive(path):
         except BlockingIOError:
             yield None
             return
-        try:
-            yield handle
-        finally:
-            fcntl.flock(handle, fcntl.LOCK_UN)
+        # Close only this owner's descriptor. Explicit LOCK_UN would also release
+        # the shared open-file-description lock still held by inherited children.
+        yield handle
+
+
+@contextlib.contextmanager
+def gpu_locks(devices):
+    """Acquire every existing per-device lock, or release the partial set immediately."""
+    with contextlib.ExitStack() as stack:
+        handles = []
+        for device in sorted(devices):
+            handle = stack.enter_context(exclusive(lock_path("gpu", device)))
+            if handle is None:
+                stack.close()
+                yield None
+                return
+            handles.append(handle)
+        yield tuple(handles)
 
 
 def gpu_idle(device):
@@ -82,6 +96,18 @@ def gpu_idle(device):
     )
     if processes.stdout.strip():
         raise ValueError(f"GPU has existing compute processes: {processes.stdout.strip()}")
+
+
+def gpu_group_idle(devices):
+    """Probe every physical device, retaining all failures for cleanup diagnosis."""
+    errors = []
+    for device in devices:
+        try:
+            gpu_idle(device)
+        except (OSError, ValueError, subprocess.SubprocessError) as exc:
+            errors.append(f"{device}: {exc}")
+    if errors:
+        raise ValueError("; ".join(errors))
 
 
 def terminate(process, grace=3):
@@ -122,5 +148,11 @@ def stop_recorded(pid, birth):
 
 
 def reap_registered(store, job):
+    errors = []
     for child in store.rows("SELECT * FROM processes WHERE job=?", (job,)):
-        stop_recorded(child["pid"], child["identity"])
+        try:
+            stop_recorded(child["pid"], child["identity"])
+        except (OSError, ValueError, subprocess.SubprocessError) as exc:
+            errors.append(f"pid {child['pid']}: {exc}")
+    if errors:
+        raise OSError("; ".join(errors))

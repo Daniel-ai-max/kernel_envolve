@@ -124,7 +124,7 @@ function render() {
     state.resources
       .map(
         (r) =>
-          `<article data-key="${escape(r.id)}" class="card"><div class="resource-head"><h3>${escape(r.id)}</h3><span>${r.problem ? "资源异常" : r.jobs.some(j => j.kind === "gpu" && j.status === "running") ? "执行中" : "空闲"}</span></div><p>GPU 作业 ${duration(r.gpu_seconds)}</p><div class="scroll"><table><thead><tr><th>任务</th><th>类型</th><th>状态</th><th>用时</th></tr></thead><tbody>${r.jobs.map(j => `<tr><td>${escape(j.task)}</td><td>${j.kind === "agent" ? "会话" : "GPU"}</td><td>${j.status === "running" ? "运行" : "排队"}</td><td>${duration(j.seconds)}</td></tr>`).join("") || '<tr><td colspan="4">—</td></tr>'}</tbody></table></div><details><summary>设备详情</summary><p><code>${escape(r.spec.device)}</code> · ${r.spec.sessions} 个会话</p>${r.problem ? `<pre>${escape(r.problem)}</pre>` : ""}</details></article>`,
+          `<article data-key="${escape(r.id)}" class="card"><div class="resource-head"><h3>${escape(r.id)}</h3><span>${r.problem ? "资源异常" : r.jobs.some(j => j.kind === "gpu" && j.status === "running") ? "执行中" : "空闲"}</span></div><p>GPU 作业 ${duration(r.gpu_seconds)}</p><div class="scroll"><table><thead><tr><th>任务</th><th>类型</th><th>状态</th><th>用时</th></tr></thead><tbody>${r.jobs.map(j => `<tr><td>${escape(j.task)}</td><td>${j.kind === "agent" ? "会话" : "GPU"}</td><td>${j.status === "running" ? "运行" : "排队"}</td><td>${duration(j.seconds)}</td></tr>`).join("") || '<tr><td colspan="4">—</td></tr>'}</tbody></table></div><details><summary>设备详情</summary><p><code>${escape(r.spec.devices ? r.spec.devices.join(", ") : r.spec.device)}</code> · ${r.spec.sessions} 个会话</p>${r.problem ? `<pre>${escape(r.problem)}</pre>` : ""}</details></article>`,
       )
       .join("") || '<p class="empty">尚未配置计算资源。</p>',
   );
