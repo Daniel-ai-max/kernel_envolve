@@ -5,6 +5,7 @@ import fcntl
 import json
 import os
 import signal
+import sqlite3
 import subprocess
 
 
@@ -23,13 +24,26 @@ def managed_lock_fds():
             or len(set(descriptors)) != len(descriptors)
         ):
             raise ValueError("Invalid device lock set")
-        visible = os.environ.get("CUDA_VISIBLE_DEVICES", "")
-        device_count = len(visible.split(",")) if visible else 1
+        state = os.environ.get("KERNEL_ENVOLVE_STATE")
+        if state:
+            from .manager.store import Store
+
+            store = Store(state, readonly=True)
+            try:
+                job = store.job(os.environ["KERNEL_ENVOLVE_GPU_JOB"])
+                device_count = job.get("gpu_count", 1)
+            finally:
+                store.close()
+        else:
+            # Legacy direct callers have no job snapshot. Real managed work uses
+            # the frozen count: native checks may expose only a subset of the group.
+            visible = os.environ.get("CUDA_VISIBLE_DEVICES", "")
+            device_count = len(visible.split(",")) if visible else 1
         if len(descriptors) != device_count:
-            raise ValueError("Visible device count does not match inherited lock count")
+            raise ValueError("Device group count does not match inherited lock count")
         for descriptor in descriptors:
             os.fstat(descriptor)
-    except (KeyError, TypeError, ValueError, OverflowError, OSError) as exc:
+    except (KeyError, TypeError, ValueError, OverflowError, OSError, sqlite3.Error) as exc:
         raise ValueError(
             "Managed GPU lock descriptor KERNEL_ENVOLVE_LOCK_FD is missing or invalid. "
             "All KERNEL_ENVOLVE_LOCK_FDS must also remain inherited. "

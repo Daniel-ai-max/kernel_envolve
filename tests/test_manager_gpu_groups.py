@@ -511,7 +511,7 @@ def test_multi_card_adapter_cannot_fall_back_to_first_lock(devices, tmp_path, mi
             text=True,
             timeout=5,
         )
-    assert result.returncode != 0 and "Visible device count" in result.stderr
+    assert result.returncode != 0 and "Device group count" in result.stderr
     assert not marker.exists()
 
 
@@ -624,3 +624,41 @@ def test_registered_child_cleanup_continues_after_one_process_error(managed, mon
                 child.kill()
             child.wait(timeout=5)
         store.finish(job, "cancelled")
+
+
+@pytest.mark.parametrize("complete_fds", [False, True])
+def test_native_device_subset_uses_frozen_group_for_lock_validation(managed, devices, complete_fds):
+    store, _, _ = managed
+    parent = running(store, devices)
+    child = store.enqueue(store.task("toy"), "gpu", ["unused"], parent)
+    with gpu_locks(devices) as handles:
+        descriptors = [handle.fileno() for handle in handles]
+        # Native checks legitimately narrow visible devices but retain the whole reservation.
+        env = os.environ | {
+            "KERNEL_ENVOLVE_STATE": str(store.root),
+            "KERNEL_ENVOLVE_GPU_JOB": child,
+            "KERNEL_ENVOLVE_LOCK_FD": str(descriptors[0]),
+            "CUDA_VISIBLE_DEVICES": devices[0],
+        }
+        if complete_fds:
+            env["KERNEL_ENVOLVE_LOCK_FDS"] = json.dumps(descriptors)
+        else:
+            env.pop("KERNEL_ENVOLVE_LOCK_FDS", None)
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                "from kernel_envolve.execution import managed_lock_fds; assert len(managed_lock_fds()) == 2",
+            ],
+            env=env,
+            pass_fds=tuple(descriptors),
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if complete_fds:
+            assert result.returncode == 0, result.stderr
+        else:
+            assert result.returncode != 0 and "Device group count" in result.stderr
+    store.finish(child, "cancelled")
+    store.finish(parent, "cancelled")
