@@ -196,7 +196,12 @@ def supervise(store, key, handle, stdin=None):
                     ):
                         status, error = "cancelled", "Parent round ended"
                         break
-                time.sleep(0.2)
+                # Wake on command completion instead of always adding a full polling
+                # interval. Long commands retain the same control/accounting cadence.
+                try:
+                    process.wait(timeout=0.2)
+                except subprocess.TimeoutExpired:
+                    pass
     except (OSError, ValueError, subprocess.SubprocessError) as exc:
         error = str(exc)
     finally:

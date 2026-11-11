@@ -1,0 +1,311 @@
+{
+  "scope": "CPU command completion/feedback only; not GPU kernel optimization or coding-agent comparison",
+  "baseline_revision": "f3339fa860e86df606113bdc46b9451820dbda21",
+  "candidate_change": "manager.worker.supervise: process.wait(timeout=0.2) replaces fixed time.sleep(0.2)",
+  "experiment_order": [
+    "before",
+    "after",
+    "before-declared",
+    "after-declared",
+    "after-repeat",
+    "before-repeat",
+    "after-history"
+  ],
+  "protocol": "Each run has 12 direct/managed pairs for batch sizes 1 and 8. Pair ordering alternates. All samples including first pair retained. Two runs reverse version order. Final run adds 10000 synthetic completed GPU-job rows to the private CPU-resource ledger. Exact outputs and terminal statuses checked; no evaluator run or best generated.",
+  "limitations": [
+    "macOS CPU fixture; does not measure NVIDIA probes, CUDA synchronization or kernel/model search quality",
+    "No concurrent dashboard, archive or coordinator in this command microbenchmark",
+    "Historical jobs are database rows, not historical source/evidence trees",
+    "Pair 0 retained as first command pair; executable/runtime caches are not forcibly flushed"
+  ],
+  "runs": [
+    {
+      "name": "before",
+      "phase": "exploratory without duration admission",
+      "raw_sha256": "efb00652c8c5d754cc0232fa268da097fb04c7aa713fc0c850a9f9ccab0407d5",
+      "result": {
+        "label": "f3339fa-before",
+        "platform": "macOS-26.5.2-arm64-arm-64bit",
+        "python": "3.12.14 (main, Sep  1 2026, 14:09:38) [Clang 22.1.3 ]",
+        "workload_sha256": "6a50b1263567a41cae39a7c71d0313fa02f47525b20a5c3c6d72565228eeaef7",
+        "delay_per_item_seconds": 0.02,
+        "pairs": 12,
+        "gpu_used": false,
+        "scope": "CPU command feedback; no model search or GPU evaluation",
+        "summary": [
+          {
+            "batch_size": 1,
+            "direct_median_seconds": 0.0412190630013356,
+            "managed_median_seconds": 0.27171510399784893,
+            "paired_overhead_median_seconds": 0.23252391650748905,
+            "overhead_per_item_seconds": 0.23252391650748905
+          },
+          {
+            "batch_size": 8,
+            "direct_median_seconds": 0.2115420210029697,
+            "managed_median_seconds": 0.4751128330026404,
+            "paired_overhead_median_seconds": 0.26095887499832315,
+            "overhead_per_item_seconds": 0.032619859374790394
+          }
+        ],
+        "sample_count": 48,
+        "managed_job_count": 24,
+        "all_outputs_verified": true,
+        "all_managed_jobs_succeeded": true
+      }
+    },
+    {
+      "name": "after",
+      "phase": "exploratory without duration admission",
+      "raw_sha256": "1135ce1676f06258bd20c992215689ae52a0085c7d706a72591586bfa0becef3",
+      "result": {
+        "label": "wait-for-completion-after",
+        "platform": "macOS-26.5.2-arm64-arm-64bit",
+        "python": "3.12.14 (main, Sep  1 2026, 14:09:38) [Clang 22.1.3 ]",
+        "workload_sha256": "6a50b1263567a41cae39a7c71d0313fa02f47525b20a5c3c6d72565228eeaef7",
+        "delay_per_item_seconds": 0.02,
+        "pairs": 12,
+        "gpu_used": false,
+        "scope": "CPU command feedback; no model search or GPU evaluation",
+        "summary": [
+          {
+            "batch_size": 1,
+            "direct_median_seconds": 0.04087422950397013,
+            "managed_median_seconds": 0.10426372900110437,
+            "paired_overhead_median_seconds": 0.0652373755001463,
+            "overhead_per_item_seconds": 0.0652373755001463
+          },
+          {
+            "batch_size": 8,
+            "direct_median_seconds": 0.21225293700263137,
+            "managed_median_seconds": 0.27187835450604325,
+            "paired_overhead_median_seconds": 0.06041343750257511,
+            "overhead_per_item_seconds": 0.007551679687821888
+          }
+        ],
+        "sample_count": 48,
+        "managed_job_count": 24,
+        "all_outputs_verified": true,
+        "all_managed_jobs_succeeded": true
+      }
+    },
+    {
+      "name": "before-declared",
+      "phase": "duration admission enabled",
+      "raw_sha256": "1fb8fa1487a15e8e05e943e5ffaa282b44dd1503ce011a6f1f46f455d87a0dfa",
+      "result": {
+        "label": "f3339fa-before",
+        "platform": "macOS-26.5.2-arm64-arm-64bit",
+        "python": "3.12.14 (main, Sep  1 2026, 14:09:38) [Clang 22.1.3 ]",
+        "workload_sha256": "6a50b1263567a41cae39a7c71d0313fa02f47525b20a5c3c6d72565228eeaef7",
+        "supervisor_sha256": "c0a8ef04e030c0f63c9e7c4f1fdff214113a6468cb92794f755d9a58934ebf73",
+        "synthetic_history_jobs": 0,
+        "delay_per_item_seconds": 0.02,
+        "pairs": 12,
+        "gpu_used": false,
+        "scope": "CPU command feedback; no model search or GPU evaluation",
+        "summary": [
+          {
+            "batch_size": 1,
+            "direct_median_seconds": 0.04073158350365702,
+            "managed_median_seconds": 0.27629552051075734,
+            "paired_overhead_median_seconds": 0.23429049999685958,
+            "overhead_per_item_seconds": 0.23429049999685958
+          },
+          {
+            "batch_size": 8,
+            "direct_median_seconds": 0.2131463125042501,
+            "managed_median_seconds": 0.4766606455013971,
+            "paired_overhead_median_seconds": 0.2639928329954273,
+            "overhead_per_item_seconds": 0.03299910412442841
+          }
+        ],
+        "sample_count": 48,
+        "managed_job_count": 24,
+        "all_outputs_verified": true,
+        "all_managed_jobs_succeeded": true
+      }
+    },
+    {
+      "name": "after-declared",
+      "phase": "duration admission enabled",
+      "raw_sha256": "692afd4431d4ccc6cc9d1227db49118f35645cb7c9a989300bd00b88bbf8ecdb",
+      "result": {
+        "label": "completion-wait-after",
+        "platform": "macOS-26.5.2-arm64-arm-64bit",
+        "python": "3.12.14 (main, Sep  1 2026, 14:09:38) [Clang 22.1.3 ]",
+        "workload_sha256": "6a50b1263567a41cae39a7c71d0313fa02f47525b20a5c3c6d72565228eeaef7",
+        "supervisor_sha256": "1069ca72991a2c0ae4a192eedd22699b7a02ee32d766edb827f5f0cd70a7f445",
+        "synthetic_history_jobs": 0,
+        "delay_per_item_seconds": 0.02,
+        "pairs": 12,
+        "gpu_used": false,
+        "scope": "CPU command feedback; no model search or GPU evaluation",
+        "summary": [
+          {
+            "batch_size": 1,
+            "direct_median_seconds": 0.040372291492531076,
+            "managed_median_seconds": 0.1020048959981068,
+            "paired_overhead_median_seconds": 0.061884459006250836,
+            "overhead_per_item_seconds": 0.061884459006250836
+          },
+          {
+            "batch_size": 8,
+            "direct_median_seconds": 0.21473564550251467,
+            "managed_median_seconds": 0.2695970210043015,
+            "paired_overhead_median_seconds": 0.05614389649417717,
+            "overhead_per_item_seconds": 0.007017987061772146
+          }
+        ],
+        "sample_count": 48,
+        "managed_job_count": 24,
+        "all_outputs_verified": true,
+        "all_managed_jobs_succeeded": true
+      }
+    },
+    {
+      "name": "after-repeat",
+      "phase": "duration admission enabled",
+      "raw_sha256": "b4330f3122d38266d3580db5a46a8d1bc8fac4f8437fb8b1f89cb71b158ce143",
+      "result": {
+        "label": "completion-wait-reverse-order",
+        "platform": "macOS-26.5.2-arm64-arm-64bit",
+        "python": "3.12.14 (main, Sep  1 2026, 14:09:38) [Clang 22.1.3 ]",
+        "workload_sha256": "6a50b1263567a41cae39a7c71d0313fa02f47525b20a5c3c6d72565228eeaef7",
+        "supervisor_sha256": "1069ca72991a2c0ae4a192eedd22699b7a02ee32d766edb827f5f0cd70a7f445",
+        "synthetic_history_jobs": 0,
+        "delay_per_item_seconds": 0.02,
+        "pairs": 12,
+        "gpu_used": false,
+        "scope": "CPU command feedback; no model search or GPU evaluation",
+        "summary": [
+          {
+            "batch_size": 1,
+            "direct_median_seconds": 0.039805166496080346,
+            "managed_median_seconds": 0.100618750002468,
+            "paired_overhead_median_seconds": 0.0602374165027868,
+            "overhead_per_item_seconds": 0.0602374165027868
+          },
+          {
+            "batch_size": 8,
+            "direct_median_seconds": 0.21530864550732076,
+            "managed_median_seconds": 0.2703473959991243,
+            "paired_overhead_median_seconds": 0.0549712504944182,
+            "overhead_per_item_seconds": 0.006871406311802275
+          }
+        ],
+        "sample_count": 48,
+        "managed_job_count": 24,
+        "all_outputs_verified": true,
+        "all_managed_jobs_succeeded": true
+      }
+    },
+    {
+      "name": "before-repeat",
+      "phase": "duration admission enabled",
+      "raw_sha256": "4b83899595ce22a86fad65db614b7368b7b64b2c3b0842989f95a145406a5948",
+      "result": {
+        "label": "f3339fa-reverse-order",
+        "platform": "macOS-26.5.2-arm64-arm-64bit",
+        "python": "3.12.14 (main, Sep  1 2026, 14:09:38) [Clang 22.1.3 ]",
+        "workload_sha256": "6a50b1263567a41cae39a7c71d0313fa02f47525b20a5c3c6d72565228eeaef7",
+        "supervisor_sha256": "c0a8ef04e030c0f63c9e7c4f1fdff214113a6468cb92794f755d9a58934ebf73",
+        "synthetic_history_jobs": 0,
+        "delay_per_item_seconds": 0.02,
+        "pairs": 12,
+        "gpu_used": false,
+        "scope": "CPU command feedback; no model search or GPU evaluation",
+        "summary": [
+          {
+            "batch_size": 1,
+            "direct_median_seconds": 0.03987279150169343,
+            "managed_median_seconds": 0.2668285414983984,
+            "paired_overhead_median_seconds": 0.2273789369937731,
+            "overhead_per_item_seconds": 0.2273789369937731
+          },
+          {
+            "batch_size": 8,
+            "direct_median_seconds": 0.21527566699660383,
+            "managed_median_seconds": 0.4749400209984742,
+            "paired_overhead_median_seconds": 0.2599765409977408,
+            "overhead_per_item_seconds": 0.0324970676247176
+          }
+        ],
+        "sample_count": 48,
+        "managed_job_count": 24,
+        "all_outputs_verified": true,
+        "all_managed_jobs_succeeded": true
+      }
+    },
+    {
+      "name": "after-history",
+      "phase": "duration admission enabled",
+      "raw_sha256": "596780e709cb5eadcd1d162f5d00002d443d80ee93f9e3a9b1cb48759cd59ce1",
+      "result": {
+        "label": "completion-wait-10k-history",
+        "platform": "macOS-26.5.2-arm64-arm-64bit",
+        "python": "3.12.14 (main, Sep  1 2026, 14:09:38) [Clang 22.1.3 ]",
+        "workload_sha256": "6a50b1263567a41cae39a7c71d0313fa02f47525b20a5c3c6d72565228eeaef7",
+        "supervisor_sha256": "1069ca72991a2c0ae4a192eedd22699b7a02ee32d766edb827f5f0cd70a7f445",
+        "synthetic_history_jobs": 10000,
+        "delay_per_item_seconds": 0.02,
+        "pairs": 12,
+        "gpu_used": false,
+        "scope": "CPU command feedback; no model search or GPU evaluation",
+        "summary": [
+          {
+            "batch_size": 1,
+            "direct_median_seconds": 0.03977333351213019,
+            "managed_median_seconds": 0.09957860400754726,
+            "paired_overhead_median_seconds": 0.059855395498743746,
+            "overhead_per_item_seconds": 0.059855395498743746
+          },
+          {
+            "batch_size": 8,
+            "direct_median_seconds": 0.21515662500314647,
+            "managed_median_seconds": 0.26947924999694806,
+            "paired_overhead_median_seconds": 0.05502333350159461,
+            "overhead_per_item_seconds": 0.006877916687699326
+          }
+        ],
+        "sample_count": 48,
+        "managed_job_count": 24,
+        "all_outputs_verified": true,
+        "all_managed_jobs_succeeded": true
+      }
+    }
+  ],
+  "preflight_failures": [
+    {
+      "stage": "fixture initialization before any measurement",
+      "error": "macOS temporary /var path resolved through a symlink and was rejected by source validation",
+      "fix": "Resolve the private temporary root before creating task files; no production validation changed."
+    }
+  ],
+  "tool_final_smoke": {
+    "label": "final-tool-smoke",
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "python": "3.12.14 (main, Sep  1 2026, 14:09:38) [Clang 22.1.3 ]",
+    "workload_sha256": "6a50b1263567a41cae39a7c71d0313fa02f47525b20a5c3c6d72565228eeaef7",
+    "supervisor_sha256": "1069ca72991a2c0ae4a192eedd22699b7a02ee32d766edb827f5f0cd70a7f445",
+    "synthetic_history_jobs": 0,
+    "delay_per_item_seconds": 0.02,
+    "pairs": 2,
+    "gpu_used": false,
+    "scope": "CPU command feedback; no model search or GPU evaluation",
+    "summary": [
+      {
+        "batch_size": 1,
+        "direct_median_seconds": 0.04535952099831775,
+        "managed_median_seconds": 0.11555466649588197,
+        "paired_overhead_median_seconds": 0.07019514549756423,
+        "overhead_per_item_seconds": 0.07019514549756423
+      }
+    ]
+  },
+  "raw_evidence": {
+    "path": "manager_feedback_raw.json.gz",
+    "sha256": "a001df25ea4b75a00f7c3819c68c3485298e2ba74d1e48a6ba1a718c7cba40c0",
+    "uncompressed_sha256": "f40703ab6f3519800bb45933e2bd165060a8629110bf5db59c705df7d8951e21"
+  }
+}
