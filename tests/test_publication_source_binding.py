@@ -10,13 +10,18 @@ from kernel_envolve.manager.config import validate
 from kernel_envolve.manager.evidence import refresh
 from kernel_envolve.manager.publication import sync_pr
 from kernel_envolve.manager.store import Store
+from kernel_envolve.manager.views import detail
 from kernel_envolve.native import evaluate_native, promote_native
+from kernel_envolve.native_confirmation import confirm_native
 
-pytest_plugins = ["test_native"]
+pytest_plugins = ["test_native", "test_native_confirmation"]
 
 
-def test_pr_with_different_implementation_cannot_bind_full_best(native_task, tmp_path, monkeypatch):
-    task, candidate = native_task
+@pytest.mark.parametrize("task_fixture", ["native_task", "confirmation_task"])
+def test_pr_with_different_implementation_cannot_bind_full_best(
+    task_fixture, request, tmp_path, monkeypatch
+):
+    task, candidate = request.getfixturevalue(task_fixture)
     cfg = json.loads((task / "native.json").read_text())
     baseline = __import__("pathlib").Path(cfg["sources"]["baseline"]["core"])
     for root in (baseline, candidate):
@@ -27,6 +32,8 @@ def test_pr_with_different_implementation_cannot_bind_full_best(native_task, tmp
         )
     run, result = evaluate_native(task, "full", timeout=90)
     assert result["decision"]["eligible_for_best"]
+    if "confirmation" in cfg:
+        assert confirm_native(run, 90)["status"] == "passed"
     promote_native(run)
     tested_head = result["identities"]["candidate"]["core"]["git_head"]
     (candidate / "toyop.py").write_text("def run(x): return x*3\n")
@@ -112,8 +119,19 @@ def test_pr_with_different_implementation_cannot_bind_full_best(native_task, tmp
 
         monkeypatch.setattr("kernel_envolve.manager.publication.github", github)
         sync_pr(store, "native", str(run), url, source_root="core", base_branch="integration")
+        binding = detail(store, "native")["implementation_pr"]
+        assert binding["current_head_verified"]
+        assert bool(binding["confirmation"]) == ("confirmation" in cfg)
         reported_head = wrong_head
         with pytest.raises(ValueError, match="source|implementation|head"):
             sync_pr(store, "native", str(run), url, source_root="core", base_branch="integration")
+        if "confirmation" in cfg:
+            receipt_path = run / "confirmation/receipt.json"
+            receipt = json.loads(receipt_path.read_text())
+            receipt["result_hash"] = "0" * 64
+            receipt_path.write_text(json.dumps(receipt))
+            refresh(store)
+            assert detail(store, "native")["best"] is None
+            assert detail(store, "native")["implementation_pr"] is None
     finally:
         store.close()
