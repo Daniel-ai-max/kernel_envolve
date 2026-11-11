@@ -883,3 +883,31 @@ def test_native_default_budgets_and_snapshot_cancellation(native_task, monkeypat
     assert result["error"]["type"] == "TimeoutError"
     assert not (run / "workers").exists()
     assert (run / "receipt.json").is_file()
+
+
+def test_native_harness_expiration_keeps_failure_and_closes_workers(native_task, monkeypatch):
+    from kernel_envolve import native
+
+    task, _ = native_task
+    monotonic, prepare, close = native.time.monotonic, native.prepare_harness, native.Worker.close
+    closed = []
+
+    def expired(run, cfg, identities, checkpoint):
+        monkeypatch.setattr(native.time, "monotonic", lambda: monotonic() + 100)
+        return prepare(run, cfg, identities, checkpoint)
+
+    def tracked_close(worker):
+        close(worker)
+        closed.append(worker.process.poll())
+
+    monkeypatch.setattr(native, "prepare_harness", expired)
+    monkeypatch.setattr(native.Worker, "close", tracked_close)
+    run, result = evaluate_native(task, "full", timeout=90)
+    assert result["execution"] == "error"
+    assert result["failed_phase"] == "native_checks"
+    assert result["error"]["type"] == "TimeoutError"
+    assert result["native_checks"] == result["samples"] == []
+    assert not result["decision"]["eligible_for_best"]
+    assert len(closed) == 3 and all(code is not None for code in closed)
+    assert (run / "receipt.json").is_file()
+    assert not (run / "sources/validation").exists()

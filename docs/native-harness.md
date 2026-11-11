@@ -23,7 +23,7 @@
 - correctness 和性能 worker 分别使用完整的冻结 candidate、baseline 或 best 源码。
 - 原生检查的工作目录、`PYTHONPATH` 及 `{core}`、`{megatron}`、`{hf}` 等替换路径统一指向 `sources/validation`。因此 conftest 将项目根目录插入 `sys.path` 后，仍能加载候选实现和受信检查代码。
 - 检查环境记录 baseline、candidate 的 Git 身份、实现覆盖路径及每个文件的 SHA256。执行结束和晋升时重新验证，文件被修改则拒绝晋升。
-- `harness_seconds` 单独记录检查环境的复制与哈希耗时，未计入算子性能。此版本使用普通文件复制，没有额外缓存。
+- `harness_seconds` 单独记录检查环境的复制与哈希耗时，未计入算子性能。按冻结清单直接合成基线与候选文件，每个目标文件只复制一次并核对原 SHA256；候选删除的实现不会残留。复制与哈希之间检查剩余执行预算，没有额外缓存。
 
 这解决候选修改检查代码而获得 PASS 的问题；同权限 Python 代码不构成安全沙箱。
 
