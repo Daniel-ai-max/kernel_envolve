@@ -192,11 +192,13 @@ def confirm_native(run, timeout=1800):
         folder.mkdir()
         write_json(folder / "attempt.json", attempt)
         receipt = {"binding": binding, "attempt_hash": digest(attempt), "status": "failed"}
+        phase = "setup"
         try:
             derived = folder / "task"
             derived.mkdir()
             shutil.copy2(run / "adapter.py", derived / "adapter.py")
             write_json(derived / "native.json", confirmation_config(cfg))
+            phase = "child_full"
             with _phase(phases, "child_full"):
                 child, held = evaluate_native(derived, "full", timeout)
             receipt.update(
@@ -206,6 +208,8 @@ def confirm_native(run, timeout=1800):
                 decision=held["decision"],
                 execution=held["execution"],
                 correctness=held["correctness"],
+                child_execution=held["execution"],
+                child_correctness=held["correctness"],
                 error=held.get("error"),
                 failed_phase=held.get("failed_phase"),
             )
@@ -213,19 +217,24 @@ def confirm_native(run, timeout=1800):
             # the parent before accepting its independent measurements.
             from .native import source_contents
 
+            phase = "source_identity"
             if {r: source_contents(i) for r, i in held["identities"].items()} != {
                 r: source_contents(result["identities"][r]) for r in held["identities"]
             }:
                 raise ValueError("Confirmation sources changed during snapshot")
+            phase = "live_sources_after"
             with _phase(phases, "live_sources_after"):
                 verify_live_sources(result, cfg)
             if native_decision(held, load_config(derived))["eligible_for_best"]:
                 receipt["status"] = "passed"
                 write_json(folder / "receipt.json", receipt)
+                phase = "posterior_audit"
                 with _phase(phases, "posterior_audit"):
                     verify_confirmation(run, result, cfg)
         except BaseException as exc:
-            receipt["status"] = "failed"
+            receipt.update(
+                status="failed", execution="error", correctness="partial", failed_phase=phase
+            )
             receipt["error"] = {"type": type(exc).__name__, "message": str(exc)}
             raise
         finally:

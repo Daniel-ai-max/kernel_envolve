@@ -342,3 +342,65 @@ def test_confirmation_cli_exit_status(receipt, expected, monkeypatch, capsys, tm
     )
     assert main(["native-confirm", str(tmp_path)]) == expected
     assert json.loads(capsys.readouterr().out) == receipt
+
+
+@pytest.mark.parametrize("failure_phase", ["live_sources_after", "posterior_audit"])
+def test_confirmation_post_child_failure_receipt(tmp_path, monkeypatch, failure_phase):
+    task = tmp_path / "task"
+    run = task / ".kernel_native/runs/full"
+    run.mkdir(parents=True)
+    (task / "adapter.py").write_text("# fixture")
+    (run / "adapter.py").write_text("# fixture")
+    cfg = {"name": "fixture", "confirmation": {"cases": [], "seeds": [83], "trials": 3}}
+    result = {
+        "task_root": str(task),
+        "evaluator_hash": "fixture",
+        "adapter_hash": file_hash(task / "adapter.py"),
+        "initial_best_hash": None,
+        "identities": {},
+    }
+    write_json(run / "result.json", result)
+    write_json(run / "receipt.json", {})
+    write_json(run / "config.json", cfg)
+    monkeypatch.setattr("kernel_envolve.native_confirmation._audit", lambda path: (result, cfg))
+    monkeypatch.setattr("kernel_envolve.native_confirmation.load_config", lambda path: cfg)
+    monkeypatch.setattr("kernel_envolve.native_confirmation.evaluator_hash", lambda: "fixture")
+    monkeypatch.setattr("kernel_envolve.native._best", lambda state: None)
+    monkeypatch.setattr(
+        "kernel_envolve.native.native_decision", lambda result, config: {"eligible_for_best": True}
+    )
+    checks = []
+
+    def live_sources(result, config):
+        checks.append(True)
+        if failure_phase == "live_sources_after" and len(checks) == 2:
+            raise ValueError("Live confirmation source changed")
+
+    monkeypatch.setattr("kernel_envolve.native_confirmation.verify_live_sources", live_sources)
+
+    def posterior(*args):
+        raise ValueError("Confirmation runtime environments differ")
+
+    monkeypatch.setattr("kernel_envolve.native_confirmation.verify_confirmation", posterior)
+
+    def child_full(derived, mode, timeout):
+        child = derived / ".kernel_native/runs/held"
+        child.mkdir(parents=True)
+        write_json(child / "receipt.json", {})
+        return child, {
+            "decision": {"eligible_for_best": True},
+            "execution": "completed",
+            "correctness": "pass",
+            "identities": {},
+        }
+
+    monkeypatch.setattr("kernel_envolve.native.evaluate_native", child_full)
+    with pytest.raises(ValueError):
+        confirm_native(run)
+    receipt = read_json(run / "confirmation/receipt.json")
+    assert receipt["status"] == "failed"
+    assert receipt["execution"] == "error" and receipt["correctness"] == "partial"
+    assert receipt["child_execution"] == "completed" and receipt["child_correctness"] == "pass"
+    assert receipt["failed_phase"] == failure_phase
+    assert receipt["error"]["type"] == "ValueError"
+    assert receipt["seconds"] >= sum(receipt["phase_wall_seconds"].values())
