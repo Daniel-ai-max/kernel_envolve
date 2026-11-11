@@ -26,10 +26,14 @@ def snapshot(root, dest, artifacts=(), checkpoint=None):
     checkpoint()
     root = Path(root)
     resolved_root = root.resolve()
-    head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
+    head = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=root, text=True, timeout=checkpoint()
+    ).strip()
     listed = (
         subprocess.check_output(
-            ["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard"], cwd=root
+            ["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
+            cwd=root,
+            timeout=checkpoint(),
         )
         .decode()
         .split("\0")
@@ -366,8 +370,10 @@ def _evaluate(task, state, cfg, mode, timeout, selection, check_only):
     workers = {}
 
     def checkpoint():
-        if time.monotonic() >= deadline:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
             raise TimeoutError("Native evaluation time budget exhausted")
+        return remaining
 
     try:
         for role, roots in cfg["sources"].items():
