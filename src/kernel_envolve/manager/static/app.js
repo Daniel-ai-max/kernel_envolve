@@ -112,7 +112,7 @@ function render() {
           <td data-label="最近晋升">${escape(stamp(t.last_promotion))}</td>
           <td data-label="GPU / 资源">${escape(baseline.hardware)}<small>${escape(t.spec.resource)}</small></td>
           <td class="research" data-label="优化方向"><div class="snippet" title="${escape(record?.hypothesis || "")}">${escape(direction)}</div>${next ? `<small class="snippet" title="${escape(record.next_action)}">下一步：${escape(next)}</small>` : ""}</td>
-          <td class="research" data-label="最近结果"><div class="snippet" title="${escape(record?.outcome || record?.hypothesis || "")}">${escape(outcome)}</div>${record ? `<small title="${escape(stamp(record.recorded_at))}">${record.inherited ? "历史 Agent 记录" : "Agent 记录"} · ${shortTime(record.recorded_at)}</small>` : ""}${recent ? `<small><button class="source-link" data-task="${escape(recent.task)}" title="${escape(stamp(recent.recorded_at))}">${escape(executionLabelFor(recent))} · ${shortTime(recent.recorded_at)}${recent.inherited ? " · 历史" : ""}</button></small>` : ""}</td>
+          <td class="research" data-label="最近结果"><div class="snippet" title="${escape(record?.outcome || record?.hypothesis || "")}">${escape(outcome)}</div>${recent ? `<small><button class="source-link execution-link" data-task="${escape(recent.task)}" title="${escape(stamp(recent.recorded_at))}">${escape(executionLabelFor(recent))} · ${shortTime(recent.recorded_at)}${recent.inherited ? " · 历史" : ""}</button></small>` : ""}</td>
         </tr>`;
       })
       .join(""),
