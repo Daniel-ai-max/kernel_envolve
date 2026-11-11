@@ -31,23 +31,40 @@ def date(value, name):
     return value
 
 
+def resource_devices(resource):
+    """Declared rank order; lock order is independently sorted by physical UUID."""
+    return resource["devices"] if "devices" in resource else [resource["device"]]
+
+
 def validate(raw, base):
     if set(raw) - {"version", "resources", "tasks"} or raw.get("version") != 1:
         raise ValueError("Expected version 1 deployment with resources and tasks")
     resources, tasks = [], []
     for item in raw["resources"]:
-        if set(item) - {"id", "device", "sessions"}:
+        if set(item) - {"id", "device", "devices", "sessions"}:
             raise ValueError("Unknown resource setting")
         resource = {"sessions": 2, **item}
         identifier(resource["id"])
-        device = resource["device"]
-        if device != "cpu" and not re.fullmatch(r"GPU-[a-fA-F0-9-]+", device):
-            raise ValueError("Use a physical NVIDIA GPU UUID, not cuda:0 or a MIG slice")
+        if ("device" in resource) == ("devices" in resource):
+            raise ValueError("Declare exactly one of device or devices")
+        devices = resource_devices(resource)
+        if (
+            not isinstance(devices, list)
+            or not devices
+            or any(
+                not isinstance(device, str) or not re.fullmatch(r"GPU-[a-fA-F0-9-]+", device)
+                for device in devices
+            )
+        ) and resource.get("device") != "cpu":
+            raise ValueError("Use physical NVIDIA GPU UUIDs, not indices or MIG slices")
+        if len(set(devices)) != len(devices):
+            raise ValueError("Physical devices must be unique within a resource")
         if type(resource["sessions"]) is not int or not 1 <= resource["sessions"] <= 2:
             raise ValueError("Each resource supports one or two agent sessions")
         resources.append(resource)
     ids = [r["id"] for r in resources]
-    if len(set(ids)) != len(ids) or len({r["device"] for r in resources}) != len(resources):
+    devices = [device for resource in resources for device in resource_devices(resource)]
+    if len(set(ids)) != len(ids) or len(set(devices)) != len(devices):
         raise ValueError("Resource IDs and physical devices must be unique")
     for item in raw["tasks"]:
         allowed = {

@@ -61,6 +61,21 @@ def exclusive(path):
             fcntl.flock(handle, fcntl.LOCK_UN)
 
 
+@contextlib.contextmanager
+def gpu_locks(devices):
+    """Acquire every existing per-device lock, or release the partial set immediately."""
+    with contextlib.ExitStack() as stack:
+        handles = []
+        for device in sorted(devices):
+            handle = stack.enter_context(exclusive(lock_path("gpu", device)))
+            if handle is None:
+                stack.close()
+                yield None
+                return
+            handles.append(handle)
+        yield tuple(handles)
+
+
 def gpu_idle(device):
     if device == "cpu":
         return
@@ -82,6 +97,18 @@ def gpu_idle(device):
     )
     if processes.stdout.strip():
         raise ValueError(f"GPU has existing compute processes: {processes.stdout.strip()}")
+
+
+def gpu_group_idle(devices):
+    """Probe every physical device, retaining all failures for cleanup diagnosis."""
+    errors = []
+    for device in devices:
+        try:
+            gpu_idle(device)
+        except (OSError, ValueError, subprocess.SubprocessError) as exc:
+            errors.append(f"{device}: {exc}")
+    if errors:
+        raise ValueError("; ".join(errors))
 
 
 def terminate(process, grace=3):

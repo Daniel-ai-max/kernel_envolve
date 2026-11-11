@@ -1,7 +1,7 @@
 # 持续优化管理
 
 管理层将一个算子的长期任务与单轮 Agent 执行分开，复用现有 evaluator 和 best。
-一个 POSIX 主机运行一个协调器、一到两个会话共用一张 GPU；所有 GPU 作业排队互斥。
+一个 POSIX 主机运行一个协调器，每个资源由一张或一组 GPU 组成，支持一到两个 Agent 会话；同一资源的 GPU 作业排队互斥。
 Agent 自主选择优化路线，协调器只管理生命周期、资源和证据。没有消息推送或模型路由。
 
 ## 启动
@@ -9,7 +9,7 @@ Agent 自主选择优化路线，协调器只管理生命周期、资源和证�
 在实际 GPU 主机的项目环境内安装本包。先准备每个算子的独立 worktree、task
 目录和原始 baseline，再编写部署 JSON。管理状态目录必须位于所有任务工作区之外。
 GPU 用 `nvidia-smi --query-gpu=uuid --format=csv,noheader` 得到的物理 UUID 标识，
-不接受 `cuda:0` 或 MIG 切片作为调度身份。进入 GPU 作业后只暴露该卡，任务使用 `cuda:0`。
+不接受 `cuda:0` 或 MIG 切片作为调度身份。GPU 作业只暴露所分配的设备，主任务使用 `cuda:0`。
 
 ```sh
 kernel-envolve manage contract --task /work/probs-scale/task --kind native
@@ -63,9 +63,34 @@ kernel-envolve manage --state /work/manager-state serve --port 8787
 计算的契约核对，导入的每条结果也必须匹配。新增硬件/覆盖/精度或原始基线时建立新任务。
 重跑相同 init 是幂等的；它不会重置暂停、用量、checkpoint 或 best。
 
-额度单位为秒，null 表示明确不设上限；两种额度都是累计值，不是每轮重置。
-session wall 时间包含该轮的等待；GPU 时间是作业占用设备的时间（包括导入、编译、
-正确性和测量），不是 GPU 内核活跃时间或费用。主管失联期间采用保守的经过时间记账。
+wall 额度单位为墙钟秒，GPU 额度单位为卡秒（设备数 × 占用秒数）；null 表示不设上限。
+两种额度都是累计值，不是每轮重置。session wall 时间包含该轮的等待；GPU 用量包含
+导入、编译、正确性和测量，按整组独占时间计费，即使部分卡未计算。主管失联期间
+采用保守的经过时间记账。单卡和 CPU 测试资源保持原来的秒数口径。
+
+### 同主机多卡资源
+
+需要 CP/TP 等分布式验收时，将资源的 `device` 改为 `devices`，按本地 rank 顺序列出
+该主机全部目标物理 UUID。两个字段只能选一个，组内及同一部署的不同资源之间不得重叠。
+例如：
+
+```json
+{"id": "cp8", "devices": ["GPU-aaaaaaaa-bbbb-cccc-dddd-000000000001", "GPU-aaaaaaaa-bbbb-cccc-dddd-000000000002"], "sessions": 1}
+```
+
+示例仅展示双卡配置格式；CP8 应列出八个真实 UUID。`CUDA_VISIBLE_DEVICES` 保留声明顺序，
+分布式命令自行启动对应 rank，例如在 `manage gpu-run` 内执行 `torchrun --nproc-per-node 8`。
+管理器不负责跨主机调度。作业入队时固定设备列表及数量；子 GPU 作业继承父轮次快照，
+之后任务转移资源不会改变历史用量。
+
+每张卡仍使用同一个逐 UUID 锁，与旧单卡作业互斥。锁按 UUID 排序获取，任一卡不可用就
+立即释放已获得的锁并等待；全部锁获得后才逐卡核对身份和空闲状态。清理和恢复同样
+检查每张卡，任一卡无法确认释放时隔离整个资源。
+
+本版本将 SQLite 升级至 schema 2，旧作业按单卡迁移，不改历史累计值。部署前停止新轮次
+派发，等待或正常终止现有轮次，备份状态后更新协调器、主管及面板。旧版本拒绝打开
+升级后的可写状态；需要回退时必须先结束新作业、保存新增证据，再恢复升级前备份，
+不能直接降级运行。旧 schema 1 备份仍可由新版面板只读查看。
 
 ## Agent 适配接口
 
@@ -99,7 +124,8 @@ kernel-envolve native-promote ./task/.kernel_native/runs/<run>
 kernel-envolve manage report --file progress.json
 ```
 
-`--expected-seconds` 声明本次命令的预计执行时长，建议使用命令超时作为保守上界。
+`--expected-seconds` 始终声明本次命令的预计墙钟时长，建议使用命令超时作为保守上界。
+例如八卡作业声明 300 秒，GPU 额度须至少剩余 2400 卡秒；wall 额度仍需 300 秒。
 管理器在入队前和获得设备锁后分别检查父轮次、累计 wall/GPU 剩余额度，排队时间也会扣除。
 不足时返回退出码 `2` 和 `error_type: gpu_duration_admission`，不启动子命令、不自动重试或延长预算。
 Agent 应保存检查点并重新规划；剩余累计预算不会因换轮恢复。额度按实际经过时间记账，
@@ -107,13 +133,14 @@ Agent 应保存检查点并重新规划；剩余累计预算不会因换轮恢�
 不会提前判断作业是否来得及完成。
 
 GPU wrapper 会转发命令输出的最后 64 KiB，完整日志在管理状态目录的 `jobs/<id>/`。
-Agent 主进程默认看不到 CUDA 设备；GPU wrapper 给子进程设置目标 UUID。不能再嵌套
-gpu-run。运行需要其他 GPU 的分布式验证不在单卡队列契约内，应单独安排并保存证据。
+Agent 主进程默认看不到 CUDA 设备；GPU wrapper 给子进程设置固定顺序的目标 UUID。不能再嵌套
+gpu-run。分布式验证必须使用已声明的资源组，不得自行扩展到组外 GPU。
 
 GPU 命令优先直接执行 evaluator。若适配脚本需要先检查条件，再转交 CLI，使用
 `os.execvpe(argv[0], argv, os.environ)`；另起子进程时须传
-`pass_fds=(int(os.environ["KERNEL_ENVOLVE_LOCK_FD"]),)` 并等待退出。
-默认 `subprocess.run` 会关闭这个继承的设备锁描述符。CLI 会在复制源码前拒绝
+`pass_fds=tuple(json.loads(os.environ["KERNEL_ENVOLVE_LOCK_FDS"]))` 并等待退出。
+`KERNEL_ENVOLVE_LOCK_FDS` 包含全部锁描述符；旧的 `KERNEL_ENVOLVE_LOCK_FD` 保留第一项，
+仅兼容旧单卡适配器。默认 `subprocess.run` 会关闭这些描述符。CLI 会在复制源码前拒绝
 缺失或失效的描述符，并给出上述修复方式；创建 worker 时也再次检查。
 检查不会重新获取锁，也不能通过删除 manager 环境变量来恢复执行。
 
