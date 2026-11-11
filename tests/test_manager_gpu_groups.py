@@ -197,6 +197,8 @@ def test_legacy_migration_and_readonly_totals_remain_single_card(managed):
     child = store.enqueue(store.task("toy"), "gpu", ["unused"], parent)
     assert store.claim(child, os.getpid(), identity(os.getpid()))
     store.heartbeat(child, 5)
+    store.finish(child, "succeeded")
+    store.finish(parent, "cancelled")
     store.db.execute("ALTER TABLE jobs DROP COLUMN devices")
     store.db.execute("ALTER TABLE jobs DROP COLUMN gpu_count")
     store.db.execute("PRAGMA user_version=1")
@@ -211,11 +213,8 @@ def test_legacy_migration_and_readonly_totals_remain_single_card(managed):
         assert migrated.db.execute("PRAGMA user_version").fetchone()[0] == 2
         assert migrated.job_devices(migrated.job(child)) == ["cpu"]
         assert migrated.job(child)["gpu_count"] == 1
-        migrated.heartbeat(child, 7)
-        assert migrated.task("toy")["gpu_seconds"] == 7
-        assert overview(migrated)["resources"][0]["gpu_seconds"] == 7
-        migrated.finish(child, "succeeded")
-        migrated.finish(parent, "cancelled")
+        assert migrated.task("toy")["gpu_seconds"] == 5
+        assert overview(migrated)["resources"][0]["gpu_seconds"] == 5
     finally:
         migrated.close()
 
@@ -662,3 +661,132 @@ def test_native_device_subset_uses_frozen_group_for_lock_validation(managed, dev
             assert result.returncode != 0 and "Device group count" in result.stderr
     store.finish(child, "cancelled")
     store.finish(parent, "cancelled")
+
+
+def legacy_schema(store):
+    store.db.execute("ALTER TABLE jobs DROP COLUMN devices")
+    store.db.execute("ALTER TABLE jobs DROP COLUMN gpu_count")
+    store.db.execute("PRAGMA user_version=1")
+    return list(store.db.iterdump())
+
+
+def assert_legacy_unchanged(store, before):
+    assert store.db.execute("PRAGMA user_version").fetchone()[0] == 1
+    assert list(store.db.iterdump()) == before
+
+
+@pytest.mark.parametrize("status", ["queued", "running"])
+def test_schema_upgrade_refuses_existing_jobs_without_mutating_state(managed, status):
+    store, _, _ = managed
+    job = store.schedule()[0]
+    if status == "running":
+        assert store.claim(job, os.getpid(), identity(os.getpid()))
+        store.heartbeat(job, 3)
+    before = legacy_schema(store)
+    with pytest.raises(ValueError, match="queued or running"):
+        Store(store.root)
+    assert_legacy_unchanged(store, before)
+    # The existing writer can still finish its old-version bookkeeping.
+    if status == "running":
+        store.heartbeat(job, 4)
+        assert store.task("toy")["wall_seconds"] == 4
+    store.finish(job, "cancelled")
+    upgraded = Store(store.root)
+    try:
+        assert upgraded.db.execute("PRAGMA user_version").fetchone()[0] == 2
+        assert upgraded.task("toy")["wall_seconds"] == (4 if status == "running" else 0)
+    finally:
+        upgraded.close()
+
+
+def test_schema_upgrade_refuses_real_coordinator_lock(managed):
+    store, _, _ = managed
+    before = legacy_schema(store)
+    script = (
+        "import sys; from pathlib import Path; from kernel_envolve.manager.process import exclusive\n"
+        f"with exclusive(Path({str(store.root / 'coordinator.lock')!r})) as handle:\n"
+        " assert handle is not None\n"
+        " print('locked',flush=True)\n"
+        " sys.stdin.readline()\n"
+    )
+    process = subprocess.Popen(
+        [sys.executable, "-c", script],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        start_new_session=True,
+    )
+    try:
+        assert process.stdout.readline().strip() == "locked"
+        with pytest.raises(ValueError, match="coordinator lock is held"):
+            Store(store.root)
+        assert_legacy_unchanged(store, before)
+    finally:
+        process.communicate("release\n", timeout=5)
+        terminate(process)
+    upgraded = Store(store.root)
+    upgraded.close()
+
+
+def test_schema_upgrade_refuses_live_registered_descendant(managed):
+    store, _, _ = managed
+    job = store.schedule()[0]
+    store.finish(job, "cancelled")
+    child = subprocess.Popen(
+        [sys.executable, "-c", "import time; time.sleep(30)"], start_new_session=True
+    )
+    try:
+        store.db.execute(
+            "INSERT INTO processes VALUES(?,?,?)", (job, child.pid, identity(child.pid))
+        )
+        before = legacy_schema(store)
+        with pytest.raises(ValueError, match="descendant is still alive"):
+            Store(store.root)
+        assert_legacy_unchanged(store, before)
+    finally:
+        terminate(child)
+    upgraded = Store(store.root)
+    try:
+        assert upgraded.job(job)["gpu_count"] == 1
+        assert upgraded.task("toy")["gpu_seconds"] == 0
+    finally:
+        upgraded.close()
+
+
+def test_schema_upgrade_holds_coordinator_lock_until_commit(managed, monkeypatch):
+    store, _, _ = managed
+    legacy_schema(store)
+    original = Store._upgrade_columns
+    observed = []
+
+    def upgrade(current):
+        with exclusive(current.root / "coordinator.lock") as handle:
+            observed.append(handle is None)
+        original(current)
+        with exclusive(current.root / "coordinator.lock") as handle:
+            observed.append(handle is None)
+
+    monkeypatch.setattr(Store, "_upgrade_columns", upgrade)
+    upgraded = Store(store.root)
+    upgraded.close()
+    assert observed == [True, True]
+    with exclusive(store.root / "coordinator.lock") as handle:
+        assert handle is not None
+
+
+def test_schema_upgrade_rolls_back_partial_migration(managed, monkeypatch):
+    store, _, _ = managed
+    before = legacy_schema(store)
+    original = Store._upgrade_columns
+
+    def fail(current):
+        original(current)
+        raise OSError("injected migration error")
+
+    monkeypatch.setattr(Store, "_upgrade_columns", fail)
+    with pytest.raises(OSError, match="injected migration error"):
+        Store(store.root)
+    assert_legacy_unchanged(store, before)
+    with exclusive(store.root / "coordinator.lock") as handle:
+        assert handle is not None

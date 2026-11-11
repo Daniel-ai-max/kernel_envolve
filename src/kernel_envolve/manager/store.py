@@ -30,11 +30,17 @@ class Store:
         self.db = sqlite3.connect(path, timeout=15, isolation_level=None)
         self.db.row_factory = sqlite3.Row
         path.chmod(0o600)
-        self.db.executescript("PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;")
         version = self.db.execute("PRAGMA user_version").fetchone()[0]
         if version not in (0, 1, 2):
             self.db.close()
             raise ValueError(f"Unsupported manager schema: {version}")
+        if version == 1:
+            try:
+                self._upgrade_legacy()
+            except BaseException:
+                self.db.close()
+                raise
+        self.db.executescript("PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;")
         self.db.executescript("""
             CREATE TABLE IF NOT EXISTS resources (
                 id TEXT PRIMARY KEY, spec TEXT NOT NULL, problem TEXT);
@@ -69,31 +75,9 @@ class Store:
                 task TEXT NOT NULL, run TEXT NOT NULL, at REAL NOT NULL, gpu_seconds REAL NOT NULL,
                 data TEXT NOT NULL, PRIMARY KEY(task, run));
         """)
-        columns = {r[1] for r in self.db.execute("PRAGMA table_info(jobs)")}
-        if "cancel_requested" not in columns:
+        if version == 0:
             with self.transaction():
-                columns = {r[1] for r in self.db.execute("PRAGMA table_info(jobs)")}
-                if "cancel_requested" not in columns:
-                    self.db.execute(
-                        "ALTER TABLE jobs ADD COLUMN cancel_requested INTEGER NOT NULL DEFAULT 0"
-                    )
-        with self.transaction():
-            columns = {r[1] for r in self.db.execute("PRAGMA table_info(jobs)")}
-            if "devices" not in columns:
-                self.db.execute("ALTER TABLE jobs ADD COLUMN devices TEXT")
-            if "gpu_count" not in columns:
-                # Old jobs were single-device, including the CPU testing resource.
-                # Keep their already-billed seconds unchanged, never infer a new count.
-                self.db.execute("ALTER TABLE jobs ADD COLUMN gpu_count INTEGER NOT NULL DEFAULT 1")
-            for row in self.rows(
-                "SELECT jobs.id,resources.spec FROM jobs JOIN resources ON jobs.resource=resources.id "
-                "WHERE jobs.devices IS NULL"
-            ):
-                self.db.execute(
-                    "UPDATE jobs SET devices=? WHERE id=?",
-                    (encode(resource_devices(json.loads(row["spec"]))), row["id"]),
-                )
-            self.db.execute("PRAGMA user_version=2")
+                self._upgrade_columns()
         try:
             with self.transaction():
                 host = socket.gethostname()
@@ -106,6 +90,45 @@ class Store:
         except BaseException:
             self.db.close()
             raise
+
+    def _upgrade_legacy(self):
+        from .process import alive, exclusive
+
+        message = "Stop the schema 1 coordinator and finish existing jobs before upgrading"
+        with exclusive(self.root / "coordinator.lock") as handle:
+            if handle is None:
+                raise ValueError(message + ": coordinator lock is held")
+            with self.transaction():
+                # Check and migrate in one write transaction; no old writer can
+                # enqueue work between the quiet-state check and the schema change.
+                if self.one("SELECT id FROM jobs WHERE status IN ('queued','running') LIMIT 1"):
+                    raise ValueError(message + ": queued or running jobs remain")
+                for child in self.rows("SELECT pid,identity FROM processes"):
+                    if alive(child["pid"], child["identity"]):
+                        raise ValueError(message + ": a registered descendant is still alive")
+                self._upgrade_columns()
+
+    def _upgrade_columns(self):
+        """Caller holds the schema transaction and, for legacy state, coordinator lock."""
+        columns = {r[1] for r in self.db.execute("PRAGMA table_info(jobs)")}
+        if "cancel_requested" not in columns:
+            self.db.execute(
+                "ALTER TABLE jobs ADD COLUMN cancel_requested INTEGER NOT NULL DEFAULT 0"
+            )
+        if "devices" not in columns:
+            self.db.execute("ALTER TABLE jobs ADD COLUMN devices TEXT")
+        if "gpu_count" not in columns:
+            # Historical single-card charges are never recomputed from new resources.
+            self.db.execute("ALTER TABLE jobs ADD COLUMN gpu_count INTEGER NOT NULL DEFAULT 1")
+        for row in self.rows(
+            "SELECT jobs.id,resources.spec FROM jobs JOIN resources ON jobs.resource=resources.id "
+            "WHERE jobs.devices IS NULL"
+        ):
+            self.db.execute(
+                "UPDATE jobs SET devices=? WHERE id=?",
+                (encode(resource_devices(json.loads(row["spec"]))), row["id"]),
+            )
+        self.db.execute("PRAGMA user_version=2")
 
     def close(self):
         self.db.close()
