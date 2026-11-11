@@ -155,3 +155,127 @@ def test_gate_rejection_requires_native_terminal_protocol(tmp_path, mode):
     ):
         native_checks(tmp_path / "run", cfg, {"core": str(root)}, time.monotonic() + 20, records)
     assert records[0]["status"] == ("fail" if mode in {"blocked", "warn"} else "error")
+
+
+@pytest.mark.parametrize("mode", ["launch", "timeout", "expired"])
+def test_execution_errors_have_check_receipts(tmp_path, mode):
+    import subprocess
+
+    cfg, root = pytest_check(tmp_path, "")
+    if mode == "launch":
+        cfg["checks"][0]["argv"] = [str(root / "missing-executable")]
+        expected = FileNotFoundError
+    else:
+        cfg["checks"][0]["argv"] = [
+            "{python}",
+            "-u",
+            "-c",
+            "import time; print('started'); time.sleep(10)",
+        ]
+        expected = TimeoutError if mode == "expired" else subprocess.TimeoutExpired
+    records = []
+    deadline = time.monotonic() + (-1 if mode == "expired" else 0.4 if mode == "timeout" else 10)
+    with pytest.raises(expected):
+        native_checks(tmp_path / "run", cfg, {"core": str(root)}, deadline, records)
+    record = records[0]
+    assert record["id"] == "operator" and record["scope"] == "operator"
+    assert record["status"] == "error" and record["returncode"] is None
+    assert record["error"]["type"] == expected.__name__
+    assert record["seconds"] > 0
+    if mode == "timeout":
+        assert record["seconds"] >= 0.35
+        assert "started" in (tmp_path / "run/native_checks/operator/command.log").read_text()
+
+
+@pytest.mark.parametrize("body,code", [("pass", 0), ("assert False, 'gradient'", 1)])
+@pytest.mark.parametrize("cleanup_fails", [False, True])
+def test_cleanup_receipt_preserves_command_verdict(
+    tmp_path, monkeypatch, body, code, cleanup_fails
+):
+    import kernel_envolve.native_checks as checks
+
+    cfg, root = pytest_check(tmp_path, f"def test_contract():\n {body}\n")
+    real_stop = checks.stop
+    cleanup_seconds = 0.03
+
+    def cleanup(process):
+        real_stop(process)
+        time.sleep(cleanup_seconds)
+        if cleanup_fails:
+            raise AssertionError("cleanup probe failed")
+
+    monkeypatch.setattr(checks, "stop", cleanup)
+    records = []
+    if cleanup_fails or code:
+        with pytest.raises(RuntimeError if cleanup_fails else AssertionError):
+            native_checks(
+                tmp_path / "run", cfg, {"core": str(root)}, time.monotonic() + 20, records
+            )
+    else:
+        native_checks(tmp_path / "run", cfg, {"core": str(root)}, time.monotonic() + 20, records)
+    record = records[0]
+    assert record["returncode"] == code
+    assert record["seconds"] >= cleanup_seconds
+    assert record["status"] == ("error" if cleanup_fails else "fail" if code else "pass")
+    assert len(record["failures"]) == code
+    if code:
+        assert record["error"]["type"] == "AssertionError"
+        assert "gradient" in record["failures"][0]["message"]
+    if cleanup_fails:
+        assert record["cleanup_error"] == {
+            "type": "AssertionError",
+            "message": "cleanup probe failed",
+        }
+    assert (tmp_path / "run/native_checks/operator/junit.xml").exists()
+
+
+def test_timeout_and_cleanup_errors_are_both_preserved(tmp_path, monkeypatch):
+    import kernel_envolve.native_checks as checks
+
+    cfg, root = pytest_check(tmp_path, "")
+    cfg["checks"][0]["argv"] = ["{python}", "-c", "import time; time.sleep(10)"]
+    real_stop = checks.stop
+
+    def cleanup(process):
+        real_stop(process)
+        raise OSError("cleanup confirmation failed")
+
+    monkeypatch.setattr(checks, "stop", cleanup)
+    records = []
+    with pytest.raises(RuntimeError, match="cleanup"):
+        native_checks(tmp_path / "run", cfg, {"core": str(root)}, time.monotonic() + 0.2, records)
+    assert records[0]["error"]["type"] == "TimeoutExpired"
+    assert records[0]["cleanup_error"]["type"] == "OSError"
+    assert records[0]["returncode"] is None and records[0]["status"] == "error"
+
+
+@pytest.mark.parametrize("shape", ["no_suite", "mixed", "wrapped"])
+def test_junit_cases_outside_suites_are_incomplete(tmp_path, shape):
+    case = '<testcase classname="m" name="test_x"><failure message="assert False"/></testcase>'
+    suite = '<testsuite tests="0" failures="0" errors="0" skipped="0"/>'
+    if shape == "no_suite":
+        xml = f"<testsuites>{case}</testsuites>"
+    elif shape == "mixed":
+        xml = f"<testsuites>{suite}{case}</testsuites>"
+    else:
+        xml = f"<testsuite><wrapper>{case}</wrapper></testsuite>"
+    (tmp_path / "junit.xml").write_text(xml)
+    with pytest.raises(ValueError, match="must belong"):
+        junit(tmp_path, ["junit.xml"], ["m::test_x"], failures=[])
+
+
+@pytest.mark.parametrize("nested", [False, True])
+@pytest.mark.parametrize("failed", [False, True])
+def test_junit_suite_structure_accepts_complete_flat_and_nested(tmp_path, nested, failed):
+    failure = '<failure message="AssertionError: mismatch"/>' if failed else ""
+    case = f'<testcase classname="m" name="test_x">{failure}</testcase>'
+    attrs = f'tests="1" failures="{int(failed)}" errors="0" skipped="0"'
+    suite = f"<testsuite {attrs}>{case}</testsuite>"
+    if nested:
+        suite = f"<testsuite {attrs}>{suite}</testsuite>"
+    (tmp_path / "junit.xml").write_text(f"<testsuites>{suite}</testsuites>")
+    failures = []
+    assert junit(tmp_path, ["junit.xml"], ["m::test_x"], failures=failures) == {
+        "junit.xml": ["m::test_x"]
+    }
+    assert len(failures) == int(failed)
