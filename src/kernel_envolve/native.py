@@ -45,7 +45,8 @@ def snapshot(root, dest, artifacts=()):
         if not matches:
             raise ValueError(f"Required compiled artifact missing: {pattern}")
         names.update(str(p.relative_to(root)) for p in matches)
-    dest.mkdir(parents=True)
+    if dest is not None:
+        dest.mkdir(parents=True)
     directories = {dest}
     files, total = {}, 0
     for name in sorted(names):
@@ -61,12 +62,15 @@ def snapshot(root, dest, artifacts=()):
         total += src.stat().st_size
         if total > 512 * 1024 * 1024:
             raise ValueError("Source snapshot exceeds 512 MiB")
-        dst = dest / name
-        if dst.parent not in directories:
-            dst.parent.mkdir(parents=True, exist_ok=True)
-            directories.add(dst.parent)
-        shutil.copy2(src, dst)
-        files[name] = file_hash(dst)
+        if dest is None:
+            files[name] = file_hash(src)
+        else:
+            dst = dest / name
+            if dst.parent not in directories:
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                directories.add(dst.parent)
+            shutil.copy2(src, dst)
+            files[name] = file_hash(dst)
     if not files:
         raise ValueError("Empty source snapshot")
     return {"git_head": head, "files": files}
@@ -268,6 +272,20 @@ def _best(state):
     if digest(result) != pointer["result_hash"]:
         raise ValueError("Best result changed")
     verify_roots(run, result["identities"]["candidate"], "candidate")
+    from .native_confirmation import verify_confirmation
+
+    cfg = read_json(run / "config.json")
+    if pointer.get("confirmation") is not None or "confirmation" in cfg:
+        receipt = read_json(run / "receipt.json")
+        if (
+            receipt["result_hash"] != digest(result)
+            or receipt["config_hash"] != file_hash(run / "config.json")
+            or "confirmation" not in cfg
+        ):
+            raise ValueError("Best confirmation config/receipt changed")
+        confirmation = verify_confirmation(run, result, cfg)
+        if pointer.get("confirmation") != confirmation:
+            raise ValueError("Best confirmation receipt changed")
     return pointer, run, result
 
 
@@ -575,11 +593,18 @@ def promote_native(run):
         decision = native_decision(result, cfg)
         if not decision["eligible_for_best"]:
             raise ValueError("Not eligible: " + "; ".join(decision["reasons"]))
+        from .native_confirmation import verify_confirmation, verify_live_sources
+
+        confirmation = verify_confirmation(run, result, cfg)
+        if confirmation is not None:
+            verify_live_sources(result, cfg)
         pointer = {
             "run": str(run.relative_to(state)),
             "result_hash": digest(result),
             "previous": best[0]["run"] if best else None,
         }
+        if confirmation is not None:
+            pointer["confirmation"] = confirmation
         write_json(
             run / "promotion.json",
             {

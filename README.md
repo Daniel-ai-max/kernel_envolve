@@ -91,6 +91,8 @@ kernel-envolve native-promote /path/to/run
 
 CUDA 原生评测在计时外缓存只读输入的精确字节副本，减少反复传回 CPU 的成本；每个 worker 最多使用 2 GiB，且不超过当时空闲显存的八分之一。超出预算或缓存分配不足时沿用原 CPU 逐位检查，验证函数执行前后的检查均保留。worker 日志记录缓存、回退与检查耗时；显存结果只扣除这些私有副本的实际 allocator 分配量，同时保存未扣除的峰值。
 
+声明 `confirmation` 的内部任务须先运行 `native-confirm <full-run>`，通过预先冻结的独立输入确认后才能晋升；每个任务只能消费一次确认集。配置与收据规则见[独立确认](docs/native-harness.md#独立确认)。
+
 `native-promote` 的路径取自合格的 full 结果。数值 gate 或 CI 通过仅说明相应检查通过，性能收益仍需测量确认。配置与适配接口见 [内部项目评测](skills/kernel-envolve/SKILL.md#apodex-内部项目评测)及[内部 evaluator](skills/kernel-envolve/SKILL.md#使用内部-evaluator)。
 
 原生评测的 CLI 与 `result.json` 提供 `phase_wall_seconds`：源码快照、设置、正确性、原生门禁、测量、后置检查、完整性校验和清理。执行阶段失败保留已耗时间及 `failed_phase`，未执行阶段不填零。各阶段是主控进程的连续墙钟耗时，总和等于 `seconds`（至 worker 清理完成，不含评分和收据写入）；首次导入/编译可能计入首个正确性请求，测量阶段还含参考计算、传输和结果核验，不能作为纯 GPU kernel 时间。

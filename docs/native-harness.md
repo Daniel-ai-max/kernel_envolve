@@ -34,3 +34,35 @@
 缺报告、覆盖不足、计数矛盾、导入或运行异常、退出码与证据不一致，继续视为执行错误。两类结果都不会进入性能测量或晋升；每项已尝试的检查在 `native_checks` 保留状态、退出码、完整耗时及失败用例，原始报告和日志纳入收据。历史结果不会被重新分类。
 
 命令启动失败、超时或清理异常均保留结构化错误记录，未知退出码为 `null`，耗时包含准备、执行、报告解析及清理。清理异常单独保存为 `cleanup_error`；即使命令已通过或产生断言拒绝，清理失败仍归为执行错误，同时保留原始报告、失败用例和原始异常。JUnit 用例必须直接属于 `testsuite`，不接受缺少 suite 的不完整报告。
+
+## 独立确认
+
+内部任务可在首次评测前声明 `confirmation`，将阶段交付的预留输入纳入晋升门禁：
+
+```json
+{
+  "confirmation": {
+    "cases": [
+      {"id": "heldout-tail", "args": {"size": 32769}, "weight": 1}
+    ],
+    "seeds": [1009, 2027],
+    "trials": 6
+  }
+}
+```
+
+case 的参数组合和名称须与开发集不同，seed 不得与开发集重合，trials 至少 3。案例字段与普通 `cases` 相同；adapter 必须实际使用声明的尺寸、布局等参数。整个确认配置属于冻结任务契约，不能在看完 full 后更换。
+
+```sh
+kernel-envolve native-evaluate --task ./task --mode full
+kernel-envolve native-confirm ./task/.kernel_native/runs/<full-run> --timeout 1800
+kernel-envolve native-promote ./task/.kernel_native/runs/<full-run>
+```
+
+管理器内通过 `manage gpu-run --expected-seconds ... -- kernel-envolve native-confirm ...` 分配资源。确认复用冻结 adapter、全部原生 checks、正确性和性能阈值，执行独立 full；独立收据绑定父 full、子 raw evidence、源码、配置及 evaluator。声明确认的任务缺失或未通过确认时不能晋升，已晋升证据被篡改也不能继续显示为有效 best。
+
+开发 full 仍比较当前 best 和固定基线；确认阶段独立比较固定基线，不宣称已在预留输入上胜过旧 best。确认集每个任务只能消费一次，失败、中断、换候选或重跑 full 都不重用。继续迭代时建立新版本任务，把已见确认输入并入开发回归，预先声明新的确认集；不能删除消费记录来重抽。工具核验参数组合与收据，agent 仍负责选择真实生产维度并保留跨任务的已见输入记录。
+
+确认收据同时记录总墙钟耗时 `seconds` 和 `phase_wall_seconds`：锁等待、父证据审计、前后 live source 哈希、独立 full、后验审计均计入；源码复制及文件系统读取成本不只归为子 full 时间。确认仅在阶段交付执行，不加入每轮 quick。
+
+未声明 `confirmation` 的旧任务保持原行为，其 full 仅代表开发覆盖，不因此获得独立确认声明。

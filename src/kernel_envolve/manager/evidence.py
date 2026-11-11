@@ -42,6 +42,9 @@ def inspect_run(path, spec, checkpoint=None):
         raise ValueError("Result receipt mismatch")
     if Path(result["task_root"]).resolve() != Path(spec["task_dir"]):
         raise ValueError("Result belongs to a different task")
+    confirmation = None
+    confirmation_status = "not_required"
+    full_eligible = None
     if spec["kind"] == "native":
         from ..native import native_decision, verify_roots
 
@@ -57,6 +60,21 @@ def inspect_run(path, spec, checkpoint=None):
         if file_hash(path / "adapter.py") != result["adapter_hash"]:
             raise ValueError("Native adapter changed")
         decision = native_decision(result, cfg)
+        full_eligible = decision["eligible_for_best"]
+        if full_eligible and "confirmation" in cfg:
+            from ..native_confirmation import verify_confirmation
+
+            held_receipt = path / "confirmation" / "receipt.json"
+            if not held_receipt.exists():
+                confirmation_status = "pending"
+            elif read_json(held_receipt).get("status") == "failed":
+                confirmation_status = "failed"
+            else:
+                confirmation = verify_confirmation(path, result, cfg, checkpoint)
+                confirmation_status = "passed"
+            if confirmation is None:
+                decision["eligible_for_best"] = False
+                decision["reasons"].append("Independent confirmation " + confirmation_status)
         contract = result.get("contract")
         source = result["identities"].get("candidate")
     else:
@@ -84,6 +102,9 @@ def inspect_run(path, spec, checkpoint=None):
         "source": source,
         "environment": result.get("environments", result.get("environment")),
         "native_checks": result.get("native_checks", []),
+        "confirmation": confirmation,
+        "confirmation_status": confirmation_status,
+        "full_eligible_for_best": full_eligible,
         "memory": result.get("memory", []),
         "error": result.get("error"),
         "recorded_at": (path / "receipt.json").stat().st_mtime,
@@ -164,6 +185,9 @@ def refresh_task(store, task, force=False, checkpoint=None):
             continue  # New in-flight results are not final evidence; indexed ones must revalidate.
         try:
             signature = fingerprint(path, checkpoint)
+            if spec["kind"] == "native":
+                claim = state / "confirmation-attempt.json"
+                signature = digest([signature, file_hash(claim) if claim.exists() else None])
             if (
                 old
                 and not force
@@ -215,6 +239,8 @@ def refresh_task(store, task, force=False, checkpoint=None):
                     or not data["decision"]["eligible_for_best"]
                 ):
                     raise ValueError("Best does not reference an eligible, verified full result")
+                if pointer.get("confirmation") != data.get("confirmation"):
+                    raise ValueError("Best confirmation receipt mismatch")
                 history = (
                     read_json(run / "promotion.json") if (run / "promotion.json").exists() else None
                 )

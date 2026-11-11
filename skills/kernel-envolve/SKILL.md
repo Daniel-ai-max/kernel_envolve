@@ -219,7 +219,7 @@ python -m apodex_core.verification.method.gate --source operations \
 
 验证结果须属于本轮源码：核对预期测试名称、非零通过数量和应有 rank 报告；意外 skip、缺报告、fallback 或旧记录不算通过。core `gate_history.json` 会保留以前的算子条目，只读取本轮预期名称且核对时间和版本；`--emit-observed` 是内部子进程接口，会跳过最终判定，不能作为验收命令。复用 Megatron `.ci/assert_no_pytest_skips.py` / `.ci/check_junit_results.py` 时仍保留 pytest 的退出码。
 
-内部任务使用 `native-evaluate/native-promote`，best 指向 `.kernel_native/` 内冻结的源码与完整证据；后续比较从快照加载，修改工作区不会改变旧 best。通用 `evaluate/promote` 保持独立，不承担内部训练验收。
+内部任务使用 `native-evaluate/native-confirm/native-promote`，best 指向 `.kernel_native/` 内冻结的源码与完整证据；后续比较从快照加载，修改工作区不会改变旧 best。通用 `evaluate/promote` 保持独立，不承担内部训练验收。
 
 交付按 core 改动 → Megatron 接线和 pin 更新的依赖顺序进行；按两仓当前规范接入相关 CI。最终 pin 必须已进入 core main，核对实际导入路径与接线结果；新特性的 sweep 配置按 Megatron 规范更新。常规 GPU merge-queue 门禁仍由队列执行，review 不要求提前重跑整套 CI。
 
@@ -237,6 +237,7 @@ python -m apodex_core.verification.method.gate --source operations \
 ```bash
 kernel-envolve native-evaluate --task <任务目录> --mode quick
 kernel-envolve native-evaluate --task <任务目录> --mode full --timeout 1800
+kernel-envolve native-confirm <完整评测run目录> --timeout 1800  # 已声明 confirmation 的任务
 kernel-envolve native-promote <完整评测run目录>
 ```
 
@@ -271,6 +272,8 @@ kernel-envolve promote <full输出的run目录>
 
 ## 阶段交付
 
-冻结本阶段候选，在实际支持范围内用未参与调参的尺寸/维度组合和数值种子验证正确性与性能，覆盖各分支和阈值邻域，保存 case、采样规则、最终源码哈希和结果。仅换 seed 不算尺寸泛化。内置 full 只覆盖 task.json 中的 case，不自动完成这项验证；使用独立验证任务或项目已有 evaluator。发现失败就修复并验收最终版本，不删除失败 case。此项在阶段交付时执行，无需加到每轮循环；交付完成后按检查点继续下一项实验。
+内部任务在注册前用 `native.json` 的 `confirmation: {cases, seeds, trials}` 冻结独立确认集。完整评测合格后，经 manager GPU 队列执行 `native-confirm`，再执行 `native-promote`；确认复用全部原生门禁与阈值，独立比较固定基线。确认集每任务消费一次，失败、中断或换候选不能重用；下一阶段把已见输入转入开发回归，建立含新确认集的新任务契约。收据与配置见 [独立确认](../../docs/native-harness.md#独立确认)。未声明该字段的旧任务不具有独立确认收据。
+
+冻结本阶段候选，在实际支持范围内用未参与调参的尺寸/维度组合和数值种子验证正确性与性能，覆盖各分支和阈值邻域，保存 case、采样规则、最终源码哈希和结果。仅换 seed 不算尺寸泛化。常规 full 只覆盖开发 case；内部任务使用上述独立确认，其他任务使用独立验证任务或项目已有 evaluator。发现失败就修复并验收最终版本，不删除失败 case。此项在阶段交付时执行，无需加到每轮循环；交付完成后按检查点继续下一项实验。
 
 确认最终导入/调用入口实际使用已验证代码及 helper，独立任务通过 `load_best(task目录)` 加载 `best.json` 指向的 source；内部项目按已验证的 core 修订与 Megatron pin 交付，并确认 dispatcher 实际调用了候选。交付对应源码、运行命令、证据路径、逐 case 结果和简短结论；若只有失败或未确认候选，保留原 best 并明确说明本轮发现。

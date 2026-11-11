@@ -290,13 +290,24 @@ def main(argv=None):
     native.add_argument("--task", type=Path, required=True)
     native.add_argument("--mode", choices=("quick", "full"), default="quick")
     native.add_argument("--timeout", type=float, default=1800)
+    confirmation = sub.add_parser(
+        "native-confirm", help="Consume the frozen independent confirmation set once"
+    )
+    confirmation.add_argument("run", type=Path)
+    confirmation.add_argument("--timeout", type=float, default=1800)
     native_pr = sub.add_parser("native-promote", help="Verify native evidence and preserve best")
     native_pr.add_argument("run", type=Path)
     args = parser.parse_args(argv)
     try:
-        if args.command in ("evaluate", "native-evaluate"):
+        if args.command in ("evaluate", "native-evaluate", "native-confirm"):
             # Detect broken adapters before copying sources or starting workers.
             managed_lock_fd()
+        if args.command == "native-confirm":
+            from .native_confirmation import confirm_native
+
+            receipt = confirm_native(args.run, args.timeout)
+            print(json.dumps(receipt, indent=2))
+            return 0 if receipt["status"] == "passed" else 1
         if args.command == "native-promote":
             from .native import promote_native
 
