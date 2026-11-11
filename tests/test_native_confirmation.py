@@ -404,3 +404,15 @@ def test_confirmation_post_child_failure_receipt(tmp_path, monkeypatch, failure_
     assert receipt["failed_phase"] == failure_phase
     assert receipt["error"]["type"] == "ValueError"
     assert receipt["seconds"] >= sum(receipt["phase_wall_seconds"].values())
+
+
+def test_full_check_only_cannot_consume_confirmation_inputs(confirmation_task):
+    task, _ = confirmation_task
+    run, result = evaluate_native(task, "full", timeout=90, check_only=True)
+    assert result["correctness"] == "pass", result.get("error")
+    with pytest.raises(ValueError, match="requires an eligible full evaluation"):
+        confirm_native(run, 90)
+    assert not (task / ".kernel_native/confirmation-attempt.json").exists()
+    assert not (run / "confirmation").exists()
+    with pytest.raises(ValueError, match="Not eligible"):
+        promote_native(run)

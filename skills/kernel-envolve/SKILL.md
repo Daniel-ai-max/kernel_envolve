@@ -11,7 +11,7 @@ description: 持续优化 apodex-core、Megatron-LM 及独立 GPU 算子；用�
 
 - 每个新会话或管理轮次执行 `kernel-envolve update`，读返回的 Skill，并使用返回的 `executable` 绝对路径。本轮固定 Skill/CLI/evaluator；full → confirm → promote 之间不换版本。不要在算子工作区 `git pull` 升级工具。离线沿用可用版本，`disabled` 时使用本地代码，见[更新规则](../../docs/auto-update.md)。
 - 先读任务 `notes.md`，核对源码、已有作业和未消费的结果，再选择下一项实验；不重建固定基线，不重复提交仍在跑的作业。保持独立 oracle、固定原始 baseline、已验证 best、探索 candidate 的区别。
-- 首次确定真实调用路径、前反向/状态语义、尺寸与上下文长度范围、dtype/stride/offset/alias、精度门、硬件、执行模式与预算。检查相关原生数值门及已知 FAIL；没有基线资格记录时先明确其未验证状态，不把 baseline 逐位一致当成数值合格。
+- 首次确定真实调用路径、前反向/状态语义、尺寸与上下文长度范围、dtype/stride/offset/alias、精度门、硬件、执行模式与预算。长时间对照搜索前确认固定基线通过相关原生数值门；复用源码、契约和环境匹配的资格证据，不在每轮重做。基线 FAIL 时先定位实现或契约问题，不把 baseline 逐位一致当成数值合格。
 - 直接使用目标 GPU 环境，不设固定 CPU 准备阶段。复用项目镜像、固定基线/输入及按源码与配置区分的编译缓存；版本、依赖或执行模式变化时才重验受影响部分。硬件或参考实现按需查[入口](references/hardware.md)。
 - 内部项目首次接入时读[原生评测与适配接口](../../docs/native-harness.md#apodex-内部项目评测)，按实际两仓分支及 pin 处理；独立任务读[通用评测](../../docs/generic-evaluator.md)。只加载本次需要的细节。
 
@@ -28,7 +28,7 @@ description: 持续优化 apodex-core、Megatron-LM 及独立 GPU 算子；用�
 
 ## 可信评测与交付
 
-- 原生任务使用 `native-evaluate`，独立任务使用 `evaluate`。二者 quick 可选 `--case/--seed`；失败定位可加 `--check-only`，正常配对筛选无需先重复一遍 check-only。quick 永不晋升。原生默认执行预算 quick 120 秒、full 1800 秒；超时是诊断信号，不是速度达标。冷编译单独记时，必要时显式设预算。
+- 原生任务使用 `native-evaluate`，独立任务使用 `evaluate`。二者 quick 可选 `--case/--seed`；失败定位可加 `--check-only`，正常配对筛选无需先重复一遍 check-only。原生 `--mode full --check-only` 检查全部开发输入及原生门、不计时；验证固定基线时使用独立任务，将 candidate 指向基线副本。quick 与 check-only 均不晋升、不消费确认集。原生默认执行预算 quick 120 秒、full 1800 秒；超时是诊断信号，不是速度达标。冷编译单独记时，必要时显式设预算。
 - **不削弱正确性。** 保留独立 reference/golden、前向及相关梯度、输入/状态/输出结构检查、既有数值与 bitwise 门槛。原生 U/z 等门与 baseline parity 分别记录。旧 FAIL 不删、不豁免；严格 FP32 与已声明 BF16 契约分别验证。确需修正契约时独立审查并建立新任务，不修改旧报告。
 - **覆盖真实泛用范围。** 用代表点、非对齐尺寸、不同输入的独立 stride/offset、dispatch 边界和 fallback 检查泛化；允许合法 shape/dtype/layout 分发，不按固定种子、输入地址或评测次数投机。仅增加 seed 不算尺寸泛化。
 - **测量口径一致。** 对照使用等值输入、权重、梯度及可变状态，按生产语义恢复状态；独占 GPU，预热后交替配对计时。包括真实调用中的准备、布局转换、分配和同步；eager/Graph 分开，通信优化在实际多卡链路验证。单独 profiler 的 replay 耗时不作性能结果。
