@@ -90,8 +90,14 @@ def test_real_full_confirmation_promotion_and_integrity(confirmation_task):
     receipt = confirm_native(run, 90)
     assert receipt["status"] == "passed", receipt
     phases = receipt["phase_wall_seconds"]
-    assert set(phases) == {"lock_wait", "parent_audit", "live_sources_before",
-                           "child_full", "live_sources_after", "posterior_audit"}
+    assert set(phases) == {
+        "lock_wait",
+        "parent_audit",
+        "live_sources_before",
+        "child_full",
+        "live_sources_after",
+        "posterior_audit",
+    }
     assert all(seconds >= 0 for seconds in phases.values())
     assert receipt["seconds"] >= sum(phases.values())
     confirmation = verify_confirmation(run, result, cfg)
