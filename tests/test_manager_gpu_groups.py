@@ -790,3 +790,18 @@ def test_schema_upgrade_rolls_back_partial_migration(managed, monkeypatch):
     assert_legacy_unchanged(store, before)
     with exclusive(store.root / "coordinator.lock") as handle:
         assert handle is not None
+
+
+def test_legacy_foreign_host_rejection_precedes_schema_mutation(managed, monkeypatch):
+    store, _, _ = managed
+    before = legacy_schema(store)
+    monkeypatch.setattr("kernel_envolve.manager.store.socket.gethostname", lambda: "foreign-host")
+    with pytest.raises(ValueError, match="another host"):
+        Store(store.root)
+    assert_legacy_unchanged(store, before)
+    # Read-only inspection of archived state remains possible from another host.
+    readonly = Store(store.root, readonly=True)
+    try:
+        assert readonly.task("toy")["gpu_seconds"] == 0
+    finally:
+        readonly.close()

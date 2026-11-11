@@ -34,12 +34,18 @@ class Store:
         if version not in (0, 1, 2):
             self.db.close()
             raise ValueError(f"Unsupported manager schema: {version}")
-        if version == 1:
-            try:
+        try:
+            if self.one("SELECT name FROM sqlite_master WHERE type='table' AND name='metadata'"):
+                previous = self.one("SELECT data FROM metadata WHERE key='host'")
+                if previous and json.loads(previous["data"]) != socket.gethostname():
+                    raise ValueError(
+                        "Manager state belongs to another host; reconcile jobs before migration"
+                    )
+            if version == 1:
                 self._upgrade_legacy()
-            except BaseException:
-                self.db.close()
-                raise
+        except BaseException:
+            self.db.close()
+            raise
         self.db.executescript("PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;")
         self.db.executescript("""
             CREATE TABLE IF NOT EXISTS resources (
