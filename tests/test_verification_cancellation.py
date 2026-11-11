@@ -37,4 +37,6 @@ def test_cancel_between_source_hashes(tmp_path, monkeypatch, kind):
             native.verify_roots(tmp_path, {"core": {"files": files}}, "candidate", checkpoint)
         else:
             storage.verify_source(tmp_path, {"files": files}, checkpoint)
-    assert hashed == ["first.py"]
+    # Native verification follows filesystem traversal order, which is unspecified.
+    # Cancellation must still stop before a second content hash in either verifier.
+    assert len(hashed) == 1 and hashed[0] in files
