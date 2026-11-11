@@ -69,7 +69,7 @@ kernel-envolve session -- bash
 
 ## 内部项目使用
 
-训练算子使用 `native-evaluate`，由 `native.json` 和 `adapter.py` 接入项目原生测试、数值 gate 和 benchmark。
+训练算子先用项目原生局部测试、微基准或 profiler 验证假设；有收益信号后使用 `native-evaluate`，由 `native.json` 和 `adapter.py` 接入完整正确性、数值 gate 和性能验收。局部探索无需每次复制整仓或执行 full。
 
 - **apodex-core**：维护 kernel 实现、算子接口和算子测试。
 - **Megatron-LM**：验证调用接线、模块梯度及受影响的训练路径。
@@ -94,7 +94,7 @@ CUDA 原生评测在计时外缓存只读输入的精确字节副本，减少反
 
 声明 `confirmation` 的内部任务须先运行 `native-confirm <full-run>`，通过预先冻结的独立输入确认后才能晋升；每个任务只能消费一次确认集。配置与收据规则见[独立确认](docs/native-harness.md#独立确认)。
 
-`native-promote` 的路径取自合格的 full 结果。数值 gate 或 CI 通过仅说明相应检查通过，性能收益仍需测量确认。配置与适配接口见 [内部项目评测](skills/kernel-envolve/SKILL.md#apodex-内部项目评测)及[内部 evaluator](skills/kernel-envolve/SKILL.md#使用内部-evaluator)。
+`native-promote` 的路径取自合格的 full 结果。数值 gate 或 CI 通过仅说明相应检查通过，性能收益仍需测量确认。配置与适配接口见 [内部项目评测](docs/native-harness.md#apodex-内部项目评测)及[内部 evaluator](docs/native-harness.md#使用内部-evaluator)。
 
 原生评测的 CLI 与 `result.json` 提供 `phase_wall_seconds`：源码快照、设置、正确性、原生门禁、测量、后置检查、完整性校验和清理。执行阶段失败保留已耗时间及 `failed_phase`，未执行阶段不填零。各阶段是主控进程的连续墙钟耗时，总和等于 `seconds`（至 worker 清理完成，不含评分和收据写入）；首次导入/编译可能计入首个正确性请求，测量阶段还含参考计算、传输和结果核验，不能作为纯 GPU kernel 时间。
 
@@ -102,7 +102,7 @@ CUDA 原生评测在计时外缓存只读输入的精确字节副本，减少反
 
 一个算子对应一个长期任务，执行轮次结束时保存 checkpoint，后续轮次继续已有工作。一次晋升或某个方向没有收益，都不自动结束任务；每轮在 `notes.md` 记录假设、结论、版本、资源消耗与下一步。
 
-确认收益后，Agent 按 [PR 交付流程](skills/kernel-envolve/SKILL.md#收益确认后自动维护-pr)创建或更新目标仓库的优化 PR，然后继续探索。PR 发布由 Agent 完成；评测器负责验证与晋升。
+确认收益后，Agent 按 [PR 交付流程](skills/kernel-envolve/SKILL.md#收益-pr)创建或更新目标仓库的优化 PR，然后继续探索。PR 发布由 Agent 完成；评测器负责验证与晋升。
 
 ### 多算子管理与面板
 
