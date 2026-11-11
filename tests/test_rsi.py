@@ -264,6 +264,39 @@ def test_context_bound_limits_prompt_overhead(rsi):
         context(rules)
 
 
+@pytest.mark.parametrize("raw", ["null", "42", '"not an object"', "true", "[" * 4000 + "]" * 4000])
+def test_malformed_advice_never_breaks_manager_checkpoint(rsi, raw, capsys):
+    manager = Manager(rsi.config["manager"], readonly=True)
+    try:
+        task = manager.task("demo")
+        expected = checkpoint(manager, task, {"id": "readiness-round"})
+        directory = manager.root / "rsi-context"
+        directory.mkdir(exist_ok=True)
+        (directory / "demo.json").write_text(raw)
+        assert checkpoint(manager, task, {"id": "readiness-round"}) == expected
+        assert "original workflow" in capsys.readouterr().err
+    finally:
+        manager.close()
+
+
+def test_advice_recursion_error_preserves_manager_checkpoint(rsi, monkeypatch, capsys):
+    from kernel_envolve.rsi import context as reader
+
+    manager = Manager(rsi.config["manager"], readonly=True)
+    try:
+        task = manager.task("demo")
+        expected = checkpoint(manager, task, {"id": "readiness-round"})
+
+        def recursive_json(*args):
+            raise RecursionError("JSON nesting exceeds this interpreter's limit")
+
+        monkeypatch.setattr(reader, "read", recursive_json)
+        assert checkpoint(manager, task, {"id": "readiness-round"}) == expected
+        assert "original workflow" in capsys.readouterr().err
+    finally:
+        manager.close()
+
+
 def test_corrupted_supporting_event_revokes_advice(rsi):
     identity = stage(rsi, proposal(rsi))
     rsi.db.execute("INSERT INTO active VALUES('demo',?)", (identity,))
