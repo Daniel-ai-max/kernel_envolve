@@ -16,12 +16,14 @@ from .native_checks import junit as junit  # Preserve the existing native helper
 from .native_checks import native_checks
 from .native_config import environment, load_config
 from .native_harness import prepare_harness, validate_overlay
-from .protocol import order, plan, post_seed, timing_seed
+from .protocol import objective_cases, order, plan, post_seed, timing_seed
 from .scoring import score
 from .storage import digest, evaluator_hash, file_hash, read_json, write_json
 
 
-def snapshot(root, dest, artifacts=()):
+def snapshot(root, dest, artifacts=(), checkpoint=None):
+    checkpoint = checkpoint or (lambda: None)
+    checkpoint()
     root = Path(root)
     resolved_root = root.resolve()
     head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
@@ -41,6 +43,7 @@ def snapshot(root, dest, artifacts=()):
         )
     )
     for pattern in artifacts:
+        checkpoint()
         matches = [p for p in root.glob(pattern) if p.is_file()]
         if not matches:
             raise ValueError(f"Required compiled artifact missing: {pattern}")
@@ -50,6 +53,7 @@ def snapshot(root, dest, artifacts=()):
     directories = {dest}
     files, total = {}, 0
     for name in sorted(names):
+        checkpoint()
         src = root / name
         if src.is_dir():  # Gitlinks are supplied as separate named roots when needed.
             continue
@@ -73,6 +77,7 @@ def snapshot(root, dest, artifacts=()):
             files[name] = file_hash(dst)
     if not files:
         raise ValueError("Empty source snapshot")
+    checkpoint()
     return {"git_head": head, "files": files}
 
 
@@ -289,8 +294,10 @@ def _best(state):
     return pointer, run, result
 
 
-def evaluate_native(task, mode="quick", timeout=1800):
+def evaluate_native(task, mode="quick", timeout=None, *, cases=None, seeds=None, check_only=False):
     task = Path(task).resolve()
+    if timeout is None:
+        timeout = 120 if mode == "quick" else 1800
     if (
         mode not in {"quick", "full"}
         or not math.isfinite(timeout)
@@ -299,13 +306,27 @@ def evaluate_native(task, mode="quick", timeout=1800):
     ):
         raise ValueError("Invalid mode/timeout or optimized Python")
     cfg = load_config(task)
+    selection = {}
+    if cases is not None:
+        if not cases:
+            raise ValueError("Selected cases must be nonempty")
+        selection["cases"] = cases
+    if seeds is not None:
+        selection["seeds"] = seeds
+    selected, _, _, _ = plan(cfg, mode, selection)
+    if check_only and mode != "quick":
+        raise ValueError("Check-only diagnostics require quick mode")
+    if not selected:
+        raise ValueError("No cases selected")
+    if not check_only and not objective_cases(selected):
+        raise ValueError("No measured objective cases selected; use --check-only")
     state = task / ".kernel_native"
     (state / "runs").mkdir(parents=True, exist_ok=True)
     with lock(state / "evaluate.lock"):
-        return _evaluate(task, state, cfg, mode, timeout)
+        return _evaluate(task, state, cfg, mode, timeout, selection, check_only)
 
 
-def _evaluate(task, state, cfg, mode, timeout):
+def _evaluate(task, state, cfg, mode, timeout, selection, check_only):
     run = state / "runs" / uuid.uuid4().hex
     run.mkdir()
     deadline = time.monotonic() + timeout
@@ -318,7 +339,9 @@ def _evaluate(task, state, cfg, mode, timeout):
         "mode": mode,
         "execution": "error",
         "correctness": "partial",
-        "signal_only": False,
+        "signal_only": check_only,
+        "check_only": check_only,
+        "selection": selection,
         "checks": [],
         "samples": [],
         "native_checks": [],
@@ -339,10 +362,17 @@ def _evaluate(task, state, cfg, mode, timeout):
         return now
 
     workers = {}
+
+    def checkpoint():
+        if time.monotonic() >= deadline:
+            raise TimeoutError("Native evaluation time budget exhausted")
+
     try:
         for role, roots in cfg["sources"].items():
             result["identities"][role] = {
-                name: snapshot(path, run / "sources" / role / name, cfg["artifacts"].get(name, []))
+                name: snapshot(
+                    path, run / "sources" / role / name, cfg["artifacts"].get(name, []), checkpoint
+                )
                 for name, path in roots.items()
             }
         begin_phase("setup")
@@ -370,16 +400,17 @@ def _evaluate(task, state, cfg, mode, timeout):
             "oracle": _roots(run, "baseline", result["identities"]["baseline"]),
             "candidate": roots,
         }
-        role_roots["comparator"] = (
-            _roots(best[1], "candidate", best[2]["identities"]["candidate"])
-            if best
-            else role_roots["oracle"]
-        )
+        if not check_only:
+            role_roots["comparator"] = (
+                _roots(best[1], "candidate", best[2]["identities"]["candidate"])
+                if best
+                else role_roots["oracle"]
+            )
         if best and mode == "full":
             role_roots["baseline"] = role_roots["oracle"]
         for role, sources in role_roots.items():
             workers[role] = Worker(run, cfg, sources, role, deadline)
-        cases, seeds, trials, batches = plan(cfg, mode)
+        cases, seeds, trials, batches = plan(cfg, mode, selection)
         roles = [r for r in workers if r != "oracle"]
 
         def call(role, kind, case, seed):
@@ -430,7 +461,7 @@ def _evaluate(task, state, cfg, mode, timeout):
             if set(cfg["required_scopes"]) - scopes:
                 raise ValueError("Missing required native validation scopes")
         begin_phase("measurement")
-        timed = [c for c in cases if c.get("measure", True)]
+        timed = [] if check_only else [c for c in cases if c.get("measure", True)]
         for batch in range(batches):
             for case in timed if batch == 0 else reversed(timed):
                 for trial in range(trials):
@@ -474,9 +505,9 @@ def _evaluate(task, state, cfg, mode, timeout):
             check(case, post_seed(case["id"], seeds), ["post"])
         begin_phase("integrity")
         for role, identity in result["identities"].items():
-            verify_roots(run, identity, role)
+            verify_roots(run, identity, role, checkpoint)
         if best:
-            verify_roots(best[1], best[2]["identities"]["candidate"], "candidate")
+            verify_roots(best[1], best[2]["identities"]["candidate"], "candidate", checkpoint)
         if (
             evaluator_hash() != result["evaluator_hash"]
             or file_hash(run / "adapter.py") != result["adapter_hash"]

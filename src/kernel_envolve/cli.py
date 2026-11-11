@@ -289,7 +289,14 @@ def main(argv=None):
     native = sub.add_parser("native-evaluate", help="Evaluate a frozen internal training task")
     native.add_argument("--task", type=Path, required=True)
     native.add_argument("--mode", choices=("quick", "full"), default="quick")
-    native.add_argument("--timeout", type=float, default=1800)
+    native.add_argument("--timeout", type=float, help="Seconds; defaults to 120 quick / 1800 full")
+    native.add_argument("--case", action="append", dest="cases", help="Diagnostic case; quick only")
+    native.add_argument(
+        "--seed", action="append", dest="seeds", type=int, help="Diagnostic seed; quick only"
+    )
+    native.add_argument(
+        "--check-only", action="store_true", help="Check selected inputs without timing; quick only"
+    )
     confirmation = sub.add_parser(
         "native-confirm", help="Consume the frozen independent confirmation set once"
     )
@@ -322,7 +329,14 @@ def main(argv=None):
         if args.command == "native-evaluate":
             from .native import evaluate_native
 
-            run, result = evaluate_native(args.task, args.mode, args.timeout)
+            run, result = evaluate_native(
+                args.task,
+                args.mode,
+                args.timeout,
+                cases=args.cases,
+                seeds=args.seeds,
+                check_only=args.check_only,
+            )
             print(
                 json.dumps(
                     {

@@ -27,6 +27,23 @@
 
 这解决候选修改检查代码而获得 PASS 的问题；同权限 Python 代码不构成安全沙箱。
 
+## 快速迭代
+
+```sh
+# 复现已知错误，不运行计时或完整原生门禁
+kernel-envolve native-evaluate --task ./task --case tail --seed 17 --check-only --timeout 60
+# 新候选直接做代表输入的正确性及 ABBA 筛选
+kernel-envolve native-evaluate --task ./task --case small --case tail --timeout 120
+```
+
+case/seed 选择和 check-only 仅用于 quick，配置与完整源码仍冻结，实际覆盖保存在结果中，不能晋升。check-only 只启动候选与独立 oracle；其余 quick 保留同轮性能对照。full 禁止缩小覆盖，独立确认的规则不变。
+
+quick 默认执行预算 120 秒、full 1800 秒，可显式覆盖；源码快照与最终完整性遍历也检查预算。系统 I/O 返回和进程清理仍需时间，超时保留失败阶段与收据。首次冷编译单独记录，不把重复超时当作自动延长预算的理由。
+
+计时循环每次仍检查输入/状态、运行设置、adapter 验证和输出结构；仅最后一次生成 CPU 输出/可写状态快照，供原有数值比较使用。中间快照原先被立即丢弃，省去其传输不减少正式数值比较或计时样本。
+
+大型项目应一次性将工作树及任务准备到 GPU 节点本地盘，避免每个候选重复承担共享文件系统元数据和临时张量交换成本。每轮仍完整哈希、隔离源码；及时保存新增 run、源码改动与 manager 一致性备份到持久盘，再回收节点。不使用跨角色硬链接、仅按 mtime 命中的快照缓存或跨候选 PASS 缓存。
+
 ## 原生拒绝与执行错误
 
 完整 JUnit 覆盖所有配置的报告和必需用例、没有跳过或运行错误，且失败均为明确的断言并与退出码 `1` 一致时，结果为 `execution=completed`、`correctness=fail`。原生数值 gate 则要求本次完整算子记录、CLI 的最终 `BLOCKED` 判定和退出码 `1` 同时成立。WARN 是否阻塞仍由项目原生策略决定。

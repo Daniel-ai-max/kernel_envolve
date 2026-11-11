@@ -80,7 +80,9 @@ skill 规定决策与恢复流程；跨会话持续运行还需要宿主执行�
 4. **确认。** 有希望且可交付的候选做完整评测（内部项目使用下文原生验证，独立任务使用 full），与当前 best、固定 baseline 同轮实测。检查各尺寸/布局区间的覆盖、逐 case 增量与累计回退、fallback 表现、噪声、目标权重和计时范围；有疑问时查看原始样本，不自行改 PASS/分数。仅为解释瓶颈时才跑 profiler。
 5. **晋升、发布并继续。** 完整证据满足任务目标后更新已验证版本；独立任务使用 promote，内部任务使用 native-promote 保存已验证源码快照及原生证据。有明确收益时按下方流程自动创建或更新 PR，再继续探索。更快但未确认的代码仍是 candidate；正确但更慢的实现可以留下供组合。记录本轮假设、改动、run 路径、PR、结论与下一步，维护一个简短 `notes.md` 即可。
 
-按阶段记录实际成本，通用 CLI 可读 phase_wall_seconds 和 worker_process_wall_seconds：setup 高时先区分导入与编译成本：减少无用启动，重复编译则优先使用工具链已有的、按源码和编译配置区分的缓存；correctness/measurement 高时用原生测试选择器（通用 CLI 用 --case/--seed）缩小探索范围。探索 trial 数在任务开始时约定；不因本轮结果修改契约或缩减正式 full 的固定覆盖。不要为省启动成本复用失败的 CUDA 进程，也不要跨候选复用正确性 PASS。
+按 `phase_wall_seconds` 记录每轮成本。内部和通用 CLI 都支持 `--case/--seed`；已有正确性失败用 `--check-only` 定向复现，正常候选直接跑选定 case 的 quick，避免再重复一遍相同检查。内部 quick 默认 120 秒执行预算，full 默认 1800 秒；首次冷编译确需更久时显式指定 `--timeout` 并单独记录，后续超时先诊断瓶颈，不直接扩大每轮预算。
+
+`snapshot` 或文件交换占主导时，将固定源码、候选工作树、任务和 run 目录一次性准备到 GPU 节点本地盘；后续只更新实际改动，不每轮从 FSx 重建整个项目。仍冻结并完整哈希每轮源码，不用跨角色硬链接或 mtime 缓存代替。每次评测结束将新证据及 manager 一致性备份保存到持久盘，确认保存成功再回收本地资源。导入/编译高时复用工具链按源码和配置区分的缓存；正确性高时缩小诊断集合；计时高时检查输出传输和 workload 范围。探索 trial 数在任务开始时约定，不因本轮结果缩减正式覆盖。失败 CUDA 进程不得复用，正确性 PASS 不跨候选沿用。
 
 噪声导致的 inconclusive 表示收益尚未确认，不等于候选更慢。保留有希望的候选并检查测量环境；连续 inconclusive 不能单独作为达到性能极限的证据。
 
@@ -235,6 +237,8 @@ python -m apodex_core.verification.method.gate --source operations \
 镜像从目标 Megatron 版本的 [`.ci/dlc/targets.yaml`](https://github.com/ApodexAI/Megatron-LM/blob/eb2c08444c46ad7bfca0f51c7554970cab6edf48/.ci/dlc/targets.yaml) 解析：HyperPod B300 使用 `aps2-b300` 的完整 image digest，并沿用该仓 `.ci/dlc/_image_env.sh` 的 Python/依赖初始化。镜像提供工具链，生产源码按固定 commit 单独准备；不要假设镜像已安装 apodex-core，也不要随意升级 Torch/Triton 来修补导入错误。
 
 ```bash
+kernel-envolve native-evaluate --task <任务目录> --case <失败case> --seed <种子> --check-only --timeout 60
+kernel-envolve native-evaluate --task <任务目录> --case <代表case> --timeout 120
 kernel-envolve native-evaluate --task <任务目录> --mode quick
 kernel-envolve native-evaluate --task <任务目录> --mode full --timeout 1800
 kernel-envolve native-confirm <完整评测run目录> --timeout 1800  # 已声明 confirmation 的任务
@@ -246,6 +250,7 @@ kernel-envolve native-promote <完整评测run目录>
 - `forward_backward(fn, inputs, grad_outputs)` 直接执行真实 autograd，返回输出及所有 `requires_grad` 输入的梯度。涉及 `.grad`、`main_grad` 或优化器状态时，在适配器中显式执行完整更新并声明/返回相应状态。单次 run 可包含完整梯度累积序列；评测在序列之间恢复初始状态，不截断序列内部的训练语义。
 - 输入为目标设备上的 strided leaf tensor，可带 `requires_grad`；保持输入原有 stride/offset 和只读共享存储，复用同一对象换值检测旧值缓存。可写共享存储应声明单一 backing tensor，并在适配器中检查其视图契约；不能把互相覆盖的多个可写 view 当作独立状态重置。
 - 各角色在独立常驻进程加载自己的源码快照，同一评测内复用导入和编译缓存；先完成便宜的契约检查，再执行 full 的原生门禁和配对计时。计时采用设备同步后的 wall time，覆盖实际调用中的 host 开销。Graph/多卡语义由显式适配器或原生测试覆盖，不将 eager 测量当作其结果。
+- `--case`、`--seed` 可重复指定，仅用于 quick；`--check-only` 保留输入、换值、重复执行及前反向输出检查，跳过性能对照和原生 full 门禁。诊断使用完整冻结配置并记录实际覆盖，不能晋升。计时的每次迭代仍执行状态、运行条件、dispatch 和输出结构检查，仅最后一次将输出与可写状态复制到 CPU 做原有跨进程数值比较。
 - 快照包含 Git 跟踪及未忽略文件。所需 Git 子模块另列为源码根目录；被忽略的已编译扩展用 `artifacts` 按根目录声明相对 glob，文件缺失直接报错。准备扩展时只编译受影响部分；不在冻结后改写源码或扩展。依赖镜像、环境与实际导入路径随记录核对，缺 CUDA 不自动退回 CPU。
 - 输出结构、shape/dtype/device、只读输入和可写状态分别核验；与固定独立参考比较前向及梯度，必要时启用 bitwise。`required_outputs` 指定必需路径，例如 `output`、`gradients.0` 和 `gradients.1`，防止遗漏训练输出。完整收益判定沿用 `scoring.py`，同时检查原始基线与 best；`max_peak_bytes` 限制 CUDA 单进程峰值分配。跨进程常驻 CUDA context 的总占用不等于这一指标。
 - 退出码 0 表示评测执行正确，能否晋升看 `eligible_for_best`；1 为正确性拒绝，2 为执行/配置错误。`native-promote` 重验源码、配置、报告和当前 best，禁止 quick、旧报告、缺测试或过期对照晋升。阶段交付前仍需执行任务之外的新尺寸组合与适用的生产验收；full 覆盖的是所声明的任务集合。

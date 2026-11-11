@@ -81,6 +81,7 @@ kernel-envolve session -- bash
 # 在本仓库目录安装工具；Python 3.11+，复用项目镜像已有依赖
 python -m pip install --no-deps -e .
 kernel-envolve native-evaluate --task examples/apodex_probs_scale --mode quick
+kernel-envolve native-evaluate --task <task> --case <case> --seed 17 --check-only --timeout 60
 kernel-envolve native-evaluate --task examples/apodex_probs_scale --mode full --timeout 1800
 kernel-envolve native-promote /path/to/run
 ```
