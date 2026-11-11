@@ -2,6 +2,7 @@
 
 import contextlib
 import json
+import math
 import sqlite3
 import time
 import uuid
@@ -12,40 +13,60 @@ from .model import context, number, read, select_rules
 
 
 class Store:
-    def __init__(self, root):
+    def __init__(self, root, *, create=False):
         self.root = Path(root).resolve()
         self.config = read(self.root / "config.json")
         self.owned()
-        self.db = sqlite3.connect(self.root / "rsi.sqlite", timeout=1, isolation_level=None)
+        database = self.root / "rsi.sqlite"
+        if create:
+            # Only initialize() creates state. Reopening must never reset a lost
+            # budget ledger or silently repair a partially damaged database.
+            database.touch(exist_ok=False)
+        self.db = sqlite3.connect(
+            f"{database.as_uri()}?mode=rw", uri=True, timeout=1, isolation_level=None
+        )
         self.db.row_factory = sqlite3.Row
-        if self.db.execute("PRAGMA user_version").fetchone()[0] not in (0, 1):
+        try:
+            if create:
+                self.db.executescript("""
+                    PRAGMA journal_mode=WAL;
+                    PRAGMA synchronous=FULL;
+                    PRAGMA user_version=1;
+                    CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT NOT NULL);
+                    CREATE TABLE IF NOT EXISTS evidence(
+                        seq INTEGER PRIMARY KEY, id TEXT UNIQUE NOT NULL, data TEXT NOT NULL);
+                    CREATE TABLE IF NOT EXISTS candidates(
+                        id TEXT PRIMARY KEY, scope TEXT NOT NULL, parent TEXT NOT NULL,
+                        data TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'candidate');
+                    CREATE TABLE IF NOT EXISTS active(scope TEXT PRIMARY KEY, id TEXT NOT NULL);
+                    CREATE TABLE IF NOT EXISTS validations(
+                        id TEXT PRIMARY KEY, candidate TEXT NOT NULL, data TEXT NOT NULL);
+                    CREATE TABLE IF NOT EXISTS operations(
+                        id TEXT PRIMARY KEY, kind TEXT NOT NULL, reserved REAL NOT NULL,
+                        charged REAL, started REAL NOT NULL, ended REAL, error TEXT);
+                    CREATE TABLE IF NOT EXISTS history(
+                        seq INTEGER PRIMARY KEY, at REAL NOT NULL, scope TEXT NOT NULL,
+                        previous TEXT NOT NULL, current TEXT NOT NULL, reason TEXT NOT NULL);
+                """)
+                self.set("config_hash", digest(self.config))
+            if self.db.execute("PRAGMA user_version").fetchone()[0] != 1:
+                raise ValueError("Unsupported or uninitialized RSI schema")
+            required = {
+                "meta": "key,value",
+                "evidence": "seq,id,data",
+                "candidates": "id,scope,parent,data,status",
+                "active": "scope,id",
+                "validations": "id,candidate,data",
+                "operations": "id,kind,reserved,charged,started,ended,error",
+                "history": "seq,at,scope,previous,current,reason",
+            }
+            for table, columns in required.items():
+                self.db.execute(f"SELECT {columns} FROM {table} LIMIT 0")
+            if self.get("config_hash") != digest(self.config):
+                raise ValueError("RSI configuration missing or changed; restore the original state")
+        except BaseException:
             self.db.close()
-            raise ValueError("Unsupported RSI schema")
-        self.db.executescript("""
-            PRAGMA journal_mode=WAL;
-            PRAGMA synchronous=FULL;
-            PRAGMA user_version=1;
-            CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT NOT NULL);
-            CREATE TABLE IF NOT EXISTS evidence(
-                seq INTEGER PRIMARY KEY, id TEXT UNIQUE NOT NULL, data TEXT NOT NULL);
-            CREATE TABLE IF NOT EXISTS candidates(
-                id TEXT PRIMARY KEY, scope TEXT NOT NULL, parent TEXT NOT NULL,
-                data TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'candidate');
-            CREATE TABLE IF NOT EXISTS active(scope TEXT PRIMARY KEY, id TEXT NOT NULL);
-            CREATE TABLE IF NOT EXISTS validations(
-                id TEXT PRIMARY KEY, candidate TEXT NOT NULL, data TEXT NOT NULL);
-            CREATE TABLE IF NOT EXISTS operations(
-                id TEXT PRIMARY KEY, kind TEXT NOT NULL, reserved REAL NOT NULL,
-                charged REAL, started REAL NOT NULL, ended REAL, error TEXT);
-            CREATE TABLE IF NOT EXISTS history(
-                seq INTEGER PRIMARY KEY, at REAL NOT NULL, scope TEXT NOT NULL,
-                previous TEXT NOT NULL, current TEXT NOT NULL, reason TEXT NOT NULL);
-        """)
-        expected = self.get("config_hash")
-        if expected and expected != digest(self.config):
-            self.db.close()
-            raise ValueError("RSI configuration changed; create a new state for a new contract")
-        self.set("config_hash", digest(self.config))
+            raise
 
     def owned(self):
         owner = read(Path(self.config["manager"]) / "rsi-owner.json")
@@ -116,6 +137,8 @@ class Store:
             raise ValueError("Unknown budget")
         number(seconds, "reservation", upper=365 * 86400)
         with self.transaction():
+            if not self.get("enabled", True):
+                raise ValueError("RSI is disabled; no new work reserved")
             used = self.db.execute(
                 "SELECT COALESCE(SUM(COALESCE(charged,reserved)),0) FROM operations WHERE kind=?",
                 (kind,),
@@ -131,12 +154,20 @@ class Store:
 
     def finish(self, key, elapsed, error=None):
         # A killed process retains its full reservation, including after a restart.
+        try:
+            valid = type(elapsed) in (int, float) and elapsed >= 0 and math.isfinite(elapsed)
+        except OverflowError:
+            valid = False
+        if not valid:
+            raise ValueError("Elapsed time must be finite and nonnegative")
         self.db.execute(
             "UPDATE operations SET charged=?,ended=?,error=? WHERE id=? AND ended IS NULL",
             (elapsed, time.time(), error, key),
         )
 
     def enable(self, enabled):
+        if type(enabled) is not bool:
+            raise ValueError("Enabled must be boolean")
         self.owned()
         marker = Path(self.config["manager"]) / "rsi-context" / "DISABLED"
         marker.parent.mkdir(exist_ok=True, mode=0o700)

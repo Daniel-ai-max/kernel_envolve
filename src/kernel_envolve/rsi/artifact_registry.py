@@ -16,7 +16,7 @@ from pathlib import Path
 from ..storage import digest, evaluator_hash
 from . import artifact_lineage as lineage
 from . import artifact_validation as validation
-from .episodes import load, save
+from .episodes import _encoded, load, save
 from .model import number, read
 from .trials import adapter_identity, validator_identity, verify_template
 
@@ -400,6 +400,14 @@ class Registry:
         return dict(row), json.loads(row["data"])
 
     def _bound_evidence(self, identity, attempt, evidence):
+        if (
+            not isinstance(evidence, dict)
+            or not isinstance(evidence.get("calls"), list)
+            or not all(isinstance(p, str) for p in evidence["calls"])
+            or not isinstance(evidence.get("trials"), list)
+            or not all(isinstance(t, dict) for t in evidence["trials"])
+        ):
+            raise ValueError("Evidence requires a call-path list and trial-object list")
         if evidence["attempt"] != identity:
             raise ValueError("Evidence belongs to a different admission reservation")
         release = read(evidence["release_receipt"])
@@ -413,7 +421,18 @@ class Registry:
     def _charge_failure(self, row, evidence):
         """Unknown expenditure retains the ceiling; known overruns still count."""
         tokens, seconds, unknown = 0, 0, 0
-        for path in set(evidence.get("calls", [])):
+        evidence = evidence if isinstance(evidence, dict) else {}
+        calls = evidence.get("calls", [])
+        if not isinstance(calls, list):
+            calls, unknown = [], 1
+        seen = set()
+        for path in calls:
+            if not isinstance(path, str):
+                unknown += 1
+                continue
+            if path in seen:
+                continue
+            seen.add(path)
             try:
                 call = read(path, 2 * 1024 * 1024)
                 value = (call.get("response") or {}).get("usage", {}).get("total_tokens")
@@ -422,7 +441,10 @@ class Registry:
                 tokens += value
             except (OSError, ValueError, KeyError, TypeError, AttributeError):
                 unknown += 1
-        for trial in evidence.get("trials", []):
+        trials = evidence.get("trials", [])
+        for trial in trials if isinstance(trials, list) else []:
+            if not isinstance(trial, dict):
+                continue
             value = trial.get("seconds")
             if type(value) in (int, float) and math.isfinite(value) and value > 0:
                 seconds += value
@@ -437,6 +459,9 @@ class Registry:
     def finish(self, identity, evidence):
         """Consume the attempt, including invalid evidence. No automatic adoption."""
         self._current_code()
+        # Reject non-archivable API input before changing the durable state. JSON
+        # shape errors below are recorded as rejected attempts with full charges.
+        _encoded(evidence)
         with self.transaction():
             row, attempt = self._attempt(identity)
             if row["status"] != "reserved":
@@ -452,7 +477,15 @@ class Registry:
             report["decision"] = validation.verify(
                 self.archive, self._catalogs(attempt["candidate"]), attempt["suite"], evidence
             )
-        except (OSError, ValueError, KeyError, TypeError, OverflowError) as exc:
+        except (
+            OSError,
+            ValueError,
+            KeyError,
+            TypeError,
+            OverflowError,
+            AttributeError,
+            IndexError,
+        ) as exc:
             report["error"] = str(exc)
         report["charge"] = (
             {k: report["decision"][k] for k in ("seconds", "tokens")}
@@ -543,11 +576,13 @@ class Registry:
         with self.transaction():
             self._set("enabled", enabled)
 
-    def rollback(self, reason):
+    def rollback(self, reason, *, expected=None):
         self._current_code()
         if not isinstance(reason, str) or not reason.strip():
             raise ValueError("Rollback requires a reason")
         current = self._get("active")
+        if expected is not None and current != expected:
+            return current
         if current is None:
             return None
         target = self.catalog(current)[0]["parent"]
@@ -561,6 +596,8 @@ class Registry:
                 target = self.catalog(target)[0]["parent"]
         with self.transaction():
             if self._get("active") != current:
+                if expected is not None:
+                    return self._get("active")
                 raise ValueError("Active catalog changed during rollback")
             # Revocation propagates through pending and adopted descendants.
             revoked = invalid
@@ -591,15 +628,25 @@ class Registry:
         # A software upgrade is not evidence that an admitted artifact failed.
         # Refuse incompatible code before the raw-evidence revocation loop.
         self._current_code()
-        while (identity := self._get("active")) is not None:
+        # Bound concurrent pointer churn as well as ancestor fallback. A missing
+        # offer is safe; returning a withdrawn snapshot is not.
+        for _ in range(lineage.MAX_ANCESTORS + 1):
+            if not self._get("enabled") or (identity := self._get("active")) is None:
+                return None
             try:
                 self.audit(identity)
                 slots = self.catalog(identity)[0]["slots"]
-                return (
+                view = (
                     lineage.validation_snapshot(self.archive, slots[scope])
                     if scope in slots
                     else None
                 )
             except (OSError, ValueError, KeyError, TypeError) as exc:
-                self.rollback(f"Background audit failed: {exc}")
+                self._current_code()
+                self.rollback(f"Background audit failed: {exc}", expected=identity)
+                continue
+            with self.transaction():
+                if not self._get("enabled") or self._get("active") != identity:
+                    return None
+                return view
         return None

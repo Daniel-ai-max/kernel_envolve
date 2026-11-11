@@ -214,4 +214,8 @@ def initialize(root, path):
             json.dump({"state": str(root), "config_hash": digest(cfg)}, stream)
     finally:
         manager.close()
+    from .store import Store
+
+    store = Store(root, create=True)
+    store.close()
     return cfg

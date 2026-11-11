@@ -60,6 +60,31 @@ def proposal(store):
     }
 
 
+@pytest.mark.parametrize(
+    "damage", ["missing", "empty", "missing_config_hash", "missing_operations"]
+)
+def test_open_damaged_state_cannot_reset_budget_or_recreate_schema(rsi, damage):
+    import sqlite3
+
+    rsi.reserve("learn", 2)
+    rsi.close()
+    database = rsi.root / "rsi.sqlite"
+    if damage == "missing":
+        database.unlink()
+    elif damage == "empty":
+        database.write_bytes(b"")
+    else:
+        with sqlite3.connect(database) as db:
+            if damage == "missing_config_hash":
+                db.execute("DELETE FROM meta WHERE key='config_hash'")
+            else:
+                db.execute("DROP TABLE operations")
+    before = database.read_bytes() if database.exists() else None
+    with pytest.raises((ValueError, sqlite3.Error)):
+        Store(rsi.root)
+    assert (database.read_bytes() if database.exists() else None) == before
+
+
 def test_complete_learn_validate_adopt_pin_rollback(rsi, monkeypatch):
     # Exercise real subprocesses/evaluators, but keep this lifecycle test independent
     # of 25 ms process-poll timing jitter. Cost thresholds have explicit verdict tests.
@@ -155,6 +180,33 @@ def test_budget_reservations_survive_crash_and_restart(rsi):
         another.reserve("learn", total - 2)
     finally:
         another.close()
+
+
+@pytest.mark.parametrize("kind", ["learn", "validation"])
+def test_disabled_state_cannot_reserve_new_work(rsi, kind):
+    rsi.enable(False)
+    with pytest.raises(ValueError, match="disabled"):
+        rsi.reserve(kind, 1)
+    assert rsi.db.execute("SELECT count(*) FROM operations").fetchone()[0] == 0
+
+
+@pytest.mark.parametrize("elapsed", [-1, float("nan"), float("inf"), None, True])
+def test_invalid_elapsed_cannot_release_or_corrupt_reserved_budget(rsi, elapsed):
+    key = rsi.reserve("learn", 2)
+    before = list(rsi.db.iterdump())
+    with pytest.raises(ValueError):
+        rsi.finish(key, elapsed)
+    assert list(rsi.db.iterdump()) == before
+    rsi.finish(key, 0)
+    assert rsi.db.execute("SELECT charged FROM operations WHERE id=?", (key,)).fetchone()[0] == 0
+
+
+@pytest.mark.parametrize("enabled", [1, "false"])
+def test_enable_requires_boolean_without_changing_published_state(rsi, enabled):
+    before = list(rsi.db.iterdump())
+    with pytest.raises(ValueError):
+        rsi.enable(enabled)
+    assert list(rsi.db.iterdump()) == before
 
 
 def test_learner_failure_consumes_batch_without_retry(rsi):
@@ -386,8 +438,7 @@ def test_timeout_cleans_up_child_processes(tmp_path):
 
 
 def test_daemon_signal_during_adapter_exits_and_charges(rsi):
-    # Use a fresh on-disk config before its first Store identity for this process-only fixture.
-    rsi.db.execute("DELETE FROM meta WHERE key='config_hash'")
+    # Explicitly reseal this synthetic process fixture; production state is immutable.
     cfg = read(rsi.root / "config.json")
     cfg["learner_command"] = [
         sys.executable,
@@ -395,6 +446,7 @@ def test_daemon_signal_during_adapter_exits_and_charges(rsi):
         "import time;open('ready','w').write('1');time.sleep(60)",
     ]
     write_json(rsi.root / "config.json", cfg)
+    rsi.set("config_hash", digest(cfg))
     write_json(
         Path(cfg["manager"]) / "rsi-owner.json",
         {"state": str(rsi.root), "config_hash": digest(cfg)},

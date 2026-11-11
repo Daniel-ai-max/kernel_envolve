@@ -712,3 +712,95 @@ def test_corrupt_registry_constructor_closes_its_connection(case, monkeypatch):
     assert len(connections) == 1
     with pytest.raises(artifact_registry.sqlite3.ProgrammingError, match="closed"):
         connections[0].execute("SELECT 1")
+
+
+@pytest.mark.parametrize("withdrawal", ["disable", "rollback"])
+def test_snapshot_rechecks_withdrawal_after_materialization(case, monkeypatch, withdrawal):
+    registry, data = case
+    other = Registry(registry.root)
+    original = lineage.validation_snapshot
+
+    def withdraw(*args):
+        view = original(*args)
+        if withdrawal == "disable":
+            other.set_enabled(False)
+        else:
+            other.rollback("Withdraw before snapshot resolution completes")
+        return view
+
+    monkeypatch.setattr(lineage, "validation_snapshot", withdraw)
+    try:
+        assert registry.snapshot(data["scope"]) is None
+    finally:
+        other.close()
+
+
+def test_failed_stale_audit_cannot_revoke_a_concurrent_replacement(case, monkeypatch):
+    registry, data = case
+    assert registry.finish(data["attempt"], data["evidence"])["decision"]["accepted"]
+    registry.adopt(data["candidate"])
+    other = Registry(registry.root)
+    original = registry.audit
+
+    def stale_failure(identity):
+        if identity == data["candidate"]:
+            other.rollback("Operator already restored the seed")
+            raise ValueError("Old candidate failed its outstanding audit")
+        return original(identity)
+
+    monkeypatch.setattr(registry, "audit", stale_failure)
+    try:
+        assert (
+            registry.snapshot(data["scope"])["identity"]
+            == lineage.audit(data["archive"], data["seed"])["snapshot"]
+        )
+        assert registry._get("active") == data["seed_catalog"]
+        assert registry.catalog(data["seed_catalog"])[1] == "seed"
+    finally:
+        other.close()
+
+
+@pytest.mark.parametrize(
+    "malformed", [None, [], {"calls": None}, {"calls": [{}]}, {"trials": [None]}]
+)
+def test_malformed_admission_is_rejected_and_keeps_reserved_charge(case, malformed):
+    registry, data = case
+    before, _ = registry._attempt(data["attempt"])
+    report = registry.finish(data["attempt"], malformed)
+    after, _ = registry._attempt(data["attempt"])
+    assert report["error"] and report["decision"] is None
+    assert after["status"] == "rejected"
+    assert after["tokens"] >= before["tokens"] and after["seconds"] >= before["seconds"]
+    assert registry.catalog(data["candidate"])[1] == "rejected"
+
+
+@pytest.mark.parametrize("invalid", [{"calls": {"not-json"}}, {"time": float("nan")}])
+def test_unarchivable_evidence_does_not_start_admission_check(case, invalid):
+    registry, data = case
+    before = list(registry.db.iterdump())
+    with pytest.raises((TypeError, ValueError)):
+        registry.finish(data["attempt"], invalid)
+    assert list(registry.db.iterdump()) == before
+
+
+def test_conditional_rollback_rechecks_pointer_after_ancestor_audit(case, monkeypatch):
+    registry, data = case
+    assert registry.finish(data["attempt"], data["evidence"])["decision"]["accepted"]
+    registry.adopt(data["candidate"])
+    other = Registry(registry.root)
+    original = registry.audit
+
+    def replace_during_audit(identity):
+        original(identity)
+        other.rollback("Concurrent completed rollback")
+
+    monkeypatch.setattr(registry, "audit", replace_during_audit)
+    try:
+        assert (
+            registry.rollback("Stale background check", expected=data["candidate"])
+            == data["seed_catalog"]
+        )
+        assert registry.catalog(data["seed_catalog"])[1] == "seed"
+        assert registry.db.execute("SELECT count(*) FROM history").fetchone()[0] == 2
+    finally:
+        other.close()
