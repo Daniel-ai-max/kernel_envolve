@@ -1,5 +1,5 @@
 {
-  "scope": "Closed jobs only, including the rejected adaptive development study; no active GPU job.",
+  "scope": "Closed jobs including rejected adaptive and infrastructure-invalid generational acquisition; no active GPU job.",
   "entries": [
     {
       "folder": "rsi-batch-pilot-20261110",
@@ -6244,13 +6244,85 @@
           "known_total_tokens": 9733
         }
       ]
+    },
+    {
+      "folder": "rsi-generational-study-20261111/learning1",
+      "job": "95909bcd3fb347a4aec8244646ea8b9d",
+      "created_at": 1794356464.5075681,
+      "released_at": 1794356789.465259,
+      "conservative_gpu_seconds": 324.9576909542084,
+      "cumulative_gpu_seconds": 22224.752683401108,
+      "receipt_sha256": {
+        "released.json": "9c9dd6faba216e669033d219f1210a099281005ca926d1978141c4ab5744c706",
+        "create-attempt.json": "bd9f0e179e326255b44126b752ff922baebf8dd0f5b8c79f0a5f6f4497e12f39",
+        "approved-budget.json": "a7d1e91586a5ea2efeac23f158902c06fbcaad036f931fd8a7e5809fbac82a51"
+      },
+      "model_attempts": 9,
+      "known_tokens": 85287,
+      "unknown_usage_attempts": 0,
+      "calls": [
+        {
+          "file": "01-solve-bf51dc4b.json",
+          "sha256": "a77c4ab9e0c53dd254e1e31a3b894af6f15567fc6a91454dfcb01b54da44c27e",
+          "status": "completed",
+          "known_total_tokens": 5797
+        },
+        {
+          "file": "02-solve-ad966a37.json",
+          "sha256": "0be031dedbcb4fd7dbbc94a23e77a97cb6f51d294646bdc563994dbabf805be8",
+          "status": "completed",
+          "known_total_tokens": 7005
+        },
+        {
+          "file": "03-solve-4a94d138.json",
+          "sha256": "7e0c5f2b2abd086e6f204a69dc61f65bd2c685b25b58e3d8f4496e97acc244e9",
+          "status": "completed",
+          "known_total_tokens": 11324
+        },
+        {
+          "file": "04-solve-6a8b8454.json",
+          "sha256": "ffad346439759e633602a9562f43254f426ff0b29edb52b8e5f08d7c9aa1b091",
+          "status": "completed",
+          "known_total_tokens": 15104
+        },
+        {
+          "file": "05-solve-5c74eb12.json",
+          "sha256": "05096bd801934a846cefec1c79bf67a66ec7c341f5a6229076e8e4e99cd869a0",
+          "status": "completed",
+          "known_total_tokens": 5985
+        },
+        {
+          "file": "06-solve-9f597b64.json",
+          "sha256": "ba1eb576d29fa7184b702e2a7ab426d7b34f8414a6ffc549976086ab7ad0e915",
+          "status": "completed",
+          "known_total_tokens": 10167
+        },
+        {
+          "file": "07-solve-5597dceb.json",
+          "sha256": "49407b2ecf2f1e55254a2bd19682ff02249cd389786789f69717253405d26f47",
+          "status": "completed",
+          "known_total_tokens": 13997
+        },
+        {
+          "file": "08-solve-1749e6a6.json",
+          "sha256": "30b2c27fc54eb62a6fa5aabf9cd099dff3ec23c4b3b07d65dc9d9d2f9deb7364",
+          "status": "completed",
+          "known_total_tokens": 5873
+        },
+        {
+          "file": "09-solve-f3d67808.json",
+          "sha256": "c326f3dd8391a41e9c2b75bf4af6e9f19ba03946e7333bddc1fb386907d4d30e",
+          "status": "completed",
+          "known_total_tokens": 10035
+        }
+      ]
     }
   ],
-  "released_gpu_seconds_under_extended_ledger": 21899.7949924469,
+  "released_gpu_seconds_under_extended_ledger": 22224.752683401108,
   "incident_separately_recorded_gpu_seconds": 6511.071068048477,
-  "combined_historical_gpu_seconds": 28410.866060495377,
-  "known_model_tokens_closed_jobs": 11548132,
-  "model_attempts_closed_jobs": 996,
+  "combined_historical_gpu_seconds": 28735.823751449585,
+  "known_model_tokens_closed_jobs": 11633419,
+  "model_attempts_closed_jobs": 1005,
   "unknown_usage_attempts_closed_jobs": 9,
   "incident_model_attempts_separately_recorded": 1,
   "incident_model_usage": null,
@@ -6262,6 +6334,6 @@
     "All failed studies and infrastructure attempts remain; reused training is counted once.",
     "Conservative allocation seconds are not active GPU kernel time or provider billing.",
     "Future per-task savings would not by themselves recover campaign acquisition/validation costs.",
-    "No current active trial output or interim arm outcomes were read."
+    "Generational acquisition stopped when transport showed missing artifact actions; original traces confirmed evaluator mismatch. No interim result was used to choose an artifact or relax gates."
   ]
 }

@@ -44,6 +44,12 @@ class Registry:
             record = lineage.audit(archive, identity)
             if record["kind"] != "seed" or record["scope"] in slots:
                 raise ValueError("Need exactly one verified seed per scope")
+            view = load(archive / "views", record["snapshot"])
+            if view["evaluator_hash"] != evaluator_hash():
+                raise ValueError(
+                    "Seed evaluator differs from current evaluator; revalidate the fixed source "
+                    "under the current evaluator before creating a new registry"
+                )
             slots[record["scope"]] = identity
         if type(max_attempts) is not int or not 1 <= max_attempts <= 32:
             raise ValueError("Invalid admission attempt ceiling")

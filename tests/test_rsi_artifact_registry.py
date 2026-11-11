@@ -251,6 +251,23 @@ def case(complete, tmp_path):
     registry.close()
 
 
+def test_old_evaluator_seed_rejected_before_registry_creation(complete, tmp_path, monkeypatch):
+    from kernel_envolve.rsi import artifact_registry
+
+    monkeypatch.setattr(artifact_registry, "evaluator_hash", lambda: "f" * 64)
+    target = tmp_path / "incompatible-registry"
+    with pytest.raises(ValueError, match="Seed evaluator differs.*revalidate"):
+        Registry.create(
+            target,
+            complete["archive"],
+            [complete["seed"]],
+            max_attempts=1,
+            max_seconds=1000,
+            max_tokens=10000,
+        )
+    assert not target.exists()
+
+
 def test_real_raw_validation_adoption_disable_and_rollback(case):
     registry, data = case
     result = registry.finish(data["attempt"], data["evidence"])
