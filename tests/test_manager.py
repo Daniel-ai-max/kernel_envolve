@@ -866,6 +866,120 @@ def test_evidence_freshness_is_independent_of_http_snapshot_time(managed):
     assert snapshot(store, "toy")["detail"]["evidence_stale"]
 
 
+@pytest.mark.parametrize("running", [False, True])
+def test_background_audit_skips_gpu_work_but_explicit_audit_remains_strict(
+    managed, monkeypatch, running
+):
+    from kernel_envolve.manager import evidence
+
+    store, _, work = managed
+    run, _ = evaluate(work, "full")
+    promote(run)
+    refresh(store)
+    before = detail(store, "toy")
+    parent = store.schedule()[0]
+    store.claim(parent, os.getpid(), identity(os.getpid()))
+    with store.transaction():
+        job = store.enqueue(store.task("toy"), "gpu", ["true"], parent)
+    if running:
+        store.claim(job, os.getpid(), identity(os.getpid()))
+    (run / "source" / "candidate.py").write_text("def run(x): return x\n")
+    original = evidence.fingerprint
+    calls = []
+
+    def counted(*args):
+        calls.append(args[0])
+        return original(*args)
+
+    monkeypatch.setattr(evidence, "fingerprint", counted)
+    assert refresh(store, yield_to_gpu=True) is False
+    from kernel_envolve.manager import service
+
+    service.run(store, once=True)
+    assert calls == []  # No source traversal, even when a job is only queued.
+    assert detail(store, "toy")["evidence_as_of"] == before["evidence_as_of"]
+    assert refresh(store, force=True)
+    assert calls == [run]
+    assert detail(store, "toy")["best"] is None
+    assert store.task("toy")["evidence_error"]
+    with pytest.raises(ValueError):
+        promote(run)  # The background policy cannot authorize corrupted evidence.
+    store.finish(job, "succeeded")
+    store.finish(parent, "succeeded")
+
+
+def test_background_audit_yields_to_new_job_without_publishing_partial_evidence(
+    managed, monkeypatch
+):
+    from kernel_envolve.manager import evidence
+
+    store, _, work = managed
+    run, _ = evaluate(work, "full")
+    promote(run)
+    refresh(store)
+    before = detail(store, "toy")
+    parent = store.schedule()[0]
+    store.claim(parent, os.getpid(), identity(os.getpid()))
+    clock = [0.0]
+    monkeypatch.setattr(evidence.time, "monotonic", lambda: clock[0])
+    original = evidence.fingerprint
+    jobs = []
+
+    def interrupted(path, checkpoint):
+        with store.transaction():
+            jobs.append(store.enqueue(store.task("toy"), "gpu", ["true"], parent))
+        clock[0] += 0.3
+        checkpoint()
+        pytest.fail("History traversal continued after queued GPU work")
+
+    monkeypatch.setattr(evidence, "fingerprint", interrupted)
+    assert refresh(store, yield_to_gpu=True) is False
+    after = detail(store, "toy")
+    assert after["best"] == before["best"]
+    assert after["evidence_as_of"] == before["evidence_as_of"]
+    scan = json.loads(store.one("SELECT data FROM metadata WHERE key='evidence_scan'")["data"])
+    assert scan["cancelled"] and not scan["running"] and scan["error"] is None
+    store.finish(jobs[0], "succeeded")
+    store.finish(parent, "succeeded")
+    monkeypatch.setattr(evidence, "fingerprint", original)
+    (run / "receipt.json").unlink()
+    assert refresh(store, yield_to_gpu=True)
+    assert detail(store, "toy")["best"] is None
+    assert store.task("toy")["evidence_error"]
+
+
+def test_targeted_delivery_refresh_indexes_only_selected_task(managed):
+    store, deployment, work = managed
+    second = copy.deepcopy(deployment)
+    other = work.parent / "other"
+    shutil.copytree(work, other)
+    second["tasks"][0].update(id="other", workspace=str(other), task_dir=str(other))
+    store.register(second)
+    run, _ = evaluate(work, "full")
+    promote(run)
+    evaluate(other, "quick")
+    command = [
+        sys.executable,
+        "-m",
+        "kernel_envolve.cli",
+        "manage",
+        "--state",
+        str(store.root),
+        "refresh",
+        "--task",
+        "toy",
+    ]
+    result = subprocess.run(command, capture_output=True, text=True, timeout=10)
+    assert result.returncode == 0, result.stderr
+    assert detail(store, "toy")["best"]
+    assert detail(store, "other")["evidence_as_of"] is None
+    assert {row["task"] for row in store.rows("SELECT task FROM runs")} == {"toy"}
+    previous = store.one("SELECT data FROM metadata WHERE key='evidence_scan'")
+    with pytest.raises(ValueError, match="Unknown task"):
+        refresh(store, task_id="missing")
+    assert store.one("SELECT data FROM metadata WHERE key='evidence_scan'") == previous
+
+
 def test_scan_progress_distinguishes_queue_age_from_scan_failure(managed, monkeypatch):
     from kernel_envolve.manager import evidence
     from kernel_envolve.manager.views import task_view

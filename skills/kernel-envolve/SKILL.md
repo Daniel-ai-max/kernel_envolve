@@ -59,7 +59,7 @@ kernel-envolve manage gpu-run --expected-seconds <预算内预计秒数> -- <原
 
 使用目标仓库模板，中文说明具体问题与实现变化，列出硬件/软件、源码版本、计时范围、主要场景和最差退化的收益表、正确性与复现证据。延迟下降为 `1 - candidate / baseline`；加速比为 `baseline / candidate`。更新时重写当前收益，不将旧百分比与新百分比相减。通过 `gh --body-file` 保留真实换行；kernel_envolve PR 执行 `tools/check_pr_body.py`。
 
-交付源码及 helper 必须与已验证快照一致；冲突或行为变化后重验。内部按项目规范处理 core 实现、Megatron 接线和 pin，核对实际调用。发布后查询 PR head/状态；管理任务使用 `manage sync-pr` 绑定当前已验证 best 与实现 PR。修复系统流程的 PR 不冒充算子收益 PR。
+交付源码及 helper 必须与已验证快照一致；冲突或行为变化后重验。内部按项目规范处理 core 实现、Megatron 接线和 pin，核对实际调用。发布后查询 PR head/状态；管理任务在晋升后执行 `manage refresh --task <id>` 主动核对当前算子，再用 `manage sync-pr` 绑定实现 PR，不等后台面板刷新。修复系统流程的 PR 不冒充算子收益 PR。
 
 ## 验证系统是否有价值
 

@@ -132,7 +132,7 @@ def run(store, once=False):
 
             local = Store(store.root)
             try:
-                refresh(local, stop=stopped)
+                refresh(local, stop=stopped, yield_to_gpu=True)
                 if not stopped.is_set():
                     from .publication import refresh_publications
 
@@ -167,6 +167,8 @@ def run(store, once=False):
                     except Exception as exc:
                         evidence_error = str(exc)
                     future = None
+                    # A long scan must not immediately trigger another history walk.
+                    last_scan = time.monotonic()
                 if future is None and time.monotonic() - last_scan >= 5:
                     future = pool.submit(scan)
                     last_scan = time.monotonic()
