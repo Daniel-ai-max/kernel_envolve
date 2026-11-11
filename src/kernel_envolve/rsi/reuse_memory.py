@@ -35,18 +35,25 @@ def _target(cfg, source, initial, scope):
 
 
 class ReuseMemory:
-    def __init__(self, root):
+    def __init__(self, root, *, recovery=False, readonly=False):
+        """Recovery permits inspection/withdrawal, never new work on stale code."""
+        if type(recovery) is not bool or type(readonly) is not bool:
+            raise ValueError("Recovery and readonly must be boolean")
         self.root = Path(root).resolve()
+        mode = "ro" if readonly else "rw"
         self.db = sqlite3.connect(
-            f"{(self.root / 'reuse.sqlite').as_uri()}?mode=rw", uri=True, isolation_level=None
+            f"{(self.root / 'reuse.sqlite').as_uri()}?mode={mode}", uri=True, isolation_level=None
         )
         self.db.row_factory = sqlite3.Row
         try:
             self.config = self._get("config")
             if digest(self.config) != self._get("config_hash"):
                 raise ValueError("Reuse memory configuration changed")
+            if self.config.get("schema") != 1:
+                raise ValueError("Unsupported reuse memory schema")
             self.archive = Path(self.config["archive"])
-            self._current()
+            if not recovery:
+                self._current()
         except BaseException:
             self.db.close()
             raise
@@ -60,6 +67,8 @@ class ReuseMemory:
                 raise ValueError("Invalid reuse memory limit")
         if root.exists() or not archive.is_dir():
             raise ValueError("Use a new memory directory and an existing artifact archive")
+        if root.is_relative_to(archive) or archive.is_relative_to(root):
+            raise ValueError("Reuse memory and archive must not overlap")
         cfg = {
             "schema": 1,
             "archive": str(archive),
@@ -121,12 +130,16 @@ class ReuseMemory:
     def set_enabled(self, enabled):
         if type(enabled) is not bool:
             raise ValueError("Enabled must be boolean")
+        if enabled:
+            self._current()
         with self._transaction():
             self.db.execute("UPDATE meta SET value=? WHERE key='enabled'", (json.dumps(enabled),))
 
     def set_entry_enabled(self, entry, enabled):
         if type(enabled) is not bool:
             raise ValueError("Enabled must be boolean")
+        if enabled:
+            self._current()
         with self._transaction():
             if (
                 self.db.execute(
@@ -135,6 +148,38 @@ class ReuseMemory:
                 != 1
             ):
                 raise ValueError("Unknown reuse entry")
+
+    def status(self, *, pending_limit=20):
+        """Bounded metadata inspection; no source audit, learning or evaluation."""
+        if type(pending_limit) is not int or not 1 <= pending_limit <= 128:
+            raise ValueError("pending_limit must be 1–128")
+        try:
+            self._current()
+            code_error = None
+        except (OSError, ValueError) as exc:
+            code_error = str(exc)
+        counts = dict(self.db.execute("SELECT status,count(*) FROM trials GROUP BY status"))
+        return {
+            "enabled": self._get("enabled"),
+            "code_compatible": code_error is None,
+            "code_error": code_error,
+            "entries": [
+                {"id": r["id"], "enabled": bool(r["enabled"]), **json.loads(r["data"])}
+                for r in self.db.execute("SELECT * FROM entries ORDER BY seq")
+            ],
+            "trial_counts": counts,
+            "max_entries": self.config["max_entries"],
+            "max_trials": self.config["max_trials"],
+            "pending": [
+                {"ticket": r["id"], **self._ticket(r["id"])[1]}
+                for r in self.db.execute(
+                    "SELECT id FROM trials WHERE status='pending' ORDER BY rowid LIMIT ?",
+                    (pending_limit,),
+                ).fetchall()
+            ],
+            "pending_truncated": counts.get("pending", 0) > pending_limit,
+            "authority": "Metadata only; prepare/observe independently audit source receipts. Pending is not proof of a running worker.",
+        }
 
     def _entry(self, row):
         value = json.loads(row["data"])
@@ -208,14 +253,17 @@ class ReuseMemory:
                 "Reuse requires 2–8 fixed actions, including the ordinary reuse action"
             )
         task, artifacts = Path(task).resolve(), Path(artifacts).resolve()
-        if (
-            artifacts.is_relative_to(task)
-            or self.root.is_relative_to(task)
-            or self.archive.is_relative_to(task)
+        paths = (task, artifacts, self.root, self.archive)
+        if any(
+            a.is_relative_to(b) or b.is_relative_to(a)
+            for index, a in enumerate(paths)
+            for b in paths[index + 1 :]
         ):
-            raise ValueError("Reuse memory, archive and evidence must be outside the task")
+            raise ValueError("Task, evidence, memory and archive directories must not overlap")
         if (artifacts / "search-trace.json").exists():
             raise ValueError("Prepare requires a future unused research trace")
+        if self.db.execute("SELECT 1 FROM trials WHERE artifacts=?", (str(artifacts),)).fetchone():
+            raise ValueError("Research evidence path already reserved")
         if not self._get("enabled"):
             return {"ticket": None, "snapshot": None, "reason": "disabled", "skipped": []}
         if (
@@ -334,13 +382,18 @@ class ReuseMemory:
         return self._finish(identity, {"status": "incomplete", "reason": reason, "record": None})
 
     def _finish(self, identity, report):
-        receipt = save(self.root / "feedback", {"ticket": identity, **report})
+        value = {"ticket": identity, **report}
+        receipt = digest(value)
         with self._transaction():
             row, _ = self._ticket(identity)
             if row["status"] != "pending":
                 if row["receipt"] == receipt:
                     return load(self.root / "feedback", receipt)
                 raise ValueError("Reuse ticket already consumed")
+            # Reject unknown/replayed requests before writing any archive file.
+            # The receipt is durable before the metadata transition; a crash
+            # can leave an orphan, never a consumed row without its receipt.
+            save(self.root / "feedback", value)
             self.db.execute(
                 "UPDATE trials SET status=?,receipt=?,record=? WHERE id=?",
                 (report["status"], receipt, report["record"], identity),

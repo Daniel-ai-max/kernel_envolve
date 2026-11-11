@@ -24,13 +24,22 @@ from .trials import adapter_identity, validator_identity, verify_template
 class Registry:
     def __init__(self, root):
         self.root = Path(root).resolve()
-        self.db = sqlite3.connect(self.root / "registry.sqlite", isolation_level=None, timeout=30)
+        self.db = sqlite3.connect(
+            f"{(self.root / 'registry.sqlite').as_uri()}?mode=rw",
+            uri=True,
+            isolation_level=None,
+            timeout=30,
+        )
         self.db.row_factory = sqlite3.Row
         self.db.execute("PRAGMA foreign_keys=ON")
-        self.config = self._get("config")
-        if digest(self.config) != self._get("config_hash"):
-            raise ValueError("Artifact registry configuration changed")
-        self.archive = Path(self.config["archive"])
+        try:
+            self.config = self._get("config")
+            if digest(self.config) != self._get("config_hash"):
+                raise ValueError("Artifact registry configuration changed")
+            self.archive = Path(self.config["archive"])
+        except BaseException:
+            self.db.close()
+            raise
 
     @classmethod
     def create(cls, root, archive, seeds, *, max_attempts, max_seconds, max_tokens):
@@ -103,12 +112,14 @@ class Registry:
 
     @contextlib.contextmanager
     def transaction(self):
-        self.db.execute("BEGIN IMMEDIATE")
+        owns_transaction = not self.db.in_transaction
         try:
+            self.db.execute("BEGIN IMMEDIATE")
             yield
             self.db.commit()
         except BaseException:
-            self.db.rollback()
+            if owns_transaction and self.db.in_transaction:
+                self.db.rollback()
             raise
 
     def _get(self, key):
@@ -425,6 +436,7 @@ class Registry:
 
     def finish(self, identity, evidence):
         """Consume the attempt, including invalid evidence. No automatic adoption."""
+        self._current_code()
         with self.transaction():
             row, attempt = self._attempt(identity)
             if row["status"] != "reserved":
@@ -526,10 +538,13 @@ class Registry:
     def set_enabled(self, enabled):
         if type(enabled) is not bool:
             raise ValueError("Enabled must be boolean")
+        if enabled:
+            self._current_code()
         with self.transaction():
             self._set("enabled", enabled)
 
     def rollback(self, reason):
+        self._current_code()
         if not isinstance(reason, str) or not reason.strip():
             raise ValueError("Rollback requires a reason")
         current = self._get("active")
@@ -573,6 +588,9 @@ class Registry:
         """
         if not self._get("enabled"):
             return None
+        # A software upgrade is not evidence that an admitted artifact failed.
+        # Refuse incompatible code before the raw-evidence revocation loop.
+        self._current_code()
         while (identity := self._get("active")) is not None:
             try:
                 self.audit(identity)

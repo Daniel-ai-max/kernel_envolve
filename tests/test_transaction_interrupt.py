@@ -5,7 +5,9 @@ import sqlite3
 import pytest
 
 from kernel_envolve.manager.store import Store as Manager
+from kernel_envolve.rsi.artifact_registry import Registry
 from kernel_envolve.rsi.managed import _DeadlineExpired
+from kernel_envolve.rsi.reuse_memory import ReuseMemory
 from kernel_envolve.rsi.store import Store as RSI
 
 
@@ -14,6 +16,16 @@ class InterruptedTransaction:
         self.connection, self.error, self.after = connection, error, after
         self.statements = []
         self.statement, self.armed = statement, True
+
+    def commit(self):
+        return self.execute("COMMIT")
+
+    def rollback(self):
+        # sqlite3.Connection.rollback() is a no-op after an already completed
+        # commit; preserve that behavior rather than injecting a false failure.
+        if self.connection.in_transaction:
+            return self.execute("ROLLBACK")
+        return self.connection.rollback()
 
     def __getattr__(self, name):
         return getattr(self.connection, name)
@@ -31,7 +43,11 @@ class InterruptedTransaction:
         return value
 
 
-@pytest.mark.parametrize("store_type", [Manager, RSI])
+def transaction(store):
+    return store._transaction() if isinstance(store, ReuseMemory) else store.transaction()
+
+
+@pytest.mark.parametrize("store_type", [Manager, RSI, Registry, ReuseMemory])
 @pytest.mark.parametrize("after", [False, True])
 @pytest.mark.parametrize("statement", ["BEGIN IMMEDIATE", "COMMIT"])
 def test_deadline_survives_transaction_boundary_without_masking(store_type, after, statement):
@@ -41,7 +57,7 @@ def test_deadline_survives_transaction_boundary_without_masking(store_type, afte
     store = object.__new__(store_type)
     store.db = InterruptedTransaction(db, error, after=after, statement=statement)
     try:
-        with pytest.raises(_DeadlineExpired) as raised, store.transaction():
+        with pytest.raises(_DeadlineExpired) as raised, transaction(store):
             store.db.execute("INSERT INTO evidence VALUES(1)")
         assert raised.value is error
         assert not db.in_transaction
@@ -56,14 +72,14 @@ def test_deadline_survives_transaction_boundary_without_masking(store_type, afte
         db.close()
 
 
-@pytest.mark.parametrize("store_type", [Manager, RSI])
+@pytest.mark.parametrize("store_type", [Manager, RSI, Registry, ReuseMemory])
 def test_exception_in_body_still_rolls_back(store_type):
     db = sqlite3.connect(":memory:", isolation_level=None)
     db.execute("CREATE TABLE evidence(value INTEGER)")
     store = object.__new__(store_type)
     store.db = db
     try:
-        with pytest.raises(ValueError, match="body failure"), store.transaction():
+        with pytest.raises(ValueError, match="body failure"), transaction(store):
             db.execute("INSERT INTO evidence VALUES(1)")
             raise ValueError("body failure")
         assert not db.in_transaction
@@ -72,16 +88,16 @@ def test_exception_in_body_still_rolls_back(store_type):
         db.close()
 
 
-@pytest.mark.parametrize("store_type", [Manager, RSI])
+@pytest.mark.parametrize("store_type", [Manager, RSI, Registry, ReuseMemory])
 def test_rejected_nested_transaction_does_not_rollback_the_caller(store_type):
     db = sqlite3.connect(":memory:", isolation_level=None)
     db.execute("CREATE TABLE evidence(value INTEGER)")
     store = object.__new__(store_type)
     store.db = db
     try:
-        with store.transaction():
+        with transaction(store):
             db.execute("INSERT INTO evidence VALUES(1)")
-            with pytest.raises(sqlite3.OperationalError), store.transaction():
+            with pytest.raises(sqlite3.OperationalError), transaction(store):
                 pytest.fail("Nested transaction must not run")
             assert db.in_transaction
         assert db.execute("SELECT COUNT(*) FROM evidence").fetchone()[0] == 1

@@ -43,9 +43,11 @@
 
 同一目标的 pending 预留与同一证据目录的使用具有唯一约束，同一源码在相同配置上的 pending 使用也会阻止换起点后并发重试；事务内再次检查禁用和反馈，避免并发重复推荐。中断使用需显式 `abandon`，保留消耗过的机会；没有自动超时重试。已经发给运行中 worker 的快照无法被这层撤回，禁用影响后续准备。
 
-原始档案必须只允许可信控制器写入；哈希不是身份认证或 OS 沙箱。当前实现仅支持本地路径绑定，不提供远端路径映射、自动任务提交、生产 Manager 挂钩或日志扫描守护进程。创建新库不能重置外层研究预算。部署仍要隔离 CPU、磁盘、API 配额和 GPU，完整 ROI 还要计入后台审计与经验采集成本。
+任务、研究输出、复用库和原始档案必须是互不包含的目录；已预留研究输出目录即使没有文件、没有新候选或已经停用，也不能重新使用。原始档案必须只允许可信控制器写入；哈希不是身份认证或 OS 沙箱。当前实现仅支持本地路径绑定，不提供远端路径映射、自动任务提交、生产 Manager 挂钩或日志扫描守护进程。创建新库不能重置外层研究预算。部署仍要隔离 CPU、磁盘、API 配额和 GPU，完整 ROI 还要计入后台审计与经验采集成本。
 
-复用控制器有独立实现身份，绑定现有验证器；新增该模块不会使历史 lineage/Registry 身份整体失效。改变控制器代码后，旧库不能继续准备/收集；需保留旧库并按冻结代码审计。不会修改任何历史 evaluator 收据。
+复用控制器有独立实现身份，绑定现有验证器。改变控制器或验证器后，旧库不能继续准备/收集；需保留旧库并按冻结代码审计。本次就绪审查还修复了 Registry 事务和版本边界，因此验证器身份会变化，旧 lineage/Registry 收据不能直接冒用新版本。原始 evaluator 身份和收据不修改，也不通过重写哈希迁移。
+
+版本不兼容属于软件迁移问题，不是经验质量失败。Registry 的 snapshot/rollback/finish/enable 现在在改变状态前拒绝不兼容代码；disabled 状态仍可读取为无经验。复用库提供 `ReuseMemory(root, recovery=True)`，只用于状态查看、停用和明确关闭未完成记录；prepare/register/observe/重新启用仍必须通过版本检查。未知数据库 schema 或配置完整性损坏会明确拒绝，不强行修库。
 
 ## 显式接入示例
 
@@ -79,3 +81,29 @@ finally:
 ```
 
 恢复已有库使用 `ReuseMemory(memory_dir)`，不要每轮新建。遇到未完成研究时，控制器应保存原日志，再显式调用 `abandon(ticket, reason)`；它不停止任何 GPU 作业，也不证明资源已释放。反馈中的耗时来自 trace，tokens 仍为未知，不推算节省调用或宣称回本；计量继续使用外部完整调用账本。
+
+
+## 命令入口与故障恢复
+
+源码环境或安装包均可使用 `python -m kernel_envolve.rsi.reuse_cli`。它只操作后台元数据与已有证据，不运行研究、模型或 evaluator，也不会申请资源。所有正常输出是 JSON；错误写入 stderr 并返回退出码 2。路径应使用独立的持久目录。
+
+```sh
+python -m kernel_envolve.rsi.reuse_cli --state /work/reuse-state init --archive /work/lineage-archive
+python -m kernel_envolve.rsi.reuse_cli --state /work/reuse-state register RECORD_ID
+python -m kernel_envolve.rsi.reuse_cli --state /work/reuse-state status --pending-limit 20
+python -m kernel_envolve.rsi.reuse_cli --state /work/reuse-state prepare --scope SCOPE_ID --task /work/operator/task --artifacts /work/research/round-1 --actions 4
+python -m kernel_envolve.rsi.reuse_cli --state /work/reuse-state observe TICKET_ID --final /work/operator/task/.kernel_envolve/runs/FINAL_ID
+python -m kernel_envolve.rsi.reuse_cli --state /work/reuse-state disable
+```
+
+`prepare` 可通过 `--profile profile.json` 指定 profile；其输出中的 snapshot 交给原研究执行器，ticket 留在可信控制器。不要将整个数据库挂入 solver。没有候选时 snapshot/ticket 都为 null，继续原研究即可；配置和证据冲突会明确报错，不能把接入错误统计为 RSI 处理成功。
+
+`status` 使用只读数据库连接，不审计原始源码，也不启动工作。它显示 code_compatible、启用状态、每类反馈数量和有上限的 pending 列表；pending 不证明 worker 仍在运行。版本不兼容时仍可 status/disable/entry-disable/abandon，不能 enable/register/prepare/observe。不存在的状态目录不会创建空数据库。
+
+确认外部 worker 已终止并保存日志后，可显式关闭中断记录：
+
+```sh
+python -m kernel_envolve.rsi.reuse_cli --state /work/reuse-state abandon TICKET_ID --reason 'Worker stopped; independent final unavailable'
+```
+
+同一关闭请求可重放；未知 ticket、已消费 ticket 的不同结论都被拒绝，不留下额外反馈文件。不删除 pending、不改成质量成功，也不重新获得机会。`entry-disable ENTRY_ID` 仅撤回一个来源，`entry-enable ENTRY_ID` 和 `enable` 只在版本一致时允许；已有失败反馈始终保留。

@@ -370,3 +370,107 @@ def test_trace_change_during_collection_cannot_relabel_feedback(setup, tmp_path,
     with pytest.raises(ValueError, match="trace changed"):
         memory.observe(offer["ticket"], confirmation_run=final)
     assert memory._ticket(offer["ticket"])[0]["status"] == "pending"
+
+
+@pytest.mark.parametrize("state", ["pending", "incomplete"])
+def test_reserved_evidence_directory_is_rejected_even_when_no_offer(setup, tmp_path, state):
+    memory, _, scope, _, _ = setup
+    task = make_task(tmp_path / "target")
+    out = tmp_path / "out"
+    offer = memory.prepare(scope, task, {}, out)
+    if state == "incomplete":
+        memory.abandon(offer["ticket"], "Stopped without creating a trace")
+    with pytest.raises(ValueError, match="already reserved"):
+        memory.prepare(scope, task, {}, out)
+
+
+@pytest.mark.parametrize("destination", ["memory", "archive", "memory_child", "archive_child"])
+def test_prepare_rejects_control_state_and_evidence_directory_overlap(setup, tmp_path, destination):
+    memory, _, scope, _, _ = setup
+    task = make_task(tmp_path / "target")
+    root = memory.root if destination.startswith("memory") else memory.archive
+    out = root / "new-trace" if destination.endswith("child") else root
+    with pytest.raises(ValueError, match="overlap"):
+        memory.prepare(scope, task, {}, out)
+    assert memory.db.execute("SELECT count(*) FROM trials").fetchone()[0] == 0
+
+
+def test_changed_code_cannot_reenable_existing_memory(setup, monkeypatch):
+    memory, _, _, entry, _ = setup
+    memory.set_enabled(False)
+    memory.set_entry_enabled(entry, False)
+    monkeypatch.setattr(module, "_implementation", lambda: "0" * 64)
+    with pytest.raises(ValueError, match="code changed"):
+        memory.set_enabled(True)
+    with pytest.raises(ValueError, match="code changed"):
+        memory.set_entry_enabled(entry, True)
+
+
+def test_recovery_allows_inspection_disable_and_abandon_but_no_new_work(
+    setup, tmp_path, monkeypatch
+):
+    memory, _, scope, entry, record = setup
+    task = make_task(tmp_path / "target")
+    offer = memory.prepare(scope, task, {}, tmp_path / "out")
+    monkeypatch.setattr(module, "_implementation", lambda: "0" * 64)
+    recovery = ReuseMemory(memory.root, recovery=True)
+    try:
+        status = recovery.status()
+        assert not status["code_compatible"]
+        assert status["pending"][0]["ticket"] == offer["ticket"]
+        for action in [
+            lambda: recovery.set_enabled(True),
+            lambda: recovery.set_entry_enabled(entry, True),
+            lambda: recovery.register(record),
+            lambda: recovery.prepare(scope, task, {}, tmp_path / "new"),
+            lambda: recovery.observe(offer["ticket"], confirmation_run=tmp_path / "unused"),
+        ]:
+            with pytest.raises(ValueError, match="code changed"):
+                action()
+        recovery.set_enabled(False)
+        recovery.set_entry_enabled(entry, False)
+        recovery.abandon(offer["ticket"], "Operator closed interrupted work after upgrade")
+        status = recovery.status()
+        assert not status["enabled"] and status["trial_counts"] == {"incomplete": 1}
+    finally:
+        recovery.close()
+
+
+def test_readonly_status_is_bounded_and_cannot_modify_state(setup, tmp_path):
+    import sqlite3
+
+    memory, _, scope, _, _ = setup
+    for n in [16, 32]:
+        memory.prepare(scope, make_task(tmp_path / f"target-{n}", n=n), {}, tmp_path / f"out-{n}")
+    before = list(memory.db.iterdump())
+    readonly = ReuseMemory(memory.root, recovery=True, readonly=True)
+    try:
+        status = readonly.status(pending_limit=1)
+        assert status["pending_truncated"] and len(status["pending"]) == 1
+        assert status["trial_counts"] == {"pending": 2}
+        with pytest.raises(sqlite3.OperationalError, match="readonly"):
+            readonly.set_enabled(False)
+    finally:
+        readonly.close()
+    assert list(memory.db.iterdump()) == before
+
+
+def test_invalid_or_consumed_ticket_writes_no_feedback_files(setup, tmp_path):
+    memory, _, scope, _, _ = setup
+    with pytest.raises(ValueError, match="Unknown"):
+        memory.abandon("unknown", "This request must not write an orphan")
+    assert not (memory.root / "feedback").exists()
+    offer = memory.prepare(scope, make_task(tmp_path / "target"), {}, tmp_path / "out")
+    memory.abandon(offer["ticket"], "No final")
+    before = set((memory.root / "feedback").iterdir())
+    with pytest.raises(ValueError, match="already consumed"):
+        memory.abandon(offer["ticket"], "Another reason cannot rewrite history")
+    assert set((memory.root / "feedback").iterdir()) == before
+
+
+def test_memory_creation_inside_archive_is_rejected_without_writes(setup):
+    memory, *_ = setup
+    nested = memory.archive / "nested-memory"
+    with pytest.raises(ValueError, match="overlap"):
+        ReuseMemory.create(nested, memory.archive)
+    assert not nested.exists()

@@ -660,3 +660,55 @@ def test_practical_threshold_cannot_be_relaxed(complete):
     suite["min_relative_quality_gain"] = 0.05
     with pytest.raises(ValueError, match="ten percent"):
         validation.check_suite(suite, {complete["scope"]: complete["child"]})
+
+
+@pytest.mark.parametrize("operation", ["snapshot", "rollback", "finish", "enable"])
+def test_code_drift_does_not_revoke_or_consume_existing_registry(case, monkeypatch, operation):
+    from kernel_envolve.rsi import artifact_registry
+
+    registry, data = case
+    if operation == "enable":
+        registry.set_enabled(False)
+    before = list(registry.db.iterdump())
+    monkeypatch.setattr(artifact_registry, "validator_identity", lambda: "0" * 64)
+    with pytest.raises(ValueError, match="validator/evaluator changed"):
+        if operation == "snapshot":
+            registry.snapshot(data["scope"])
+        elif operation == "rollback":
+            registry.rollback("Attempt with incompatible implementation")
+        elif operation == "finish":
+            registry.finish(data["attempt"], data["evidence"])
+        else:
+            registry.set_enabled(True)
+    assert list(registry.db.iterdump()) == before
+    registry.set_enabled(False)
+    assert registry.snapshot(data["scope"]) is None
+
+
+def test_open_missing_registry_does_not_create_an_empty_database(tmp_path):
+    import sqlite3
+
+    with pytest.raises(sqlite3.OperationalError):
+        Registry(tmp_path)
+    assert not (tmp_path / "registry.sqlite").exists()
+
+
+def test_corrupt_registry_constructor_closes_its_connection(case, monkeypatch):
+    from kernel_envolve.rsi import artifact_registry
+
+    registry, _ = case
+    registry.db.execute("UPDATE meta SET value='\"wrong\"' WHERE key='config_hash'")
+    original = artifact_registry.sqlite3.connect
+    connections = []
+
+    def track(*args, **kwargs):
+        connection = original(*args, **kwargs)
+        connections.append(connection)
+        return connection
+
+    monkeypatch.setattr(artifact_registry.sqlite3, "connect", track)
+    with pytest.raises(ValueError, match="configuration changed"):
+        Registry(registry.root)
+    assert len(connections) == 1
+    with pytest.raises(artifact_registry.sqlite3.ProgrammingError, match="closed"):
+        connections[0].execute("SELECT 1")
