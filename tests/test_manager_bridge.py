@@ -114,7 +114,9 @@ def test_result_consume_next_request_and_finish(managed):
 def test_idle_exit_does_not_auto_reopen(managed):
     store, root, job, proc, directory = start(managed, idle=1)
     proc.communicate(timeout=8)
-    assert store.job(job)["status"] == "failed"
+    assert store.job(job)["status"] == "yielded"
+    assert store.task("toy")["failures"] == 0
+    assert proc.returncode == 0
     assert json.loads((directory / "context.json").read_text())["status"] == "closed"
     store.db.execute("UPDATE tasks SET next_at=0")
     assert store.schedule() == []
@@ -410,3 +412,141 @@ def test_sixty_second_wait_throttles_durable_host_writes(tmp_path, monkeypatch):
             == "succeeded"
         )
         assert not writes  # Reading a completed result is not a host keepalive loop.
+
+
+@pytest.mark.parametrize("desired", ["active", "paused", "budget", "superseded"])
+def test_closed_round_consumption_is_visible_without_restarting_task(managed, desired):
+    from kernel_envolve.manager.views import detail, overview
+
+    store, root, job, proc, _ = start(managed, idle=1)
+    receipt = send(store, root, job, "actual-result", cpu("print('actual experiment output')"))
+    proc.communicate(timeout=8)
+    assert store.job(job)["status"] == "yielded"
+    store.db.execute("UPDATE tasks SET desired=? WHERE id='toy'", (desired,))
+    protected = ("desired", "next_at", "failures", "wall_seconds", "gpu_seconds")
+    before = {name: store.task("toy")[name] for name in protected}
+    consume(store, root, job, "actual-result", receipt)
+    view = overview(store)["tasks"][0]
+    assert view["research_record"]["outcome"] == "Observed subprocess result"
+    archived = next(row for row in detail(store, "toy")["rounds"] if row["id"] == job)
+    assert archived["report"]["report"]["outcome"] == "Observed subprocess result"
+    assert {name: store.task("toy")[name] for name in protected} == before
+    events = len(store.rows("SELECT seq FROM events WHERE kind='report'"))
+    consume(store, root, job, "actual-result", receipt)
+    assert len(store.rows("SELECT seq FROM events WHERE kind='report'")) == events
+    assert not store.schedule()
+
+
+def test_late_old_round_never_overwrites_newer_round_report(managed):
+    from kernel_envolve.manager.views import detail
+
+    store, root, old_job, proc, _ = start(managed, idle=1)
+    receipt = send(store, root, old_job, "old-result", cpu("print('old')"))
+    proc.communicate(timeout=8)
+    bridge.open_host(store, "toy", "foreground", "new-round")
+    new_job = store.schedule()[0]
+    assert store.claim(new_job, os.getpid(), identity(os.getpid()))
+    store.report(
+        "toy",
+        new_job,
+        {"phase": "new experiment", "outcome": "newer evidence", "next_action": "new plan"},
+    )
+    consume(store, root, old_job, "old-result", receipt)
+    assert store.task("toy")["report"]["outcome"] == "newer evidence"
+    archived = next(row for row in detail(store, "toy")["rounds"] if row["id"] == old_job)
+    assert archived["report"]["report"]["outcome"] == "Observed subprocess result"
+    assert store.job(new_job)["status"] == "running"
+    store.finish(new_job, "cancelled")
+
+
+def test_replaying_legacy_consumption_repairs_projection_once(managed):
+    store, root, job, proc, directory = start(managed, idle=1)
+    receipt = send(store, root, job, "legacy", cpu("print('legacy')"))
+    proc.communicate(timeout=8)
+    # The old release recorded idle expiry as an execution failure. Keep that evidence.
+    store.db.execute(
+        "UPDATE jobs SET status='failed',exit_code=2,error='legacy idle exit' WHERE id=?", (job,)
+    )
+    store.db.execute("UPDATE tasks SET failures=3,next_at=? WHERE id='toy'", (time.time() + 300,))
+    before = store.task("toy")
+    record = {
+        "request": "legacy",
+        "receipt_sha256": receipt["receipt_sha256"],
+        "owner": "foreground",
+        "outcome": "Observed subprocess result",
+        "next_action": "Run the next distinct hypothesis",
+    }
+    bridge.atomic(directory / "consumed/legacy.json", record)
+    store.event("toy", "host_consumed_result", record | {"round": job})
+    original_at = store.one("SELECT MAX(at) AS at FROM events WHERE kind='host_consumed_result'")[
+        "at"
+    ]
+    assert not store.task("toy")["report"].get("outcome")
+    consume(store, root, job, "legacy", receipt)
+    assert store.task("toy")["report"]["outcome"] == record["outcome"]
+    saved = store.one("SELECT data FROM metadata WHERE key=?", ("report_progress:toy",))
+    assert json.loads(saved["data"]) == original_at
+    assert len(store.rows("SELECT seq FROM events WHERE kind='host_consumed_result'")) == 1
+    assert store.job(job)["status"] == "failed" and store.job(job)["exit_code"] == 2
+    assert store.task("toy")["failures"] == 3
+    assert store.task("toy")["next_at"] == before["next_at"]
+
+
+@pytest.mark.parametrize("code", [2, bridge.IDLE_EXIT_CODE])
+def test_exit_code_alone_cannot_exempt_real_failure(managed, code):
+    store, _, _ = managed
+    replace_command(store, [sys.executable, "-c", f"raise SystemExit({code})"], host_driven=True)
+    bridge.open_host(store, "toy", "foreground", "not-a-bridge")
+    job = store.schedule()[0]
+    proc = launch(store, job)
+    proc.communicate(timeout=8)
+    assert store.job(job)["status"] == "failed"
+    assert store.task("toy")["failures"] == 1
+    assert store.task("toy")["next_at"] > time.time()
+
+
+def test_repeated_idle_yields_do_not_accumulate_failures_or_reopen(managed):
+    store, root, job, proc, _ = start(managed, idle=1)
+    for index in range(3):
+        proc.communicate(timeout=8)
+        assert store.job(job)["status"] == "yielded"
+        assert store.task("toy")["failures"] == 0
+        assert not store.schedule()
+        if index < 2:
+            bridge.open_host(store, "toy", "foreground", f"fresh-{index}")
+            job = store.schedule()[0]
+            proc = launch(store, job)
+    assert store.task("toy")["desired"] == "active"
+    assert store.task("toy")["next_at"] <= time.time()
+
+
+def test_idle_preserves_prior_real_failures_and_gpu_error_receipts(managed):
+    store, root, job, proc, _ = start(managed, idle=1)
+    store.db.execute("UPDATE tasks SET failures=2 WHERE id='toy'")
+    receipt = send(store, root, job, "failed-test", cpu("raise SystemExit(2)", 5) | {"kind": "gpu"})
+    assert receipt["status"] == "failed"
+    gpu = store.one("SELECT status,exit_code FROM jobs WHERE kind='gpu'")
+    assert gpu == {"status": "failed", "exit_code": 2}
+    proc.communicate(timeout=8)
+    assert store.job(job)["status"] == "yielded"
+    assert store.task("toy")["failures"] == 2
+
+
+def test_same_analysis_preserves_phase_and_progress_clock(managed):
+    store, root, job, proc, _ = start(managed)
+    store.report(
+        "toy",
+        job,
+        {
+            "phase": "diagnosis",
+            "outcome": "Observed subprocess result",
+            "next_action": "Run the next distinct hypothesis",
+        },
+    )
+    before = store.one("SELECT data FROM metadata WHERE key='report_progress:toy'")["data"]
+    receipt = send(store, root, job, "more-evidence", cpu("print('another result')"))
+    consume(store, root, job, "more-evidence", receipt)
+    assert store.task("toy")["report"]["phase"] == "diagnosis"
+    assert store.one("SELECT data FROM metadata WHERE key='report_progress:toy'")["data"] == before
+    store.control("toy", "pause")
+    proc.communicate(timeout=8)

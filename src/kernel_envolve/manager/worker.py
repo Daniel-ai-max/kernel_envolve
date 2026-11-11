@@ -138,8 +138,20 @@ def supervise(store, key, handle, stdin=None):
                 task = store.task(job["task"])
                 code = process.poll()
                 if code is not None:
-                    status = "succeeded" if code == 0 else "failed"
-                    error = None if code == 0 else f"Command exited {code}; inspect stderr.log"
+                    from .bridge import IDLE_EXIT_CODE, idle_exit
+
+                    status = (
+                        "yielded"
+                        if code == IDLE_EXIT_CODE and idle_exit(store, job)
+                        else "succeeded"
+                        if code == 0
+                        else "failed"
+                    )
+                    error = (
+                        None
+                        if status in ("succeeded", "yielded")
+                        else f"Command exited {code}; inspect stderr.log"
+                    )
                     break
                 reason = store.budget_reason(task)
                 if (
@@ -202,7 +214,7 @@ def supervise(store, key, handle, stdin=None):
         store.finish(key, status, error, code)
         for sig, handler in old_signals.items():
             signal.signal(sig, handler)
-    return 0 if status == "succeeded" else 2
+    return 0 if status in ("succeeded", "yielded") else 2
 
 
 def run(root, key):
