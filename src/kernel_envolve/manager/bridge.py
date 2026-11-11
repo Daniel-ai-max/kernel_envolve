@@ -12,7 +12,7 @@ import time
 from pathlib import Path
 
 from .config import identifier
-from .process import exclusive
+from .process import exclusive, identity, terminate
 from .store import encode
 
 
@@ -141,6 +141,8 @@ def request(store, root, task, round_id, owner, request_id, value=None, wait_sec
     elif not target.exists():
         raise ValueError("Unknown request ID; never infer a submission")
     deadline = time.monotonic() + wait_seconds
+    renew_at = 0.0
+    renew_interval = min(5.0, context.get("idle_seconds", 120) / 3)
     while True:
         receipt = result(directory, request_id)
         if receipt:
@@ -156,8 +158,11 @@ def request(store, root, task, round_id, owner, request_id, value=None, wait_sec
                 else "not_executed",
                 "round": round_id,
             }
-        atomic(directory / "host.json", {"owner": owner, "at": time.time()})
-        if time.monotonic() >= deadline:
+        now = time.monotonic()
+        if now >= renew_at:
+            atomic(directory / "host.json", {"owner": owner, "at": time.time()})
+            renew_at = now + renew_interval
+        if now >= deadline:
             return {"id": request_id, "status": "pending", "round": round_id}
         time.sleep(0.1)
 
@@ -220,11 +225,18 @@ def run_bridge(store, root, idle_seconds=120):
     for child in ("requests", "results", "claims", "consumed", "logs"):
         (directory / child).mkdir()
     (directory / "prompt.txt").write_text(sys.stdin.read())
-    context = {"task": task, "round": round_id, "owner": owner, "status": "ready"}
+    context = {
+        "task": task,
+        "round": round_id,
+        "owner": owner,
+        "status": "ready",
+        "idle_seconds": idle_seconds,
+    }
     atomic(directory / "context.json", context)
     atomic(directory / "host.json", {"owner": owner, "at": time.time()})
     stopped = False
     child = None
+    cpu_child = False
 
     def stop(signum, frame):
         nonlocal stopped
@@ -283,26 +295,70 @@ def run_bridge(store, root, idle_seconds=120):
                     (directory / "logs" / f"{path.stem}.stdout.log").open("wb") as out,
                     (directory / "logs" / f"{path.stem}.stderr.log").open("wb") as err,
                 ):
-                    child = subprocess.Popen(argv, stdin=subprocess.DEVNULL, stdout=out, stderr=err)
+                    cpu_child = value["kind"] == "cpu"
+                    completed = directory / "logs" / f"{path.stem}.exit.json"
+                    if cpu_child:
+                        child = subprocess.Popen(
+                            [sys.executable, "-m", "kernel_envolve.manager.bridge", str(completed)],
+                            stdin=subprocess.PIPE,
+                            stdout=out,
+                            stderr=err,
+                            start_new_session=True,
+                        )
+                        try:
+                            birth = identity(child.pid)
+                            if not birth:
+                                raise ValueError(
+                                    "CPU request supervisor exited before registration"
+                                )
+                            store.db.execute(
+                                "INSERT INTO processes(job,pid,identity) VALUES(?,?,?)",
+                                (round_id, child.pid, birth),
+                            )
+                            child.stdin.write((encode(argv) + "\n").encode())
+                            child.stdin.flush()
+                        except BaseException:
+                            terminate(child)
+                            child.stdin.close()
+                            raise
+                    else:
+                        child = subprocess.Popen(
+                            argv, stdin=subprocess.DEVNULL, stdout=out, stderr=err
+                        )
                     start = time.monotonic()
                     while child.poll() is None:
+                        if cpu_child and completed.exists():
+                            break
                         if (
                             stopped
                             or not active(store, task, round_id)
-                            or (
-                                value["kind"] == "cpu"
-                                and time.monotonic() - start > value["expected_seconds"]
-                            )
+                            or (cpu_child and time.monotonic() - start > value["expected_seconds"])
                         ):
-                            child.terminate()
                             stopped = True
                             break
                         time.sleep(0.1)
-                    try:
-                        code = child.wait(timeout=3)
-                    except subprocess.TimeoutExpired:
-                        child.kill()
-                        code = child.wait()
+                    if cpu_child:
+                        # The registered group leader remains alive after the command exits.
+                        # Publish a result only after its entire owned group has been cleaned.
+                        unexpected_exit = child.poll() is not None
+                        terminate(child)
+                        unexpected_exit = unexpected_exit or child.returncode != -signal.SIGTERM
+                        child.stdin.close()
+                        completion = read(completed) if completed.exists() else {"returncode": None}
+                        code = completion["returncode"]
+                        if unexpected_exit:
+                            code = None
+                            receipt["error"] = "CPU request supervisor exited before group cleanup"
+                        if completion.get("error"):
+                            receipt["error"] = completion["error"]
+                    else:
+                        if stopped and child.poll() is None:
+                            child.terminate()
+                        try:
+                            code = child.wait(timeout=3)
+                        except subprocess.TimeoutExpired:
+                            child.kill()
+                            code = child.wait()
                 child = None
                 receipt.update(
                     status="succeeded" if code == 0 and not stopped else "failed",
@@ -317,7 +373,10 @@ def run_bridge(store, root, idle_seconds=120):
                 atomic(directory / "results" / path.name, receipt)
         return 2
     finally:
-        if child is not None and child.poll() is None:
+        if child is not None and cpu_child:
+            terminate(child)
+            child.stdin.close()
+        elif child is not None and child.poll() is None:
             child.terminate()
             with contextlib.suppress(subprocess.TimeoutExpired):
                 child.wait(timeout=3)
@@ -329,3 +388,25 @@ def run_bridge(store, root, idle_seconds=120):
         )
         for sig, handler in signals.items():
             signal.signal(sig, handler)
+
+
+def cpu_supervisor(completed):
+    """Keep a registered group leader alive until the bridge confirms group cleanup."""
+    line = sys.stdin.readline()
+    if not line:
+        return 2  # The bridge vanished before releasing the registration handshake.
+    try:
+        command = subprocess.Popen(json.loads(line), stdin=subprocess.DEVNULL)
+        outcome = {"returncode": command.wait()}
+    except (OSError, ValueError, TypeError) as exc:
+        outcome = {"returncode": None, "error": str(exc)}
+    atomic(completed, outcome)
+    # Keeping stdin open is the bridge's ownership lease. If it dies after command
+    # completion, EOF cleans this group, including children of an exited command.
+    sys.stdin.read()
+    os.killpg(os.getpid(), signal.SIGKILL)
+    return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(cpu_supervisor(Path(sys.argv[1])))

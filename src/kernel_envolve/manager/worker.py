@@ -166,6 +166,11 @@ def supervise(store, key, handle, stdin=None):
     finally:
         if process is not None:
             terminate(process)
+        if job["kind"] == "agent":
+            try:
+                reap_registered(store, key)
+            except (OSError, ValueError, subprocess.SubprocessError) as exc:
+                status, error = "failed", f"Agent child cleanup unconfirmed: {exc}"
         if job["kind"] == "gpu":
             try:
                 reap_registered(store, key)

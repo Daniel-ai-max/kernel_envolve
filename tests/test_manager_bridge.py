@@ -295,3 +295,118 @@ def test_bridge_artifacts_cannot_count_as_implementation_changes(managed):
     assert store.job(job)["status"] == "failed"
     assert not root.exists()
     assert "outside task workspaces" in (store.root / "jobs" / job / "stderr.log").read_text()
+
+
+@pytest.mark.parametrize(
+    "fault",
+    ["none", "bridge_after_leader_exit", "cpu_supervisor", "cpu_supervisor_after_leader_exit"],
+)
+def test_cpu_success_cleans_descendants_before_receipt(managed, fault):
+    import subprocess
+
+    store, root, job, proc, directory = start(managed)
+    unrelated = subprocess.Popen(
+        [sys.executable, "-c", "import time; time.sleep(30)"], start_new_session=True
+    )
+    marker = directory / "ordinary-child.pid"
+    script = f"import subprocess,sys,time; from pathlib import Path; child=subprocess.Popen([sys.executable,'-c','import time;time.sleep(30)']); Path({str(marker)!r}).write_text(str(child.pid)); time.sleep(0.5)"
+    try:
+        send(store, root, job, "fork-exit", cpu(script, 5), wait=0)
+        wait_for(marker.exists)
+        descendant = int(marker.read_text())
+        birth = identity(descendant)
+        registered = store.rows("SELECT * FROM processes WHERE job=?", (job,))
+        assert len(registered) == 1
+        if fault == "bridge_after_leader_exit":
+            bridge_pid = store.job(job)["child_pid"]
+            os.kill(bridge_pid, signal.SIGSTOP)
+            wait_for(lambda: (directory / "logs/fork-exit.exit.json").exists())
+            assert alive(descendant, birth)
+            assert alive(registered[0]["pid"], registered[0]["identity"])
+            os.kill(bridge_pid, signal.SIGKILL)
+            proc.communicate(timeout=10)
+            receipt = send(store, root, job, "fork-exit", wait=0)
+            assert receipt["status"] == "interrupted_without_receipt"
+        else:
+            if fault == "cpu_supervisor_after_leader_exit":
+                bridge_pid = store.job(job)["child_pid"]
+                os.kill(bridge_pid, signal.SIGSTOP)
+                wait_for(lambda: (directory / "logs/fork-exit.exit.json").exists())
+                os.kill(registered[0]["pid"], signal.SIGKILL)
+                wait_for(lambda: not alive(registered[0]["pid"], registered[0]["identity"]))
+                os.kill(bridge_pid, signal.SIGCONT)
+            elif fault == "cpu_supervisor":
+                os.kill(registered[0]["pid"], signal.SIGKILL)
+            receipt = send(store, root, job, "fork-exit")
+            assert receipt["status"] == ("succeeded" if fault == "none" else "failed")
+            assert not alive(descendant, birth)  # Clean before receipt, not at round end.
+            consume(store, root, job, "fork-exit", receipt)
+            following = send(store, root, job, "next", cpu("print('next command')"))
+            assert following["status"] == "succeeded"
+            assert not alive(descendant, birth)
+            store.control("toy", "pause")
+            proc.communicate(timeout=10)
+        wait_for(lambda: not alive(descendant, birth))
+        assert unrelated.poll() is None
+    finally:
+        unrelated.terminate()
+        unrelated.wait(timeout=5)
+
+
+def test_wait_renews_short_host_lease_without_disconnect(managed):
+    store, root, job, proc, directory = start(managed, idle=1)
+    receipt = send(
+        store, root, job, "slow", cpu("import time;time.sleep(1.5);print('result')"), wait=4
+    )
+    assert receipt["status"] == "succeeded"
+    assert json.loads((directory / "context.json").read_text())["idle_seconds"] == 1
+    consume(store, root, job, "slow", receipt)
+    send(
+        store,
+        root,
+        job,
+        "done",
+        {"kind": "finish", "report": {"next_action": "next distinct input"}},
+    )
+    proc.communicate(timeout=8)
+    assert store.job(job)["status"] == "succeeded"
+
+
+def test_sixty_second_wait_throttles_durable_host_writes(tmp_path, monkeypatch):
+    directory = bridge.folder(tmp_path, "task", "round")
+    for name in ("requests", "results"):
+        (directory / name).mkdir(parents=True)
+    bridge.atomic(
+        directory / "context.json", {"owner": "host", "status": "ready", "idle_seconds": 120}
+    )
+    bridge.atomic(directory / "requests/request.json", {})
+    writes = []
+    original = bridge.atomic
+
+    def counted(path, value):
+        if path.name == "host.json":
+            writes.append(value)
+        original(path, value)
+
+    clock = [0.0]
+    with monkeypatch.context() as patch:
+        patch.setattr(bridge, "active", lambda *_: True)
+        patch.setattr(bridge, "atomic", counted)
+        patch.setattr(bridge.time, "monotonic", lambda: clock[0])
+        patch.setattr(
+            bridge.time, "sleep", lambda seconds: clock.__setitem__(0, clock[0] + seconds)
+        )
+        receipt = bridge.request(
+            None, tmp_path, "task", "round", "host", "request", wait_seconds=60
+        )
+        assert receipt["status"] == "pending"
+        assert 11 <= len(writes) <= 13
+        original(directory / "results/request.json", {"status": "succeeded"})
+        writes.clear()
+        assert (
+            bridge.request(None, tmp_path, "task", "round", "host", "request", wait_seconds=60)[
+                "status"
+            ]
+            == "succeeded"
+        )
+        assert not writes  # Reading a completed result is not a host keepalive loop.
