@@ -189,30 +189,29 @@ def supervise(store, key, handle, stdin=None):
     except (OSError, ValueError, subprocess.SubprocessError) as exc:
         error = str(exc)
     finally:
+        cleanup_errors = []
         if process is not None:
-            terminate(process)
-        if job["kind"] == "agent":
             try:
-                reap_registered(store, key)
+                terminate(process)
             except (OSError, ValueError, subprocess.SubprocessError) as exc:
-                status, error = "failed", f"Agent child cleanup unconfirmed: {exc}"
+                cleanup_errors.append(f"Command cleanup: {exc}")
+        try:
+            reap_registered(store, key)
+        except (OSError, ValueError, subprocess.SubprocessError) as exc:
+            cleanup_errors.append(f"Child cleanup: {exc}")
         if job["kind"] == "gpu":
-            errors = []
-            try:
-                reap_registered(store, key)
-            except (OSError, ValueError, subprocess.SubprocessError) as exc:
-                errors.append(str(exc))
             try:
                 gpu_group_idle(devices)
             except (OSError, ValueError, subprocess.SubprocessError) as exc:
-                errors.append(str(exc))
-            if errors:
-                error = "GPU cleanup unconfirmed: " + "; ".join(errors)
+                cleanup_errors.append(str(exc))
+        if cleanup_errors:
+            status = "failed"
+            error = f"{job['kind'].upper()} cleanup unconfirmed: " + "; ".join(cleanup_errors)
+            if job["kind"] == "gpu":
                 with store.transaction():
                     store.db.execute(
                         "UPDATE resources SET problem=? WHERE id=?", (error, job["resource"])
                     )
-                status = "failed"
         if job["kind"] == "agent" and report.exists():
             try:
                 if report.stat().st_size > 65536:

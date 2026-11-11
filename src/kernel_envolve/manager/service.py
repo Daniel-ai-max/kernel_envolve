@@ -39,29 +39,44 @@ def reconcile(store):
             if job["kind"] == "agent"
             else gpu_locks(devices)
         )
-        stop_recorded(job["child_pid"], job["child_identity"])
-        reap_registered(store, job["id"])
+        errors = []
+        try:
+            stop_recorded(job["child_pid"], job["child_identity"])
+        except (OSError, ValueError, subprocess.SubprocessError) as exc:
+            errors.append(f"Command cleanup: {exc}")
+        try:
+            reap_registered(store, job["id"])
+        except (OSError, ValueError, subprocess.SubprocessError) as exc:
+            errors.append(f"Child cleanup: {exc}")
         with guard as handle:
             if handle is None:
                 # A surviving child inherited the lock. Do not declare the job terminal.
-                store.db.execute(
-                    "UPDATE jobs SET error=? WHERE id=?",
-                    ("Supervisor absent; owned lock still held; inspect descendants", job["id"]),
+                error = "; ".join(
+                    ["Supervisor absent; owned lock still held; inspect descendants", *errors]
                 )
+                store.db.execute("UPDATE jobs SET error=? WHERE id=?", (error, job["id"]))
+                if errors and job["kind"] == "gpu":
+                    store.db.execute(
+                        "UPDATE resources SET problem=? WHERE id=?", (error, job["resource"])
+                    )
                 continue
             if job["kind"] == "gpu" and job["status"] == "running":
                 try:
                     gpu_group_idle(devices)
                 except (OSError, ValueError, subprocess.SubprocessError) as exc:
-                    store.db.execute(
-                        "UPDATE resources SET problem=? WHERE id=?",
-                        (f"Orphan GPU work; inspect before clearing: {exc}", job["resource"]),
-                    )
+                    errors.append(str(exc))
+            if errors and job["kind"] == "gpu":
+                store.db.execute(
+                    "UPDATE resources SET problem=? WHERE id=?",
+                    ("Orphan GPU cleanup unconfirmed: " + "; ".join(errors), job["resource"]),
+                )
             if job["started"]:
                 # Conservative charge for the unobserved interval, never free budget on a crash.
                 store.heartbeat(job["id"], max(job["seconds"], time.time() - job["started"]))
             store.finish(
-                job["id"], "interrupted", "Supervisor exited; recovered without replaying the job"
+                job["id"],
+                "interrupted",
+                "; ".join(["Supervisor exited; recovered without replaying the job", *errors]),
             )
 
 

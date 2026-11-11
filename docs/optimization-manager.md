@@ -65,7 +65,7 @@ kernel-envolve manage --state /work/manager-state serve --port 8787
 
 wall 额度单位为墙钟秒，GPU 额度单位为卡秒（设备数 × 占用秒数）；null 表示不设上限。
 两种额度都是累计值，不是每轮重置。session wall 时间包含该轮的等待；GPU 用量包含
-导入、编译、正确性和测量，按整组独占时间计费，即使部分卡未计算。主管失联期间
+导入、编译、正确性和测量，按整组独占时间记账，即使部分卡未计算。主管失联期间
 采用保守的经过时间记账。单卡和 CPU 测试资源保持原来的秒数口径。
 
 ### 同主机多卡资源
@@ -75,7 +75,7 @@ wall 额度单位为墙钟秒，GPU 额度单位为卡秒（设备数 × 占用�
 例如：
 
 ```json
-{"id": "cp8", "devices": ["GPU-aaaaaaaa-bbbb-cccc-dddd-000000000001", "GPU-aaaaaaaa-bbbb-cccc-dddd-000000000002"], "sessions": 1}
+{"id": "gpu-group", "devices": ["GPU-aaaaaaaa-bbbb-cccc-dddd-000000000001", "GPU-aaaaaaaa-bbbb-cccc-dddd-000000000002"], "sessions": 1}
 ```
 
 示例仅展示双卡配置格式；CP8 应列出八个真实 UUID。`CUDA_VISIBLE_DEVICES` 保留声明顺序，

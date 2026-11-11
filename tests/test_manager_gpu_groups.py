@@ -482,3 +482,145 @@ def test_closed_second_lock_is_rejected_even_when_first_is_valid(monkeypatch, tm
         monkeypatch.setenv("KERNEL_ENVOLVE_LOCK_FDS", json.dumps(descriptors))
         with pytest.raises(ValueError, match="pass_fds"):
             managed_lock_fds()
+
+
+@pytest.mark.parametrize("missing_group", [True, False])
+def test_multi_card_adapter_cannot_fall_back_to_first_lock(devices, tmp_path, missing_group):
+    marker = tmp_path / "must-not-launch"
+    child = f"from pathlib import Path; Path({str(marker)!r}).touch()"
+    script = (
+        "import sys; from kernel_envolve.execution import spawn; "
+        f"spawn([sys.executable,'-c',{child!r}])"
+    )
+    with gpu_locks(devices) as handles:
+        descriptors = [handle.fileno() for handle in handles]
+        env = os.environ | {
+            "KERNEL_ENVOLVE_GPU_JOB": "group-test",
+            "KERNEL_ENVOLVE_LOCK_FD": str(descriptors[0]),
+            "CUDA_VISIBLE_DEVICES": ",".join(devices),
+        }
+        if missing_group:
+            env.pop("KERNEL_ENVOLVE_LOCK_FDS", None)
+        else:
+            env["KERNEL_ENVOLVE_LOCK_FDS"] = json.dumps(descriptors[:1])
+        result = subprocess.run(
+            [sys.executable, "-c", script],
+            env=env,
+            pass_fds=tuple(descriptors),
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+    assert result.returncode != 0 and "Visible device count" in result.stderr
+    assert not marker.exists()
+
+
+def test_cleanup_errors_preserve_locks_owned_by_surviving_descendant(managed, devices, monkeypatch):
+    from kernel_envolve.manager.process import stop_recorded
+
+    store, _, _ = managed
+    parent = running(store, devices)
+    script = (
+        "import sys; from kernel_envolve.execution import spawn; "
+        "spawn([sys.executable,'-c','import time; time.sleep(30)'],start_new_session=True)"
+    )
+    child = store.enqueue(store.task("toy"), "gpu", [sys.executable, "-c", script], parent)
+    assert store.claim(child, os.getpid(), identity(os.getpid()))
+    probed = []
+    monkeypatch.setattr("kernel_envolve.manager.process.gpu_idle", probed.append)
+
+    def fail_terminate(*_):
+        raise OSError("injected terminate failure")
+
+    def fail_reap(*_):
+        raise OSError("injected descendant cleanup failure")
+
+    monkeypatch.setattr("kernel_envolve.manager.worker.terminate", fail_terminate)
+    monkeypatch.setattr("kernel_envolve.manager.worker.reap_registered", fail_reap)
+    descendant = None
+    try:
+        with gpu_locks(devices) as handles:
+            assert supervise(store, child, handles) == 2
+        descendant = store.one("SELECT * FROM processes WHERE job=?", (child,))
+        assert alive(descendant["pid"], descendant["identity"])
+        assert probed == devices
+        job = store.job(child)
+        assert job["status"] == "failed"
+        assert "terminate failure" in job["error"] and "descendant cleanup failure" in job["error"]
+        assert store.resource("local")["problem"] == job["error"]
+        # A separate resource/state cannot acquire any card after supervisor exits.
+        for device in devices:
+            with gpu_locks([device]) as handles:
+                assert handles is None
+    finally:
+        descendant = descendant or store.one("SELECT * FROM processes WHERE job=?", (child,))
+        if descendant:
+            stop_recorded(descendant["pid"], descendant["identity"])
+        store.finish(parent, "cancelled")
+    with gpu_locks(devices) as handles:
+        assert len(handles) == 2
+
+
+def test_reconcile_keeps_probing_after_first_cleanup_error(managed, devices, monkeypatch):
+    store, _, _ = managed
+    parent = running(store, devices)
+    child = store.enqueue(store.task("toy"), "gpu", ["unused"], parent)
+    assert store.claim(child, 99999999, "absent")
+    probed = []
+    reaped = []
+    monkeypatch.setattr("kernel_envolve.manager.process.gpu_idle", probed.append)
+    monkeypatch.setattr(
+        "kernel_envolve.manager.service.reap_registered", lambda *args: reaped.append(args[1])
+    )
+
+    def fail_stop(*_):
+        raise OSError("injected stop failure")
+
+    monkeypatch.setattr("kernel_envolve.manager.service.stop_recorded", fail_stop)
+    reconcile(store)
+    assert reaped == [child] and probed == devices
+    assert store.job(child)["status"] == "interrupted"
+    assert "stop failure" in store.job(child)["error"]
+    assert "stop failure" in store.resource("local")["problem"]
+    store.finish(parent, "cancelled")
+
+
+def test_registered_child_cleanup_continues_after_one_process_error(managed, monkeypatch):
+    from kernel_envolve.manager import process as processes
+
+    store, _, _ = managed
+    job = store.schedule()[0]
+    children = [
+        subprocess.Popen(
+            [sys.executable, "-c", "import time; time.sleep(30)"], start_new_session=True
+        )
+        for _ in range(2)
+    ]
+    births = [identity(child.pid) for child in children]
+    for child, birth in zip(children, births, strict=True):
+        store.db.execute("INSERT INTO processes VALUES(?,?,?)", (job, child.pid, birth))
+    first = min(children, key=lambda child: child.pid)
+    stop = processes.stop_recorded
+    attempted = []
+
+    def fail_one(pid, birth):
+        attempted.append(pid)
+        if pid == first.pid:
+            raise OSError("injected process error")
+        stop(pid, birth)
+
+    monkeypatch.setattr(processes, "stop_recorded", fail_one)
+    try:
+        with pytest.raises(OSError, match="injected process error"):
+            processes.reap_registered(store, job)
+        assert set(attempted) == {child.pid for child in children}
+        assert alive(first.pid, births[children.index(first)])
+        for child, birth in zip(children, births, strict=True):
+            if child is not first:
+                assert not alive(child.pid, birth)
+    finally:
+        for child in children:
+            if child.poll() is None:
+                child.kill()
+            child.wait(timeout=5)
+        store.finish(job, "cancelled")

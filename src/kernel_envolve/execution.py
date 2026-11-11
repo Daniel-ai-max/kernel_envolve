@@ -23,6 +23,10 @@ def managed_lock_fds():
             or len(set(descriptors)) != len(descriptors)
         ):
             raise ValueError("Invalid device lock set")
+        visible = os.environ.get("CUDA_VISIBLE_DEVICES", "")
+        device_count = len(visible.split(",")) if visible else 1
+        if len(descriptors) != device_count:
+            raise ValueError("Visible device count does not match inherited lock count")
         for descriptor in descriptors:
             os.fstat(descriptor)
     except (KeyError, TypeError, ValueError, OverflowError, OSError) as exc:

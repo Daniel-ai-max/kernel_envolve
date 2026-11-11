@@ -55,10 +55,9 @@ def exclusive(path):
         except BlockingIOError:
             yield None
             return
-        try:
-            yield handle
-        finally:
-            fcntl.flock(handle, fcntl.LOCK_UN)
+        # Close only this owner's descriptor. Explicit LOCK_UN would also release
+        # the shared open-file-description lock still held by inherited children.
+        yield handle
 
 
 @contextlib.contextmanager
@@ -149,5 +148,11 @@ def stop_recorded(pid, birth):
 
 
 def reap_registered(store, job):
+    errors = []
     for child in store.rows("SELECT * FROM processes WHERE job=?", (job,)):
-        stop_recorded(child["pid"], child["identity"])
+        try:
+            stop_recorded(child["pid"], child["identity"])
+        except (OSError, ValueError, subprocess.SubprocessError) as exc:
+            errors.append(f"pid {child['pid']}: {exc}")
+    if errors:
+        raise OSError("; ".join(errors))
