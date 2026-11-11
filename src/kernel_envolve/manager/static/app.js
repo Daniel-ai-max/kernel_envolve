@@ -99,12 +99,12 @@ function render() {
     $("tasks"),
     filtered
       .map((t) => {
-        const record = t.research_record, recent = t.recent_execution, counts = t.history_counts, baseline = t.spec.baseline;
+        const record = t.research_record, recent = t.recent_execution, baseline = t.spec.baseline;
         const outcome = noteSnippet(record?.outcome || record?.hypothesis, "尚无研究结论");
         const direction = noteSnippet(record?.hypothesis, "—");
         const next = noteSnippet(record?.next_action, "");
         return `<tr data-key="${escape(t.id)}">
-          <td data-label="算子"><button class="name" data-task="${escape(t.id)}">${escape(t.spec.name)}</button><small><button class="source-link" data-task="${escape(t.id)}" title="当前契约 ${counts.current_runs} 条；历史 ${counts.previous_runs} 条">评测 ${counts.current_runs + counts.previous_runs} · 作业 ${counts.gpu_jobs}</button>${t.history_complete ? "" : " · 历史链异常"}</small></td>
+          <td data-label="算子"><button class="name" data-task="${escape(t.id)}">${escape(t.spec.name)}</button></td>
           <td data-label="阶段">${escape(phaseLabel(t))}</td>
           <td data-label="基线"><div title="${escape(baseline.revision)}"><code>${escape(baseline.revision.slice(0, 8))}</code></div><small>${link(baseline.repository, baseline.repository.split("/").filter(Boolean).pop())}</small></td>
           <td data-label="提出时间">${link(baseline.introduction_url, baseline.introduced_on || "—")}</td>
