@@ -412,6 +412,63 @@ def test_real_gpu_wrapper_serializes_two_commands_on_cpu_resource(managed):
     assert store.task("toy")["gpu_seconds"] > 0.3
 
 
+@pytest.mark.parametrize("kind", ["generic", "native"])
+def test_managed_local_batch_needs_no_evaluator_and_cannot_promote(managed, kind):
+    store, _, work = managed
+    spec = store.task("toy")["spec"]
+    spec["kind"] = kind
+    store.db.execute("UPDATE tasks SET spec=? WHERE id='toy'", (json.dumps(spec),))
+    # A local hypothesis experiment must not need an adapter/config or source snapshot.
+    for name in ("task.json", "task.py", "candidate.py"):
+        (work / name).unlink()
+    batch = work / "local_probe.py"
+    batch.write_text(
+        "import json,os,pathlib,time\n"
+        "assert os.environ['KERNEL_ENVOLVE_GPU_JOB']\n"
+        "assert os.environ['CUDA_VISIBLE_DEVICES']==''\n"
+        "for parameter in [1,2,3]:\n"
+        " time.sleep(.01)\n"
+        " with pathlib.Path('probes.jsonl').open('a') as f:\n"
+        "  f.write(json.dumps({'parameter':parameter,'correct':parameter!=2})+'\\n')\n"
+    )
+    command = [
+        sys.executable,
+        "-m",
+        "kernel_envolve.cli",
+        "manage",
+        "gpu-run",
+        "--expected-seconds",
+        "3",
+        "--",
+        sys.executable,
+        str(batch),
+    ]
+    script = work / "agent.py"
+    script.write_text(
+        "import subprocess,os,json,pathlib\n"
+        f"subprocess.run({command!r},check=True)\n"
+        "pathlib.Path(os.environ['KERNEL_ENVOLVE_REPORT']).write_text(json.dumps("
+        "{'outcome':'local probes only; parameter 2 failed; see probes.jsonl',"
+        "'next_action':'compare the remaining mechanisms on representative inputs'}))\n"
+    )
+    replace_command(store, [sys.executable, str(script)])
+    key = store.schedule()[0]
+    process = launch(store, key)
+    out, err = process.communicate(timeout=15)
+    assert process.returncode == 0, (out, err)
+    probes = [json.loads(line) for line in (work / "probes.jsonl").read_text().splitlines()]
+    assert [item["correct"] for item in probes] == [True, False, True]
+    jobs = store.rows("SELECT * FROM jobs WHERE kind='gpu'")
+    assert len(jobs) == 1 and jobs[0]["status"] == "succeeded"
+    assert store.task("toy")["gpu_seconds"] > 0
+    assert not (work / ".kernel_native").exists()
+    assert not (work / ".kernel_envolve").exists()
+    refresh(store)
+    assert not store.rows("SELECT * FROM runs")
+    assert detail(store, "toy")["best"] is None
+    assert "parameter 2 failed" in store.task("toy")["report"]["outcome"]
+
+
 def test_real_evidence_history_and_corruption_hide_best(managed):
     store, _, work = managed
     quick, _ = evaluate(work, "quick")

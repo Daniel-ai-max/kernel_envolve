@@ -39,8 +39,14 @@ Declare a conservative duration so admission can reject work that no longer fits
 the current round or cumulative budgets, including time spent in the GPU queue.
 The wrapper supplies CUDA_VISIBLE_DEVICES. Never launch GPU work outside it or leave
 detached jobs. CPU analysis can proceed while another task owns the GPU.
-Use the existing evaluate/native-evaluate and promote/native-promote commands. A
-round ending is a checkpoint, not task completion. Save notes.md and write a JSON
+Start with the cheapest valid hypothesis test: a targeted native test, benchmark,
+or profiler. gpu-run accepts these commands directly; a bounded batch can test
+several candidates without new rounds, full source snapshots or per-point archives.
+Keep candidate diffs, inputs, commands and raw results; reuse fixed dependencies and
+matching compilation caches. Local signals never promote best. Use quick when a
+paired screen is useful, and full/independent confirmation only for promising
+candidates. Formal evaluator source isolation and correctness gates still apply.
+A round ending is a checkpoint, not task completion. Save notes.md and write a JSON
 object to the file at KERNEL_ENVOLVE_REPORT before returning. Fields: phase,
 hypothesis, outcome, next_action, session_url, pr_urls, integrated_revision (all
 optional strings except pr_urls, an array). next_action should be executable, not
