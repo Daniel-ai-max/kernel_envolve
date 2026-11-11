@@ -314,6 +314,8 @@ def evaluate_native(task, mode="quick", timeout=None, *, cases=None, seeds=None,
     if seeds is not None:
         selection["seeds"] = seeds
     selected, _, _, _ = plan(cfg, mode, selection)
+    if seeds is not None and set(seeds) & set(cfg.get("confirmation", {}).get("seeds", [])):
+        raise ValueError("Diagnostic seeds must not use reserved confirmation seeds")
     if check_only and mode != "quick":
         raise ValueError("Check-only diagnostics require quick mode")
     if not selected:

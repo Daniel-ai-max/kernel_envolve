@@ -846,6 +846,20 @@ def test_native_cli_selection_reaches_evaluator(native_task, monkeypatch, capsys
     assert not json.loads(capsys.readouterr().out)["eligible_for_best"]
 
 
+def test_native_diagnostic_cannot_use_reserved_confirmation_seed(native_task):
+    task, _ = native_task
+    cfg = json.loads((task / "native.json").read_text())
+    cfg["confirmation"] = {
+        "cases": [{"id": "reserved", "args": {"size": 31}, "weight": 1}],
+        "seeds": [29],
+        "trials": 3,
+    }
+    (task / "native.json").write_text(json.dumps(cfg))
+    with pytest.raises(ValueError, match="reserved confirmation"):
+        evaluate_native(task, cases=["padded"], seeds=[29], check_only=True)
+    assert not (task / ".kernel_native").exists()
+
+
 def test_native_default_budgets_and_snapshot_cancellation(native_task, monkeypatch):
     from kernel_envolve import native
 
