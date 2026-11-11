@@ -406,15 +406,24 @@ class Store:
             )
 
     def finish(self, key, status, error=None, exit_code=None):
-        if status not in ("succeeded", "failed", "interrupted", "cancelled"):
+        if status not in ("succeeded", "failed", "interrupted", "cancelled", "yielded"):
             raise ValueError("Invalid terminal status")
         from .recovery import assess, implementation
 
         job = self.job(key)
         if job["status"] not in ("queued", "running"):
             return
+        if status == "yielded":
+            from .bridge import idle_exit
+
+            if not idle_exit(self, job):
+                raise ValueError("Yielded rounds require the bridge's idle receipt")
         # FSx/source reads must never hold the shared manager write transaction.
-        current = implementation(self.task(job["task"])) if job["kind"] == "agent" else None
+        current = (
+            implementation(self.task(job["task"]))
+            if job["kind"] == "agent" and status != "yielded"
+            else None
+        )
         with self.transaction():
             job = self.job(key)
             if job["status"] not in ("queued", "running"):
@@ -423,7 +432,28 @@ class Store:
                 "UPDATE jobs SET status=?,ended=?,error=?,exit_code=? WHERE id=?",
                 (status, time.time(), error, exit_code, key),
             )
-            if job["kind"] == "agent":
+            if job["kind"] == "agent" and status == "yielded":
+                task = self.task(job["task"])
+                recovery = assess(self, task, job, status, None)
+                recovery.update(
+                    state="awaiting_host",
+                    round=key,
+                    observable_progress=False,
+                    reason="Host lease expired; completed results remain consumable",
+                    retry_after_seconds=0,
+                    attempts=task["failures"],
+                )
+                self.db.execute(
+                    "INSERT OR REPLACE INTO metadata VALUES(?,?)",
+                    ("recovery:" + task["id"], encode(recovery)),
+                )
+                if task["desired"] == "active":
+                    reason = self.budget_reason(task)
+                    self.db.execute(
+                        "UPDATE tasks SET desired=?,reason=? WHERE id=?",
+                        ("budget" if reason else "active", reason, task["id"]),
+                    )
+            elif job["kind"] == "agent":
                 task = self.task(job["task"])
                 recovery = assess(self, task, job, status, current)
                 failures = 0 if recovery["observable_progress"] else task["failures"] + 1
@@ -510,3 +540,97 @@ class Store:
             )
             self.db.execute("UPDATE tasks SET report=? WHERE id=?", (encode(old | report), task_id))
             self.event(task_id, "report", report)
+            self.db.execute(
+                "INSERT OR REPLACE INTO metadata VALUES(?,?)",
+                (
+                    "round_report:" + job_id,
+                    encode({"round": job_id, "recorded_at": time.time(), "report": old | report}),
+                ),
+            )
+
+    def consume_result(self, task_id, job_id, record, *, legacy=False):
+        """Archive a receipt-bound analysis even after its execution round closes."""
+        key = f"consumed_result:{job_id}:{record['request']}"
+        with self.transaction():
+            job = self.job(job_id)
+            if job["task"] != task_id or job["kind"] != "agent":
+                raise ValueError("Consumption must belong to its agent round")
+            saved = self.one("SELECT data FROM metadata WHERE key=?", (key,))
+            if saved:
+                if json.loads(saved["data"])["record"] != record:
+                    raise ValueError("Result already consumed with a different analysis")
+                return
+            # Preserve the original observation time when repairing a legacy file/event.
+            previous = next(
+                (
+                    event
+                    for event in (
+                        self.rows(
+                            "SELECT at,data FROM events WHERE task=? AND kind='host_consumed_result' ORDER BY seq DESC",
+                            (task_id,),
+                        )
+                        if legacy
+                        else []
+                    )
+                    if json.loads(event["data"]).get("round") == job_id
+                    and json.loads(event["data"]).get("request") == record["request"]
+                ),
+                None,
+            )
+            at = previous["at"] if previous else time.time()
+            self.db.execute(
+                "INSERT INTO metadata VALUES(?,?)",
+                (key, encode({"recorded_at": at, "record": record})),
+            )
+            prior = self.one("SELECT data FROM metadata WHERE key=?", ("round_report:" + job_id,))
+            prior = json.loads(prior["data"]) if prior else {}
+            report = {
+                "outcome": record["outcome"],
+                "next_action": record["next_action"],
+            }
+            if at >= prior.get("recorded_at", 0):
+                self.db.execute(
+                    "INSERT OR REPLACE INTO metadata VALUES(?,?)",
+                    (
+                        "round_report:" + job_id,
+                        encode(
+                            {
+                                "round": job_id,
+                                "recorded_at": at,
+                                "report": prior.get("report", {}) | report,
+                            }
+                        ),
+                    ),
+                )
+                latest = self.one(
+                    "SELECT id FROM jobs WHERE task=? AND kind='agent' ORDER BY created DESC,rowid DESC LIMIT 1",
+                    (task_id,),
+                )
+                last_report = self.one(
+                    "SELECT MAX(at) AS at FROM events WHERE task=? AND kind='report'", (task_id,)
+                )
+                if latest["id"] == job_id and at >= (last_report["at"] or 0):
+                    task = self.task(task_id)
+                    self.db.execute(
+                        "UPDATE tasks SET report=? WHERE id=?",
+                        (encode(task["report"] | report), task_id),
+                    )
+                    progress = self.one(
+                        "SELECT data FROM metadata WHERE key=?", ("report_progress:" + task_id,)
+                    )
+                    changed = task["report"] | report != task["report"]
+                    if changed or progress is None:
+                        self.db.execute(
+                            "INSERT OR REPLACE INTO metadata VALUES(?,?)",
+                            (
+                                "report_progress:" + task_id,
+                                encode(at if changed else last_report["at"]),
+                            ),
+                        )
+                    # A projection repair retains the original consumption timestamp.
+                    self.db.execute(
+                        "INSERT INTO events(at,task,kind,data) VALUES(?,?,?,?)",
+                        (at, task_id, "report", encode(report)),
+                    )
+            if not previous:
+                self.event(task_id, "host_consumed_result", record | {"round": job_id})

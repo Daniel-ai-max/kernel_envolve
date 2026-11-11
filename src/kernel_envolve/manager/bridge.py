@@ -15,6 +15,19 @@ from .config import identifier
 from .process import exclusive, identity, terminate
 from .store import encode
 
+IDLE_EXIT_CODE = 75
+
+
+def idle_exit(store, job):
+    receipt = store.one("SELECT data FROM metadata WHERE key=?", ("bridge_idle:" + job["id"],))
+    return bool(
+        job["kind"] == "agent"
+        and store.task(job["task"])["spec"].get("host_driven")
+        and receipt
+        and json.loads(receipt["data"]).get("task") == job["task"]
+        and json.loads(receipt["data"]).get("round") == job["id"]
+    )
+
 
 def atomic(path, value):
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -189,19 +202,14 @@ def consume(store, root, task, round_id, owner, request_id, sha256, outcome, nex
         if lock is None:
             raise ValueError("Another host operation is in progress")
         target = directory / "consumed" / (request_id + ".json")
-        if target.exists():
-            if read(target) != record:
-                raise ValueError("Result already consumed with a different analysis")
-        else:
-            if active(store, task, round_id):
-                try:
-                    store.report(task, round_id, {"outcome": outcome, "next_action": next_action})
-                except ValueError:
-                    if active(store, task, round_id):
-                        raise
+        if target.exists() and read(target) != record:
+            raise ValueError("Result already consumed with a different analysis")
+        # Idempotent DB projection also repairs consumption files written by old releases.
+        store.consume_result(task, round_id, record, legacy=target.exists())
+        if not target.exists():
             atomic(target, record)
-            store.event(task, "host_consumed_result", record | {"round": round_id})
-        atomic(directory / "host.json", {"owner": owner, "at": time.time()})
+        if active(store, task, round_id):
+            atomic(directory / "host.json", {"owner": owner, "at": time.time()})
     return record
 
 
@@ -254,8 +262,13 @@ def run_bridge(store, root, idle_seconds=120):
             ]
             if not pending:
                 if time.time() - read(directory / "host.json")["at"] > idle_seconds:
+                    receipt = {"task": task, "round": round_id, "at": time.time()}
+                    store.db.execute(
+                        "INSERT INTO metadata VALUES(?,?)",
+                        ("bridge_idle:" + round_id, encode(receipt)),
+                    )
                     store.event(task, "host_disconnected", {"round": round_id})
-                    return 2
+                    return IDLE_EXIT_CODE
                 time.sleep(0.1)
                 continue
             path = pending[0]

@@ -312,6 +312,9 @@ def detail(store, key, now=None):
     task["rounds"] = store.rows(
         "SELECT * FROM jobs WHERE task=? ORDER BY created DESC LIMIT 100", (key,)
     )
+    for row in task["rounds"]:
+        report = store.one("SELECT data FROM metadata WHERE key=?", ("round_report:" + row["id"],))
+        row["report"] = json.loads(report["data"]) if report else None
     task["notes"] = ""
     for directory in ("task_dir", "workspace"):
         notes = Path(task["spec"][directory]) / "notes.md"
