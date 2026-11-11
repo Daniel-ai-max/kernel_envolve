@@ -61,6 +61,8 @@ def parser():
     publication.add_argument("task")
     publication.add_argument("--run", required=True)
     publication.add_argument("--url", required=True)
+    publication.add_argument("--source-root", required=True)
+    publication.add_argument("--base-branch", required=True)
     usage = commands.add_parser("import-usage", help="Import scheduler GPU allocation receipts")
     usage.add_argument("--file", type=Path, required=True)
     audit = commands.add_parser("refresh", help="Recheck and index evaluator evidence")
@@ -234,7 +236,14 @@ def main(argv=None):
         elif args.action == "sync-pr":
             from .publication import sync_pr
 
-            sync_pr(store, args.task, args.run, args.url)
+            sync_pr(
+                store,
+                args.task,
+                args.run,
+                args.url,
+                source_root=args.source_root,
+                base_branch=args.base_branch,
+            )
         elif args.action == "import-usage":
             from .usage import import_usage
 

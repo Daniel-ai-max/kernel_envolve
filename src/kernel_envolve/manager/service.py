@@ -133,6 +133,10 @@ def run(store, once=False):
             local = Store(store.root)
             try:
                 refresh(local, stop=stopped)
+                if not stopped.is_set():
+                    from .publication import refresh_publications
+
+                    refresh_publications(local)
             finally:
                 local.close()
 
