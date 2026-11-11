@@ -1,4 +1,5 @@
 import copy
+import json
 from pathlib import Path
 
 import pytest
@@ -314,3 +315,30 @@ def test_confirmation_interruption_is_not_retryable(confirmation_task, monkeypat
     assert read_json(run / "confirmation/receipt.json")["status"] == "failed"
     with pytest.raises(ValueError, match="already consumed"):
         confirm_native(run, 90)
+
+
+@pytest.mark.parametrize(
+    ("receipt", "expected"),
+    [
+        ({"status": "passed", "execution": "completed"}, 0),
+        ({"status": "failed", "execution": "completed"}, 1),
+        (
+            {
+                "status": "failed",
+                "execution": "error",
+                "error": {"type": "TimeoutError", "message": "worker timeout"},
+                "failed_phase": "native_checks",
+            },
+            2,
+        ),
+    ],
+)
+def test_confirmation_cli_exit_status(receipt, expected, monkeypatch, capsys, tmp_path):
+    from kernel_envolve.cli import main
+
+    monkeypatch.setattr("kernel_envolve.cli.managed_lock_fd", lambda: None)
+    monkeypatch.setattr(
+        "kernel_envolve.native_confirmation.confirm_native", lambda run, timeout: receipt
+    )
+    assert main(["native-confirm", str(tmp_path)]) == expected
+    assert json.loads(capsys.readouterr().out) == receipt

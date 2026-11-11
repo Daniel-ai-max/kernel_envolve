@@ -307,7 +307,13 @@ def main(argv=None):
 
             receipt = confirm_native(args.run, args.timeout)
             print(json.dumps(receipt, indent=2))
-            return 0 if receipt["status"] == "passed" else 1
+            return (
+                2
+                if receipt.get("execution") == "error"
+                else 0
+                if receipt["status"] == "passed"
+                else 1
+            )
         if args.command == "native-promote":
             from .native import promote_native
 

@@ -206,6 +206,8 @@ def confirm_native(run, timeout=1800):
                 decision=held["decision"],
                 execution=held["execution"],
                 correctness=held["correctness"],
+                error=held.get("error"),
+                failed_phase=held.get("failed_phase"),
             )
             # Child evaluation snapshots live roots; require those bytes to match
             # the parent before accepting its independent measurements.
