@@ -173,7 +173,7 @@ python -m apodex_core.verification.method.gate --source operations \
 
 内部任务使用 `native-evaluate/native-confirm/native-promote`，best 指向 `.kernel_native/` 内冻结的源码与完整证据；后续比较从快照加载，修改工作区不会改变旧 best。通用 `evaluate/promote` 保持独立，不承担内部训练验收。
 
-交付按 core 改动 → Megatron 接线和 pin 更新的依赖顺序进行；按两仓当前规范接入相关 CI。最终 pin 必须已进入 core main，核对实际导入路径与接线结果；新特性的 sweep 配置按 Megatron 规范更新。常规 GPU merge-queue 门禁仍由队列执行，review 不要求提前重跑整套 CI。
+交付按 core 改动 → Megatron 接线和 pin 更新的依赖顺序进行；按两仓当前规范接入相关 CI。最终 pin 必须满足目标分支的接入规则，核对实际导入路径与接线结果；用户指定 integration 分支时沿用该分支，不擅自切到 main；新特性的 sweep 配置按 Megatron 规范更新。常规 GPU merge-queue 门禁仍由队列执行，review 不要求提前重跑整套 CI。
 
 源码核对基准（2026-11-10）：Megatron `eb2c08444c46ad7bfca0f51c7554970cab6edf48` 的 core pin 为 `0b8b9b8da1624f8f994e4e54c9126f22c3b00361`。后续任务读取实际 checkout 的规范和入口：
 
