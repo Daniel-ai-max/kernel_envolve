@@ -167,6 +167,7 @@ PR 交付由 agent 使用 Git 和 GitHub 工具完成。用户启动此优化流
 - **版本与入口**：Megatron SHA、`git ls-tree HEAD submodules/apodex-core` 的 pin、实际 core 源码与改动哈希、导入文件路径、后端开关、镜像 digest 和 GPU 型号。开发期可挂载候选 core，但须显式记录；最终验证使用实际交付的组合。
 - **工作负载**：从训练配置和调用处确定每 rank 的 local tokens、hidden/head/expert 维度、dtype、stride、packing、梯度累积等；全局上下文长度不等于本地算子输入长度。覆盖常用区间、非对齐尺寸、分支阈值及实际 fallback；MoE 包含空专家和不均衡负载，不能只测均匀分配。
 - **验收约定**：相关测试/数值 gate 的名称、quick 代表集合、完整覆盖、性能对照与收益/退化/显存门槛、预算。没有实际频次就分尺寸报告，不虚构训练加权收益。
+- **路径与精度**：将默认、显式后端和 fallback 分别对应到实际输入范围、working reference / golden 精度及具名测试。用路由断言确认执行路径；单个后端的长输入 gate 不代表完整默认组合，短输入也不能覆盖长输入才触发的 dispatch。
 
 使用项目当前指定的开发镜像及依赖，不另行升级 torch/TE/FA4/DeepGEMM。首次运行确认导入确实来自候选 checkout，之后仅在版本或环境变化时重查。复用源码和编译配置匹配的扩展/Triton 缓存，只重建受影响扩展。默认直接在 GPU 环境工作，不设独立 CPU 准备阶段。
 
@@ -181,9 +182,12 @@ PR 交付由 agent 使用 Git 和 GitHub 工具完成。用户启动此优化流
 
 不把整仓 CI、长跑或所有并行组合放入每轮循环。先沿调用链判断影响：纯局部 kernel 优化优先单卡；涉及 TP/CP/EP、通信或 overlap 时增加真实多卡路径。模块 gate 的多 rank 采样加速不等于 TP/EP 覆盖。Graph、recompute、梯度累积和 checkpoint 状态有变化时，分别验证捕获/换值回放、重算梯度、`main_grad` 累加及恢复行为。已有训练 smoke/bitwise/long-run 入口按仓库规范选用，不新建全量训练平台。
 
+确认训练入口实际支持目标并行度、通信后端与每 rank 独立设备；mock 通信、分摊数值采样或单卡训练不作为真实 CP/TP/EP 训练证据。启动器拒绝目标配置时先修复入口，不把较小并行度的通过结果沿用到目标配置。
+
 ### 正确性 evaluate
 
 - **core 数值验证**：复用 `apodex_core/verification/operations/local_ops.py` 的 `Case(candidate, reference, golden, gen_input)`。检查前向、输入梯度、权重/偏置梯度等实际输出；沿用原生偏差与误差幅度判据、精度配置和已批准的 WARN 规则，不用通用 allclose 替代。reference 与 golden 必须独立于候选；手写反向不能仅升为 FP64 就充当独立 golden。
+- **不同精度契约**：历史严格 FP32 路径与已经声明的 BF16 默认路径分别验收。前者失败不能单独证明后者违约，也不能据此豁免默认路径；各自使用原契约及独立 reference/golden。测试绑定错误需独立评审、另建任务版本，保留原固定失败输入、阈值与报告，并补齐默认路径验证，不能仅切换后端让原测试变绿。
 - **接口与覆盖**：结合 `tests/` 检查既有 bitwise、确定性、batch invariance、输入修改、alias、布局、设备/stream 等承诺。正确性 harness 在候选执行前保存原始输入，给对照提供独立但等值的输入/状态；保留每条执行内部应有的 alias/stride。数值转换前检查输出结构、shape/dtype/device，并断言只发生允许的原地更新；随机性任务还要对齐 RNG 状态。数值 gate 的固定 fixture 不代表全部生产尺寸/dtype；缺失覆盖补到算子测试或原生 case builder，不通过缩减支持范围取得加速。新增/调整验证器需用已知错误实现确认能检出目标错误。
 - **Megatron 集成**：复用 `tests/unit_tests/apodex/operations/local_modules.py` 与相关模块测试，检查真实模块的 forward、dgrad、wgrad。用调用计数或定向断言确认候选后端确实执行，不能静默 fallback。涉及 microbatch 切分、padding、分片或归约时，核对相同有效 token 的归一化与梯度，防止引入系统性缩放或偏差。
 - **新后端**：按 core 规范保留旧后端的执行路径和默认选择，验证旧路径不触达新 helper；性能对照使用改动前源码，不能只与当前代码中「关闭新开关」的路径比较。
