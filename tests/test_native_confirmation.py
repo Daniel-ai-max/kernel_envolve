@@ -158,6 +158,44 @@ def test_real_full_confirmation_promotion_and_integrity(confirmation_task):
     pointer = promote_native(run)
     assert pointer["confirmation"] == confirmation
     assert _best(task / ".kernel_native")[0] == pointer
+    # Loading best (including quick iterations) hashes only its executed parent
+    # candidate tree, plus bound metadata; it does not rescan child raw evidence.
+    real_hash = file_hash
+    with pytest.MonkeyPatch.context() as patch:
+
+        def metadata_only(path):
+            path = Path(path)
+            if path.is_relative_to(child):
+                assert path in {child / "config.json", child / "receipt.json"}
+            return real_hash(path)
+
+        patch.setattr("kernel_envolve.native_confirmation.file_hash", metadata_only)
+        assert _best(task / ".kernel_native")[0] == pointer
+    child_source = child / "sources/candidate/core/toyop.py"
+    saved_source = child_source.read_bytes()
+    child_source.write_bytes(saved_source + b"\n# changed unused archive\n")
+    try:
+        assert _best(task / ".kernel_native")[0] == pointer
+        with pytest.raises(ValueError):
+            verify_confirmation(run, result, cfg)
+        with pytest.raises(ValueError):
+            inspect_run(run, spec)
+        with pytest.raises(ValueError):
+            promote_native(run)
+    finally:
+        child_source.write_bytes(saved_source)
+    for target in (
+        child / "result.json",
+        child / "receipt.json",
+        run / "confirmation/receipt.json",
+    ):
+        saved_metadata = target.read_bytes()
+        target.write_bytes(b"{}\n")
+        try:
+            with pytest.raises((ValueError, KeyError)):
+                _best(task / ".kernel_native")
+        finally:
+            target.write_bytes(saved_metadata)
     saved_config = (run / "config.json").read_bytes()
     changed = dict(cfg)
     del changed["confirmation"]

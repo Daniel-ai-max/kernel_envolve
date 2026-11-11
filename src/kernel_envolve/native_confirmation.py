@@ -21,7 +21,7 @@ def _within(root, relative):
     return path
 
 
-def _audit(run, checkpoint=None):
+def _audit(run, checkpoint=None, *, deep=True):
     from .native import verify_roots
 
     checkpoint = checkpoint or (lambda: None)
@@ -34,6 +34,8 @@ def _audit(run, checkpoint=None):
         or file_hash(run / "config.json") != receipt["config_hash"]
     ):
         raise ValueError("Native result/config receipt changed")
+    if not deep:
+        return result, cfg
     for name, expected in receipt["evidence"].items():
         checkpoint()
         if file_hash(_within(run, name)) != expected:
@@ -67,8 +69,12 @@ def _binding(run, result):
     }
 
 
-def verify_confirmation(run, result, cfg, checkpoint=None):
-    """Verify frozen receipt provenance; historical reads need no live checkout."""
+def verify_confirmation(run, result, cfg, checkpoint=None, *, deep=True):
+    """Verify frozen provenance; deep=False loads metadata for an existing best.
+
+    Promotion, publication and manager evidence audits retain the default deep
+    verification. Loading best already verifies the source actually executed.
+    """
     if "confirmation" not in cfg:
         return None
     from .native import native_decision, source_contents
@@ -95,7 +101,7 @@ def verify_confirmation(run, result, cfg, checkpoint=None):
     if load_config(task) != expected or file_hash(task / "adapter.py") != result["adapter_hash"]:
         raise ValueError("Confirmation task/adapter changed")
     child = _within(task / ".kernel_native" / "runs", receipt["run"])
-    held, held_cfg = _audit(child, checkpoint)
+    held, held_cfg = _audit(child, checkpoint, deep=deep)
     if (
         held_cfg != expected
         or Path(held["task_root"]) != task

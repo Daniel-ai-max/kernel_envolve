@@ -283,7 +283,7 @@ def _best(state):
             or "confirmation" not in cfg
         ):
             raise ValueError("Best confirmation config/receipt changed")
-        confirmation = verify_confirmation(run, result, cfg)
+        confirmation = verify_confirmation(run, result, cfg, deep=False)
         if pointer.get("confirmation") != confirmation:
             raise ValueError("Best confirmation receipt changed")
     return pointer, run, result

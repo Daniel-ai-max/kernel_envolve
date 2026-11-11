@@ -66,3 +66,5 @@ kernel-envolve native-promote ./task/.kernel_native/runs/<full-run>
 确认收据同时记录总墙钟耗时 `seconds` 和 `phase_wall_seconds`：锁等待、父证据审计、前后 live source 哈希、独立 full、后验审计均计入；源码复制及文件系统读取成本不只归为子 full 时间。确认仅在阶段交付执行，不加入每轮 quick。
 
 未声明 `confirmation` 的旧任务保持原行为，其 full 仅代表开发覆盖，不因此获得独立确认声明。
+
+后续迭代加载已晋升 best 时，仅核验绑定的结果、配置、收据、消费记录及实际加载的父候选源码，不重复扫描独立确认阶段未使用的子源码与日志。晋升、管理器正式证据复核和 PR 发布继续完整核验这些归档文件；快速加载不替代交付验收。
