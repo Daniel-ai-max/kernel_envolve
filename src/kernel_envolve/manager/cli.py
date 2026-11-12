@@ -114,7 +114,12 @@ def parser():
         command.add_argument("--id", required=True)
         if name == "bridge-request":
             command.add_argument("--file", type=Path)
-            command.add_argument("--wait-seconds", type=float, default=0)
+            command.add_argument(
+                "--wait-seconds",
+                type=float,
+                default=30,
+                help="Return on completion, waiting at most this many seconds (0–60; default 30)",
+            )
         else:
             command.add_argument("--sha256", required=True)
             command.add_argument("--outcome", required=True)

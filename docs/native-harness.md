@@ -52,6 +52,34 @@ quick 默认执行预算 120 秒、full 1800 秒，可显式覆盖；源码快�
 
 大型项目应一次性将工作树及任务准备到 GPU 节点本地盘，避免每个候选重复承担共享文件系统元数据和临时张量交换成本。每轮仍完整哈希、隔离源码；及时保存新增 run、源码改动与 manager 一致性备份到持久盘，再回收节点。不使用跨角色硬链接、仅按 mtime 命中的快照缓存或跨候选 PASS 缓存。
 
+## 轻量研究工具
+
+`kernel_envolve.research` 提供两个可选 Python 函数，直接在现有实验脚本里使用，不创建任务、进程或正式评测快照：
+
+- `paired_probe(baseline, candidate, measure=..., check=...)`：复用两个显式 callable，预热后按 ABBA/BAAB 交替采样，保存原始样本和中位数。`measure(fn)` 负责同步、状态复位和计时范围，返回同一单位的正数；`check()` 在预热前和计时后检查独立参考、输出及相关梯度/状态，通过返回 None/True，失败抛异常或返回 False；其他返回类型按错误处理。有可变状态时每次调用都按生产语义恢复，不能只在批次开头复位。
+- `run_stages([(name, callback), ...])`：每阶段返回明确的 `decision`（`continue`、`reject`、`inconclusive`）和 `reason`。仅 continue 执行下一阶段；其余结果结束该批次。异常记录后原样抛出；子命令用 `subprocess.run(..., check=True)`，避免包装脚本吞掉失败退出码。
+
+例如，已有的局部探针与完整调用探针可这样组合：
+
+```python
+from kernel_envolve.research import run_stages
+
+# boundary_probe / module_probe 是项目自己的函数，返回原始结果和决策。
+# 先做能否定假设的便宜检查，再决定是否运行完整调用链。
+run_stages(
+    [
+        ("boundary", boundary_probe),
+        ("module", module_probe),
+    ]
+)
+# 阶段返回示例：
+# {"decision": "reject", "reason": "全有效支持明显退化", "ratio": 1.33}
+```
+
+逐阶段 JSON 立即 flush 到 stdout；可传入 `emit` 将记录追加到自己的 JSONL 文件并 flush。外层工具何时返回日志取决于传输接口；它不负责实时推送或取消外部进程。整个 GPU 批次仍放在一次有界 `manage gpu-run` 内。拒绝一个候选只结束该批次，agent 继续换机制，不结束长期任务。
+
+这些函数不设置通用收益阈值、不判定统计显著性，结果固定为 research_only、不可晋升。反例与收益判据应在看结果前按任务选定，不确定时仅对关键输入诊断。适合可明确区分实现、输入与状态的局部实验；依赖全局 import 或状态的内部模块继续使用独立来源进程，并让同一角色进程复用多个 case。正式 full/confirm 的源码冻结、独立原生门和角色隔离不变。
+
 ## 原生拒绝与执行错误
 
 完整 JUnit 覆盖所有配置的报告和必需用例、没有跳过或运行错误，且失败均为明确的断言并与退出码 `1` 一致时，结果为 `execution=completed`、`correctness=fail`。原生数值 gate 则要求本次完整算子记录、CLI 的最终 `BLOCKED` 判定和退出码 `1` 同时成立。WARN 是否阻塞仍由项目原生策略决定。
