@@ -45,7 +45,7 @@ description: 持续优化 apodex-core、Megatron-LM 及独立 GPU 算子；用�
 kernel-envolve manage gpu-run --expected-seconds <预算内预计秒数> -- <原生实验命令>
 ```
 
-它可直接执行现有实验脚本，不强制调用 evaluator。一次有界命令可包含多个相关候选，禁止嵌套或留下后台 GPU 进程；设备与累计预算由管理器控制。若使用前台 bridge，同一请求可执行这批实验，及时消费结果，不把 ready/heartbeat 当作 agent 进展。宿主使用 `bridge-request --wait-seconds 30`，完成即返回；pending 时接续同一 ID 等待，不在状态查询之间固定 sleep，也不重复提交。CPU 分析不占 GPU 队列，失败 CUDA 进程不能复用。管理方法见[管理层](../../docs/optimization-manager.md)。
+它可直接执行现有实验脚本，不强制调用 evaluator。一次有界命令可包含多个相关候选，禁止嵌套或留下后台 GPU 进程；设备与累计预算由管理器控制。若使用前台 bridge，同一请求可执行这批实验，及时消费结果，不把 ready/heartbeat 当作 agent 进展。提交后还有独立源码分析可做时用 `--wait-seconds 0` 先返回；需要结果时使用 `bridge-request --wait-seconds 30`，完成即返回；pending 时接续同一 ID 等待，不在状态查询之间固定 sleep，也不重复提交。CPU 分析不占 GPU 队列，失败 CUDA 进程不能复用。管理方法见[管理层](../../docs/optimization-manager.md)。
 
 沿用一份简短 `notes.md`：当前候选/最佳版本与证据、已尝试机制、下一项可执行实验、运行中作业、PR 与累计额度。管理轮次结束时写 `KERNEL_ENVOLVE_REPORT`（hypothesis、outcome、next_action）；正式速度由 evaluator 证据提供，局部结果写 outcome 并指向原始记录。不要为每个参数点创建管理轮次或强制等待面板刷新。
 
