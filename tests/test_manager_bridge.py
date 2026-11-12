@@ -550,3 +550,42 @@ def test_same_analysis_preserves_phase_and_progress_clock(managed):
     assert store.one("SELECT data FROM metadata WHERE key='report_progress:toy'")["data"] == before
     store.control("toy", "pause")
     proc.communicate(timeout=8)
+
+
+def test_cli_bridge_wait_default_and_explicit_nonblocking():
+    from kernel_envolve.manager.cli import parser
+
+    argv = [
+        "bridge-request",
+        "--root",
+        "/tmp/bridge",
+        "--task",
+        "task",
+        "--round",
+        "round",
+        "--owner",
+        "host",
+        "--id",
+        "request",
+    ]
+    assert parser().parse_args(argv).wait_seconds == 30
+    assert parser().parse_args([*argv, "--wait-seconds", "0"]).wait_seconds == 0
+
+
+def test_wait_returns_on_completion_without_sleeping_remaining_budget(tmp_path, monkeypatch):
+    directory = bridge.folder(tmp_path, "task", "round")
+    bridge.atomic(directory / "context.json", {"owner": "host", "status": "ready"})
+    bridge.atomic(directory / "requests/request.json", {})
+    clock = [0.0]
+    monkeypatch.setattr(bridge, "active", lambda *_: True)
+    monkeypatch.setattr(bridge.time, "monotonic", lambda: clock[0])
+
+    def advance(seconds):
+        clock[0] += seconds
+        if clock[0] >= 0.3:
+            bridge.atomic(directory / "results/request.json", {"status": "succeeded"})
+
+    monkeypatch.setattr(bridge.time, "sleep", advance)
+    receipt = bridge.request(None, tmp_path, "task", "round", "host", "request", wait_seconds=30)
+    assert receipt["status"] == "succeeded"
+    assert 0.3 <= clock[0] < 0.5

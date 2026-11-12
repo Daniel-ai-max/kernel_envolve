@@ -380,8 +380,8 @@ coding-agent 命令仍使用默认 `host_driven: false`。
 3. 写请求 JSON，例如
    `{"kind":"gpu","argv":["kernel-envolve","native-evaluate","--task","/work/task","--mode","quick"],"expected_seconds":300}`。
    调用 `manage bridge-request --root /work/bridge --task TASK --round ROUND --owner HOST
-   --id REQUEST --file request.json --wait-seconds 60`。
-4. 返回 `pending` 时，用相同参数去掉 `--file` 继续等待。返回完成收据时，当前 coding agent
+   --id REQUEST --file request.json --wait-seconds 30`。
+4. CLI 默认最多等30秒，完成立即返回；`--wait-seconds 0` 保留非阻塞查询。返回 `pending` 时，用相同参数去掉 `--file` 继续等待，不插入固定 sleep。返回完成收据时，当前 coding agent
    阅读 stdout/stderr、核对产物并决定下一步，然后调用
    `manage bridge-consume --root /work/bridge --task TASK --round ROUND --owner HOST
    --id REQUEST --sha256 RECEIPT_SHA256 --outcome '本次发现' --next-action '具体下一步'`。
