@@ -57,7 +57,7 @@ quick 默认执行预算 120 秒、full 1800 秒，可显式覆盖；源码快�
 `kernel_envolve.research` 提供两个可选 Python 函数，直接在现有实验脚本里使用，不创建任务、进程或正式评测快照：
 
 - `paired_probe(baseline, candidate, measure=..., check=...)`：复用两个显式 callable，预热后按 ABBA/BAAB 交替采样，保存原始样本和中位数。`measure(fn)` 负责同步、状态复位和计时范围，返回同一单位的正数；`check()` 在预热前和计时后检查独立参考、输出及相关梯度/状态，通过返回 None/True，失败抛异常或返回 False；其他返回类型按错误处理。有可变状态时每次调用都按生产语义恢复，不能只在批次开头复位。
-- `run_stages([(name, callback), ...])`：每阶段返回明确的 `decision`（`continue`、`reject`、`inconclusive`）和 `reason`。仅 continue 执行下一阶段；其余结果结束该批次。异常记录后原样抛出；子命令用 `subprocess.run(..., check=True)`，避免包装脚本吞掉失败退出码。
+- `run_stages([(name, callback), ...])`：同一候选的每个依赖阶段返回明确的 `decision`（`continue`、`reject`、`inconclusive`）和 `reason`。仅 continue 执行下一阶段；其余结果结束该批次。异常记录后原样抛出；子命令用 `subprocess.run(..., check=True)`，避免包装脚本吞掉失败退出码。
 
 例如，已有的局部探针与完整调用探针可这样组合：
 
@@ -79,6 +79,22 @@ run_stages(
 逐阶段 JSON 立即 flush 到 stdout；可传入 `emit` 将记录追加到自己的 JSONL 文件并 flush。外层工具何时返回日志取决于传输接口；它不负责实时推送或取消外部进程。整个 GPU 批次仍放在一次有界 `manage gpu-run` 内。拒绝一个候选只结束该批次，agent 继续换机制，不结束长期任务。
 
 这些函数不设置通用收益阈值、不判定统计显著性，结果固定为 research_only、不可晋升。反例与收益判据应在看结果前按任务选定，不确定时仅对关键输入诊断。适合可明确区分实现、输入与状态的局部实验；依赖全局 import 或状态的内部模块继续使用独立来源进程，并让同一角色进程复用多个 case。正式 full/confirm 的源码冻结、独立原生门和角色隔离不变。
+
+### DSA dQ/dW 局部探针
+
+[`examples/apodex_dsa_research/query_probe.py`](../examples/apodex_dsa_research/query_probe.py) 是可直接运行的单叶研究示例：在固定 Core helper 上加载原始/当前较优实现与候选，复用输入、进程和 A/A 校准，计时包含 `backward_query` 的准备与分配。支持洞与全有效支持分别作为收益输入和反例；先检查反例没有明显退化，近似持平不应直接淘汰面向稀疏输入的优化。
+
+```bash
+kernel-envolve manage gpu-run --expected-seconds 300 -- python query_probe.py \
+  --core /work/frozen-core \
+  --candidate trim=/work/variants/trim_query.py \
+  --candidate other=/work/variants/other_query.py \
+  --output /work/results/query-screen-001.json
+```
+
+`--control` 可指定当前较优的 query 文件，默认固定 Core 的原版。候选及对照只替换该叶文件，helper 仍来自 `--core`；跨文件/全局状态变化应另设正确的模块探针。启动前固定 shape、seed、采样预算及 `--margin`；默认 5% 只是保守研究筛选余量，不是正式门槛或统计置信度。每块配对均显示足够收益才继续，A/A不稳或信号不一致则返回待诊断证据，不自动重抽直到通过。
+
+每个候选独立调用 `run_stages`：前一候选性能拒绝不影响后一候选；正确性/CUDA异常终止进程。输入仅构造一次且检查未被修改，原始与强对照、候选前后 dQ/dW 均逐位比较；此示例不覆盖数学 oracle、完整辅助链和原生 U/z。JSON 与逐阶段 JSONL 保留源码哈希、输入配置、原始样本、导入时间、检查与预热合计耗时、批次耗时和决策，输出路径不可覆盖。结束即交还 agent 判断下一步，不自动附加全量验收。整个批次仍经过 `manage gpu-run`；正式 full/confirm 规则不变。
 
 ## 原生拒绝与执行错误
 
