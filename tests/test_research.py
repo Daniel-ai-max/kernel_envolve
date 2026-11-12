@@ -131,3 +131,12 @@ def test_batch_explicit_continue_is_required_and_emits_before_next_stage():
         emit=records.append,
     )
     assert len(result["stages"]) == 2
+
+
+@pytest.mark.parametrize("verdict", [False, 0, math.nan, {"passed": False}])
+def test_probe_does_not_silently_accept_false_or_ambiguous_check(verdict):
+    def measure(_):
+        pytest.fail("A failed or ambiguous check must not start timing")
+
+    with pytest.raises((AssertionError, TypeError)):
+        paired_probe(lambda: None, lambda: None, measure=measure, check=lambda: verdict)

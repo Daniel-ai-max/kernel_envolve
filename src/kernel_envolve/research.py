@@ -12,7 +12,8 @@ def paired_probe(baseline, candidate, *, measure, check, trials=3, warmup=1):
     measure(fn) runs fn and returns a positive duration in caller-chosen units.
     It owns device synchronization, state reset and timing scope. check() must
     independently validate outputs/gradients/state and raise on failure (or
-    return False). Called before warmup and after timing; never inside timing.
+    return False); success returns None or True. Called before warmup and after
+    timing; never inside timing.
     No source isolation, automatic threshold or statistical acceptance is implied.
     """
     if type(trials) is not int or trials < 1 or type(warmup) is not int or warmup < 0:
@@ -22,8 +23,11 @@ def paired_probe(baseline, candidate, *, measure, check, trials=3, warmup=1):
         raise TypeError("Explicit baseline, candidate, measure and check callables are required")
 
     def validate():
-        if check() is False:
+        verdict = check()
+        if verdict is False:
             raise AssertionError("Research correctness check failed")
+        if verdict is not None and verdict is not True:
+            raise TypeError("check must raise on failure or return None/True/False")
 
     def sample(role):
         value = measure(functions[role])

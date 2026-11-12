@@ -56,7 +56,7 @@ quick 默认执行预算 120 秒、full 1800 秒，可显式覆盖；源码快�
 
 `kernel_envolve.research` 提供两个可选 Python 函数，直接在现有实验脚本里使用，不创建任务、进程或正式评测快照：
 
-- `paired_probe(baseline, candidate, measure=..., check=...)`：复用两个显式 callable，预热后按 ABBA/BAAB 交替采样，保存原始样本和中位数。`measure(fn)` 负责同步、状态复位和计时范围，返回同一单位的正数；`check()` 在预热前和计时后检查独立参考、输出及相关梯度/状态，失败抛异常或返回 False。有可变状态时每次调用都按生产语义恢复，不能只在批次开头复位。
+- `paired_probe(baseline, candidate, measure=..., check=...)`：复用两个显式 callable，预热后按 ABBA/BAAB 交替采样，保存原始样本和中位数。`measure(fn)` 负责同步、状态复位和计时范围，返回同一单位的正数；`check()` 在预热前和计时后检查独立参考、输出及相关梯度/状态，通过返回 None/True，失败抛异常或返回 False；其他返回类型按错误处理。有可变状态时每次调用都按生产语义恢复，不能只在批次开头复位。
 - `run_stages([(name, callback), ...])`：每阶段返回明确的 `decision`（`continue`、`reject`、`inconclusive`）和 `reason`。仅 continue 执行下一阶段；其余结果结束该批次。异常记录后原样抛出；子命令用 `subprocess.run(..., check=True)`，避免包装脚本吞掉失败退出码。
 
 例如，已有的局部探针与完整调用探针可这样组合：
