@@ -11,7 +11,7 @@ description: 持续优化 apodex-core、Megatron-LM 及独立 GPU 算子；用�
 
 - 每个新会话或管理轮次执行 `kernel-envolve update`，读返回的 Skill，并使用返回的 `executable` 绝对路径。本轮固定 Skill/CLI/evaluator；full → confirm → promote 之间不换版本。不要在算子工作区 `git pull` 升级工具。离线沿用可用版本，`disabled` 时使用本地代码，见[更新规则](../../docs/auto-update.md)。
 - 先读任务 `notes.md`，核对源码、已有作业和未消费的结果，再选择下一项实验；不重建固定基线，不重复提交仍在跑的作业。保持独立 oracle、固定原始 baseline、已验证 best、探索 candidate 的区别。
-- 首次确定真实调用路径、前反向/状态语义、尺寸与上下文长度范围、dtype/stride/offset/alias、精度门、硬件、执行模式与预算。长时间对照搜索前确认固定基线通过相关原生数值门；复用源码、契约和环境匹配的资格证据，不在每轮重做。基线 FAIL 时先定位实现或契约问题，不把 baseline 逐位一致当成数值合格。
+- 首次确定真实调用路径、前反向/状态语义、尺寸与上下文长度范围、dtype/stride/offset/alias、精度门、硬件、执行模式与预算。搜索前确认固定基线通过本次研究路径的独立数值检查；复用源码、契约和环境匹配的资格证据。若整链存在历史 FAIL，先定位影响范围；可独立验证的未受影响子任务继续研究，相关失败路径先修复。保留原 FAIL 和完整晋升门，不把 baseline 逐位一致当成数值合格，不重复无新证据的诊断。
 - 直接使用目标 GPU 环境，不设固定 CPU 准备阶段。复用项目镜像、固定基线/输入及按源码与配置区分的编译缓存；版本、依赖或执行模式变化时才重验受影响部分。硬件或参考实现按需查[入口](references/hardware.md)。
 - 内部项目首次接入时读[原生评测与适配接口](../../docs/native-harness.md#apodex-内部项目评测)，按实际两仓分支及 pin 处理；独立任务读[通用评测](../../docs/generic-evaluator.md)。只加载本次需要的细节。
 
