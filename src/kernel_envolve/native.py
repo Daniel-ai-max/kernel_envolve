@@ -476,7 +476,9 @@ def _evaluate(task, state, cfg, mode, timeout, selection, check_only):
                         repeat = repeats[role]
                         seed = timing_seed(case["id"], batch, trial, repeat, seeds)
                         if seed not in expected_cache:
-                            _, oracle = call("oracle", "check", case, seed)
+                            _, oracle = call("oracle", "timing_oracle", case, seed)
+                            if len(oracle) != 1:
+                                raise AssertionError("Expected one timing oracle observation")
                             expected_cache[seed] = oracle[0]
                         meta, observed = call(role, "measure", case, seed)
                         compare(observed[0], expected_cache[seed], cfg)

@@ -64,14 +64,20 @@ def serve(request_path):
         start = time.perf_counter()
         session = None
         try:
+            timing_oracle = command["kind"] == "timing_oracle"
+            if timing_oracle and request["role"] != "oracle":
+                raise ValueError("Timing oracle observations require the oracle role")
             session = Session(
                 build(command["case"], command["seed"]),
                 device,
                 device_guard_limit=2 * 1024**3 if device.startswith("cuda") else 0,
             )
-            if command["kind"] == "check":
+            if command["kind"] == "check" or timing_oracle:
                 observations = []
-                for index in range(3 if cfg.get("deterministic", True) else 2):
+                # Timing consumes only the fresh reference output. Keep the full
+                # fresh/reuse/repeat protocol for both precheck and postcheck.
+                repeats = 1 if timing_oracle else (3 if cfg.get("deterministic", True) else 2)
+                for index in range(repeats):
                     if index == 1:
                         session.refresh(build(command["case"], command["seed"] + 1))
                     session.reset()
