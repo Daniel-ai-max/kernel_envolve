@@ -589,3 +589,115 @@ def test_wait_returns_on_completion_without_sleeping_remaining_budget(tmp_path, 
     receipt = bridge.request(None, tmp_path, "task", "round", "host", "request", wait_seconds=30)
     assert receipt["status"] == "succeeded"
     assert 0.3 <= clock[0] < 0.5
+
+
+def test_cli_consumes_and_submits_once_even_after_lost_reply(managed, tmp_path, capsys):
+    from kernel_envolve.manager.cli import main
+
+    store, root, job, proc, directory = start(managed)
+    receipt = send(store, root, job, "first", cpu("print('evidence')"))
+    analysis = tmp_path / "analysis.json"
+    analysis.write_text(
+        json.dumps(
+            {
+                "request": "first",
+                "receipt_sha256": receipt["receipt_sha256"],
+                "outcome": "Observed evidence",
+                "next_action": "Measure second hypothesis",
+            }
+        )
+    )
+    marker = tmp_path / "executed"
+    payload = tmp_path / "next.json"
+    payload.write_text(
+        json.dumps(
+            cpu(
+                f"from pathlib import Path; p=Path({str(marker)!r}); p.write_text(p.read_text()+'x' if p.exists() else 'x')"
+            )
+        )
+    )
+    argv = [
+        "--state",
+        str(store.root),
+        "bridge-request",
+        "--root",
+        str(root),
+        "--task",
+        "toy",
+        "--round",
+        job,
+        "--owner",
+        "foreground",
+        "--id",
+        "second",
+        "--file",
+        str(payload),
+        "--consume-file",
+        str(analysis),
+    ]
+    main(argv)
+    first = json.loads(capsys.readouterr().out)
+    main(argv)  # A lost transport response is safe to reconcile with the same IDs.
+    second = json.loads(capsys.readouterr().out)
+    assert first == second and first["status"] == "succeeded"
+    assert marker.read_text() == "x"
+    assert len(list((directory / "claims").glob("second.json"))) == 1
+    assert len(store.rows("SELECT seq FROM events WHERE kind='host_consumed_result'")) == 1
+    assert store.task("toy")["report"]["outcome"] == "Observed evidence"
+    store.control("toy", "pause")
+    proc.communicate(timeout=8)
+
+
+def test_cli_combined_request_preserves_checks_and_partial_consumption(managed, tmp_path):
+    from kernel_envolve.manager.cli import main
+
+    store, root, job, proc, directory = start(managed)
+    receipt = send(store, root, job, "first", cpu("print('evidence')"))
+    analysis = tmp_path / "analysis.json"
+    previous = {
+        "request": "first",
+        "receipt_sha256": "wrong",
+        "outcome": "Observed evidence",
+        "next_action": "Measure next hypothesis",
+    }
+    analysis.write_text(json.dumps(previous))
+    payload = tmp_path / "next.json"
+    payload.write_text(json.dumps({"kind": "invalid"}))
+    argv = [
+        "--state",
+        str(store.root),
+        "bridge-request",
+        "--root",
+        str(root),
+        "--task",
+        "toy",
+        "--round",
+        job,
+        "--owner",
+        "foreground",
+        "--id",
+        "second",
+        "--file",
+        str(payload),
+        "--consume-file",
+        str(analysis),
+    ]
+    with pytest.raises(ValueError, match="match the completed"):
+        main(argv)
+    assert not (directory / "consumed/first.json").exists()
+    assert not (directory / "requests/second.json").exists()
+    previous["receipt_sha256"] = receipt["receipt_sha256"]
+    analysis.write_text(json.dumps(previous))
+    with pytest.raises(ValueError, match="kind must"):
+        main(argv)
+    assert (directory / "consumed/first.json").exists()
+    assert not (directory / "requests/second.json").exists()
+    payload.write_text(json.dumps(cpu("print('repaired request')")))
+    main(argv)
+    assert len(store.rows("SELECT seq FROM events WHERE kind='host_consumed_result'")) == 1
+    previous["outcome"] = "Changed analysis must not be silently accepted"
+    analysis.write_text(json.dumps(previous))
+    with pytest.raises(ValueError, match="different analysis"):
+        main(argv)
+    store.control("toy", "pause")
+    proc.communicate(timeout=8)
