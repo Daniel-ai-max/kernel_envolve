@@ -394,6 +394,8 @@ coding-agent 命令仍使用默认 `host_driven: false`。
 在下一条 `bridge-request --file request.json` 中加 `--consume-file analysis.json`。
 该调用先保存分析，再提交新请求；仍要求本人读取真实结果。提交失败不会撤销已保存分析，
 修复后沿用相同请求 ID 和分析重试，不重跑已执行命令。仅查询状态时不传这两个文件。
+组合调用用于同一 round。上一轮已经让出时，先用旧 round 消费其结果，再用新 claim
+开启下一轮；不能把旧收据交给新 round 消费。远端适配层可在一次往返中顺序执行这两步。
 
 所有命令使用相同 `manage --state /work/manager-state`。`gpu` 请求由本轮固定版本的
 `manage gpu-run` 执行并声明时长；排队受 manager 的父轮次和累计预算控制，不把预计执行时长
