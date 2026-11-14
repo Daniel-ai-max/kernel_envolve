@@ -17,6 +17,34 @@ PACKAGE = "apodex_core.ops.candidate.dsa_tilelang.flash_fast"
 QUERY = Path("apodex_core/ops/candidate/dsa_tilelang/flash_fast/residual_indexer_query.py")
 
 
+class QueryMismatch(AssertionError):
+    """Wrong output after successful synchronization and an input-integrity check."""
+
+
+def check_outputs(expected, actual, values, originals, torch):
+    # A wrong result is recoverable only when the device and shared inputs are safe.
+    # Check these first: output mismatch must never hide a poisoned case or context.
+    torch.cuda.synchronize()
+    if any(not torch.equal(x, y) for x, y in zip(values, originals)):
+        raise AssertionError("Query mutated its inputs")
+    if len(expected) != 2 or len(actual) != 2:
+        raise QueryMismatch("Missing dQ/dW output")
+    for x, y in zip(expected, actual):
+        if x.shape != y.shape or x.dtype != y.dtype or not torch.isfinite(y).all():
+            raise QueryMismatch("Invalid query gradient")
+        if not torch.equal(x.contiguous().view(torch.uint8), y.contiguous().view(torch.uint8)):
+            raise QueryMismatch("Query dQ/dW differs bytewise from the selected control")
+
+
+def compare_candidate(a, b, *, aa, check, measure, trials, guard, margin):
+    try:
+        ab = paired_probe(a, b, measure=measure, check=lambda: check(a, b), trials=trials)
+    except QueryMismatch as exc:
+        return {"decision": "reject", "reason": str(exc), "correctness": "fail"}
+    decision, reason = decide(ratios(aa), ratios(ab), guard=guard, margin=margin)
+    return {"decision": decision, "reason": reason, "aa": aa, "ab": ab}
+
+
 def digest(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
@@ -99,15 +127,7 @@ def make_case(length, topk, seed, full, torch):
 
     def check(a, b):
         expected, actual = a(), b()
-        if len(expected) != 2 or len(actual) != 2:
-            raise AssertionError("Missing dQ/dW output")
-        for x, y in zip(expected, actual):
-            if x.shape != y.shape or x.dtype != y.dtype or not torch.isfinite(y).all():
-                raise AssertionError("Invalid query gradient")
-            if not torch.equal(x.contiguous().view(torch.uint8), y.contiguous().view(torch.uint8)):
-                raise AssertionError("Query dQ/dW differs bytewise from the selected control")
-        if any(not torch.equal(x, y) for x, y in zip(values, originals)):
-            raise AssertionError("Query mutated its inputs")
+        check_outputs(expected, actual, values, originals, torch)
 
     return bind, check
 
@@ -115,8 +135,8 @@ def make_case(length, topk, seed, full, torch):
 def screen(candidates, stage_factory, emit):
     """Only dependent stages of ONE candidate stop; independent candidates continue.
 
-    Exceptions deliberately abort the command. A CUDA failure needs a clean
-    process; it must not be caught and treated like a performance rejection.
+    compare_candidate turns safe output mismatches into explicit rejections.
+    CUDA errors, input mutation and unknown exceptions still abort the command.
     """
     results = {}
     for name, candidate in candidates:
@@ -225,13 +245,16 @@ def main(argv=None):
                         cache[full] = bind, check, aa
                     bind, check, aa = cache[full]
                     a, b = bind(baseline), bind(candidate)
-                    ab = paired_probe(
-                        a, b, measure=measure, check=lambda: check(a, b), trials=args.trials
+                    return compare_candidate(
+                        a,
+                        b,
+                        aa=aa,
+                        check=check,
+                        measure=measure,
+                        trials=args.trials,
+                        guard=full,
+                        margin=args.margin,
                     )
-                    decision, reason = decide(
-                        ratios(aa), ratios(ab), guard=full, margin=args.margin
-                    )
-                    return {"decision": decision, "reason": reason, "aa": aa, "ab": ab}
 
                 return [
                     ("full_support_guard", lambda: stage(True)),

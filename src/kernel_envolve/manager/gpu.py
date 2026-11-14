@@ -1,5 +1,6 @@
 """FIFO device admission with a host-wide inherited lock and parent-round supervision."""
 
+import json
 import math
 import os
 import subprocess
@@ -12,6 +13,38 @@ from .worker import supervise
 
 class DurationAdmissionError(ValueError):
     """A declared command cannot fit the remaining execution budgets."""
+
+
+class ResourceAdmissionError(ValueError):
+    """A quarantined resource cannot admit work until explicitly repaired."""
+
+    def __init__(self, resource, problem):
+        self.resource = resource
+        self.problem = problem
+        super().__init__(f"GPU resource {resource} is quarantined: {problem}")
+
+
+def require_resource(store, resource):
+    problem = store.resource(resource)["problem"]
+    if problem:
+        raise ResourceAdmissionError(resource, problem)
+
+
+def queue_ready(store, job):
+    """Cheap advisory check; Store.claim still makes the transactional decision."""
+    first = store.one(
+        "SELECT id FROM jobs WHERE resource=? AND kind='gpu' "
+        "AND status='queued' ORDER BY created,id LIMIT 1",
+        (job["resource"],),
+    )
+    return bool(
+        first
+        and first["id"] == job["id"]
+        and not store.one(
+            "SELECT id FROM jobs WHERE resource=? AND kind='gpu' AND status='running'",
+            (job["resource"],),
+        )
+    )
 
 
 def require_duration(store, task, parent, expected_seconds):
@@ -72,6 +105,7 @@ def run(root, task_id, round_id, command, *, expected_seconds=None):
                 or parent["status"] != "running"
             ):
                 raise ValueError("GPU work requires the current running agent round")
+            require_resource(store, parent["resource"])
             require_duration(store, task, parent, expected_seconds)
             key = store.enqueue(task, "gpu", command, round_id)
             if expected_seconds is not None:
@@ -91,10 +125,14 @@ def run(root, task_id, round_id, command, *, expected_seconds=None):
             )
         devices = store.job_devices(store.job(key))
         while True:
+            job = store.job(key)
+            # Preserve the actionable resource cause even if its failure also
+            # ended the parent round. Quarantine is never an ordinary queue wait.
+            require_resource(store, job["resource"])
             task = store.task(task_id)
             parent = store.job(round_id)
             if (
-                store.job(key)["status"] != "queued"
+                job["status"] != "queued"
                 or parent["cancel_requested"]
                 or task["desired"] != "active"
                 or store.budget_reason(task)
@@ -103,8 +141,14 @@ def run(root, task_id, round_id, command, *, expected_seconds=None):
             ):
                 store.finish(key, "cancelled", "Parent ended, task paused, or budget exhausted")
                 return 2
+            if not queue_ready(store, job):
+                time.sleep(0.2)
+                continue
             with gpu_locks(devices) as handles:
                 if handles is not None:
+                    require_resource(store, job["resource"])
+                    if not queue_ready(store, job):
+                        continue
                     try:
                         gpu_group_idle(devices)
                     except (OSError, ValueError, subprocess.SubprocessError) as exc:
@@ -113,6 +157,7 @@ def run(root, task_id, round_id, command, *, expected_seconds=None):
                         if store.claim(key, os.getpid(), identity(os.getpid())):
                             # Waiting in the device queue consumes parent/wall time.
                             with store.transaction():
+                                require_resource(store, job["resource"])
                                 require_duration(
                                     store,
                                     store.task(task_id),
@@ -128,7 +173,25 @@ def run(root, task_id, round_id, command, *, expected_seconds=None):
                                         log.seek(max(0, (directory / name).stat().st_size - 65536))
                                         print(log.read().decode(errors="replace"), end="")
                             return result
+                    # A concurrent cleanup may have quarantined this resource
+                    # during probing/claiming. Do not hide it behind another wait.
+                    require_resource(store, job["resource"])
             time.sleep(0.2)
+    except ResourceAdmissionError as exc:
+        if key:
+            store.finish(key, "cancelled", str(exc))
+        print(
+            json.dumps(
+                {
+                    "error_type": "gpu_resource_quarantined",
+                    "error": str(exc),
+                    "resource": exc.resource,
+                    "problem": exc.problem,
+                    "job": key,
+                }
+            )
+        )
+        return 2
     except BaseException as exc:
         if key:
             reason = str(exc) if isinstance(exc, ValueError) else "GPU waiter interrupted"

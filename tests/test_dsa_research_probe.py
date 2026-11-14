@@ -1,12 +1,93 @@
 import importlib.util
 from pathlib import Path
+from types import SimpleNamespace
 
+import numpy as np
 import pytest
 
 path = Path(__file__).resolve().parents[1] / "examples/apodex_dsa_research/query_probe.py"
 spec = importlib.util.spec_from_file_location("dsa_research_probe", path)
 probe = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(probe)
+
+
+def test_wrong_output_rejects_one_candidate_without_cancelling_control():
+    calls, events = [], []
+    aa = {
+        "samples": [
+            {"trial": 0, "role": role, "duration": 1.0} for role in ("baseline", "candidate")
+        ]
+    }
+
+    def stages(candidate):
+        def check(a, b):
+            calls.append(candidate)
+            if candidate == "wrong":
+                raise probe.QueryMismatch("wrong dQ")
+
+        return [
+            (
+                "guard",
+                lambda: probe.compare_candidate(
+                    lambda: None,
+                    lambda: None,
+                    aa=aa,
+                    check=check,
+                    measure=lambda fn: 1.0,
+                    trials=2,
+                    guard=True,
+                    margin=0.05,
+                ),
+            )
+        ]
+
+    results = probe.screen([("bad", "wrong"), ("good", "control")], stages, events.append)
+    assert calls == ["wrong", "control", "control"]
+    rejected = results["bad"]["stages"][0]["outcome"]
+    assert rejected == {"decision": "reject", "reason": "wrong dQ", "correctness": "fail"}
+    assert results["good"]["stages"][0]["outcome"]["decision"] == "continue"
+    assert all(event["status"] != "error" for event in events)
+
+
+@pytest.mark.parametrize(
+    "failure", [RuntimeError("CUDA failure"), AssertionError("input mutation")]
+)
+def test_candidate_comparison_never_reclassifies_device_or_unknown_errors(failure):
+    def check(a, b):
+        raise failure
+
+    with pytest.raises(type(failure), match=str(failure)):
+        probe.compare_candidate(
+            lambda: None,
+            lambda: None,
+            aa={},
+            check=check,
+            measure=lambda fn: 1.0,
+            trials=2,
+            guard=True,
+            margin=0.05,
+        )
+
+
+@pytest.mark.parametrize("mutated,device_error", [(False, False), (True, False), (False, True)])
+def test_output_mismatch_cannot_hide_unsafe_shared_state(mutated, device_error):
+    synchronized = []
+
+    def synchronize():
+        synchronized.append(True)
+        if device_error:
+            raise RuntimeError("CUDA failure")
+
+    torch = SimpleNamespace(cuda=SimpleNamespace(synchronize=synchronize), equal=np.array_equal)
+    values, originals = [np.array([2 if mutated else 1])], [np.array([1])]
+    # Missing outputs is intentionally simultaneous with mutation/device failure.
+    expected_error = (
+        RuntimeError if device_error else AssertionError if mutated else probe.QueryMismatch
+    )
+    with pytest.raises(expected_error) as error:
+        probe.check_outputs([], [], values, originals, torch)
+    assert synchronized == [True]
+    assert isinstance(error.value, probe.QueryMismatch) == (not mutated and not device_error)
 
 
 def test_rejected_candidate_does_not_cancel_independent_candidate():
