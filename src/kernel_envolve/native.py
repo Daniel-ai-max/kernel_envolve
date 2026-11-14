@@ -427,8 +427,10 @@ def _evaluate(task, state, cfg, mode, timeout, selection, check_only):
             result["environments"][role] = env
             return meta, observed
 
-        def check(case, seed, kinds):
+        def check(case, seed, kinds, *, post=False):
             _, expected = call("oracle", "check", case, seed)
+            if len(expected) != len(kinds):
+                raise AssertionError("Incomplete correctness observations")
             for role in roles:
                 _, observed = call(role, "check", case, seed)
                 if len(observed) != len(expected):
@@ -441,11 +443,14 @@ def _evaluate(task, state, cfg, mode, timeout, selection, check_only):
                             observed[index - 1],
                             cfg | {"rtol": 0, "atol": 0, "bitwise": True},
                         )
+                    # Post is one aggregate receipt, only after every observation passed.
+                    if post and index != len(kinds) - 1:
+                        continue
                     result["checks"].append(
                         {
                             "case": case["id"],
                             "seed": seed,
-                            "kind": kind,
+                            "kind": "post" if post else kind,
                             "role": role,
                             "status": "pass",
                         }
@@ -510,7 +515,7 @@ def _evaluate(task, state, cfg, mode, timeout, selection, check_only):
                         repeats[role] += 1
         begin_phase("postcheck")
         for case in timed:
-            check(case, post_seed(case["id"], seeds), ["post"])
+            check(case, post_seed(case["id"], seeds), kinds, post=True)
         begin_phase("integrity")
         for role, identity in result["identities"].items():
             verify_roots(run, identity, role, checkpoint)
