@@ -135,7 +135,11 @@ def assess(store, task, job, status, current):
         (task["id"], job["created"]),
     ):
         execution = json.loads(event["data"])
-        if execution["round"] != job["id"]:
+        if (
+            execution["round"] != job["id"]
+            or type(execution.get("returncode")) is not int
+            or execution.get("cleanup_confirmed") is not True
+        ):
             continue
         signature = hashlib.sha256(
             json.dumps(

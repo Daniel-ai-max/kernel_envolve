@@ -466,7 +466,9 @@ def run_bridge(store, root, idle_seconds=120):
                     finished_at=time.time(),
                 )
                 atomic(directory / "results" / path.name, receipt)
-                if cpu_child:
+                if cpu_child and type(code) is int:
+                    # A supervisor can finish without ever starting argv. Only
+                    # a command exit, after confirmed group cleanup, is activity.
                     store.event(
                         task,
                         "bridge_execution",
@@ -476,6 +478,7 @@ def run_bridge(store, root, idle_seconds=120):
                             "command": value["argv"],
                             "status": receipt["status"],
                             "returncode": receipt["returncode"],
+                            "cleanup_confirmed": True,
                             "receipt_sha256": hashlib.sha256(
                                 (directory / "results" / path.name).read_bytes()
                             ).hexdigest(),

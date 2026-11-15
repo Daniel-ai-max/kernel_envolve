@@ -906,3 +906,60 @@ def test_query_cli_does_not_create_state_or_request_a_writer_lock(managed, tmp_p
     assert not missing.exists()
     send(store, root, job, "finish", {"kind": "finish"})
     proc.communicate(timeout=8)
+
+
+@pytest.mark.parametrize("started", [False, True])
+def test_cpu_launch_failure_is_not_activity_but_command_failure_is(managed, started):
+    store, root, job, proc, directory = start(managed)
+    payload = (
+        cpu("print('command really started', flush=True); raise SystemExit(7)")
+        if started
+        else {"kind": "cpu", "argv": [str(directory / "missing-executable")], "expected_seconds": 3}
+    )
+    receipt = send(store, root, job, "failed-command", payload)
+    assert receipt["status"] == "failed"
+    assert receipt["returncode"] == (7 if started else None)
+    events = store.rows("SELECT data FROM events WHERE kind='bridge_execution'")
+    assert len(events) == int(started)
+    if started:
+        event = json.loads(events[0]["data"])
+        assert event["cleanup_confirmed"] is True
+        assert event["receipt_sha256"] == receipt["receipt_sha256"]
+        assert "command really started" in receipt["stdout"]
+    send(store, root, job, "finish", {"kind": "finish"})
+    proc.communicate(timeout=8)
+    recovery = json.loads(store.one("SELECT data FROM metadata WHERE key='recovery:toy'")["data"])
+    assert recovery["observable_progress"] is started
+    assert recovery["new_cpu_requests"] == (["failed-command"] if started else [])
+    assert store.task("toy")["failures"] == (0 if started else 1)
+    assert "not evaluator acceptance or verified research gains" in recovery["verification"]
+
+
+def test_cpu_cleanup_error_cannot_publish_execution_activity(managed):
+    store, _, _ = managed
+    root = store.root.parent / "bridge"
+    script = f"""import os,sys
+from kernel_envolve.manager import bridge
+from kernel_envolve.manager.cli import main
+original = bridge.terminate
+def cleanup_error(process):
+    original(process)
+    raise OSError('cleanup confirmation unavailable')
+bridge.terminate = cleanup_error
+raise SystemExit(main(['--state', os.environ['KERNEL_ENVOLVE_STATE'], 'bridge', '--root', {str(root)!r}]))
+"""
+    replace_command(store, [sys.executable, "-c", script], host_driven=True)
+    bridge.open_host(store, "toy", "foreground", "cleanup-probe")
+    job = store.schedule()[0]
+    proc = launch(store, job)
+    directory = bridge.folder(root, "toy", job)
+    wait_for(lambda: (directory / "context.json").exists())
+    receipt = send(store, root, job, "once", cpu("print('command completed', flush=True)"))
+    proc.communicate(timeout=8)
+    assert receipt["status"] == "interrupted_without_receipt"
+    assert not (directory / "results/once.json").exists()
+    assert not store.rows("SELECT data FROM events WHERE kind='bridge_execution'")
+    assert "command completed" in (directory / "logs/once.stdout.log").read_text()
+    recovery = json.loads(store.one("SELECT data FROM metadata WHERE key='recovery:toy'")["data"])
+    assert not recovery["observable_progress"] and recovery["new_cpu_requests"] == []
+    assert store.task("toy")["failures"] == 1

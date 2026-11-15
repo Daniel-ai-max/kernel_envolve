@@ -334,3 +334,27 @@ def test_repeated_failure_backoff_is_capped_but_never_removed(managed):
         assert not store.schedule()
         store.db.execute("UPDATE tasks SET next_at=0 WHERE id='toy'")
     assert delays == [10, 20, 40, 80, 160, 300, 300, 300, 300]
+
+
+@pytest.mark.parametrize(
+    "evidence",
+    [
+        {"returncode": None, "cleanup_confirmed": True},
+        {"returncode": 0, "cleanup_confirmed": False},
+        {"returncode": 0},  # Legacy event without confirmed cleanup is not proof.
+    ],
+)
+def test_cpu_activity_requires_command_exit_and_confirmed_cleanup(managed, evidence):
+    store, _, _ = managed
+    job = store.schedule()[0]
+    assert store.claim(job, os.getpid(), identity(os.getpid()))
+    store.event(
+        "toy",
+        "bridge_execution",
+        {"round": job, "request": "uncertain", "command": ["unconfirmed"], "status": "failed"}
+        | evidence,
+    )
+    store.finish(job, "succeeded")
+    state = recovery(store)
+    assert not state["observable_progress"] and state["new_cpu_requests"] == []
+    assert store.task("toy")["failures"] == 1
