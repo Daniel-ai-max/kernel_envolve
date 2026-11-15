@@ -1,0 +1,553 @@
+{
+  "status": "transport_acceptance_complete",
+  "framework_revision": "6fee2ded33c12f114d17ed49dd4680b07d6dd72b",
+  "scope": "Independent one-card transport acceptance; no agent or kernel-performance ranking",
+  "elapsed_seconds": 134.62769389152527,
+  "timing": {
+    "samples": [
+      {
+        "index": 0,
+        "variant": "original",
+        "rpc_counts": {
+          "upload": 1,
+          "consume": 1,
+          "submit": 1,
+          "status": 2
+        },
+        "submission_feedback_seconds": 7.842331886291504,
+        "validated_feedback_seconds": 12.605549097061157,
+        "rpc_seconds": {
+          "upload": 2.4766448750160635,
+          "consume": 2.199495625041891,
+          "submit": 3.0051073750364594,
+          "status": 4.29342274897499
+        }
+      },
+      {
+        "index": 1,
+        "variant": "next",
+        "rpc_counts": {
+          "upload": 1,
+          "consume": 0,
+          "submit": 1,
+          "status": 1
+        },
+        "submission_feedback_seconds": 5.540446043014526,
+        "validated_feedback_seconds": 8.482497215270996,
+        "rpc_seconds": {
+          "upload": 2.116270957980305,
+          "consume": 0,
+          "submit": 3.367231999989599,
+          "status": 2.9189049580018036
+        }
+      },
+      {
+        "index": 2,
+        "variant": "next",
+        "rpc_counts": {
+          "upload": 1,
+          "consume": 0,
+          "submit": 1,
+          "status": 2
+        },
+        "submission_feedback_seconds": 5.732049942016602,
+        "validated_feedback_seconds": 10.872424840927124,
+        "rpc_seconds": {
+          "upload": 2.749747666006442,
+          "consume": 0,
+          "submit": 2.9101809170097113,
+          "status": 5.024555082956795
+        }
+      },
+      {
+        "index": 3,
+        "variant": "original",
+        "rpc_counts": {
+          "upload": 1,
+          "consume": 1,
+          "submit": 1,
+          "status": 2
+        },
+        "submission_feedback_seconds": 7.604840278625488,
+        "validated_feedback_seconds": 12.447496175765991,
+        "rpc_seconds": {
+          "upload": 2.424317917029839,
+          "consume": 2.9731151669984683,
+          "submit": 2.0279086669906974,
+          "status": 4.357534332957584
+        }
+      }
+    ],
+    "sample_count": 4,
+    "paired_differences": [
+      {
+        "original_index": 0,
+        "next_index": 1,
+        "submission_saved_seconds": 2.3018858432769775,
+        "validated_feedback_saved_seconds": 4.123051881790161
+      },
+      {
+        "original_index": 3,
+        "next_index": 2,
+        "submission_saved_seconds": 1.8727903366088867,
+        "validated_feedback_saved_seconds": 1.5750713348388672
+      }
+    ],
+    "interpretation": "Two samples per variant, AB/BA order; transport acceptance only, no agent or Student ranking"
+  },
+  "samples": [
+    {
+      "index": 0,
+      "variant": "original",
+      "tag": "0-transition",
+      "started_at": 1794723190.508374,
+      "finished_at": 1794723203.113923,
+      "identities": [
+        {
+          "id": "2d35b5d5c0a347d7ae346fafd538772f",
+          "receipt_sha256": "2312d345a0de846fcca6d067720f9709c95b4cc70e2310fb34724e2774fa3e28",
+          "gpu_job": "9b63ca77fc8d47b2910d3ea254071b2a"
+        },
+        {
+          "id": "2298228b942d4b529f654af304d0713f",
+          "receipt_sha256": "1fbe7997ff11fb68fb7a25d4ace11887b5b52751f813ac2faa9eba387265ac5d",
+          "gpu_job": "3668a3d08fd544f4ad6e8f27ac5f78ff"
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "variant": "next",
+      "tag": "1-transition",
+      "started_at": 1794723223.079705,
+      "finished_at": 1794723231.5622022,
+      "identities": [
+        {
+          "id": "3618d46d38984eb9af642a807a00bff6",
+          "receipt_sha256": "2938a327fc2f731da342146d6416ad6fe39d21c7d26ba10e6f018707c3565302",
+          "gpu_job": "d3dace4360bd4ed38348d4a2a745d0fe"
+        },
+        {
+          "id": "61438ce4e35a4b5c908a1c31b8af9c7b",
+          "receipt_sha256": "7d4641c164a5013eb588da43cfe0b6c797875d6c5f487a2c86ca2cf61ef807e0",
+          "gpu_job": "2b364c8e35444fd8a3340e6d20eb0fbe"
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "variant": "next",
+      "tag": "2-transition",
+      "started_at": 1794723250.13714,
+      "finished_at": 1794723261.0095649,
+      "identities": [
+        {
+          "id": "bc240ae8094446faac6ef5cbb233a097",
+          "receipt_sha256": "5693e0b63a68e1a85495807a5baefe1c1480d97f986776a58a0cd271d694ee53",
+          "gpu_job": "09efde0356ed46ef9bf95c0c72d34dd7"
+        },
+        {
+          "id": "00083a8b1ad84ca6a16f97e526a88713",
+          "receipt_sha256": "cfd82eb01f99ce183f489eacfaba49834fba2654474579a508e6048752a9f179",
+          "gpu_job": "a47e5cfd560345ab922fbe37bb4239c7"
+        }
+      ]
+    },
+    {
+      "index": 3,
+      "variant": "original",
+      "tag": "3-transition",
+      "started_at": 1794723280.2546408,
+      "finished_at": 1794723292.702137,
+      "identities": [
+        {
+          "id": "f18c054005c54957a18110fb528c22c8",
+          "receipt_sha256": "753ad3e393d9b1b8d42393066bb158a944260191e2232f5bac4eba66662aabda",
+          "gpu_job": "f6f0b7e55998499782562caecdb91d80"
+        },
+        {
+          "id": "1b008be427824b768b2f3de81b5dd80f",
+          "receipt_sha256": "1cb06e10dcd3175f7999dd51b712d885c629f80d54d8f96cf8ce0d9a6b099b11",
+          "gpu_job": "c08e5f857aa8439c837e632c32904b6e"
+        }
+      ]
+    }
+  ],
+  "source_bundle_sha256": "b77ae78d39b24ce1b3720c175ab3cbbb770d2ae336df02c1af218027e9fd61b7",
+  "collection_sha256": "71b9c571292c7fabbb798193ae2d6a2ed812dfb6172022815da02ba11c7bcef5",
+  "verified_collection_files": 249,
+  "source_result_sha256": "f0591242c96505bea9f49f75843a0d1647e8abeb2a9aabfb117bf0b4ed1e5255",
+  "raw_rpc_events": [
+    {
+      "tag": "0-seed",
+      "kind": "upload",
+      "started_at": 1794723181.3710778,
+      "timeout": null,
+      "response_bytes": null,
+      "status": "returned",
+      "finished_at": 1794723183.482414,
+      "seconds": 2.111355791974347
+    },
+    {
+      "tag": "0-seed",
+      "kind": "submit",
+      "started_at": 1794723183.486086,
+      "timeout": 30,
+      "response_bytes": 291,
+      "status": "returned",
+      "finished_at": 1794723185.697063,
+      "seconds": 2.210994750028476
+    },
+    {
+      "tag": "0-seed",
+      "kind": "status",
+      "started_at": 1794723185.788049,
+      "timeout": 30,
+      "response_bytes": 380,
+      "status": "returned",
+      "finished_at": 1794723187.926272,
+      "seconds": 2.138242083019577
+    },
+    {
+      "tag": "0-seed",
+      "kind": "status",
+      "started_at": 1794723188.2872121,
+      "timeout": 30,
+      "response_bytes": 1913,
+      "status": "returned",
+      "finished_at": 1794723190.489772,
+      "seconds": 2.2025787090533413
+    },
+    {
+      "tag": "0-transition",
+      "kind": "consume",
+      "started_at": 1794723190.576371,
+      "timeout": 30,
+      "response_bytes": 772,
+      "status": "returned",
+      "finished_at": 1794723192.775846,
+      "seconds": 2.199495625041891
+    },
+    {
+      "tag": "0-transition",
+      "kind": "upload",
+      "started_at": 1794723192.866776,
+      "timeout": null,
+      "response_bytes": null,
+      "status": "returned",
+      "finished_at": 1794723195.3433979,
+      "seconds": 2.4766448750160635
+    },
+    {
+      "tag": "0-transition",
+      "kind": "submit",
+      "started_at": 1794723195.3456252,
+      "timeout": 30,
+      "response_bytes": 290,
+      "status": "returned",
+      "finished_at": 1794723198.3507059,
+      "seconds": 3.0051073750364594
+    },
+    {
+      "tag": "0-transition",
+      "kind": "status",
+      "started_at": 1794723198.441735,
+      "timeout": 30,
+      "response_bytes": 379,
+      "status": "returned",
+      "finished_at": 1794723200.581507,
+      "seconds": 2.1397920409799553
+    },
+    {
+      "tag": "0-transition",
+      "kind": "status",
+      "started_at": 1794723200.938303,
+      "timeout": 30,
+      "response_bytes": 1909,
+      "status": "returned",
+      "finished_at": 1794723203.091914,
+      "seconds": 2.1536307079950348
+    },
+    {
+      "tag": "0-final-consume",
+      "kind": "consume",
+      "started_at": 1794723203.180768,
+      "timeout": 30,
+      "response_bytes": 679,
+      "status": "returned",
+      "finished_at": 1794723206.804279,
+      "seconds": 3.6235443329787813
+    },
+    {
+      "tag": "1-seed",
+      "kind": "upload",
+      "started_at": 1794723214.197653,
+      "timeout": null,
+      "response_bytes": null,
+      "status": "returned",
+      "finished_at": 1794723216.2013152,
+      "seconds": 2.0036792079918087
+    },
+    {
+      "tag": "1-seed",
+      "kind": "submit",
+      "started_at": 1794723216.2031062,
+      "timeout": 30,
+      "response_bytes": 291,
+      "status": "returned",
+      "finished_at": 1794723218.7046971,
+      "seconds": 2.5016128749703057
+    },
+    {
+      "tag": "1-seed",
+      "kind": "status",
+      "started_at": 1794723218.7063732,
+      "timeout": 30,
+      "response_bytes": 863,
+      "status": "returned",
+      "finished_at": 1794723220.770986,
+      "seconds": 2.0646310000447556
+    },
+    {
+      "tag": "1-seed",
+      "kind": "status",
+      "started_at": 1794723220.846213,
+      "timeout": 30,
+      "response_bytes": 2515,
+      "status": "returned",
+      "finished_at": 1794723223.064013,
+      "seconds": 2.217820124991704
+    },
+    {
+      "tag": "1-transition",
+      "kind": "upload",
+      "started_at": 1794723223.134515,
+      "timeout": null,
+      "response_bytes": null,
+      "status": "returned",
+      "finished_at": 1794723225.250766,
+      "seconds": 2.116270957980305
+    },
+    {
+      "tag": "1-transition",
+      "kind": "submit",
+      "started_at": 1794723225.252948,
+      "timeout": 60,
+      "response_bytes": 1742,
+      "status": "returned",
+      "finished_at": 1794723228.620151,
+      "seconds": 3.367231999989599
+    },
+    {
+      "tag": "1-transition",
+      "kind": "status",
+      "started_at": 1794723228.62252,
+      "timeout": 30,
+      "response_bytes": 2511,
+      "status": "returned",
+      "finished_at": 1794723231.541399,
+      "seconds": 2.9189049580018036
+    },
+    {
+      "tag": "1-final-consume",
+      "kind": "consume",
+      "started_at": 1794723231.631211,
+      "timeout": 30,
+      "response_bytes": 765,
+      "status": "returned",
+      "finished_at": 1794723234.503228,
+      "seconds": 2.872042250004597
+    },
+    {
+      "tag": "2-seed",
+      "kind": "upload",
+      "started_at": 1794723240.398396,
+      "timeout": null,
+      "response_bytes": null,
+      "status": "returned",
+      "finished_at": 1794723242.723417,
+      "seconds": 2.3250422500423156
+    },
+    {
+      "tag": "2-seed",
+      "kind": "submit",
+      "started_at": 1794723242.726157,
+      "timeout": 30,
+      "response_bytes": 291,
+      "status": "returned",
+      "finished_at": 1794723244.951166,
+      "seconds": 2.2250242910231464
+    },
+    {
+      "tag": "2-seed",
+      "kind": "status",
+      "started_at": 1794723244.952904,
+      "timeout": 30,
+      "response_bytes": 863,
+      "status": "returned",
+      "finished_at": 1794723247.149398,
+      "seconds": 2.196514416951686
+    },
+    {
+      "tag": "2-seed",
+      "kind": "status",
+      "started_at": 1794723247.238944,
+      "timeout": 30,
+      "response_bytes": 2514,
+      "status": "returned",
+      "finished_at": 1794723250.1141188,
+      "seconds": 2.875201917020604
+    },
+    {
+      "tag": "2-transition",
+      "kind": "upload",
+      "started_at": 1794723250.2064798,
+      "timeout": null,
+      "response_bytes": null,
+      "status": "returned",
+      "finished_at": 1794723252.956202,
+      "seconds": 2.749747666006442
+    },
+    {
+      "tag": "2-transition",
+      "kind": "submit",
+      "started_at": 1794723252.959033,
+      "timeout": 60,
+      "response_bytes": 1742,
+      "status": "returned",
+      "finished_at": 1794723255.86919,
+      "seconds": 2.9101809170097113
+    },
+    {
+      "tag": "2-transition",
+      "kind": "status",
+      "started_at": 1794723255.8714418,
+      "timeout": 30,
+      "response_bytes": 863,
+      "status": "returned",
+      "finished_at": 1794723258.077775,
+      "seconds": 2.2063504999969155
+    },
+    {
+      "tag": "2-transition",
+      "kind": "status",
+      "started_at": 1794723258.167774,
+      "timeout": 30,
+      "response_bytes": 2514,
+      "status": "returned",
+      "finished_at": 1794723260.985953,
+      "seconds": 2.818204582959879
+    },
+    {
+      "tag": "2-final-consume",
+      "kind": "consume",
+      "started_at": 1794723261.079832,
+      "timeout": 30,
+      "response_bytes": 764,
+      "status": "returned",
+      "finished_at": 1794723264.46302,
+      "seconds": 3.3832182079786435
+    },
+    {
+      "tag": "3-seed",
+      "kind": "upload",
+      "started_at": 1794723270.644852,
+      "timeout": null,
+      "response_bytes": null,
+      "status": "returned",
+      "finished_at": 1794723272.72594,
+      "seconds": 2.0811098749982193
+    },
+    {
+      "tag": "3-seed",
+      "kind": "submit",
+      "started_at": 1794723272.727773,
+      "timeout": 30,
+      "response_bytes": 291,
+      "status": "returned",
+      "finished_at": 1794723275.022429,
+      "seconds": 2.2946753340074793
+    },
+    {
+      "tag": "3-seed",
+      "kind": "status",
+      "started_at": 1794723275.095854,
+      "timeout": 30,
+      "response_bytes": 379,
+      "status": "returned",
+      "finished_at": 1794723277.2426639,
+      "seconds": 2.1468287500320002
+    },
+    {
+      "tag": "3-seed",
+      "kind": "status",
+      "started_at": 1794723277.587914,
+      "timeout": 30,
+      "response_bytes": 1910,
+      "status": "returned",
+      "finished_at": 1794723280.229942,
+      "seconds": 2.6420524590066634
+    },
+    {
+      "tag": "3-transition",
+      "kind": "consume",
+      "started_at": 1794723280.328224,
+      "timeout": 30,
+      "response_bytes": 772,
+      "status": "returned",
+      "finished_at": 1794723283.301313,
+      "seconds": 2.9731151669984683
+    },
+    {
+      "tag": "3-transition",
+      "kind": "upload",
+      "started_at": 1794723283.405609,
+      "timeout": null,
+      "response_bytes": null,
+      "status": "returned",
+      "finished_at": 1794723285.8299048,
+      "seconds": 2.424317917029839
+    },
+    {
+      "tag": "3-transition",
+      "kind": "submit",
+      "started_at": 1794723285.831587,
+      "timeout": 30,
+      "response_bytes": 291,
+      "status": "returned",
+      "finished_at": 1794723287.859481,
+      "seconds": 2.0279086669906974
+    },
+    {
+      "tag": "3-transition",
+      "kind": "status",
+      "started_at": 1794723287.9570508,
+      "timeout": 30,
+      "response_bytes": 379,
+      "status": "returned",
+      "finished_at": 1794723290.118977,
+      "seconds": 2.1619463329552673
+    },
+    {
+      "tag": "3-transition",
+      "kind": "status",
+      "started_at": 1794723290.4828212,
+      "timeout": 30,
+      "response_bytes": 1910,
+      "status": "returned",
+      "finished_at": 1794723292.678389,
+      "seconds": 2.195588000002317
+    },
+    {
+      "tag": "3-final-consume",
+      "kind": "consume",
+      "started_at": 1794723292.779797,
+      "timeout": 30,
+      "response_bytes": 679,
+      "status": "returned",
+      "finished_at": 1794723295.145992,
+      "seconds": 2.366217333008535
+    }
+  ],
+  "cleanup_confirmed": true
+}
