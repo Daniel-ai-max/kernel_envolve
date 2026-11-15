@@ -73,6 +73,11 @@ def test_result_consume_next_request_and_finish(managed):
     payload = cpu("print('first-result')")
     receipt = send(store, root, job, "first", payload)
     assert receipt["status"] == "succeeded" and receipt["stdout"] == "first-result\n"
+    activity = json.loads(
+        store.one("SELECT data FROM metadata WHERE key='cpu_activity:toy'")["data"]
+    )
+    assert activity["request"] == "first" and activity["status"] == "succeeded"
+    assert activity["round"] == job and activity["command"] == payload["argv"]
     assert send(store, root, job, "first", payload) == receipt
     with pytest.raises(ValueError, match="different content"):
         send(store, root, job, "first", cpu("print('changed')"))

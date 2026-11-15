@@ -208,6 +208,7 @@ def context(store, task):
                 root = Path(task["spec"]["workspace"]) / root
             job["bridge_results"] = str(root / task["id"] / job["id"])
     data["recent_sessions"] = recent
+    data["resource_problem"] = store.resource(task["spec"]["resource"])["problem"]
     state = ".kernel_native" if task["spec"]["kind"] == "native" else ".kernel_envolve"
     data["evaluation_records"] = str(Path(task["spec"]["task_dir"]) / state)
     data["best_pointer"] = str(Path(data["evaluation_records"]) / "best.json")

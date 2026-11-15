@@ -305,8 +305,12 @@ def refresh_task(store, task, force=False, checkpoint=None):
                         "failed_phase",
                         "phase_wall_seconds",
                         "contract_verified",
+                        "baseline_speedup",
+                        "incremental_speedup",
                     )
                 },
+                "performance": value.get("decision", {}).get("performance"),
+                "eligible_for_best": value.get("decision", {}).get("eligible_for_best", False),
                 "native_checks": [
                     {key: check.get(key) for key in ("id", "scope", "status")}
                     for check in value.get("native_checks", [])

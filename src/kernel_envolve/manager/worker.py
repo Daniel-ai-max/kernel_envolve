@@ -75,7 +75,11 @@ Local signals do not establish delivery correctness or training speedup.
 All GPU commands must use:
   kernel-envolve manage gpu-run --expected-seconds <duration> -- <command> <arguments...>
 Keep execution, queue, startup and cleanup within the existing budgets. Do not
-nest the wrapper, leave detached GPU jobs, clear quarantine or revive stopped tasks.
+nest the wrapper, leave detached GPU jobs or revive stopped tasks.
+If recovery context reports a resource_problem, diagnose it before further GPU work.
+Only the checked `manage resource <id> --clear` path may clear a repaired quarantine;
+never edit the database or ignore unknown processes. Unrecoverable execution must
+retain diagnostics and terminate the host with exit 78.
 CPU analysis can proceed independently of the GPU queue. Save reproducible source
 and raw results; do not duplicate them into notes or per-experiment reports.
 For bridge requests, a terminal prior result permits the next request without

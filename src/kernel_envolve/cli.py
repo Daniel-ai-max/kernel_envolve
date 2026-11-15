@@ -244,6 +244,14 @@ def main(argv=None):
     result = enter(argv)
     if result is not None:
         return result
+    if argv and argv[0] == "dashboard":
+        from .manager.single import main as dashboard
+
+        try:
+            return dashboard(argv[1:])
+        except (ValueError, OSError, KeyError, TypeError, subprocess.SubprocessError) as exc:
+            print(f"kernel-envolve dashboard: {exc}", file=sys.stderr)
+            return 2
     if argv and argv[0] == "manage":
         from .manager.cli import main as manage
 
@@ -259,6 +267,7 @@ def main(argv=None):
     sub.add_parser(
         "manage", help="Supervise persistent tasks, GPU queues and the progress dashboard"
     )
+    sub.add_parser("dashboard", help="Open the existing dashboard for a single kernel")
     ev = sub.add_parser("evaluate", help="Check and measure a frozen task snapshot")
     ev.add_argument("--task", type=Path, required=True)
     ev.add_argument("--mode", choices=("quick", "full"), default="quick")

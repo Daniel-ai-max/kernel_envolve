@@ -10,6 +10,7 @@ export function noteSnippet(value, fallback) {
 }
 export function executionLabelFor(record) {
   if (!record) return "尚无执行记录";
+  if (record.kind === "cpu_request") return `本地诊断 · ${jobLabel(record.status)}`;
   if (record.kind === "gpu_job") return `GPU 作业 · ${jobLabel(record.status)}`;
   const mode = record.mode === "full" ? "完整评测" : record.mode === "quick" ? "初筛" : "评测";
   const result = record.evidence_error ? "证据异常" : record.execution === "error" ? "执行失败"
@@ -18,3 +19,28 @@ export function executionLabelFor(record) {
 }
 
 export const visibleTask = (task, showHistory = false) => showHistory || task.desired !== "superseded";
+
+export function resultSummary(record) {
+  const label = executionLabelFor(record);
+  if (!record || record.evidence_error || record.execution === "error" || record.correctness !== "pass") return label;
+  if (record.mode === "quick" && typeof record.incremental_speedup === "number" && Number.isFinite(record.incremental_speedup))
+    return `${label} · 局部信号 ${record.incremental_speedup.toFixed(3)}×（当前对照）`;
+  return label;
+}
+export function phaseLabel(task) {
+  if (task.stale) return "会话失联";
+  return ({active: "持续优化", cooldown: "准备下一轮", resource_blocked: "资源异常",
+    paused: "已停止", superseded: "历史版本", budget: "预算结束", blocked: "恢复失败",
+    gpu_running: "GPU 执行", waiting_gpu: "等待 GPU", cpu_running: "本地诊断",
+    agent_running: "会话在线", awaiting_progress: "暂无新实验", observing: "记录同步",
+    recovering: "故障诊断", queued: "准备会话", backoff: "故障诊断退避", waiting_session: "等待会话"})[task.phase] || task.phase;
+}
+
+export function recentResult(task) {
+  const recent = task.recent_execution, evaluated = task.recent_evaluation;
+  // A wrapper exits after its evaluator writes the receipt: retain that actual result.
+  if (recent?.kind === "gpu_job" && recent.status === "succeeded" && evaluated && recent.task === evaluated.task &&
+      evaluated.recorded_at >= recent.started && evaluated.recorded_at <= recent.recorded_at)
+    return evaluated;
+  return recent;
+}

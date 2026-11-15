@@ -104,6 +104,24 @@ CUDA 原生评测在计时外缓存只读输入的精确字节副本，减少反
 
 确认收益后，Agent 按 [正确性与交付约束](skills/kernel-envolve/SKILL.md#正确性与交付约束)创建或更新目标仓库的优化 PR，然后继续探索。PR 发布由 Agent 完成；评测器负责验证与晋升。
 
+### 单算子启动
+
+直接打开已有任务的看板，无需编写调度配置：
+
+```bash
+kernel-envolve dashboard --task /work/kernel-task
+```
+
+仅同步已有实验和评测，不启动 Agent 或申请 GPU。单算子显示一条任务，多算子沿用同一看板、详情与收益展示。
+
+同时启动预算内持续研究时，传入实际模型宿主命令：
+
+```bash
+kernel-envolve dashboard --task /work/kernel-task --seconds 3600 -- /opt/model-host-adapter
+```
+
+宿主接入见[单任务启动](docs/optimization-manager.md#单任务启动)。已有管理状态用 `--state /work/manager-state` 直接复用；重开不重置预算或恢复已停止任务。当前工作和最近结果自动读取执行记录，无需额外报告或确认。
+
 ### 多算子管理与面板
 
 管理层面向单台 POSIX 主机：每个算子使用独立工作区和 Agent 命令，每张物理 GPU 配置 1–2 个会话。会话可并行分析和修改代码，受管理的 GPU 作业按队列串行执行。

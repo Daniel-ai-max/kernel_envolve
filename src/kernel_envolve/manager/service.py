@@ -108,10 +108,11 @@ def resource_sessions(store, key, sessions):
         store.event(None, "resource_sessions", {"resource": key, "sessions": sessions})
 
 
-def run(store, once=False):
-    with exclusive(store.root / "coordinator.lock") as handle:
+def run(store, once=False, *, observe=False):
+    role = "observer" if observe else "coordinator"
+    with exclusive(store.root / (role + ".lock")) as handle:
         if handle is None:
-            raise ValueError("A coordinator already owns this state directory")
+            raise ValueError(f"A {role} already owns this state directory")
         stopped = threading.Event()
         stop_requested = False
 
@@ -148,11 +149,12 @@ def run(store, once=False):
                     "heartbeat": time.time(),
                 }
                 try:
-                    reconcile(store)
+                    if not observe:
+                        reconcile(store)
                 except (OSError, ValueError, subprocess.SubprocessError) as exc:
                     health["error"] = f"Process recovery unavailable; dispatch held: {exc}"
                     store.db.execute(
-                        "INSERT OR REPLACE INTO metadata VALUES('coordinator',?)", (encode(health),)
+                        "INSERT OR REPLACE INTO metadata VALUES(?,?)", (role, encode(health))
                     )
                     if once:
                         raise
@@ -174,11 +176,11 @@ def run(store, once=False):
                     last_scan = time.monotonic()
                 health["evidence_error"] = evidence_error
                 store.db.execute(
-                    "INSERT OR REPLACE INTO metadata VALUES('coordinator',?)", (encode(health),)
+                    "INSERT OR REPLACE INTO metadata VALUES(?,?)", (role, encode(health))
                 )
                 if stop_requested:
                     break
-                for key in store.schedule():
+                for key in [] if observe else store.schedule():
                     directory = store.root / "jobs" / key
                     directory.mkdir(parents=True, exist_ok=True)
                     try:

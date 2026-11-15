@@ -384,7 +384,7 @@ class Store:
         with self.transaction():
             for row in self.rows("SELECT id FROM tasks ORDER BY next_at,created"):
                 task = migrate_legacy(self, self.task(row["id"]))
-                if task["desired"] != "active":
+                if task["desired"] != "active" or task["spec"].get("observe_only"):
                     continue
                 if self.budget_reason(task):
                     self.db.execute(
@@ -405,7 +405,9 @@ class Store:
                     "AND status IN ('queued','running')",
                     (resource["id"],),
                 ).fetchone()[0]
-                if resource["problem"] or count >= resource["spec"]["sessions"]:
+                if (
+                    resource["problem"] and not task["spec"].get("host_command")
+                ) or count >= resource["spec"]["sessions"]:
                     continue
                 permit = None
                 if task["spec"].get("host_driven"):

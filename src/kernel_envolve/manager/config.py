@@ -83,7 +83,7 @@ def validate(raw, base):
                 not isinstance(device, str) or not re.fullmatch(r"GPU-[a-fA-F0-9-]+", device)
                 for device in devices
             )
-        ) and resource.get("device") != "cpu":
+        ) and resource.get("device") not in ("cpu", "unassigned"):
             raise ValueError("Use physical NVIDIA GPU UUIDs, not indices or MIG slices")
         if len(set(devices)) != len(devices):
             raise ValueError("Physical devices must be unique within a resource")
@@ -111,6 +111,7 @@ def validate(raw, base):
             "host_driven",
             "host_command",
             "deadline_at",
+            "observe_only",
         }
         if set(item) - allowed:
             raise ValueError("Unknown task setting")
@@ -124,6 +125,10 @@ def validate(raw, base):
         }
         if type(task["host_driven"]) is not bool:
             raise ValueError("host_driven must be boolean")
+        if type(task.get("observe_only", False)) is not bool:
+            raise ValueError("observe_only must be boolean")
+        if task.get("observe_only") and (task["host_driven"] or task.get("host_command")):
+            raise ValueError("Observation-only tasks cannot launch an agent")
         identifier(task["id"])
         if not isinstance(task["name"], str) or not task["name"].strip():
             raise ValueError("Task name is required")
@@ -139,10 +144,16 @@ def validate(raw, base):
         command = task["command"]
         if (
             not isinstance(command, list)
-            or not command
+            or (not command and not task.get("observe_only"))
             or any(not isinstance(arg, str) or not arg or "\0" in arg for arg in command)
         ):
             raise ValueError("command must be a nonempty argv array, never a shell string")
+        if task.get("observe_only") and command:
+            raise ValueError("Observation-only tasks have no agent command")
+        if any(
+            r["id"] == task["resource"] and r.get("device") == "unassigned" for r in resources
+        ) and not task.get("observe_only"):
+            raise ValueError("An executable task needs an assigned device")
         validate_host(task)
         for key in ("round_timeout_seconds", "cooldown_seconds"):
             positive(task[key], key)
