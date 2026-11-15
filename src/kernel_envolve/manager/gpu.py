@@ -94,8 +94,10 @@ def require_duration(store, task, parent, expected_seconds):
     for name, seconds in remaining.items():
         if expected_seconds > seconds:
             raise DurationAdmissionError(
-                f"GPU duration admission rejected: declared {expected_seconds:g}s exceeds "
-                f"{max(0, seconds):.3f}s remaining in {name}. "
+                f"GPU duration admission rejected: declared {expected_seconds!r}s exceeds "
+                f"{max(0.0, seconds)!r}s remaining in {name} "
+                f"(shortfall {expected_seconds - seconds!r}s). "
+                "Budgets must include startup and cleanup overhead. "
                 "Save a checkpoint before rescheduling; no budget was extended."
             )
 
