@@ -8,7 +8,7 @@ import time
 import uuid
 from pathlib import Path
 
-from .config import positive, resource_devices
+from .config import positive, resource_devices, validate_host
 
 
 def encode(value):
@@ -238,8 +238,16 @@ class Store:
                     )
             elif action == "configure":
                 changes = changes or {}
-                if set(changes) - {"resource", "wall_budget_seconds", "gpu_budget_seconds"}:
-                    raise ValueError("Only resource assignment and cumulative budgets are mutable")
+                if set(changes) - {
+                    "resource",
+                    "wall_budget_seconds",
+                    "gpu_budget_seconds",
+                    "host_command",
+                    "deadline_at",
+                }:
+                    raise ValueError(
+                        "Only resource, budgets, deadline and host launcher are mutable"
+                    )
                 if task["desired"] != "paused" or self.one(
                     "SELECT id FROM jobs WHERE task=? AND status IN ('queued','running')", (key,)
                 ):
@@ -247,11 +255,13 @@ class Store:
                 for field, value in changes.items():
                     if field == "resource":
                         self.resource(value)
-                    else:
+                    elif field != "host_command":
                         positive(value, field, nullable=True)
-                self.db.execute(
-                    "UPDATE tasks SET spec=? WHERE id=?", (encode(task["spec"] | changes), key)
-                )
+                updated = task["spec"] | changes
+                validate_host(updated)
+                if "host_command" in changes:
+                    self.db.execute("DELETE FROM metadata WHERE key=?", ("host-ready:" + key,))
+                self.db.execute("UPDATE tasks SET spec=? WHERE id=?", (encode(updated), key))
             else:
                 raise ValueError("Unknown action")
             self.event(key, action, changes or {})
@@ -332,6 +342,9 @@ class Store:
             return receipt
 
     def budget_reason(self, task):
+        deadline = task["spec"].get("deadline_at")
+        if deadline is not None and time.time() >= deadline:
+            return "task deadline reached"
         for kind in ("wall", "gpu"):
             limit = task["spec"][f"{kind}_budget_seconds"]
             if limit is not None and task[f"{kind}_seconds"] >= limit:
@@ -399,9 +412,13 @@ class Store:
                     ready = self.one(
                         "SELECT data FROM metadata WHERE key=?", ("host-ready:" + task["id"],)
                     )
-                    if not ready or json.loads(ready["data"])["expires_at"] <= time.time():
+                    if task["spec"].get("host_command"):
+                        # A real configured model host is launched by the bridge, not an idle lease.
+                        permit = {"owner": "manager", "claim": uuid.uuid4().hex}
+                    elif ready and json.loads(ready["data"])["expires_at"] > time.time():
+                        permit = json.loads(ready["data"])
+                    else:
                         continue
-                    permit = json.loads(ready["data"])
                 job = self.enqueue(task, "agent", task["spec"]["command"])
                 if permit:
                     permit["round"] = job
@@ -412,8 +429,8 @@ class Store:
                         "INSERT INTO metadata VALUES(?,?)", ("host-round:" + job, encode(permit))
                     )
                     self.db.execute(
-                        "UPDATE metadata SET data=? WHERE key=?",
-                        (encode(permit), f"host-claim:{task['id']}:{permit['claim']}"),
+                        "INSERT OR REPLACE INTO metadata VALUES(?,?)",
+                        (f"host-claim:{task['id']}:{permit['claim']}", encode(permit)),
                     )
                 scheduled.append(job)
         return scheduled
@@ -523,7 +540,15 @@ class Store:
             elif job["kind"] == "agent":
                 task = self.task(job["task"])
                 recovery = assess(self, task, job, status, current)
-                failures = 0 if recovery["observable_progress"] else task["failures"] + 1
+                active_host = (
+                    task["spec"].get("host_command")
+                    and status == "succeeded"
+                    and recovery["execution_observed"]
+                )
+                # Novelty heuristics must not stop real probes whose input files changed.
+                failures = (
+                    0 if recovery["observable_progress"] or active_host else task["failures"] + 1
+                )
                 delay = (
                     min(300, 5 * 2 ** min(failures, 6))
                     if failures
@@ -538,6 +563,13 @@ class Store:
                         error
                         or "Recovery needs new action evidence with a changed outcome checkpoint"
                     )
+                if desired == "active" and task["spec"].get("host_command"):
+                    if exit_code == 78:
+                        desired = "blocked"
+                        reason = "Model host reported unrecoverable execution failure (exit 78); see saved session logs"
+                    elif failures >= 3:
+                        desired = "blocked"
+                        reason = "Host continuation produced no execution/source evidence in three rounds; inspect saved logs before resuming"
                 recovery.update(reason=reason, retry_after_seconds=delay, attempts=failures)
                 self.db.execute(
                     "INSERT OR REPLACE INTO metadata VALUES(?,?)",

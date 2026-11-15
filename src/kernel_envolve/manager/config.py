@@ -36,6 +36,34 @@ def resource_devices(resource):
     return resource["devices"] if "devices" in resource else [resource["device"]]
 
 
+def validate_host(task):
+    """Optional host launcher settings; also used when enabling an existing paused task."""
+    host_command = task.get("host_command")
+    if host_command is not None:
+        if not task["host_driven"] or not isinstance(host_command, list) or not host_command:
+            raise ValueError("host_command requires host_driven and a nonempty argv array")
+        if any(not isinstance(arg, str) or not arg or "\0" in arg for arg in host_command):
+            raise ValueError("host_command must contain nonempty argv strings")
+        if task["wall_budget_seconds"] is None and task.get("deadline_at") is None:
+            raise ValueError("Automatic host continuation requires a wall budget or deadline_at")
+    positive(task.get("deadline_at"), "deadline_at", nullable=True)
+    command = task["command"]
+    if host_command:
+        try:
+            bridge_index = command.index("bridge")
+            root_index = command.index("--root", bridge_index)
+            if (
+                bridge_index == 0
+                or "manage" not in command[:bridge_index]
+                or root_index + 1 >= len(command)
+            ):
+                raise ValueError
+        except ValueError:
+            raise ValueError(
+                "host_command requires command to run manage bridge --root PATH"
+            ) from None
+
+
 def validate(raw, base):
     if set(raw) - {"version", "resources", "tasks"} or raw.get("version") != 1:
         raise ValueError("Expected version 1 deployment with resources and tasks")
@@ -81,6 +109,8 @@ def validate(raw, base):
             "gpu_budget_seconds",
             "cooldown_seconds",
             "host_driven",
+            "host_command",
+            "deadline_at",
         }
         if set(item) - allowed:
             raise ValueError("Unknown task setting")
@@ -113,6 +143,7 @@ def validate(raw, base):
             or any(not isinstance(arg, str) or not arg or "\0" in arg for arg in command)
         ):
             raise ValueError("command must be a nonempty argv array, never a shell string")
+        validate_host(task)
         for key in ("round_timeout_seconds", "cooldown_seconds"):
             positive(task[key], key)
         for key in ("wall_budget_seconds", "gpu_budget_seconds"):

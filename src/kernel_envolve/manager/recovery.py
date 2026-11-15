@@ -115,14 +115,16 @@ def assess(store, task, job, status, current):
     old = json.loads(old["data"]) if old else {}
     seen = set(old.get("execution_signatures", []))
     novel = []
+    execution_observed = False
     for child in store.rows(
         "SELECT * FROM jobs WHERE parent=? AND kind='gpu' AND child_pid IS NOT NULL "
         "AND status IN ('succeeded','failed')",
         (job["id"],),
     ):
+        execution_observed = True
         signature = hashlib.sha256(
             json.dumps(
-                [child["command"], child["status"], child["exit_code"]],
+                [child["command"], child["status"], child["exit_code"], current],
                 sort_keys=True,
             ).encode()
         ).hexdigest()
@@ -141,9 +143,16 @@ def assess(store, task, job, status, current):
             or execution.get("cleanup_confirmed") is not True
         ):
             continue
+        execution_observed = True
         signature = hashlib.sha256(
             json.dumps(
-                ["bridge-cpu", execution["command"], execution["status"], execution["returncode"]],
+                [
+                    "bridge-cpu",
+                    execution["command"],
+                    execution["status"],
+                    execution["returncode"],
+                    current,
+                ],
                 sort_keys=True,
             ).encode()
         ).hexdigest()
@@ -167,6 +176,7 @@ def assess(store, task, job, status, current):
         else "diagnosis_requested",
         "round": job["id"],
         "observable_progress": progress,
+        "execution_observed": execution_observed,
         "implementation_changed": changed,
         "new_execution_jobs": novel,
         "new_cpu_requests": cpu_requests,
@@ -179,9 +189,28 @@ def assess(store, task, job, status, current):
 
 def context(store, task):
     row = store.one("SELECT data FROM metadata WHERE key=?", ("recovery:" + task["id"],))
-    if not row:
-        return {}
-    data = json.loads(row["data"])
+    data = json.loads(row["data"]) if row else {}
+    recent = store.rows(
+        "SELECT id,status,error,exit_code FROM jobs WHERE task=? AND kind='agent' "
+        "AND status NOT IN ('queued','running') ORDER BY ended DESC LIMIT 3",
+        (task["id"],),
+    )
+    for job in recent:
+        job["logs"] = str(store.root / "jobs" / job["id"])
+        command = task["spec"]["command"]
+        if (
+            task["spec"].get("host_driven")
+            and "--root" in command
+            and command.index("--root") + 1 < len(command)
+        ):
+            root = Path(command[command.index("--root") + 1])
+            if not root.is_absolute():
+                root = Path(task["spec"]["workspace"]) / root
+            job["bridge_results"] = str(root / task["id"] / job["id"])
+    data["recent_sessions"] = recent
+    state = ".kernel_native" if task["spec"]["kind"] == "native" else ".kernel_envolve"
+    data["evaluation_records"] = str(Path(task["spec"]["task_dir"]) / state)
+    data["best_pointer"] = str(Path(data["evaluation_records"]) / "best.json")
     data.pop("execution_signatures", None)
     jobs = store.rows(
         "SELECT id,kind,status,error,exit_code FROM jobs WHERE task=? "

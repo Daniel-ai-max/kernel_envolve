@@ -47,6 +47,8 @@ def open_host(store, task_id, owner, claim_id):
     identifier(claim_id)
     key = f"host-claim:{task_id}:{claim_id}"
     with store.transaction():
+        if store.task(task_id)["spec"].get("host_command"):
+            raise ValueError("Automatic host_command owns continuation; do not open a second host")
         old = store.one("SELECT data FROM metadata WHERE key=?", (key,))
         if old:
             value = json.loads(old["data"])
@@ -268,6 +270,54 @@ def consume(store, root, task, round_id, owner, request_id, sha256, outcome, nex
     return record
 
 
+@contextlib.contextmanager
+def model_host(store, task, round_id, directory, owner):
+    """Run the configured foreground model under the existing registered-group supervisor."""
+    command = store.task(task)["spec"].get("host_command")
+    if not command:
+        yield None
+        return
+    completed = directory / "agent.exit.json"
+    with (
+        (directory / "agent.stdout.log").open("wb") as out,
+        (directory / "agent.stderr.log").open("wb") as err,
+    ):
+        process = subprocess.Popen(
+            [
+                sys.executable,
+                "-m",
+                "kernel_envolve.manager.bridge",
+                str(completed),
+                str(directory / "prompt.txt"),
+            ],
+            stdin=subprocess.PIPE,
+            stdout=out,
+            stderr=err,
+            start_new_session=True,
+            env=os.environ
+            | {
+                "KERNEL_ENVOLVE_BRIDGE_ROOT": str(directory.parent.parent),
+                "KERNEL_ENVOLVE_BRIDGE_OWNER": owner,
+            },
+        )
+        try:
+            birth = identity(process.pid)
+            if not birth:
+                raise ValueError("Model host supervisor exited before registration")
+            store.db.execute(
+                "INSERT INTO processes(job,pid,identity) VALUES(?,?,?)",
+                (round_id, process.pid, birth),
+            )
+            process.stdin.write((encode(command) + "\n").encode())
+            process.stdin.flush()
+            yield process, completed
+        finally:
+            try:
+                terminate(process)
+            finally:
+                process.stdin.close()
+
+
 def run_bridge(store, root, idle_seconds=120):
     if not 1 <= idle_seconds <= 300:
         raise ValueError("idle_seconds must be in [1,300]")
@@ -309,7 +359,9 @@ def run_bridge(store, root, idle_seconds=120):
             child.terminate()
 
     signals = {s: signal.signal(s, stop) for s in (signal.SIGTERM, signal.SIGINT)}
+    hosts = contextlib.ExitStack()
     try:
+        host = hosts.enter_context(model_host(store, task, round_id, directory, owner))
         while not stopped and active(store, task, round_id):
             pending = [
                 p
@@ -317,8 +369,18 @@ def run_bridge(store, root, idle_seconds=120):
                 if not (directory / "claims" / p.name).exists()
             ]
             if not pending:
+                if host:
+                    process, completed = host
+                    if completed.exists():
+                        outcome = read(completed)
+                        return (
+                            outcome["returncode"] if type(outcome.get("returncode")) is int else 2
+                        )
+                    if process.poll() is not None:
+                        raise ValueError("Model host supervisor exited without a terminal receipt")
                 if (
-                    time.time() - max(last_execution, read(directory / "host.json")["at"])
+                    not host
+                    and time.time() - max(last_execution, read(directory / "host.json")["at"])
                     > idle_seconds
                 ):
                     receipt = {"task": task, "round": round_id, "at": time.time()}
@@ -343,6 +405,8 @@ def run_bridge(store, root, idle_seconds=120):
                         atomic(Path(os.environ["KERNEL_ENVOLVE_REPORT"]), value["report"])
                     receipt.update(status="succeeded", returncode=0, finished_at=time.time())
                     atomic(directory / "results" / path.name, receipt)
+                    if host:
+                        continue  # Let the real host save its final output and exit normally.
                     return 0
                 argv = value["argv"]
                 if value["kind"] == "gpu":
@@ -502,31 +566,40 @@ def run_bridge(store, root, idle_seconds=120):
                 last_execution = time.time()
         return 2
     finally:
-        if child is not None and cpu_child:
-            terminate(child)
-            child.stdin.close()
-        elif child is not None and child.poll() is None:
-            child.terminate()
-            with contextlib.suppress(subprocess.TimeoutExpired):
-                child.wait(timeout=3)
-            if child.poll() is None:
-                child.kill()
-                child.wait()
-        atomic(
-            directory / "context.json", context | {"status": "closed", "finished_at": time.time()}
-        )
-        for sig, handler in signals.items():
-            signal.signal(sig, handler)
+        try:
+            hosts.close()
+        finally:
+            if child is not None and cpu_child:
+                terminate(child)
+                child.stdin.close()
+            elif child is not None and child.poll() is None:
+                child.terminate()
+                with contextlib.suppress(subprocess.TimeoutExpired):
+                    child.wait(timeout=3)
+                if child.poll() is None:
+                    child.kill()
+                    child.wait()
+            atomic(
+                directory / "context.json",
+                context | {"status": "closed", "finished_at": time.time()},
+            )
+            for sig, handler in signals.items():
+                signal.signal(sig, handler)
 
 
-def cpu_supervisor(completed):
+def cpu_supervisor(completed, prompt=None):
     """Keep a registered group leader alive until the bridge confirms group cleanup."""
     line = sys.stdin.readline()
     if not line:
         return 2  # The bridge vanished before releasing the registration handshake.
     try:
-        command = subprocess.Popen(json.loads(line), stdin=subprocess.DEVNULL)
-        outcome = {"returncode": command.wait()}
+        with (
+            Path(prompt).open("rb")
+            if prompt
+            else contextlib.nullcontext(subprocess.DEVNULL) as input_stream
+        ):
+            command = subprocess.Popen(json.loads(line), stdin=input_stream)
+            outcome = {"returncode": command.wait()}
     except (OSError, ValueError, TypeError) as exc:
         outcome = {"returncode": None, "error": str(exc)}
     atomic(completed, outcome)
@@ -538,4 +611,4 @@ def cpu_supervisor(completed):
 
 
 if __name__ == "__main__":
-    raise SystemExit(cpu_supervisor(Path(sys.argv[1])))
+    raise SystemExit(cpu_supervisor(Path(sys.argv[1]), sys.argv[2] if len(sys.argv) > 2 else None))
