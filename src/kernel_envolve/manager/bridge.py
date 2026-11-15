@@ -463,6 +463,24 @@ def run_bridge(store, root, idle_seconds=120):
                             stderr=err,
                             env=os.environ | {"KERNEL_ENVOLVE_BRIDGE_CAPTURE": "1"},
                         )
+                    if cpu_child:
+                        store.db.execute(
+                            "INSERT OR REPLACE INTO metadata VALUES(?,?)",
+                            (
+                                "cpu_activity:" + task,
+                                encode(
+                                    {
+                                        "task": task,
+                                        "round": round_id,
+                                        "request": path.stem,
+                                        "kind": "cpu_request",
+                                        "command": value["argv"],
+                                        "status": "running",
+                                        "recorded_at": time.time(),
+                                    }
+                                ),
+                            ),
+                        )
                     # A short wrapper may already be a zombie. Capture its birth
                     # before poll/wait can reap it; never fall back to PID alone.
                     gpu_identity = (
@@ -534,6 +552,25 @@ def run_bridge(store, root, idle_seconds=120):
                     finished_at=time.time(),
                 )
                 atomic(directory / "results" / path.name, receipt)
+                if cpu_child:
+                    store.db.execute(
+                        "INSERT OR REPLACE INTO metadata VALUES(?,?)",
+                        (
+                            "cpu_activity:" + task,
+                            encode(
+                                {
+                                    "task": task,
+                                    "round": round_id,
+                                    "request": path.stem,
+                                    "kind": "cpu_request",
+                                    "command": value["argv"],
+                                    "status": receipt["status"],
+                                    "recorded_at": receipt["finished_at"],
+                                    "returncode": code,
+                                }
+                            ),
+                        ),
+                    )
                 if cpu_child and type(code) is int:
                     # A supervisor can finish without ever starting argv. Only
                     # a command exit, after confirmed group cleanup, is activity.

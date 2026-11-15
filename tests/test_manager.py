@@ -163,7 +163,8 @@ def test_only_changed_reports_refresh_research_progress(managed, monkeypatch):
     assert view["progress_stale"] and view["progress_as_of"] == reported_at
     store.report("toy", job, {"outcome": "identified an FP32 reduction discrepancy"})
     view = overview(store)["tasks"][0]
-    assert not view["progress_stale"] and view["phase"] == "agent_running"
+    assert not view["progress_stale"]  # Research prose has its own clock.
+    assert view["experiment_stale"] and view["phase"] == "awaiting_progress"
     assert view["progress_as_of"] == clock[0]
 
 

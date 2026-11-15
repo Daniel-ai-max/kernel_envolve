@@ -1,6 +1,7 @@
 """UI projections use evaluator facts, supervisor state and separately labeled agent notes."""
 
 import json
+import shlex
 import time
 from pathlib import Path
 
@@ -50,6 +51,21 @@ def lineage_index(store):
         if new and receipt.get("task", old) == old:
             predecessors[new] = old if new not in predecessors else None
     return predecessors
+
+
+def cpu_activity(store, key):
+    row = store.one("SELECT data FROM metadata WHERE key=?", ("cpu_activity:" + key,))
+    if not row:
+        return None
+    value = json.loads(row["data"])
+    parent = store.one(
+        "SELECT status FROM jobs WHERE id=? AND task=? AND kind='agent'", (value["round"], key)
+    )
+    if not parent:
+        return None
+    if value["status"] == "running" and parent["status"] != "running":
+        value["status"] = "interrupted"
+    return value
 
 
 def research_summary(store, task, predecessors):
@@ -117,6 +133,9 @@ def research_summary(store, task, predecessors):
     )
     # A report can change during maintenance. Its timestamp is never an experiment timestamp.
     executions = []
+    cpu = cpu_activity(store, task["id"])
+    if cpu:
+        executions.append(cpu)
     if recent_gpu:
         executions.append({**recent_gpu, "kind": "gpu_job"})
     if recent_evaluation:
@@ -127,6 +146,7 @@ def research_summary(store, task, predecessors):
         "research_record": record,
         "recent_evaluation": recent_evaluation,
         "recent_gpu_job": recent_gpu,
+        "recent_cpu_request": cpu,
         "recent_execution": max(
             executions, key=lambda value: value.get("recorded_at") or 0, default=None
         ),
@@ -192,6 +212,7 @@ def task_view(store, key, now=None, predecessors=None, usage=None):
     report = store.one("SELECT MAX(at) AS at FROM events WHERE task=? AND kind='report'", (key,))
     task["report_as_of"] = report["at"]
     task["phase"] = task["desired"]
+    cpu = task["recent_cpu_request"]
     if task["desired"] == "active":
         gpu = next((j for j in jobs if j["kind"] == "gpu" and j["status"] == "running"), None)
         waiting = next((j for j in jobs if j["kind"] == "gpu" and j["status"] == "queued"), None)
@@ -199,10 +220,21 @@ def task_view(store, key, now=None, predecessors=None, usage=None):
             task["phase"] = "gpu_running"
         elif waiting:
             task["phase"] = "waiting_gpu"
+        elif cpu and cpu["status"] == "running":
+            task["phase"] = "cpu_running"
         elif jobs:
-            task["phase"] = "agent_running" if jobs[0]["status"] == "running" else "queued"
+            task["phase"] = (
+                "recovering"
+                if store.resource(task["spec"]["resource"])["problem"]
+                and jobs[0]["status"] == "running"
+                else "agent_running"
+                if jobs[0]["status"] == "running"
+                else "queued"
+            )
         else:
-            if store.resource(task["spec"]["resource"])["problem"]:
+            if task["spec"].get("observe_only"):
+                task["phase"] = "observing"
+            elif store.resource(task["spec"]["resource"])["problem"]:
                 task["phase"] = "resource_blocked"
             elif task["next_at"] > now:
                 task["phase"] = "backoff" if task["failures"] else "cooldown"
@@ -222,8 +254,22 @@ def task_view(store, key, now=None, predecessors=None, usage=None):
     task["progress_stale"] = (
         task["phase"] == "agent_running" and task["progress_age_seconds"] >= PROGRESS_NOTICE_SECONDS
     )
-    if task["progress_stale"]:
+    first = store.one("SELECT MIN(started) AS at FROM jobs WHERE task=? AND kind='agent'", (key,))
+    execution = task["recent_execution"]
+    task["experiment_as_of"] = execution.get("recorded_at") if execution else None
+    activity_origin = max(task["created"], first["at"] or 0, task["experiment_as_of"] or 0)
+    task["experiment_stale"] = (
+        task["phase"] == "agent_running" and now - activity_origin >= PROGRESS_NOTICE_SECONDS
+    )
+    if task["experiment_stale"]:
         task["phase"] = "awaiting_progress"
+    active_gpu = next((j for j in jobs if j["kind"] == "gpu"), None)
+    if active_gpu:
+        task["current_work"] = shlex.join(json.loads(active_gpu["command"]))[:500]
+    elif cpu and cpu["status"] == "running":
+        task["current_work"] = shlex.join(cpu["command"])[:500]
+    else:
+        task["current_work"] = None
     task["last_promotion"] = store.one(
         "SELECT at,data FROM promotions WHERE task=? ORDER BY at DESC LIMIT 1", (key,)
     )
@@ -239,6 +285,8 @@ def overview(store, *, compact=False, now=None):
     now = time.time() if now is None else now
     coordinator = store.one("SELECT data FROM metadata WHERE key='coordinator'")
     coordinator = json.loads(coordinator["data"]) if coordinator else None
+    observer = store.one("SELECT data FROM metadata WHERE key='observer'")
+    observer = json.loads(observer["data"]) if observer else None
     predecessors = lineage_index(store)
     usage = allocations(store)
     tasks = [
@@ -275,6 +323,7 @@ def overview(store, *, compact=False, now=None):
         resources.append(resource)
     return {
         "coordinator": coordinator,
+        "observer": observer,
         "allocation_usage": usage_view(usage),
         "as_of": now,
         "tasks": tasks,

@@ -240,7 +240,7 @@ def main(argv=None):
                     cfg = config(Path(task["task_dir"]))
                 resource = next(r for r in deployment["resources"] if r["id"] == task["resource"])
                 allowed = ("cpu",) if resource_devices(resource) == ["cpu"] else ("cuda", "cuda:0")
-                if cfg["device"] not in allowed:
+                if not task.get("observe_only") and cfg["device"] not in allowed:
                     raise ValueError(
                         "Managed tasks use cpu on CPU resources or cuda:0 on the assigned GPU"
                     )

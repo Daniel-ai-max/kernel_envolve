@@ -1,5 +1,5 @@
 import { patch, poller } from "/sync.js";
-import { executionLabel, jobLabel, benefitLabel, noteSnippet, executionLabelFor, visibleTask } from "/summary.js";
+import { executionLabel, jobLabel, benefitLabel, noteSnippet, executionLabelFor, visibleTask, resultSummary, phaseLabel, recentResult } from "/summary.js";
 /* All external text passes through textContent or escaping. No HTML from agent reports. */
 const $ = (id) => document.getElementById(id);
 const escape = (s) =>
@@ -23,22 +23,6 @@ const cardHours = (usage) => usage ? `${usage.gpu_hours.toFixed(2)} 卡时` : "�
 const speed = (n) => (n == null ? "—" : `${n.toFixed(3)}×`);
 const shortTime = (t) => t ? new Date(t * 1000).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"}) : "—";
 const mode = (value) => ({quick: "初筛", full: "完整评测"})[value] || value || "—";
-const phases = {
-  active: "持续优化",
-  cooldown: "准备下一轮",
-  resource_blocked: "资源异常",
-  paused: "已停止",
-  superseded: "历史版本",
-  budget: "预算耗尽",
-  blocked: "执行失败",
-  gpu_running: "GPU 执行",
-  waiting_gpu: "等待 GPU",
-  agent_running: "会话在线",
-  awaiting_progress: "会话在线",
-  queued: "准备会话",
-  backoff: "失败退避",
-  waiting_session: "排队中",
-};
 let state = null,
   selected = null,
   view = "overview",
@@ -66,9 +50,6 @@ function evidenceSummary(t) {
     : r.correctness === "fail" ? "正确性失败"
     : r.correctness === "pass" ? "正确性通过" : "未完成";
   return `${escape(mode(r.mode))} · ${status}`;
-}
-function phaseLabel(t) {
-  return t.stale ? "会话失联" : phases[t.phase] || t.phase;
 }
 function render() {
   const tasks = state.tasks;
@@ -100,9 +81,9 @@ function render() {
     $("tasks"),
     filtered
       .map((t) => {
-        const record = t.research_record, recent = t.recent_execution, baseline = t.spec.baseline;
-        const outcome = noteSnippet(record?.outcome || record?.hypothesis, "尚无研究结论");
-        const direction = noteSnippet(record?.hypothesis, "—");
+        const record = t.research_record, recent = recentResult(t), baseline = t.spec.baseline;
+        const outcome = resultSummary(recent);
+        const direction = noteSnippet(t.current_work || record?.hypothesis, phaseLabel(t));
         const next = noteSnippet(record?.next_action, "");
         return `<tr data-key="${escape(t.id)}">
           <td data-label="算子"><button class="name" data-task="${escape(t.id)}">${escape(t.spec.name)}</button></td>
@@ -111,8 +92,8 @@ function render() {
           <td class="benefit ${t.best ? "good" : "muted"}" data-label="已验证加速">${escape(benefitLabel(t.best))}</td>
           <td data-label="最新实现">${t.implementation_pr ? `${link(t.implementation_pr.url, "PR #" + t.implementation_pr.url.split("/").pop())}${t.implementation_pr.current_head_verified === false ? `<small>${link(t.implementation_pr.commit_url, "已验 " + t.implementation_pr.head.slice(0, 7))}</small>` : ""}<small>${escape(stamp(t.implementation_pr.updated_at))}</small>` : "—"}</td>
           <td data-label="消耗卡时" title="${escape(t.allocation_usage ? `含准备与空闲占卡 · 截至 ${stamp(t.allocation_usage.observed_at)}` : "尚无占卡用量记录")}">${cardHours(t.allocation_usage)}</td>
-          <td class="research" data-label="优化方向"><div class="snippet" title="${escape(record?.hypothesis || "")}">${escape(direction)}</div>${next ? `<small class="snippet" title="${escape(record.next_action)}">下一步：${escape(next)}</small>` : ""}</td>
-          <td class="research" data-label="最近结果"><div class="snippet" title="${escape(record?.outcome || record?.hypothesis || "")}">${escape(outcome)}</div>${recent ? `<small><button class="source-link execution-link" data-task="${escape(recent.task)}" title="${escape(stamp(recent.recorded_at))}">${escape(executionLabelFor(recent))} · ${shortTime(recent.recorded_at)}${recent.inherited ? " · 历史" : ""}</button></small>` : ""}</td>
+          <td class="research" data-label="当前工作"><div class="snippet" title="${escape(t.current_work || record?.hypothesis || "")}">${escape(direction)}</div>${next ? `<small class="snippet" title="${escape(record.next_action)}">下一步：${escape(next)}</small>` : ""}</td>
+          <td class="research" data-label="最近结果"><div class="snippet" title="${escape(recent ? resultSummary(recent) : "")}">${escape(outcome)}</div>${recent ? `<small><button class="source-link execution-link" data-task="${escape(recent.task)}" title="${escape(stamp(recent.recorded_at))}">${escape(executionLabelFor(recent))} · ${shortTime(recent.recorded_at)}${recent.inherited ? " · 历史" : ""}</button></small>` : ""}</td>
         </tr>`;
       })
       .join(""),
@@ -133,11 +114,12 @@ function render() {
 function renderStatus() {
   const live =
     state?.coordinator && state.as_of - state.coordinator.heartbeat < 5;
+  const observing = state?.observer && state.as_of - state.observer.heartbeat < 5;
   $("updated").textContent = connected
-    ? (live ? `在线 · ${shortTime(state.as_of)}` : `离线 · 最后观测 ${stamp(state?.coordinator?.heartbeat)}`)
+    ? (live ? `在线 · ${shortTime(state.as_of)}` : observing ? `同步在线 · ${shortTime(state.as_of)}` : `离线 · 最后观测 ${stamp(state?.coordinator?.heartbeat)}`)
     : `连接中断 · ${shortTime(state?.as_of)}`;
-  $("updated").classList.toggle("warn", !connected || !live);
-  const problem = state?.coordinator?.error || state?.coordinator?.evidence_error;
+  $("updated").classList.toggle("warn", !connected || (!live && !observing));
+  const problem = (live ? state?.coordinator : state?.observer)?.error || (live ? state?.coordinator : state?.observer)?.evidence_error;
   $("error").hidden = !problem;
   if (problem) { $("error").textContent = "服务异常"; $("error").title = String(problem); }
 }
@@ -175,7 +157,7 @@ function renderDetail(t) {
     <div class="section-head"><h2>${escape(t.spec.name)}</h2><button id="close-detail">返回</button></div>
     <div class="detail-summary"><span>${executionLabel(t.execution_state)}</span><span>${evidenceSummary(t)}</span><span>${escape(benefitLabel(t.best))}</span></div>
     ${t.superseded_by ? `<p>历史契约 · 后续任务：<button class="source-link" data-task="${escape(t.superseded_by)}">${escape(t.superseded_by)}</button></p>` : ""}
-    <article class="card"><h3>研究记录 · Agent 报告</h3>${record?.inherited ? `<p>来源：<button class="source-link" data-task="${escape(record.task)}">${escape(record.task)}</button>（历史契约）</p>` : ""}<dl>${fields([["记录时间", record ? stamp(record.recorded_at) : ""], ["方向", record?.hypothesis], ["结论", record?.outcome], ["下一步", record?.next_action]])}${t.report.pr_urls?.length ? `<dt>PR</dt><dd>${t.report.pr_urls.map(u => link(u, u.replace("https://github.com/", "").replace("/pull/", "#"))).join("<br>")}</dd>` : ""}</dl></article>
+    <article class="card"><h3>当前工作</h3><p>${escape(t.current_work || phaseLabel(t))}</p><p>${escape(resultSummary(recentResult(t)))}</p>${record?.inherited ? `<p>来源：<button class="source-link" data-task="${escape(record.task)}">${escape(record.task)}</button>（历史契约）</p>` : ""}<dl>${fields([["记录时间", record ? stamp(record.recorded_at) : ""], ["方向", record?.hypothesis], ["结论", record?.outcome], ["下一步", record?.next_action]])}${t.report.pr_urls?.length ? `<dt>PR</dt><dd>${t.report.pr_urls.map(u => link(u, u.replace("https://github.com/", "").replace("/pull/", "#"))).join("<br>")}</dd>` : ""}</dl></article>
     ${t.best ? `<article class="card"><h3>加速趋势</h3>${chart(t.history)}</article><details><summary>逐用例性能</summary><div class="scroll"><table><thead><tr><th>用例</th><th>批次</th><th>基线 μs</th><th>上一版 μs</th><th>最优 μs</th><th>加速</th></tr></thead><tbody>${rows.map(c => {
       const base = c.baseline_us ?? c.comparator_us;
       return `<tr><td>${escape(c.case)}${c.performance_role === "guard" ? '<small title="不计入总收益">护栏</small>' : ""}</td><td>${c.batch + 1}</td><td>${base?.toFixed(3) ?? "—"}</td><td>${c.comparator_us?.toFixed(3) ?? "—"}</td><td>${c.candidate_us?.toFixed(3) ?? "—"}</td><td>${base ? speed(base / c.candidate_us) : "—"}</td></tr>`;

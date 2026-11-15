@@ -26,3 +26,24 @@ test("stopped current tasks remain visible; only superseded tasks are hidden", (
   assert.equal(visibleTask({desired: "superseded"}), false);
   assert.equal(visibleTask({desired: "superseded"}, true), true);
 });
+
+const extra = await import("data:text/javascript;base64," + Buffer.from(source).toString("base64"));
+test("stale research is not relabeled as normal running or a user todo", () => {
+  assert.equal(extra.phaseLabel({phase:"awaiting_progress"}), "暂无新实验");
+  assert.equal(extra.phaseLabel({phase:"blocked"}), "恢复失败");
+  assert.equal(extra.phaseLabel({phase:"observing"}), "记录同步");
+  assert.equal(extra.phaseLabel({phase:"gpu_running",stale:true}), "会话失联");
+});
+test("local signal is distinct from verified best and failure never shows speed", () => {
+  const quick={kind:"evaluation",mode:"quick",correctness:"pass",incremental_speedup:1.2};
+  assert.match(extra.resultSummary(quick), /局部信号 1.200×/);
+  assert.doesNotMatch(extra.resultSummary({...quick,evidence_error:"changed"}), /1.200/);
+  assert.equal(benefitLabel(null), "尚无完整验收收益");
+});
+test("evaluator result survives its enclosing GPU wrapper completion", () => {
+  const evalRecord={kind:"evaluation",mode:"full",recorded_at:15};
+  const task={recent_execution:{kind:"gpu_job",status:"succeeded",started:10,recorded_at:20},recent_evaluation:evalRecord};
+  assert.equal(extra.recentResult(task), evalRecord);
+  task.recent_execution.status="failed";
+  assert.equal(extra.recentResult(task),task.recent_execution);
+});
