@@ -1,5 +1,6 @@
 """Foreground model handoffs use real subprocess receipts, never bridge liveness."""
 
+import hashlib
 import json
 import os
 import signal
@@ -701,3 +702,57 @@ def test_cli_combined_request_preserves_checks_and_partial_consumption(managed, 
         main(argv)
     store.control("toy", "pause")
     proc.communicate(timeout=8)
+
+
+@pytest.mark.parametrize("output", [b"", b"x" * 65536, b"x" * 65537, "中文".encode() * 20000])
+def test_result_marks_bounded_log_tail_without_changing_receipt(tmp_path, output):
+    directory = tmp_path / "bridge"
+    (directory / "results").mkdir(parents=True)
+    (directory / "logs").mkdir()
+    path = directory / "results/request.json"
+    original = b'{"id":"request","status":"succeeded"}\n'
+    path.write_bytes(original)
+    stdout = directory / "logs/request.stdout.log"
+    stderr = directory / "logs/request.stderr.log"
+    stdout.write_bytes(output)
+    stderr.write_bytes(b"warning\n")
+    value = bridge.result(directory, "request")
+    assert value["stdout"] == output[-65536:].decode(errors="replace")
+    assert value["stderr"] == "warning\n"
+    assert value["log_files"] == {
+        "stdout": {"path": str(stdout), "bytes": len(output), "truncated": len(output) > 65536},
+        "stderr": {"path": str(stderr), "bytes": 8, "truncated": False},
+    }
+    assert value["receipt_sha256"] == hashlib.sha256(original).hexdigest()
+    assert path.read_bytes() == original and stdout.read_bytes() == output
+    assert bridge.result(directory, "request") == value
+
+
+def test_gpu_truncation_paths_survive_bridge_tail(tmp_path, capsys):
+    from kernel_envolve.manager.gpu import forward_logs
+
+    raw = tmp_path / "gpu-job"
+    raw.mkdir()
+    (raw / "stdout.log").write_bytes(b"out" * 30000)
+    (raw / "stderr.log").write_bytes(b"err" * 30000)
+    forward_logs(raw)
+    captured = capsys.readouterr().out
+    directory = tmp_path / "bridge"
+    (directory / "logs").mkdir(parents=True)
+    (directory / "results").mkdir()
+    (directory / "logs/request.stdout.log").write_text(captured)
+    (directory / "results/request.json").write_text('{"status":"succeeded"}')
+    value = bridge.result(directory, "request")
+    assert value["log_files"]["stdout"]["truncated"]
+    marker = next(
+        line for line in value["stdout"].splitlines() if line.startswith("KERNEL_ENVOLVE_LOGS ")
+    )
+    metadata = json.loads(marker.split(" ", 1)[1])
+    assert metadata == {
+        name: {"path": str(raw / (name + ".log")), "bytes": 90000, "truncated": True}
+        for name in ("stdout", "stderr")
+    }
+    (raw / "stdout.log").write_text("short\n")
+    (raw / "stderr.log").write_text("")
+    forward_logs(raw)
+    assert capsys.readouterr().out == "short\n"

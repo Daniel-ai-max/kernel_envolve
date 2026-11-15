@@ -105,8 +105,15 @@ def result(directory, request_id):
         log = directory / "logs" / f"{request_id}.{name}.log"
         if log.exists():
             with log.open("rb") as stream:
-                stream.seek(max(0, log.stat().st_size - 65536))
-                value[name] = stream.read().decode(errors="replace")
+                size = stream.seek(0, os.SEEK_END)
+                offset = max(0, size - 65536)
+                stream.seek(offset)
+                value[name] = stream.read(size - offset).decode(errors="replace")
+            value.setdefault("log_files", {})[name] = {
+                "path": str(log.resolve()),
+                "bytes": size,
+                "truncated": offset > 0,
+            }
     return value
 
 
