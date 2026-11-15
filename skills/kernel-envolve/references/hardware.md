@@ -28,4 +28,4 @@
 | [HazyResearch/ThunderKittens](https://github.com/HazyResearch/ThunderKittens) | tile 抽象、流水和融合实现 |
 | [pytorch/pytorch](https://github.com/pytorch/pytorch) | ATen 语义、边界 case、测试与原生实现 |
 
-先搜索目标算子名和目标架构，读取最相关的源码与测试。记录实际借鉴的 commit/路径和思路；发现可复用知识时，在任务 notes 中保留“观察 + 证据 run + 适用硬件”的短条目。无需另建 wiki 或复制整份文档。
+先搜索目标算子名和目标架构，读取最相关的源码与测试。借鉴实现时保留 commit/路径以便追溯；有用的硬件结论可链接已有实验记录，无需逐次另写 notes、wiki 或复制整份文档。

@@ -1,5 +1,6 @@
 """Native project evaluation with frozen sources, isolated workers and native gates."""
 
+import hashlib
 import json
 import math
 import os
@@ -7,6 +8,7 @@ import shutil
 import statistics
 import subprocess
 import sys
+import tempfile
 import time
 import uuid
 from pathlib import Path
@@ -146,11 +148,29 @@ class Worker:
         self.count = 0
         self.log = (self.folder / "worker.log").open("w")
         request = self.folder / "request.json"
+        self.temporary = None
+        launch_attempted = False
         try:
+            selected = os.environ.get("KERNEL_ENVOLVE_NATIVE_TMPDIR")
+            parent = Path(selected).expanduser().resolve() if selected else None
+            # Explicit lifetime: an automatic finalizer must not remove files
+            # while a worker whose stop failed might still be writing them.
+            self.temporary = Path(tempfile.mkdtemp(prefix="kernel-envolve-", dir=parent)).resolve()
+            if self.temporary.is_relative_to(run.resolve()):
+                raise ValueError("Native tensor exchange directory must be outside the run")
+            self.transport = {
+                "directory": str(self.temporary),
+                "selected_parent": str(parent) if parent else None,
+                "selection": "host environment" if selected else "system temporary directory",
+                "state": "active",
+                "preserved_outputs": [],
+            }
+            write_json(self.folder / "transport.json", self.transport)
             write_json(
                 request,
                 {"config": cfg, "roots": roots, "role": role, "adapter": str(run / "adapter.py")},
             )
+            launch_attempted = True
             self.process = spawn(
                 [sys.executable, "-m", "kernel_envolve.native_worker", str(request)],
                 stdin=subprocess.PIPE,
@@ -161,8 +181,19 @@ class Worker:
                 env=environment(cfg, roots),
                 start_new_session=True,
             )
-        except BaseException:
+        except BaseException as exc:
             self.log.close()
+            if self.temporary is not None:
+                try:
+                    if launch_attempted:
+                        # spawn may fail while registering/reaping a child that
+                        # was already started; we cannot prove it stopped here.
+                        self.transport.update(state="retained", launch_error=str(exc))
+                        write_json(self.folder / "transport.json", self.transport)
+                    else:
+                        shutil.rmtree(self.temporary)
+                except Exception as cleanup_error:
+                    exc.add_note(f"Temporary directory cleanup failed: {cleanup_error}")
             raise
 
     def call(self, kind, case, seed):
@@ -172,7 +203,8 @@ class Worker:
             raise TimeoutError("Native evaluation time budget exhausted")
         self.count += 1
         base = self.folder / str(self.count)
-        reply, output = base.with_suffix(".json"), base.with_suffix(".pt")
+        reply = base.with_suffix(".json")
+        output = self.temporary / f"{self.count}.pt"
         command = {
             "id": self.count,
             "kind": kind,
@@ -201,15 +233,64 @@ class Worker:
 
     def close(self):
         errors = []
-        for cleanup in (lambda: stop(self.process), self.process.stdin.close, self.log.close):
+        try:
+            stop(self.process)
+        except Exception as exc:
+            errors.append(exc)
+        try:
+            if not errors:
+                self._close_transport()
+        except Exception as exc:
+            errors.append(exc)
+        for cleanup in (self.process.stdin.close, self.log.close):
             try:
                 cleanup()
             except Exception as exc:
                 errors.append(exc)
         if errors:
+            self.transport.update(
+                state="retained" if self.temporary.exists() else "closed",
+                cleanup_errors=[f"{type(exc).__name__}: {exc}" for exc in errors],
+            )
+            try:
+                write_json(self.folder / "transport.json", self.transport)
+            except Exception as exc:
+                errors.append(exc)
             for other in errors[1:]:
                 errors[0].add_note(f"Additional cleanup error: {type(other).__name__}: {other}")
             raise errors[0]
+
+    def _close_transport(self):
+        # Only unconsumed outputs remain: successful loads already unlink them.
+        # Persist these after stop, without changing the worker's command/reply.
+        preserved = []
+        for output in sorted(self.temporary.iterdir()):
+            if output.is_symlink() or not output.is_file():
+                raise ValueError(f"Unexpected tensor exchange entry: {output}")
+            destination = self.folder / "transport-failures" / output.name
+            destination.parent.mkdir(exist_ok=True)
+            with output.open("rb") as stream:
+                expected = hashlib.file_digest(stream, "sha256").hexdigest()
+            shutil.copy2(output, destination)
+            with destination.open("rb") as stream:
+                copied_hash = hashlib.file_digest(stream, "sha256").hexdigest()
+            if copied_hash != expected:
+                raise ValueError(f"Failed tensor evidence copy differs: {destination}")
+            preserved.append(
+                {
+                    "temporary_path": str(output),
+                    "path": str(destination.relative_to(self.folder)),
+                    "bytes": destination.stat().st_size,
+                    "sha256": expected,
+                }
+            )
+        # This manifest is covered by the normal receipt even though .pt files
+        # are excluded there. Keep originals until it has been written.
+        self.transport.update(state="stopped", preserved_outputs=preserved)
+        write_json(self.folder / "transport.json", self.transport)
+        shutil.rmtree(self.temporary)
+        self.transport["state"] = "closed"
+        write_json(self.folder / "transport.json", self.transport)
 
 
 def compare(actual, expected, cfg):

@@ -104,7 +104,7 @@ wall 额度单位为墙钟秒，GPU 额度单位为卡秒（设备数 × 占用�
 再续接下一项实验，不反复开启没有工作内容的轮次。
 
 每轮 stdin 是恢复提示：任务范围、固定基线、上一轮结构化报告、最近事件、预算和
-工作目录。Agent 仍需要读取项目指令、kernel-envolve skill、任务 notes.md 和已有 run。
+工作目录。Agent 按需读取项目指令、kernel-envolve skill 与已有源码和 run；notes 可用于交接，但不要求重复运行记录。
 如果宿主支持原生 session resume，适配器可以在自己的任务工作区保存宿主 session ID
 并续接；否则每轮使用新 session，通过同一任务 checkpoint 恢复。两者都不改变任务身份。
 
@@ -115,15 +115,14 @@ wall 额度单位为墙钟秒，GPU 额度单位为卡秒（设备数 × 占用�
 | `KERNEL_ENVOLVE_STATE` | 管理状态目录 |
 | `KERNEL_ENVOLVE_TASK` | 长期任务 ID |
 | `KERNEL_ENVOLVE_ROUND` | 当前执行轮次 ID；用于拒绝过期报告 |
-| `KERNEL_ENVOLVE_REPORT` | 本轮结束时的 JSON 报告文件 |
+| `KERNEL_ENVOLVE_REPORT` | 可选研究结论的 JSON 文件；执行状态另由主管记录 |
 
 ```sh
 # GPU 上运行的所有命令均经该入口，包括局部正确性检查和 profiler。
 kernel-envolve manage gpu-run --expected-seconds 300 -- kernel-envolve native-evaluate --task ./task --mode quick
 kernel-envolve manage gpu-run --expected-seconds 1200 -- kernel-envolve native-evaluate --task ./task --mode full
 kernel-envolve native-promote ./task/.kernel_native/runs/<run>
-# 交付时主动索引当前算子，再 sync-pr；局部候选不需要这一步。
-kernel-envolve manage refresh --task probs-scale-b300
+# 有需要交接的新结论时可保存；不是每次实验的必经步骤。
 kernel-envolve manage report --file progress.json
 ```
 
@@ -153,31 +152,21 @@ GPU 命令可直接执行原生测试、benchmark 或 profiler；有依据的候
 缺失或失效的描述符，并给出上述修复方式；创建 worker 时也再次检查。
 检查不会重新获取锁，也不能通过删除 manager 环境变量来恢复执行。
 
-报告示例：
+研究摘要按需保存到 `KERNEL_ENVOLVE_REPORT`，或通过 `manage report --file progress.json` 更新。
+只记录需要交接的结论与未完成工作，无需重复源码、日志、用量或 PR 数据。例如：
 
 ```json
-{
-  "phase": "实现反向融合",
-  "hypothesis": "复用前向统计量，减少一次读写",
-  "outcome": "小尺寸正确，长序列仍需验证",
-  "next_action": "检查 padded case 的反向梯度，然后执行 quick",
-  "pr_urls": [],
-  "session_url": "",
-  "integrated_revision": ""
-}
+{"outcome":"小尺寸正确，长序列尚未确认","next_action":"检查长序列退化原因"}
 ```
 
-报告只描述研究活动。speedup、覆盖、best 都来自 evaluator 结果和晋升链。收到失效
-轮次的报告会拒绝；无效报告将本轮记为失败。轮次成功退出后继续调度，而不是结束任务。
-执行失败后保留任务，并按 10、20、40、80、160、300 秒退避，后续最多等待 300 秒。
-下一轮会收到最近失败作业的退出码、日志路径和错误摘要，由 Agent 诊断原因、修复后
-继续实验。管理器只负责调度配置的命令；外部 bridge 仍需宿主实际接收请求并运行
-Agent，新的进程或心跳不代表模型已经工作。
+执行状态、退出码和原始日志由主管记录；speedup、覆盖与 best 来自 evaluator 证据，
+PR 状态来自已验证绑定。研究结论不能代替执行恢复或性能验收，省略分析不阻止下一实验。
+提交的摘要仍需符合字段契约并属于有效轮次；只读查询不产生报告。
 
-清除连续失败计数需要成功结束的轮次、新的结论与下一步，以及实现内容变化或新的
-实际 GPU 作业结果。仅修改报告措辞、重复相同命令和结果不会清除计数。数值检查失败
-可以成为诊断依据，但不能作为放宽 oracle、容差或验收条件的理由；恢复记录也不等于
-evaluator 验收通过。所有重试沿用原累计预算，预算耗尽、暂停及 GPU 资源隔离仍有效。
+执行失败保留原任务与证据，按 10、20、40、80、160、300 秒退避；新轮收到实际退出码、
+日志与错误摘要。Agent 自主诊断和选择下一实验，不靠改写报告或心跳宣称故障已修复。
+数值 FAIL 是实验结果，不允许放宽 oracle、容差或覆盖；恢复不会延长预算、解除暂停或 GPU 隔离。
+bridge 不提供模型，外部宿主仍须实际运行 Agent，进程在线不代表研究正在推进。
 
 ## 操作与恢复
 
@@ -192,7 +181,7 @@ kernel-envolve manage --state /work/manager-state refresh --force
 ```
 
 暂停会在下一次主管检查时终止当前轮次和 GPU 作业；必须等待作业退出后才能改额度或
-资源绑定。notes.md 只包含最后完成的 checkpoint，运行中的本地编辑保留供恢复核对。
+资源绑定。原始运行记录和运行中的本地编辑保留供恢复核对。
 恢复不会清空累计用量。降低会话数只影响新调度，不强杀现有会话。
 升级时，仅旧版以 `Three consecutive failed rounds; inspect and resume` 原因自动阻塞的
 任务会转入诊断重试，并保留累计用量和失败次数；预算已耗尽则结束。其他阻塞、暂停
@@ -218,8 +207,8 @@ kernel-envolve manage --state /work/manager-state supersede probs-scale-b300 --b
 
 面板区分进程心跳与研究活动。会话在线但连续 5 分钟没有变化的研究报告或 GPU 作业，
 将无进展信号留给 Agent 宿主核对和接续，不在用户界面展示“待核实”或无进展倒计时。
-重复相同报告、主管心跳和自动开启下一轮不会清除内部信号。真实诊断或实验完成后
-通过 `manage report` 更新结论和下一步；报告不能替代性能证据。
+重复相同报告、主管心跳和自动开启下一轮不会成为新实验。研究结论可随下一请求
+或在交接时保存，面板从已有记录投影；不要求另行填写报告来刷新页面。
 任务详情优先读取 `task_dir/notes.md`；未提供时读取 `workspace/notes.md`，
 兼容评测配置与研究工作区分开的目录结构。
 
@@ -273,8 +262,8 @@ python examples/manager/demo.py /tmp/kernel-manager-demo
 完整发布的结果和原观测时间。单次文件读取不可中断，0.25 秒不是硬实时停止保证。
 持续繁忙时证据索引可能延后，作业、研究报告和用量仍独立更新；实验不等面板刷新。
 正式 evaluate/confirm/promote/sync-pr 的验证与此调度策略无关，仍完整执行。
-晋升后 Agent 执行 `manage refresh --task <id>` 主动核对该算子的证据，再绑定 PR，
-不依赖后台空闲窗口；此入口不会扫描其他算子的历史。不带 `--task` 时仍核对全部任务。
+PR 交付使用 `sync-pr` 完成证据核验与绑定，无需先额外 refresh。主动诊断索引时可用
+`manage refresh --task <id>`，不带 `--task` 则核对全部任务。
 
 面板采用短轮询，适合当前单主机、少量观察者的工作方式：
 
@@ -370,54 +359,57 @@ GitHub 暂时不可用或观察超过 240 秒时，保留最后验证的 PR、�
 
 ## 前台宿主接续
 
-若当前 coding agent 通过命令工具操作远端工作区，使用内置 bridge，不再复制实验中的
-转接脚本。配置该任务 `"host_driven": true`，并把 `command` 设为
-`["kernel-envolve", "manage", "bridge", "--root", "/work/bridge"]`。bridge 产物目录必须位于
-所有任务 workspace 之外，避免日志被计作实现变更。普通非交互
-coding-agent 命令仍使用默认 `host_driven: false`。
+命令工具操作远端工作区时，可配置 `"host_driven": true`，将 `command` 设为
+`["kernel-envolve", "manage", "bridge", "--root", "/work/bridge"]`。
+bridge 目录放在所有任务 workspace 之外。普通非交互 Agent 保持 `host_driven: false`。
+所有命令使用同一 `manage --state /work/manager-state`。
 
-前台宿主亲自执行一次接续循环：
+`manage bridge-open TASK --owner HOST --claim-id UNIQUE` 申请一次轮次；同 claim 重放只返回
+原收据。由 `manage status` 获取 round，读取 `/work/bridge/TASK/ROUND/prompt.txt` 后即可提交
+原生局部检查、批量实验或 evaluator 命令，无需为每个参数点新开轮次。例如 request.json：
 
-1. `manage bridge-open TASK --owner HOST --claim-id UNIQUE` 声明准备启动一轮。
-   协调器消费一次许可后才启动；相同 claim 重放只返回原收据，不产生新轮。
-2. 从 `manage status` 获取当前 round，读取
-   `/work/bridge/TASK/ROUND/prompt.txt` 和任务 checkpoint。
-3. 写请求 JSON，例如
-   `{"kind":"gpu","argv":["kernel-envolve","native-evaluate","--task","/work/task","--mode","quick"],"expected_seconds":300}`。
-   调用 `manage bridge-request --root /work/bridge --task TASK --round ROUND --owner HOST
-   --id REQUEST --file request.json --wait-seconds 30`。
-4. CLI 默认最多等30秒，完成立即返回；提交后还可独立分析源码时用 `--wait-seconds 0` 先返回，完成分析后再接续等待。返回 `pending` 时，用相同参数去掉 `--file` 继续等待，不插入固定 sleep。返回完成收据时，当前 coding agent
-   阅读 stdout/stderr、核对产物并决定下一步，然后调用
-   `manage bridge-consume --root /work/bridge --task TASK --round ROUND --owner HOST
-   --id REQUEST --sha256 RECEIPT_SHA256 --outcome '本次发现' --next-action '具体下一步'`。
-5. 完成消费后才能提交下一条请求。结束本轮时提交
-   `{"kind":"finish","report":{"outcome":"本轮结论","next_action":"下一轮具体实验"}}`。
-   新轮需要新 claim，不会因等待进程退出而自动重复开启。
+```json
+{"kind":"gpu","argv":["python","experiment.py"],"expected_seconds":300}
+```
 
-已有下一条实验时，可省去单独的消费往返：把实际分析写为
-`{"request":"上一请求ID","receipt_sha256":"已读取的收据哈希","outcome":"本次发现","next_action":"具体下一步"}`，
-在下一条 `bridge-request --file request.json` 中加 `--consume-file analysis.json`。
-该调用先保存分析，再提交新请求；仍要求本人读取真实结果。提交失败不会撤销已保存分析，
-修复后沿用相同请求 ID 和分析重试，不重跑已执行命令。仅查询状态时不传这两个文件。
-组合调用用于同一 round。上一轮已经让出时，先用旧 round 消费其结果，再用新 claim
-开启下一轮；不能把旧收据交给新 round 消费。远端适配层可在一次往返中顺序执行这两步。
+```sh
+kernel-envolve manage --state /work/manager-state bridge-request \
+  --root /work/bridge --task TASK --round ROUND --owner HOST \
+  --id REQUEST --file request.json --wait-seconds 30
+```
 
-所有命令使用相同 `manage --state /work/manager-state`。`gpu` 请求由本轮固定版本的
-`manage gpu-run` 执行并声明时长；排队受 manager 的父轮次和累计预算控制，不把预计执行时长
-当作排队超时。`cpu` 仅供源码检查等无 GPU 命令，`expected_seconds` 同时作为其超时上限。
-CPU 请求在独立的已登记进程组中执行，正常退出也会清理派生进程，清理完成后才返回收据。
-桥进程失联时由轮次主管回收；未获得完整收据的执行不会写成成功。单次等待最多 60 秒，
-返回的 stdout/stderr 各最多取最后 64 KiB；`log_files` 标明 bridge 捕获日志的字节数、是否截断和完整日志路径。
-截断输出不能当作完整实验清单，缺失结果按路径读取。新增信息不改变原始收据及其哈希；完整日志留在本轮目录。每个请求 ID 只执行一次，
-不同内容不可复用 ID，旧结果未消费不可提交新工作。进程崩溃后已领取但没有完成收据的
-请求返回 `interrupted_without_receipt`；先核对产物，不自动重试。
+同轮只允许一个未终态请求。前一请求完成后可直接提交下一请求，不要求先消费或撰写分析。
+需要保留对已有结果的结论时，在下一请求内添加可选字段：
 
-宿主等待按 `min(5秒, idle_seconds/3)` 续租，消费时立即更新接续时间；读取已完成结果不续租。没有在途命令且宿主离开超过 120 秒（可配置 1–300 秒），
-bridge 正常让出本轮（`yielded`），不增加失败次数或失败退避，保留已有真实失败、任务和预算，
-不自动开启空轮。只有受信 bridge 的闲置收据和专用退出码能进入该状态，普通命令或 GPU
-执行失败仍按失败保存。当前 coding agent 必须持续读取结果并
-提交下一步；bridge 不提供模型或后台模型调度。用户停止、预算用尽和任务替换始终生效，
-事后补记结果消费也不会恢复任务。关闭轮次的结果仍可消费并保存到该轮报告；只有任务最新
-轮次的分析会更新当前研究记录，旧轮迟到的分析不会覆盖新轮。补记不会修改原执行结果、
-失败次数、调度时间或预算；重复消费同一收据也不会刷新进展时间。旧版本已经消费但未进入
-研究记录的结果，可重放原 `bridge-consume` 命令补齐投影，无需重跑实验。
+```json
+"analysis": {
+  "request": "PREVIOUS_REQUEST",
+  "receipt_sha256": "已读取的完整收据SHA256",
+  "outcome": "本次发现"
+}
+```
+
+`analysis.round` 可省略，默认当前 round；显式指定可引用本任务同宿主的旧轮结果。
+`next_action` 也可省略。分析必须对应真实完成收据，保存到原轮，不会改写执行状态或预算。
+它不是运行许可；缺省分析不影响下一实验。结束轮次用 `{"kind":"finish"}`，有需要交接的
+结论时附加 `report`，例如 `{"kind":"finish","report":{"outcome":"已排除当前融合方案"}}`。
+新轮仍需新 claim，不因等待进程退出自动开启。
+
+查询原请求使用相同身份和 ID，省略 `--file`、`analysis` 及兼容参数；查询零写入，
+不续租、不生成分析、不提交工作。CLI 默认最多等待 30 秒，`--wait-seconds` 范围 0–60；
+有独立工作可做时设为 0，pending 后按需继续查询原 ID。完成与 pending 都可返回当前日志：
+stdout/stderr 默认各末尾 4096 字节，`--log-bytes 0` 只取元数据，最大 65536 字节。
+`log_files` 给出完整路径、字节数和截断状态；尾部不足以判断时再按路径读取完整内容。
+日志投影不改变不可变收据及其 `receipt_sha256`。
+
+`gpu` 由固定版本的 `manage gpu-run` 执行，受父轮次、设备锁和累计预算控制；预计执行时长
+不等于排队超时。`cpu` 只运行无 GPU 命令，`expected_seconds` 同时作为超时上限；其登记
+进程组在清理完成后才返回收据。每个 ID 只执行一次，不同内容不可复用 ID。响应不确定时
+查询原 ID；`interrupted_without_receipt` 保留已领取但无完整收据的执行，先核对现场，不能换 ID 盲目重派。
+
+没有在途命令，且距最近提交或执行完成超过 120 秒（可配置 1–300 秒）时，bridge 让出本轮（`yielded`），
+不增加失败次数、不自动开启空轮。查询不会伪装为研究进展；真实执行恢复与下一研究决策
+分别处理。用户停止、预算用尽和任务替换始终有效，补记旧结果不会恢复终态任务。
+
+`bridge-consume` 与 `--consume-file` 保留旧客户端兼容；新流程使用可选的请求内 analysis，
+不把独立消费作为继续实验的前置条件。

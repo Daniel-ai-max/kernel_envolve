@@ -651,10 +651,7 @@ class Store:
             )
             prior = self.one("SELECT data FROM metadata WHERE key=?", ("round_report:" + job_id,))
             prior = json.loads(prior["data"]) if prior else {}
-            report = {
-                "outcome": record["outcome"],
-                "next_action": record["next_action"],
-            }
+            report = {key: record[key] for key in ("outcome", "next_action") if key in record}
             if at >= prior.get("recorded_at", 0):
                 self.db.execute(
                     "INSERT OR REPLACE INTO metadata VALUES(?,?)",

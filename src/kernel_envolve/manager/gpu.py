@@ -186,7 +186,8 @@ def run(root, task_id, round_id, command, *, expected_seconds=None):
                                 )
                             result = supervise(store, key, handles)
                             directory = store.root / "jobs" / key
-                            forward_logs(directory)
+                            if not os.environ.get("KERNEL_ENVOLVE_BRIDGE_CAPTURE"):
+                                forward_logs(directory)
                             return result
                     # A concurrent cleanup may have quarantined this resource
                     # during probing/claiming. Do not hide it behind another wait.

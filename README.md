@@ -4,7 +4,7 @@ kernel_envolve 是面向 coding agent 的算子持续优化工具，主要用于
 
 目标是在保持调用语义、精度和输入覆盖的前提下提升性能，并让多个算子的优化进展可追溯、可恢复、可查看。项目包含三部分：
 
-- **优化流程（Skill）**：指导 Agent 分析瓶颈、验证假设、记录实验，并在确认收益后维护优化 PR。
+- **研究指导（Skill）**：提供目标、正确性与交付约束，Agent 自主选择实验与验证方式。
 - **评测器（Evaluator）**：冻结源码，检查正确性和性能，保存证据并更新已验证的最佳版本。
 - **管理层（Manager）**：调度长期任务和 GPU 队列，管理暂停、预算及故障恢复，通过本地面板展示进展。
 
@@ -49,7 +49,7 @@ kernel-envolve evaluate --task examples/cuda_vector_add --mode full
 
 > 使用 $kernel-envolve 持续优化 examples/cuda_vector_add，使用指定 GPU，累计预算 20 分钟。保持任务定义与精度要求不变，通过完整评测后更新 best，并记录下一步。
 
-Skill 规定优化方法，跨会话自动续接由下方管理层或现有宿主执行器负责。
+Skill 提供研究建议与交付约束，不规定逐次实验步骤；跨会话续接由管理层或现有宿主执行器负责。
 
 ### 自动跟随 main
 
@@ -63,7 +63,7 @@ kernel-envolve session -- <agent命令及参数>
 kernel-envolve session -- bash
 ```
 
-会话运行期间保持版本不变，下次会话再检查更新。已有 Agent 可执行 `kernel-envolve update`，读取返回的 `skill`，并在本轮使用返回的 `executable`；复制安装的 Skill 也会按此入口读取最新流程。
+会话运行期间保持版本不变，下次会话由 CLI/管理器检查更新，不要求 Agent 每轮重复执行 update。手动检查时可用 `kernel-envolve update`，返回当前 `skill` 与 `executable`。
 
 断网或新版本检查失败时保留可用版本，原因输出到 stderr。`kernel-envolve update --status` 查看最近检查结果。开发本仓库时设置 `KERNEL_ENVOLVE_AUTO_UPDATE=0` 使用本地代码。缓存、兼容性与升级边界见[自动更新指南](docs/auto-update.md)。
 
@@ -100,9 +100,9 @@ CUDA 原生评测在计时外缓存只读输入的精确字节副本，减少反
 
 ## 持续优化
 
-一个算子对应一个长期任务，执行轮次结束时保存 checkpoint，后续轮次继续已有工作。一次晋升或某个方向没有收益，都不自动结束任务；每轮在 `notes.md` 记录假设、结论、版本、资源消耗与下一步。
+一个算子对应一个长期任务，后续轮次沿已有执行记录和研究结论接续。一次晋升或某个方向没有收益，都不自动结束已授权的持续任务；原始运行记录无需再抄写到 notes 或面板。结束轮次时只保存需要交接的结论。
 
-确认收益后，Agent 按 [PR 交付流程](skills/kernel-envolve/SKILL.md#收益-pr)创建或更新目标仓库的优化 PR，然后继续探索。PR 发布由 Agent 完成；评测器负责验证与晋升。
+确认收益后，Agent 按 [正确性与交付约束](skills/kernel-envolve/SKILL.md#正确性与交付约束)创建或更新目标仓库的优化 PR，然后继续探索。PR 发布由 Agent 完成；评测器负责验证与晋升。
 
 ### 多算子管理与面板
 
@@ -140,7 +140,9 @@ kernel-envolve manage --state /work/manager-state run
 kernel-envolve manage --state /work/manager-state serve --port 8787
 ```
 
-Agent 适配器从 stdin 接收恢复提示，结束前写入结构化 checkpoint；受管理会话中的所有 GPU 命令必须经 `kernel-envolve manage gpu-run -- <命令>` 执行。管理层依赖同一用户下的协作工作流，跨用户资源分配和多 GPU 分布式作业由外部系统安排。远程面板通过 SSH 转发访问。
+Agent 适配器从 stdin 接收恢复提示；执行记录自动保留，研究摘要按需补充。受管理会话中的所有 GPU 命令必须经 `kernel-envolve manage gpu-run -- <命令>` 执行。管理层依赖同一用户下的协作工作流，跨用户资源分配和多 GPU 分布式作业由外部系统安排。远程面板通过 SSH 转发访问。
+
+前台 bridge 可直接提交下一实验，前一请求终态后无需独立 consume。对结果的分析可随下一请求保存；状态查询只读，pending 也能返回日志尾部和完整路径，详见[前台宿主接续](docs/optimization-manager.md#前台宿主接续)。
 
 部署、控制命令和恢复规则见[管理层文档](docs/optimization-manager.md)，数据一致性与刷新策略见[自动更新契约](docs/optimization-manager.md#自动更新契约)。
 
@@ -159,9 +161,9 @@ Agent 适配器从 stdin 接收恢复提示，结束前写入结构化 checkpoin
 
 ## 评测规则
 
-1. **quick 筛选**：用代表用例验证正确性并比较性能，适合日常迭代。
-2. **full 确认**：验证全部声明用例，进行两批配对测量，检查总体收益、波动和逐用例退化；原生任务还要求声明的原生检查通过。
-3. **promote 晋升**：复核证据、源码、契约与当前 best 后更新最佳版本。quick 结果不能晋升。
+- **quick 筛选（可选）**：用代表用例验证正确性并比较性能，也可直接使用原生局部测试与批量实验。
+- **full 确认**：验证全部声明用例，进行两批配对测量，检查总体收益、波动和逐用例退化；原生任务还要求声明的原生检查通过。
+- **promote 晋升**：复核证据、源码、契约与当前 best 后更新最佳版本。quick 结果不能晋升。
 
 评测退出码 `0` 表示正确完成，`1` 表示正确性失败，`2` 表示配置或执行错误；能否晋升以 `eligible_for_best` 为准。有 best 时与当前 best 比较，full 同时检查固定原始基线，从而区分增量与累计收益。
 

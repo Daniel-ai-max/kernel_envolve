@@ -115,9 +115,15 @@ def parser():
         if name == "bridge-request":
             command.add_argument("--file", type=Path)
             command.add_argument(
+                "--log-bytes",
+                type=int,
+                default=4096,
+                help="Tail bytes per stream (0–65536); full logs remain at log_files paths",
+            )
+            command.add_argument(
                 "--consume-file",
                 type=Path,
-                help="Consume an observed result and submit --file in one call; retries retain both IDs",
+                help="Legacy analysis-file format; optional and never required for the next request",
             )
             command.add_argument(
                 "--wait-seconds",
@@ -152,7 +158,8 @@ def main(argv=None):
         except DurationAdmissionError as exc:
             print(json.dumps({"error_type": "gpu_duration_admission", "error": str(exc)}))
             return 2
-    store = Store(args.state)
+    query = args.action == "bridge-request" and not args.file and not args.consume_file
+    store = Store(args.state, readonly=query or args.action == "status")
     try:
         if args.action.startswith("bridge"):
             from . import bridge
@@ -198,6 +205,7 @@ def main(argv=None):
                     args.id,
                     payload,
                     args.wait_seconds,
+                    args.log_bytes,
                 )
             else:
                 value = bridge.consume(
@@ -272,8 +280,13 @@ def main(argv=None):
 
             serve(store.root, args.port)
         elif args.action == "sync-pr":
+            from .evidence import refresh
             from .publication import sync_pr
 
+            if not refresh(store, task_id=args.task):
+                raise ValueError(
+                    "Evidence scan already running; retry publication after it finishes"
+                )
             sync_pr(
                 store,
                 args.task,

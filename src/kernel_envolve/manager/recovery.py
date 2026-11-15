@@ -129,6 +129,23 @@ def assess(store, task, job, status, current):
         if signature not in seen:
             novel.append(child["id"])
         seen.add(signature)
+    cpu_requests = []
+    for event in store.rows(
+        "SELECT data FROM events WHERE task=? AND kind='bridge_execution' AND at>=?",
+        (task["id"], job["created"]),
+    ):
+        execution = json.loads(event["data"])
+        if execution["round"] != job["id"]:
+            continue
+        signature = hashlib.sha256(
+            json.dumps(
+                ["bridge-cpu", execution["command"], execution["status"], execution["returncode"]],
+                sort_keys=True,
+            ).encode()
+        ).hexdigest()
+        if signature not in seen:
+            cpu_requests.append(execution["request"])
+        seen.add(signature)
     changed = (
         before.get("implementation") is not None
         and current is not None
@@ -139,16 +156,19 @@ def assess(store, task, job, status, current):
     checkpoint = bool(
         outcome and outcome != before.get("outcome") and report.get("next_action", "").strip()
     )
-    progress = status == "succeeded" and checkpoint and bool(novel or changed)
+    progress = status == "succeeded" and bool(novel or cpu_requests or changed)
     return {
-        "state": "checkpoint_received" if progress else "diagnosis_requested",
+        "state": ("checkpoint_received" if checkpoint else "execution_completed")
+        if progress
+        else "diagnosis_requested",
         "round": job["id"],
         "observable_progress": progress,
         "implementation_changed": changed,
         "new_execution_jobs": novel,
+        "new_cpu_requests": cpu_requests,
         "execution_signatures": sorted(seen)[-256:],
         "checkpoint_changed": checkpoint,
-        "verification": "Agent checkpoint and execution activity; evaluator acceptance is separate.",
+        "verification": "Execution/source activity, with optional agent analysis; not evaluator acceptance or verified research gains.",
         "executor": "Configured command; it may be an external bridge, not a running model.",
     }
 
