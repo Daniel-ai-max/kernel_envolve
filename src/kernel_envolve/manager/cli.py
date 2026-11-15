@@ -115,6 +115,11 @@ def parser():
         if name == "bridge-request":
             command.add_argument("--file", type=Path)
             command.add_argument(
+                "--consume-file",
+                type=Path,
+                help="Consume an observed result and submit --file in one call; retries retain both IDs",
+            )
+            command.add_argument(
                 "--wait-seconds",
                 type=float,
                 default=30,
@@ -157,6 +162,33 @@ def main(argv=None):
             if args.action == "bridge-open":
                 value = bridge.open_host(store, args.task, args.owner, args.claim_id)
             elif args.action == "bridge-request":
+                payload = read_json(args.file) if args.file else None
+                if args.consume_file:
+                    previous = read_json(args.consume_file)
+                    fields = {"request", "receipt_sha256", "outcome", "next_action"}
+                    if (
+                        payload is None
+                        or not isinstance(previous, dict)
+                        or set(previous) != fields
+                        or previous["request"] == args.id
+                    ):
+                        raise ValueError(
+                            "--consume-file requires --file and a distinct prior request, "
+                            "receipt_sha256, outcome and next_action"
+                        )
+                    # Both operations retain their normal idempotency. If submission
+                    # fails, the real analysis stays saved and the same call is retryable.
+                    bridge.consume(
+                        store,
+                        args.root,
+                        args.task,
+                        args.round,
+                        args.owner,
+                        previous["request"],
+                        previous["receipt_sha256"],
+                        previous["outcome"],
+                        previous["next_action"],
+                    )
                 value = bridge.request(
                     store,
                     args.root,
@@ -164,7 +196,7 @@ def main(argv=None):
                     args.round,
                     args.owner,
                     args.id,
-                    read_json(args.file) if args.file else None,
+                    payload,
                     args.wait_seconds,
                 )
             else:
