@@ -76,8 +76,6 @@ def test_result_consume_next_request_and_finish(managed):
     assert send(store, root, job, "first", payload) == receipt
     with pytest.raises(ValueError, match="different content"):
         send(store, root, job, "first", cpu("print('changed')"))
-    with pytest.raises(ValueError, match="Consume"):
-        send(store, root, job, "second", cpu("print('second')"))
     with pytest.raises(ValueError, match="match the completed"):
         bridge.consume(store, root, "toy", job, "foreground", "first", "wrong-hash", "read", "next")
     assert consume(store, root, job, "first", receipt) == consume(
@@ -375,7 +373,7 @@ def test_wait_renews_short_host_lease_without_disconnect(managed):
     assert store.job(job)["status"] == "succeeded"
 
 
-def test_sixty_second_wait_throttles_durable_host_writes(tmp_path, monkeypatch):
+def test_waiting_query_never_writes_host_keepalive(tmp_path, monkeypatch):
     directory = bridge.folder(tmp_path, "task", "round")
     for name in ("requests", "results"):
         (directory / name).mkdir(parents=True)
@@ -403,7 +401,7 @@ def test_sixty_second_wait_throttles_durable_host_writes(tmp_path, monkeypatch):
             None, tmp_path, "task", "round", "host", "request", wait_seconds=60
         )
         assert receipt["status"] == "pending"
-        assert 11 <= len(writes) <= 13
+        assert not writes
         original(directory / "results/request.json", {"status": "succeeded"})
         writes.clear()
         assert (
@@ -717,10 +715,10 @@ def test_result_marks_bounded_log_tail_without_changing_receipt(tmp_path, output
     stdout.write_bytes(output)
     stderr.write_bytes(b"warning\n")
     value = bridge.result(directory, "request")
-    assert value["stdout"] == output[-65536:].decode(errors="replace")
+    assert value["stdout"] == output[-4096:].decode(errors="replace")
     assert value["stderr"] == "warning\n"
     assert value["log_files"] == {
-        "stdout": {"path": str(stdout), "bytes": len(output), "truncated": len(output) > 65536},
+        "stdout": {"path": str(stdout), "bytes": len(output), "truncated": len(output) > 4096},
         "stderr": {"path": str(stderr), "bytes": 8, "truncated": False},
     }
     assert value["receipt_sha256"] == hashlib.sha256(original).hexdigest()
@@ -756,3 +754,278 @@ def test_gpu_truncation_paths_survive_bridge_tail(tmp_path, capsys):
     (raw / "stderr.log").write_text("")
     forward_logs(raw)
     assert capsys.readouterr().out == "short\n"
+
+
+def test_unacknowledged_results_allow_followup_and_finish(managed):
+    store, root, job, proc, directory = start(managed)
+    first = send(store, root, job, "first", cpu("print('one')"))
+    second = send(store, root, job, "second", cpu("print('two')"))
+    assert first["status"] == second["status"] == "succeeded"
+    assert list((directory / "consumed").iterdir()) == []
+    assert not store.rows("SELECT seq FROM events WHERE kind='host_consumed_result'")
+    assert send(store, root, job, "finish", {"kind": "finish"})["status"] == "succeeded"
+    proc.communicate(timeout=8)
+    assert store.job(job)["status"] == "succeeded"
+
+
+def test_optional_analysis_is_bound_saved_once_and_not_required_to_continue(managed):
+    store, root, job, proc, directory = start(managed)
+    first = send(store, root, job, "first", cpu("print('one')"))
+    analysis = {
+        "request": "first",
+        "receipt_sha256": first["receipt_sha256"],
+        "outcome": "first input passed; widening the layout",
+    }
+    payload = cpu("print('two')") | {"analysis": analysis}
+    result = send(store, root, job, "second", payload)
+    assert send(store, root, job, "second", payload) == result
+    assert store.task("toy")["report"]["outcome"] == analysis["outcome"]
+    assert "next_action" not in store.task("toy")["report"]
+    assert len(store.rows("SELECT seq FROM events WHERE kind='host_consumed_result'")) == 1
+    assert not list((directory / "consumed").iterdir())
+    bad = cpu("print('never')") | {"analysis": analysis | {"receipt_sha256": "0" * 64}}
+    with pytest.raises(ValueError, match="match the completed"):
+        send(store, root, job, "bad", bad)
+    assert not (directory / "requests/bad.json").exists()
+    send(store, root, job, "finish", {"kind": "finish"})
+    proc.communicate(timeout=8)
+
+
+@pytest.mark.parametrize("kind", ["cpu", "gpu"])
+def test_batch_intermediate_output_is_visible_without_confirming_or_replaying(managed, kind):
+    store, root, job, proc, directory = start(managed, idle=1)
+    release = directory / "release-batch"
+    command = (
+        "import pathlib,time; print('candidate A: passed',flush=True); "
+        f"p=pathlib.Path({str(release)!r}); "
+        "\nwhile not p.exists(): time.sleep(.02)\n"
+        "print('candidate B: failed check',flush=True)"
+    )
+    send(store, root, job, "batch", cpu(command, 10) | {"kind": kind}, wait=0)
+    wait_for(lambda: "candidate A" in bridge.logs(directory, "batch").get("stdout", ""))
+    before = (directory / "host.json").read_bytes()
+    pending = send(store, root, job, "batch", wait=0)
+    assert pending["status"] == "pending" and "candidate A" in pending["stdout"]
+    assert "receipt_sha256" not in pending
+    with pytest.raises(ValueError, match="still pending"):
+        send(store, root, job, "other", cpu("pass"), wait=0)
+    assert (directory / "host.json").read_bytes() == before
+    release.touch()
+    result = send(store, root, job, "batch")
+    assert "candidate B" in result["stdout"]
+    assert len(list((directory / "claims").iterdir())) == 1
+    if kind == "gpu":
+        assert result["gpu_job"]
+        assert result["log_files"]["stdout"]["path"] == str(
+            store.root / "jobs" / result["gpu_job"] / "stdout.log"
+        )
+        assert "candidate A" not in (directory / "logs/batch.stdout.log").read_text()
+    # A completed long command gets an idle grace period even though no query
+    # updated host.json. Neither waiting nor reading logs is research progress.
+    assert store.job(job)["status"] == "running"
+    send(store, root, job, "finish", {"kind": "finish"})
+    proc.communicate(timeout=8)
+
+
+def test_metadata_only_and_requested_log_tail_preserve_complete_files(tmp_path):
+    directory = tmp_path / "bridge"
+    bridge.atomic(directory / "results/a.json", {"status": "succeeded"})
+    (directory / "logs").mkdir()
+    raw = b"header\n" + b"x" * 10000 + b"\nlast\n"
+    (directory / "logs/a.stdout.log").write_bytes(raw)
+    metadata = bridge.result(directory, "a", log_bytes=0)
+    assert metadata["stdout"] == ""
+    assert metadata["log_files"]["stdout"]["bytes"] == len(raw)
+    assert bridge.result(directory, "a", log_bytes=65536)["stdout"].encode() == raw
+    assert metadata["receipt_sha256"] == bridge.result(directory, "a")["receipt_sha256"]
+
+
+def test_cross_round_same_request_id_analysis_and_real_cpu_activity(managed):
+    store, root, old_job, proc, _ = start(managed)
+    first = send(store, root, old_job, "one", cpu("print('old experiment')"))
+    send(store, root, old_job, "finish", {"kind": "finish"})
+    proc.communicate(timeout=8)
+    state = json.loads(store.one("SELECT data FROM metadata WHERE key='recovery:toy'")["data"])
+    assert state["observable_progress"] and state["new_cpu_requests"] == ["one"]
+    assert store.task("toy")["failures"] == 0
+    store.db.execute("UPDATE tasks SET next_at=0")
+    bridge.open_host(store, "toy", "foreground", "second-round")
+    new_job = store.schedule()[0]
+    new_proc = launch(store, new_job)
+    wait_for(lambda: (bridge.folder(root, "toy", new_job) / "context.json").exists())
+    payload = cpu("print('new experiment')") | {
+        "analysis": {
+            "round": old_job,
+            "request": "one",
+            "receipt_sha256": first["receipt_sha256"],
+            "outcome": "Old input passed; testing new input",
+        }
+    }
+    second = send(store, root, new_job, "one", payload)
+    assert second["status"] == "succeeded"
+    assert store.one("SELECT data FROM metadata WHERE key=?", (f"consumed_result:{old_job}:one",))
+    send(store, root, new_job, "finish", {"kind": "finish"})
+    new_proc.communicate(timeout=8)
+
+
+def test_query_cli_does_not_create_state_or_request_a_writer_lock(managed, tmp_path, capsys):
+    import sqlite3
+
+    from kernel_envolve.manager import cli
+
+    store, root, job, proc, directory = start(managed)
+    send(store, root, job, "one", cpu("print('result')"))
+    argv = [
+        "--state",
+        str(store.root),
+        "bridge-request",
+        "--root",
+        str(root),
+        "--task",
+        "toy",
+        "--round",
+        job,
+        "--owner",
+        "foreground",
+        "--id",
+        "one",
+        "--wait-seconds",
+        "0",
+    ]
+    before = (directory / "host.json").read_bytes()
+    store.db.execute("BEGIN IMMEDIATE")
+    try:
+        assert cli.main(argv) == 0  # Read-only WAL query succeeds while a writer holds its lock.
+    finally:
+        store.db.execute("ROLLBACK")
+    assert json.loads(capsys.readouterr().out)["stdout"] == "result\n"
+    assert (directory / "host.json").read_bytes() == before
+    missing = tmp_path / "missing-state"
+    with pytest.raises(sqlite3.OperationalError):
+        cli.main(["--state", str(missing), *argv[2:]])
+    assert not missing.exists()
+    send(store, root, job, "finish", {"kind": "finish"})
+    proc.communicate(timeout=8)
+
+
+@pytest.mark.parametrize("started", [False, True])
+def test_cpu_launch_failure_is_not_activity_but_command_failure_is(managed, started):
+    store, root, job, proc, directory = start(managed)
+    payload = (
+        cpu("print('command really started', flush=True); raise SystemExit(7)")
+        if started
+        else {"kind": "cpu", "argv": [str(directory / "missing-executable")], "expected_seconds": 3}
+    )
+    receipt = send(store, root, job, "failed-command", payload)
+    assert receipt["status"] == "failed"
+    assert receipt["returncode"] == (7 if started else None)
+    events = store.rows("SELECT data FROM events WHERE kind='bridge_execution'")
+    assert len(events) == int(started)
+    if started:
+        event = json.loads(events[0]["data"])
+        assert event["cleanup_confirmed"] is True
+        assert event["receipt_sha256"] == receipt["receipt_sha256"]
+        assert "command really started" in receipt["stdout"]
+    send(store, root, job, "finish", {"kind": "finish"})
+    proc.communicate(timeout=8)
+    recovery = json.loads(store.one("SELECT data FROM metadata WHERE key='recovery:toy'")["data"])
+    assert recovery["observable_progress"] is started
+    assert recovery["new_cpu_requests"] == (["failed-command"] if started else [])
+    assert store.task("toy")["failures"] == (0 if started else 1)
+    assert "not evaluator acceptance or verified research gains" in recovery["verification"]
+
+
+def test_cpu_cleanup_error_cannot_publish_execution_activity(managed):
+    store, _, _ = managed
+    root = store.root.parent / "bridge"
+    script = f"""import os,sys
+from kernel_envolve.manager import bridge
+from kernel_envolve.manager.cli import main
+original = bridge.terminate
+def cleanup_error(process):
+    original(process)
+    raise OSError('cleanup confirmation unavailable')
+bridge.terminate = cleanup_error
+raise SystemExit(main(['--state', os.environ['KERNEL_ENVOLVE_STATE'], 'bridge', '--root', {str(root)!r}]))
+"""
+    replace_command(store, [sys.executable, "-c", script], host_driven=True)
+    bridge.open_host(store, "toy", "foreground", "cleanup-probe")
+    job = store.schedule()[0]
+    proc = launch(store, job)
+    directory = bridge.folder(root, "toy", job)
+    wait_for(lambda: (directory / "context.json").exists())
+    receipt = send(store, root, job, "once", cpu("print('command completed', flush=True)"))
+    proc.communicate(timeout=8)
+    assert receipt["status"] == "interrupted_without_receipt"
+    assert not (directory / "results/once.json").exists()
+    assert not store.rows("SELECT data FROM events WHERE kind='bridge_execution'")
+    assert "command completed" in (directory / "logs/once.stdout.log").read_text()
+    recovery = json.loads(store.one("SELECT data FROM metadata WHERE key='recovery:toy'")["data"])
+    assert not recovery["observable_progress"] and recovery["new_cpu_requests"] == []
+    assert store.task("toy")["failures"] == 1
+
+
+@pytest.mark.parametrize("exit_code", [0, 7])
+def test_completed_gpu_wrapper_keeps_birth_and_raw_logs_before_reap(managed, exit_code):
+    store, _, _ = managed
+    root = store.root.parent / "bridge"
+    delayed = root.parent / "delayed-identity.json"
+    script = f"""import json,os,pathlib,subprocess,sys,time
+from kernel_envolve.manager import bridge
+from kernel_envolve.manager.cli import main
+original = bridge.identity
+def delayed_identity(pid, **kwargs):
+    deadline = time.monotonic() + 10
+    while time.monotonic() < deadline:
+        state = subprocess.check_output(['ps', '-p', str(pid), '-o', 'stat='], text=True).strip()
+        if state.startswith('Z'):
+            pathlib.Path({str(delayed)!r}).write_text(json.dumps({{'pid':pid, 'default_identity':original(pid)}}))
+            from kernel_envolve.manager.store import Store
+            store = Store(os.environ['KERNEL_ENVOLVE_STATE'])
+            store.db.execute("INSERT INTO jobs(id,task,kind,resource,status,parent,command,pid,identity,created) "
+                "SELECT 'pid-reuse-decoy',task,kind,resource,'failed',parent,command,pid,'wrong-birth',created+1 "
+                "FROM jobs WHERE kind='gpu' AND pid=?", (pid,))
+            store.close()
+            return original(pid, **kwargs)
+        time.sleep(.02)
+    raise AssertionError('GPU wrapper did not become an unreaped zombie')
+bridge.identity = delayed_identity
+raise SystemExit(main(['--state', os.environ['KERNEL_ENVOLVE_STATE'], 'bridge', '--root', {str(root)!r}]))
+"""
+    replace_command(
+        store, [sys.executable, "-c", script], host_driven=True, round_timeout_seconds=30
+    )
+    bridge.open_host(store, "toy", "foreground", "short-wrapper")
+    job = store.schedule()[0]
+    proc = launch(store, job)
+    directory = bridge.folder(root, "toy", job)
+    wait_for(lambda: (directory / "context.json").exists())
+    try:
+        payload = cpu(
+            "import sys; print('raw output before parent probe',flush=True); "
+            "print('raw warning before parent probe',file=sys.stderr,flush=True); "
+            f"raise SystemExit({exit_code})",
+            15,
+        ) | {"kind": "gpu"}
+        receipt = send(store, root, job, "short", payload, wait=15)
+        delayed_probe = json.loads(delayed.read_text())
+        assert delayed_probe["default_identity"] is None
+        gpu = store.one(
+            "SELECT * FROM jobs WHERE parent=? AND kind='gpu' AND id!='pid-reuse-decoy'", (job,)
+        )
+        assert gpu["pid"] == delayed_probe["pid"]
+        assert gpu["status"] == ("succeeded" if exit_code == 0 else "failed")
+        assert receipt["status"] == ("succeeded" if exit_code == 0 else "failed")
+        assert receipt["gpu_job"] == gpu["id"]
+        assert receipt["stdout"] == "raw output before parent probe\n"
+        assert receipt["stderr"] == "raw warning before parent probe\n"
+        assert receipt["log_files"]["stdout"]["path"] == str(
+            store.root / "jobs" / gpu["id"] / "stdout.log"
+        )
+        assert (directory / "logs/short.stdout.log").read_text() == ""
+        send(store, root, job, "finish", {"kind": "finish"})
+        proc.communicate(timeout=8)
+    finally:
+        if proc.poll() is None:
+            store.control("toy", "pause")
+            proc.communicate(timeout=10)

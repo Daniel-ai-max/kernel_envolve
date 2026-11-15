@@ -769,13 +769,16 @@ def test_pause_cancels_unlaunched_intent_without_waiting_for_timeout(managed):
     store.control("toy", "configure", {"gpu_budget_seconds": 10})
 
 
-def test_success_without_checkpoint_is_failed_not_infinite_progress(managed):
+def test_success_without_checkpoint_keeps_execution_distinct_from_progress(managed):
     store, _, _ = managed
     key = store.schedule()[0]
     process = launch(store, key)
     process.communicate(timeout=5)
-    assert store.job(key)["status"] == "failed"
-    assert "checkpoint" in store.job(key)["error"]
+    assert store.job(key)["status"] == "succeeded"
+    assert store.job(key)["error"] is None
+    recovery = json.loads(store.one("SELECT data FROM metadata WHERE key='recovery:toy'")["data"])
+    assert not recovery["observable_progress"]
+    assert store.task("toy")["failures"] == 1
 
 
 def test_native_task_cannot_accidentally_override_managed_device(monkeypatch):

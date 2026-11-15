@@ -94,19 +94,24 @@ def read(path):
     return json.loads(path.read_text())
 
 
-def result(directory, request_id):
-    path = directory / "results" / (request_id + ".json")
-    if not path.exists():
-        return None
-    raw = path.read_bytes()
-    value = json.loads(raw)
-    value["receipt_sha256"] = hashlib.sha256(raw).hexdigest()
+def logs(directory, request_id, limit=4096):
+    """Bounded live output; the files remain the single complete log source."""
+    value = {}
+    claim = directory / "claims" / f"{request_id}.json"
+    gpu_directory = read(claim).get("gpu_logs") if claim.exists() else None
     for name in ("stdout", "stderr"):
         log = directory / "logs" / f"{request_id}.{name}.log"
+        if gpu_directory and (Path(gpu_directory) / f"{name}.log").exists():
+            if log.exists():
+                value.setdefault("wrapper_log_files", {})[name] = {
+                    "path": str(log.resolve()),
+                    "bytes": log.stat().st_size,
+                }
+            log = Path(gpu_directory) / f"{name}.log"
         if log.exists():
             with log.open("rb") as stream:
                 size = stream.seek(0, os.SEEK_END)
-                offset = max(0, size - 65536)
+                offset = max(0, size - limit)
                 stream.seek(offset)
                 value[name] = stream.read(size - offset).decode(errors="replace")
             value.setdefault("log_files", {})[name] = {
@@ -117,10 +122,24 @@ def result(directory, request_id):
     return value
 
 
-def request(store, root, task, round_id, owner, request_id, value=None, wait_seconds=0):
+def result(directory, request_id, log_bytes=4096):
+    path = directory / "results" / (request_id + ".json")
+    if not path.exists():
+        return None
+    raw = path.read_bytes()
+    value = json.loads(raw)
+    value["receipt_sha256"] = hashlib.sha256(raw).hexdigest()
+    return value | logs(directory, request_id, log_bytes)
+
+
+def request(
+    store, root, task, round_id, owner, request_id, value=None, wait_seconds=0, log_bytes=4096
+):
     identifier(request_id)
     if not 0 <= wait_seconds <= 60:
         raise ValueError("wait_seconds must be between 0 and 60")
+    if type(log_bytes) is not int or not 0 <= log_bytes <= 65536:
+        raise ValueError("log_bytes must be an integer between 0 and 65536")
     directory = folder(root, task, round_id)
     context = read(directory / "context.json")
     if context["owner"] != owner:
@@ -141,8 +160,8 @@ def request(store, root, task, round_id, owner, request_id, value=None, wait_sec
                 ):
                     raise ValueError("Round is no longer active")
                 for previous in (directory / "requests").glob("*.json"):
-                    if not (directory / "consumed" / previous.name).exists():
-                        raise ValueError("Consume the previous result before submitting new work")
+                    if not (directory / "results" / previous.name).exists():
+                        raise ValueError("Previous request is still pending; query its existing ID")
                 kind = encoded.get("kind")
                 if kind not in ("cpu", "gpu", "finish"):
                     raise ValueError("kind must be cpu, gpu or finish")
@@ -157,14 +176,37 @@ def request(store, root, task, round_id, owner, request_id, value=None, wait_sec
                     seconds = encoded.get("expected_seconds")
                     if type(seconds) not in (float, int) or not 0 < seconds <= 86400:
                         raise ValueError("expected_seconds must be in (0,86400]")
+                if "analysis" in encoded:
+                    previous = encoded["analysis"]
+                    fields = {"round", "request", "receipt_sha256", "outcome", "next_action"}
+                    required = {"request", "receipt_sha256", "outcome"}
+                    if (
+                        not isinstance(previous, dict)
+                        or not required <= previous.keys() <= fields
+                        or (previous.get("round", round_id), previous["request"])
+                        == (round_id, request_id)
+                    ):
+                        raise ValueError("analysis must identify a distinct completed result")
+                    previous_round = previous.get("round", round_id)
+                    previous_directory = folder(root, task, previous_round)
+                    record = analysis_record(
+                        previous_directory,
+                        owner,
+                        previous["request"],
+                        previous["receipt_sha256"],
+                        previous["outcome"],
+                        previous.get("next_action"),
+                    )
+                    # Analysis is optional evidence, never permission to run. Its
+                    # DB projection is idempotent even if request persistence fails.
+                    store.consume_result(task, previous_round, record)
                 atomic(target, encoded)
+                atomic(directory / "host.json", {"owner": owner, "at": time.time()})
     elif not target.exists():
         raise ValueError("Unknown request ID; never infer a submission")
     deadline = time.monotonic() + wait_seconds
-    renew_at = 0.0
-    renew_interval = min(5.0, context.get("idle_seconds", 120) / 3)
     while True:
-        receipt = result(directory, request_id)
+        receipt = result(directory, request_id, log_bytes)
         if receipt:
             return receipt
         if (
@@ -177,25 +219,23 @@ def request(store, root, task, round_id, owner, request_id, value=None, wait_sec
                 if (directory / "claims" / target.name).exists()
                 else "not_executed",
                 "round": round_id,
-            }
+            } | logs(directory, request_id, log_bytes)
         now = time.monotonic()
-        if now >= renew_at:
-            atomic(directory / "host.json", {"owner": owner, "at": time.time()})
-            renew_at = now + renew_interval
         if now >= deadline:
-            return {"id": request_id, "status": "pending", "round": round_id}
+            return {"id": request_id, "status": "pending", "round": round_id} | logs(
+                directory, request_id, log_bytes
+            )
         time.sleep(0.1)
 
 
-def consume(store, root, task, round_id, owner, request_id, sha256, outcome, next_action):
-    directory = folder(root, task, round_id)
+def analysis_record(directory, owner, request_id, sha256, outcome, next_action=None):
     identifier(request_id)
     if read(directory / "context.json")["owner"] != owner or any(
         not isinstance(text, str) or not text.strip() or len(text) > 8000
-        for text in (outcome, next_action)
+        for text in ((outcome,) if next_action is None else (outcome, next_action))
     ):
         raise ValueError("Matching host, outcome and concrete next_action are required")
-    value = result(directory, request_id)
+    value = result(directory, request_id, log_bytes=0)
     if value is None or value["receipt_sha256"] != sha256:
         raise ValueError("Read and match the completed result receipt before consuming it")
     record = {
@@ -203,8 +243,16 @@ def consume(store, root, task, round_id, owner, request_id, sha256, outcome, nex
         "receipt_sha256": sha256,
         "owner": owner,
         "outcome": outcome,
-        "next_action": next_action,
     }
+    if next_action is not None:
+        record["next_action"] = next_action
+    return record
+
+
+def consume(store, root, task, round_id, owner, request_id, sha256, outcome, next_action):
+    """Legacy client compatibility; new requests never require consumption."""
+    directory = folder(root, task, round_id)
+    record = analysis_record(directory, owner, request_id, sha256, outcome, next_action)
     with exclusive(directory / ".host.lock") as lock:
         if lock is None:
             raise ValueError("Another host operation is in progress")
@@ -252,6 +300,7 @@ def run_bridge(store, root, idle_seconds=120):
     stopped = False
     child = None
     cpu_child = False
+    last_execution = time.time()
 
     def stop(signum, frame):
         nonlocal stopped
@@ -268,7 +317,10 @@ def run_bridge(store, root, idle_seconds=120):
                 if not (directory / "claims" / p.name).exists()
             ]
             if not pending:
-                if time.time() - read(directory / "host.json")["at"] > idle_seconds:
+                if (
+                    time.time() - max(last_execution, read(directory / "host.json")["at"])
+                    > idle_seconds
+                ):
                     receipt = {"task": task, "round": round_id, "at": time.time()}
                     store.db.execute(
                         "INSERT INTO metadata VALUES(?,?)",
@@ -284,13 +336,11 @@ def run_bridge(store, root, idle_seconds=120):
             receipt = {"id": path.stem, "round": round_id, "started_at": time.time()}
             try:
                 if value["kind"] == "finish":
-                    if (
-                        not isinstance(value.get("report"), dict)
-                        or not str(value["report"].get("next_action", "")).strip()
-                    ):
-                        raise ValueError("Finish requires a concrete next_action checkpoint")
-                    store.report(task, round_id, value["report"])
-                    atomic(Path(os.environ["KERNEL_ENVOLVE_REPORT"]), value["report"])
+                    if "report" in value:
+                        if not isinstance(value["report"], dict):
+                            raise ValueError("An optional finish report must be an object")
+                        store.report(task, round_id, value["report"])
+                        atomic(Path(os.environ["KERNEL_ENVOLVE_REPORT"]), value["report"])
                     receipt.update(status="succeeded", returncode=0, finished_at=time.time())
                     atomic(directory / "results" / path.name, receipt)
                     return 0
@@ -343,10 +393,43 @@ def run_bridge(store, root, idle_seconds=120):
                             raise
                     else:
                         child = subprocess.Popen(
-                            argv, stdin=subprocess.DEVNULL, stdout=out, stderr=err
+                            argv,
+                            stdin=subprocess.DEVNULL,
+                            stdout=out,
+                            stderr=err,
+                            env=os.environ | {"KERNEL_ENVOLVE_BRIDGE_CAPTURE": "1"},
                         )
+                    # A short wrapper may already be a zombie. Capture its birth
+                    # before poll/wait can reap it; never fall back to PID alone.
+                    gpu_identity = (
+                        identity(child.pid, include_zombie=True) if not cpu_child else None
+                    )
+                    gpu_bound = False
+
+                    def bind_gpu_logs():
+                        nonlocal gpu_bound
+                        if cpu_child or gpu_bound:
+                            return
+                        gpu = store.one(
+                            "SELECT id FROM jobs WHERE parent=? AND kind='gpu' AND pid=? AND identity=? "
+                            "ORDER BY created DESC LIMIT 1",
+                            (round_id, child.pid, gpu_identity),
+                        )
+                        if gpu:
+                            atomic(
+                                directory / "claims" / path.name,
+                                {
+                                    "started_at": receipt["started_at"],
+                                    "gpu_job": gpu["id"],
+                                    "gpu_logs": str(store.root / "jobs" / gpu["id"]),
+                                },
+                            )
+                            receipt["gpu_job"] = gpu["id"]
+                            gpu_bound = True
+
                     start = time.monotonic()
                     while child.poll() is None:
+                        bind_gpu_logs()
                         if cpu_child and completed.exists():
                             break
                         if (
@@ -379,6 +462,7 @@ def run_bridge(store, root, idle_seconds=120):
                         except subprocess.TimeoutExpired:
                             child.kill()
                             code = child.wait()
+                        bind_gpu_logs()
                 child = None
                 receipt.update(
                     status="succeeded" if code == 0 and not stopped else "failed",
@@ -386,11 +470,36 @@ def run_bridge(store, root, idle_seconds=120):
                     finished_at=time.time(),
                 )
                 atomic(directory / "results" / path.name, receipt)
+                if cpu_child and type(code) is int:
+                    # A supervisor can finish without ever starting argv. Only
+                    # a command exit, after confirmed group cleanup, is activity.
+                    store.event(
+                        task,
+                        "bridge_execution",
+                        {
+                            "round": round_id,
+                            "request": path.stem,
+                            "command": value["argv"],
+                            "status": receipt["status"],
+                            "returncode": receipt["returncode"],
+                            "cleanup_confirmed": True,
+                            "receipt_sha256": hashlib.sha256(
+                                (directory / "results" / path.name).read_bytes()
+                            ).hexdigest(),
+                        },
+                    )
+                last_execution = time.time()
             except (OSError, ValueError, KeyError, TypeError) as exc:
+                if child is not None or (directory / "results" / path.name).exists():
+                    # A protocol/persistence failure after launch is uncertain,
+                    # not a completed request. Exit through supervised cleanup;
+                    # never admit another command while this child may survive.
+                    raise
                 receipt.update(
                     status="failed", error=str(exc), returncode=None, finished_at=time.time()
                 )
                 atomic(directory / "results" / path.name, receipt)
+                last_execution = time.time()
         return 2
     finally:
         if child is not None and cpu_child:
