@@ -142,7 +142,7 @@ kernel-envolve manage --state /work/manager-state serve --port 8787
 
 Agent 适配器从 stdin 接收恢复提示；执行记录自动保留，研究摘要按需补充。受管理会话中的所有 GPU 命令必须经 `kernel-envolve manage gpu-run -- <命令>` 执行。管理层依赖同一用户下的协作工作流，跨用户资源分配和多 GPU 分布式作业由外部系统安排。远程面板通过 SSH 转发访问。
 
-前台 bridge 可直接提交下一实验，前一请求终态后无需独立 consume。对结果的分析可随下一请求保存；状态查询只读，pending 也能返回日志尾部和完整路径，详见[前台宿主接续](docs/optimization-manager.md#前台宿主接续)。
+前台 bridge 配置实际 `host_command` 后可在剩余预算内自动接续模型会话，沿用工作区、结果与累计用量，见[预算内自动接续](docs/optimization-manager.md#预算内自动接续)。前台 bridge 可直接提交下一实验，前一请求终态后无需独立 consume。对结果的分析可随下一请求保存；状态查询只读，pending 也能返回日志尾部和完整路径，详见[前台宿主接续](docs/optimization-manager.md#前台宿主接续)。
 
 部署、控制命令和恢复规则见[管理层文档](docs/optimization-manager.md)，数据一致性与刷新策略见[自动更新契约](docs/optimization-manager.md#自动更新契约)。
 

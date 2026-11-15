@@ -74,6 +74,8 @@ def require_duration(store, task, parent, expected_seconds):
         "parent round": task["spec"]["round_timeout_seconds"]
         - max(parent["seconds"], now - parent["started"])
     }
+    if task["spec"].get("deadline_at") is not None:
+        remaining["task deadline"] = task["spec"]["deadline_at"] - now
     for kind, job_kind in (("wall", "agent"), ("gpu", "gpu")):
         limit = task["spec"][kind + "_budget_seconds"]
         if limit is None:

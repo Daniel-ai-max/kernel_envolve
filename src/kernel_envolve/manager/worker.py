@@ -90,6 +90,13 @@ does not establish a repair. Inspect a failed execution before retrying, preserv
 numerical FAIL evidence, and do not blindly replay uncertain submissions.
 Before resource release, persist required evidence and verify owned jobs, descendants
 and GPU cleanup. A round boundary does not itself complete the persistent task.
+Saving a candidate, promotion or a PR is a checkpoint, not task completion. While
+budget remains, continue with a distinct useful question: slow/regressing cases,
+full-call bottlenecks, mechanism combinations or generalization. Reuse failed
+results instead of repeating rejected mechanisms. Inspect recent_sessions and
+bridge_results (including agent.stdout.log) before choosing the next experiment.
+No per-round report or consume is required. If execution cannot be recovered,
+save the concrete failure and clean up; do not simulate work with empty rounds.
 After publishing the current verified implementation PR, bind it directly:
   kernel-envolve manage sync-pr {task["id"]} --run <verified-best-run> --source-root <native-root-or-task> --base-branch <target-branch> --url <PR-URL>
 The command verifies implementation and confirmation evidence; no separate refresh
@@ -99,7 +106,8 @@ Previous research conclusions: {json.dumps(task["report"], ensure_ascii=False)}
 Recent lifecycle events: {json.dumps(store.rows("SELECT kind,data FROM events WHERE task=? ORDER BY seq DESC LIMIT 6", (task["id"],)), ensure_ascii=False)}
 Consumed active session wall seconds: {task["wall_seconds"]:.1f}; GPU card-seconds:
 {task["gpu_seconds"]:.1f}. Cumulative budgets: wall={spec["wall_budget_seconds"]},
-gpu={spec["gpu_budget_seconds"]}. This round is limited to {spec["round_timeout_seconds"]}s.
+gpu={spec["gpu_budget_seconds"]}. Absolute deadline (Unix UTC seconds): {spec.get("deadline_at")}.
+This round is limited to {spec["round_timeout_seconds"]}s.
 """
 
 

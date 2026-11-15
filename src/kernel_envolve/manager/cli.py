@@ -74,7 +74,9 @@ def parser():
     control = commands.add_parser("configure")
     control.add_argument("task")
     control.add_argument(
-        "--changes", required=True, help="JSON resource/budget changes; task must be paused"
+        "--changes",
+        required=True,
+        help="JSON resource/budget/deadline/host_command changes; task must be paused",
     )
     replacement = commands.add_parser(
         "supersede", help="Retire a task in favor of an existing identity, preserving all usage"
