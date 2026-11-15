@@ -33,7 +33,9 @@ kernel-envolve manage gpu-run --expected-seconds <预计秒数> -- <原生实验
 
 前台宿主使用 `manage bridge-request --file request.json` 提交原生命令。下一请求可选携带 `analysis={request,receipt_sha256,outcome,round?,next_action?}`，将对已有结果的真实分析一并保存；无需独立 consume，也不要求每次写分析。独立 consume 仅供旧客户端兼容。查询已有请求不带请求文件或 analysis，只读返回状态/结果，不生成分析或提交新工作。同一请求 ID 不重复执行；响应不确定时查询原 ID，不换 ID 重派。等待、恢复和字段定义见[前台 bridge](../../docs/optimization-manager.md#前台宿主接续)。
 
-有独立工作可做时使用 `--wait-seconds 0` 先返回，需要结果时有界等待；按决策需要核对日志与产物，截断 stdout 不代表全部实验结果。CPU 分析不占 GPU 队列；CUDA 故障后不要继续使用故障进程。单会话研究不要求先部署管理器或面板。预算内自动续接必须连接真实模型宿主，配置见[宿主接续](../../docs/optimization-manager.md#预算内自动接续)；bridge 在线不代表模型在研究。
+有独立工作可做时使用 `--wait-seconds 0` 先返回，需要结果时有界等待；按决策需要核对日志与产物，截断 stdout 不代表全部实验结果。CPU 分析不占 GPU 队列；CUDA 故障后不要继续使用故障进程。预算内自动续接必须连接真实模型宿主，配置见[宿主接续](../../docs/optimization-manager.md#预算内自动接续)；bridge 在线不代表模型在研究。
+
+任务开始时启动或复用现有看板，单 kernel 使用 `dashboard --task <任务目录>`；已有管理状态传 `--state <状态目录>`，不重复注册任务。它自动读取记录，不增加逐实验报告或确认。单独打开看板只同步记录；启动真实宿主与预算内接续见[单任务入口](../../docs/optimization-manager.md#单任务启动)。
 
 ## 研究建议
 
