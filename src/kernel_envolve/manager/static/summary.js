@@ -22,7 +22,7 @@ export const visibleTask = (task, showHistory = false) => showHistory || task.de
 
 export function resultSummary(record) {
   const label = executionLabelFor(record);
-  if (!record || record.evidence_error || record.correctness !== "pass") return label;
+  if (!record || record.evidence_error || record.execution === "error" || record.correctness !== "pass") return label;
   if (record.mode === "quick" && typeof record.incremental_speedup === "number" && Number.isFinite(record.incremental_speedup))
     return `${label} · 局部信号 ${record.incremental_speedup.toFixed(3)}×（当前对照）`;
   return label;
@@ -39,7 +39,7 @@ export function phaseLabel(task) {
 export function recentResult(task) {
   const recent = task.recent_execution, evaluated = task.recent_evaluation;
   // A wrapper exits after its evaluator writes the receipt: retain that actual result.
-  if (recent?.kind === "gpu_job" && recent.status === "succeeded" && evaluated &&
+  if (recent?.kind === "gpu_job" && recent.status === "succeeded" && evaluated && recent.task === evaluated.task &&
       evaluated.recorded_at >= recent.started && evaluated.recorded_at <= recent.recorded_at)
     return evaluated;
   return recent;

@@ -38,12 +38,17 @@ test("local signal is distinct from verified best and failure never shows speed"
   const quick={kind:"evaluation",mode:"quick",correctness:"pass",incremental_speedup:1.2};
   assert.match(extra.resultSummary(quick), /局部信号 1.200×/);
   assert.doesNotMatch(extra.resultSummary({...quick,evidence_error:"changed"}), /1.200/);
+  assert.doesNotMatch(extra.resultSummary({...quick,execution:"error"}), /1.200/);
+  assert.doesNotMatch(extra.resultSummary({...quick,correctness:"fail"}), /1.200/);
   assert.equal(benefitLabel(null), "尚无完整验收收益");
 });
 test("evaluator result survives its enclosing GPU wrapper completion", () => {
   const evalRecord={kind:"evaluation",mode:"full",recorded_at:15};
   const task={recent_execution:{kind:"gpu_job",status:"succeeded",started:10,recorded_at:20},recent_evaluation:evalRecord};
   assert.equal(extra.recentResult(task), evalRecord);
+  task.recent_execution.task="different-task";
+  assert.equal(extra.recentResult(task),task.recent_execution);
+  delete task.recent_execution.task;
   task.recent_execution.status="failed";
   assert.equal(extra.recentResult(task),task.recent_execution);
 });
