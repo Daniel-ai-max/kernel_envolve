@@ -399,7 +399,11 @@ def run_bridge(store, root, idle_seconds=120):
                             stderr=err,
                             env=os.environ | {"KERNEL_ENVOLVE_BRIDGE_CAPTURE": "1"},
                         )
-                    gpu_identity = identity(child.pid) if not cpu_child else None
+                    # A short wrapper may already be a zombie. Capture its birth
+                    # before poll/wait can reap it; never fall back to PID alone.
+                    gpu_identity = (
+                        identity(child.pid, include_zombie=True) if not cpu_child else None
+                    )
                     gpu_bound = False
 
                     def bind_gpu_logs():

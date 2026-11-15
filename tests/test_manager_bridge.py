@@ -963,3 +963,69 @@ raise SystemExit(main(['--state', os.environ['KERNEL_ENVOLVE_STATE'], 'bridge', 
     recovery = json.loads(store.one("SELECT data FROM metadata WHERE key='recovery:toy'")["data"])
     assert not recovery["observable_progress"] and recovery["new_cpu_requests"] == []
     assert store.task("toy")["failures"] == 1
+
+
+@pytest.mark.parametrize("exit_code", [0, 7])
+def test_completed_gpu_wrapper_keeps_birth_and_raw_logs_before_reap(managed, exit_code):
+    store, _, _ = managed
+    root = store.root.parent / "bridge"
+    delayed = root.parent / "delayed-identity.json"
+    script = f"""import json,os,pathlib,subprocess,sys,time
+from kernel_envolve.manager import bridge
+from kernel_envolve.manager.cli import main
+original = bridge.identity
+def delayed_identity(pid, **kwargs):
+    deadline = time.monotonic() + 10
+    while time.monotonic() < deadline:
+        state = subprocess.check_output(['ps', '-p', str(pid), '-o', 'stat='], text=True).strip()
+        if state.startswith('Z'):
+            pathlib.Path({str(delayed)!r}).write_text(json.dumps({{'pid':pid, 'default_identity':original(pid)}}))
+            from kernel_envolve.manager.store import Store
+            store = Store(os.environ['KERNEL_ENVOLVE_STATE'])
+            store.db.execute("INSERT INTO jobs(id,task,kind,resource,status,parent,command,pid,identity,created) "
+                "SELECT 'pid-reuse-decoy',task,kind,resource,'failed',parent,command,pid,'wrong-birth',created+1 "
+                "FROM jobs WHERE kind='gpu' AND pid=?", (pid,))
+            store.close()
+            return original(pid, **kwargs)
+        time.sleep(.02)
+    raise AssertionError('GPU wrapper did not become an unreaped zombie')
+bridge.identity = delayed_identity
+raise SystemExit(main(['--state', os.environ['KERNEL_ENVOLVE_STATE'], 'bridge', '--root', {str(root)!r}]))
+"""
+    replace_command(
+        store, [sys.executable, "-c", script], host_driven=True, round_timeout_seconds=30
+    )
+    bridge.open_host(store, "toy", "foreground", "short-wrapper")
+    job = store.schedule()[0]
+    proc = launch(store, job)
+    directory = bridge.folder(root, "toy", job)
+    wait_for(lambda: (directory / "context.json").exists())
+    try:
+        payload = cpu(
+            "import sys; print('raw output before parent probe',flush=True); "
+            "print('raw warning before parent probe',file=sys.stderr,flush=True); "
+            f"raise SystemExit({exit_code})",
+            15,
+        ) | {"kind": "gpu"}
+        receipt = send(store, root, job, "short", payload, wait=15)
+        delayed_probe = json.loads(delayed.read_text())
+        assert delayed_probe["default_identity"] is None
+        gpu = store.one(
+            "SELECT * FROM jobs WHERE parent=? AND kind='gpu' AND id!='pid-reuse-decoy'", (job,)
+        )
+        assert gpu["pid"] == delayed_probe["pid"]
+        assert gpu["status"] == ("succeeded" if exit_code == 0 else "failed")
+        assert receipt["status"] == ("succeeded" if exit_code == 0 else "failed")
+        assert receipt["gpu_job"] == gpu["id"]
+        assert receipt["stdout"] == "raw output before parent probe\n"
+        assert receipt["stderr"] == "raw warning before parent probe\n"
+        assert receipt["log_files"]["stdout"]["path"] == str(
+            store.root / "jobs" / gpu["id"] / "stdout.log"
+        )
+        assert (directory / "logs/short.stdout.log").read_text() == ""
+        send(store, root, job, "finish", {"kind": "finish"})
+        proc.communicate(timeout=8)
+    finally:
+        if proc.poll() is None:
+            store.control("toy", "pause")
+            proc.communicate(timeout=10)

@@ -10,12 +10,16 @@ import time
 from pathlib import Path
 
 
-def identity(pid):
-    """Return a birth identity, None for absence, and raise on an unavailable probe."""
+def identity(pid, *, include_zombie=False):
+    """Return birth identity; include an unreaped child only for receipt binding.
+
+    The default excludes zombies so existing liveness checks remain unchanged.
+    Callers opting in must capture identity before polling/waiting reaps the child.
+    """
     if Path("/proc").is_dir():
         try:
             stat = Path(f"/proc/{pid}/stat").read_text().rsplit(")", 1)[1].split()
-            if stat[0] == "Z":
+            if stat[0] == "Z" and not include_zombie:
                 return None
             return Path("/proc/sys/kernel/random/boot_id").read_text().strip() + ":" + stat[19]
         except FileNotFoundError:
@@ -31,7 +35,11 @@ def identity(pid):
     if reply.returncode:
         raise OSError(f"Process probe failed: {reply.stderr.strip()}")
     fields = reply.stdout.split()
-    return None if not fields or fields[-1].startswith("Z") else " ".join(fields[:-1])
+    return (
+        None
+        if not fields or (fields[-1].startswith("Z") and not include_zombie)
+        else " ".join(fields[:-1])
+    )
 
 
 def alive(pid, birth):
