@@ -1,7 +1,9 @@
 """Independent, bounded round supervisor. It survives coordinator restarts."""
 
+import contextlib
 import json
 import os
+import resource
 import signal
 import subprocess
 import sys
@@ -17,6 +19,42 @@ from .process import (
     terminate,
 )
 from .store import Store
+
+
+@contextlib.contextmanager
+def inherited_core_limit(kind):
+    """Set the GPU command's inherited limit in its dedicated, single-threaded worker.
+
+    Do not use preexec_fn or apply this process-wide setting in a shared/threaded launcher.
+    Linux ignores the usual RLIMIT_CORE size for pipe handlers, except for the value 1:
+    fs/coredump.c uses that sentinel to skip recursive dumps before starting the handler.
+    Unlike PR_SET_DUMPABLE, the resource limit survives exec and reaches compiler children.
+    """
+    if kind != "gpu" or sys.platform != "linux":
+        yield None
+        return
+    previous = None
+    warning = None
+    try:
+        limits = resource.getrlimit(resource.RLIMIT_CORE)
+        if limits[1] == 0:
+            warning = "inherited RLIMIT_CORE hard limit is 0"
+        else:
+            resource.setrlimit(resource.RLIMIT_CORE, (1, limits[1]))
+            previous = limits
+    except (OSError, ValueError) as exc:
+        warning = str(exc)
+    try:
+        yield (
+            "Core dump suppression unavailable: "
+            + warning
+            + "; limits remain unchanged and Linux piped core handlers may still run.\n"
+            if warning
+            else None
+        )
+    finally:
+        if previous is not None:
+            resource.setrlimit(resource.RLIMIT_CORE, previous)
 
 
 def checkpoint(store, task, job):
@@ -123,7 +161,10 @@ def supervise(store, key, handle, stdin=None):
             # A regular file avoids a pipe deadlock with adapters that do not consume stdin.
             prompt_path = directory / "prompt.txt"
             prompt_path.write_text(stdin or "")
-            with prompt_path.open("rb") as prompt:
+            with prompt_path.open("rb") as prompt, inherited_core_limit(job["kind"]) as warning:
+                if warning:
+                    err.write(warning.encode())
+                    err.flush()
                 process = subprocess.Popen(
                     json.loads(job["command"]),
                     cwd=task["spec"]["workspace"],
