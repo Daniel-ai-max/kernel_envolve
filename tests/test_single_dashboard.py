@@ -119,11 +119,13 @@ def test_cpu_activity_is_automatic_and_cannot_survive_terminal_parent(managed):
     )
     view = task_view(store, "toy")
     assert view["phase"] == "cpu_running" and view["current_work"] == "python diagnose.py"
+    assert view["current_work_argv"] == ["python", "diagnose.py"]
     assert view["recent_execution"]["kind"] == "cpu_request"
     store.finish(key, "failed", "host lost")
     view = task_view(store, "toy")
     assert view["phase"] != "cpu_running"
     assert view["recent_cpu_request"]["status"] == "interrupted"
+    assert view["current_work_argv"] is None
 
 
 def test_single_command_http_dashboard_refreshes_without_reports(task, tmp_path):

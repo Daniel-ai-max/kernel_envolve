@@ -152,7 +152,7 @@ function renderDetail(t) {
   const b = t.spec.baseline, r = t.latest_evaluation, record = t.research_record;
   const rows = t.best?.decision?.cases || [];
   const fields = (pairs) => pairs.filter(([, value]) => value).map(([label, value]) => `<dt>${label}</dt><dd>${escape(value)}</dd>`).join("");
-  const diagnoses = {session: phaseLabel(t), reason: t.reason, evidence_error: t.evidence_error, latest: r, recovery: t.recovery};
+  const diagnoses = {session: phaseLabel(t), reason: t.reason, evidence_error: t.evidence_error, latest: r, recovery: t.recovery, current_work_argv: t.current_work_argv};
   patch($("detail"), `
     <div class="section-head"><h2>${escape(t.spec.name)}</h2><button id="close-detail">返回</button></div>
     <div class="detail-summary"><span>${executionLabel(t.execution_state)}</span><span>${evidenceSummary(t)}</span><span>${escape(benefitLabel(t.best))}</span></div>
