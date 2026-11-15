@@ -11,6 +11,24 @@ from .store import Store
 from .worker import supervise
 
 
+def forward_logs(directory):
+    """Keep bounded output and make upstream truncation visible through the bridge."""
+    logs = {}
+    for name in ("stdout", "stderr"):
+        path = directory / (name + ".log")
+        if not path.exists():
+            continue
+        with path.open("rb") as stream:
+            size = stream.seek(0, os.SEEK_END)
+            offset = max(0, size - 65536)
+            stream.seek(offset)
+            print(stream.read(size - offset).decode(errors="replace"), end="")
+        logs[name] = {"path": str(path.resolve()), "bytes": size, "truncated": offset > 0}
+    if any(log["truncated"] for log in logs.values()):
+        # Emit last so a second bounded bridge capture still points to both raw logs.
+        print("\nKERNEL_ENVOLVE_LOGS " + json.dumps(logs))
+
+
 class DurationAdmissionError(ValueError):
     """A declared command cannot fit the remaining execution budgets."""
 
@@ -166,12 +184,7 @@ def run(root, task_id, round_id, command, *, expected_seconds=None):
                                 )
                             result = supervise(store, key, handles)
                             directory = store.root / "jobs" / key
-                            # Forward bounded tails; full output remains in durable job logs.
-                            for name in ("stdout.log", "stderr.log"):
-                                if (directory / name).exists():
-                                    with (directory / name).open("rb") as log:
-                                        log.seek(max(0, (directory / name).stat().st_size - 65536))
-                                        print(log.read().decode(errors="replace"), end="")
+                            forward_logs(directory)
                             return result
                     # A concurrent cleanup may have quarantined this resource
                     # during probing/claiming. Do not hide it behind another wait.
