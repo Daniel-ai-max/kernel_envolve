@@ -271,3 +271,38 @@ kernel-envolve native-promote <完整评测run目录>
 
 同一个 case/seed 的计时 oracle 已在当前配对内复用；前后完整正确性检查及新输入
 仍独立运行。不得跨输入、源码或数值契约复用未经验证的参考结果。
+
+### 候选验收自动止损
+
+已有完整调用计时脚本可调用 `kernel_envolve.validation.validate_candidate`，在一次
+`manage gpu-run` 内先检查收益，再执行昂贵原生门禁。不改变研究任务、预算或晋升规则。
+
+```python
+from kernel_envolve.validation import validate_candidate
+
+validate_candidate(
+    public_call_probe,
+    [("native", native_checks), ("holdout", independent_checks)],
+    cases=["short", "long"],
+    scope="完整前向及反向",
+    mode="eager",
+    min_gain=0.01,
+    max_regression=0.0,
+)
+```
+
+`public_call_probe()` 返回 `scope`、`mode`、`baseline_revision`、`source_sha256` 和
+`cases`。每个 case 包含 `name`、`correctness=True`，以及至少三对同单位、正有限数的
+`baseline` / `candidate` 时延数组。源码身份取当前作业的 `research-source-before.json`；
+probe 应使用该冻结候选及基线，计时覆盖声明的完整调用范围。门禁函数通过时明确返回
+`True`，失败抛异常。范围、场景和门槛在测量前固定。
+
+所有场景的配对加速中位数均不超过 1 时，记录无收益并跳过后续门禁。至少一个场景
+的中位数及三分之二配对达到收益门槛，且其他场景不超出退化限额时，才继续。
+其余结果保存为不确定；缺失数据、错版本、错计时模式和非有限数不能当作无收益。
+这只是候选筛选，不代表统计显著性或最终交付通过。
+
+每个阶段自动保存到当前作业的 `validation.json`，并由管理器绑定源码与完整日志。
+异常、中断保留已完成阶段；同一作业不能重复调用覆盖结果。管理器自动导入到现有看板、
+旁白输入和归档，研究 agent 无需再次确认或汇报。无收益只结束当前候选验收，任务仍可
+继续研究。通过该批检查也不产生 best；正式交付继续使用既有完整验收及晋升入口。

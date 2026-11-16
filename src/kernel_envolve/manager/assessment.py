@@ -90,7 +90,102 @@ def validate_assessment(value, task):
     return value
 
 
-def watch(store, key, receipt, verifier, *, research=False):
+def validate_validation(value, task):
+    """Validate a trusted verifier's external outcome, never promote or qualify.
+
+    The pinned host verifier must check the external terminal job, original
+    receipt/log hashes and immutable source manifest. These identifiers are
+    provenance only: no external path, job or executable is followed here.
+    ``passed`` means only that every declared check in ``scope`` passed.
+    """
+    fields = {
+        "schema",
+        "task",
+        "baseline_revision",
+        "source_sha256",
+        "evidence_sha256",
+        "recorded_at",
+        "promotion",
+        "status",
+        "scope",
+        "summary",
+        "limitations",
+        "external",
+        "checks",
+    }
+    statuses = {"passed", "no_benefit", "failed", "interrupted", "inconclusive"}
+
+    def text(v, limit):
+        return isinstance(v, str) and bool(v.strip()) and len(v) <= limit
+
+    def sha(v):
+        return isinstance(v, str) and re.fullmatch(r"[a-f0-9]{64}", v)
+
+    if (
+        not isinstance(value, dict)
+        or set(value) != fields
+        or value["schema"] != "validation-result-v1"
+        or value["task"] != task["id"]
+        or value["baseline_revision"] != task["spec"]["baseline"]["revision"]
+        or value["promotion"] is not False
+        or value["status"] not in statuses
+        or not all(sha(value[k]) for k in ("source_sha256", "evidence_sha256"))
+        or type(value["recorded_at"]) not in (float, int)
+        or not math.isfinite(value["recorded_at"])
+        or not 0 < value["recorded_at"] <= time.time()
+        or not text(value["scope"], 300)
+        or not text(value["summary"], 2000)
+        or not isinstance(value["limitations"], list)
+        or len(value["limitations"]) > 16
+        or not all(text(v, 500) for v in value["limitations"])
+    ):
+        raise ValueError("Invalid external validation identity or outcome")
+    external = value["external"]
+    if (
+        not isinstance(external, dict)
+        or set(external)
+        != {
+            "task",
+            "job",
+            "receipt_sha256",
+            "source_sha256",
+            "baseline_revision",
+            "evidence_sha256",
+        }
+        or not all(
+            isinstance(external[k], str) and re.fullmatch(r"[A-Za-z0-9_.:-]{1,160}", external[k])
+            for k in ("task", "job")
+        )
+        or not sha(external["receipt_sha256"])
+        or any(
+            external[k] != value[k]
+            for k in ("baseline_revision", "source_sha256", "evidence_sha256")
+        )
+    ):
+        raise ValueError("External validation source/receipt binding differs")
+    checks = value["checks"]
+    if (
+        not isinstance(checks, list)
+        or not 1 <= len(checks) <= 1000
+        or any(
+            not isinstance(c, dict)
+            or set(c) != {"name", "status"}
+            or not text(c["name"], 300)
+            or c["status"] not in statuses | {"skipped"}
+            for c in checks
+        )
+        or len({c["name"] for c in checks}) != len(checks)
+        or (value["status"] == "passed" and any(c["status"] != "passed" for c in checks))
+    ):
+        raise ValueError("Invalid external validation checks")
+    if len(encode(value).encode()) > 2 * 1024 * 1024:
+        raise ValueError("Validation summary exceeds 2 MiB")
+    return value
+
+
+def watch(store, key, receipt, verifier, *, research=False, validation=False):
+    if research and validation:
+        raise ValueError("Choose research or validation, not both")
     task = store.task(key)
     verifier, receipt = Path(verifier).resolve(), Path(receipt).resolve()
     if not verifier.is_file() or verifier.is_relative_to(task["spec"]["workspace"]):
@@ -100,7 +195,9 @@ def watch(store, key, receipt, verifier, *, research=False):
         "verifier": str(verifier),
         "verifier_sha256": hash_file(verifier),
     }
-    namespace = "research_result" if research else "assessment"
+    namespace = "validation" if validation else "research_result" if research else "assessment"
+    if validation:
+        source["validation_only"] = True
     if research:
         source["research_only"] = True
     with store.transaction():
@@ -159,6 +256,8 @@ def verify(source, task):
             except ProcessLookupError:
                 pass
             process.wait()
+    if source.get("validation_only"):
+        return validate_validation(value, task)
     if source.get("research_only"):
         from .research_result import validate
 
@@ -175,46 +274,82 @@ def refresh_sources(store, *, force=False):
 
 
 def _refresh_sources(store, *, force=False):
-    for row in store.rows(
+    from .validation_import import sources, sync_health
+
+    installed = store.rows(
         "SELECT key,data FROM metadata WHERE key LIKE 'assessment_source:%' "
-        "OR key LIKE 'research_result_source:%'"
-    ):
+        "OR key LIKE 'research_result_source:%' OR key LIKE 'validation_source:%'"
+    )
+    for row in [*installed, *sources(store)]:
         namespace = row["key"].split("_source:", 1)[0]
         key = row["key"].split("_source:", 1)[1]
         research = namespace == "research_result"
-        field = "research_result" if research else "assessment"
-        directory = "research-results" if research else "assessments"
+        field = namespace
+        directory = (
+            "validations"
+            if namespace == "validation"
+            else "research-results"
+            if research
+            else "assessments"
+        )
         source = json.loads(row["data"])
+        external = source.get("kind") == "external_validation"
         task = store.task(key)
-        receipt = Path(source["receipt"])
-        previous = store.one("SELECT data FROM metadata WHERE key=?", (namespace + "_sync:" + key,))
+        receipt = None if external else Path(source["receipt"])
+        sync_key = row["sync_key"] if "sync_key" in row.keys() else namespace + "_sync:" + key
+        if namespace == "validation" and not external:
+            sync_key = "validation_custom_sync:" + key
+        previous = store.one("SELECT data FROM metadata WHERE key=?", (sync_key,))
         previous = json.loads(previous["data"]) if previous else {}
-        if not receipt.exists() and not previous:
+        if not external and not receipt.exists() and not previous:
             continue  # The independently running assessor has not published its receipt yet.
         signature = None
         try:
-            if receipt.stat().st_size > 4 * 1024 * 1024:
+            if external:
+                from . import validation_import
+
+                if namespace != "validation":
+                    raise ValueError("External validation requires its own namespace")
+                signature = validation_import.signature(source)
+            elif receipt.stat().st_size > 4 * 1024 * 1024:
                 raise ValueError("Assessment input receipt exceeds 4 MiB")
-            signature = digest([hash_file(receipt), hash_file(source["verifier"])])
+            else:
+                signature = digest([hash_file(receipt), hash_file(source["verifier"])])
             if not force and previous.get("signature") == signature:
                 continue  # Do not repeat verification or retry an unchanged failure.
-            value = verify(source, task)
+            proof_files = None
+            if external:
+                value, proof_files = validation_import.verify_bundle(source, task)
+                validate_validation(value, task)
+            else:
+                value = verify(source, task)
             if research:
                 from .research_result import validate_job
 
                 validate_job(store, task, value)
-            raw = receipt.read_bytes()
-            if (
-                digest([hashlib.sha256(raw).hexdigest(), hash_file(source["verifier"])])
-                != signature
-            ):
+            raw = proof_files["validation.json"] if external else receipt.read_bytes()
+            after_signature = (
+                validation_import.signature(source)
+                if external
+                else digest([hashlib.sha256(raw).hexdigest(), hash_file(source["verifier"])])
+            )
+            if len(raw) > 4 * 1024 * 1024 or after_signature != signature:
                 raise ValueError("Assessment input changed during verification")
             record = {
                 field: value,
                 "input_sha256": hashlib.sha256(raw).hexdigest(),
-                "verifier_sha256": source["verifier_sha256"],
+                "verifier_sha256": (
+                    digest(["builtin-external-validation-v1"])
+                    if external
+                    else source["verifier_sha256"]
+                ),
                 "indexed_at": time.time(),
             }
+            if proof_files is not None:
+                record["proof_files"] = {
+                    name: {"sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)}
+                    for name, data in proof_files.items()
+                }
             record_id = digest(record | {"indexed_at": None})
             existing = store.one(
                 "SELECT data FROM metadata WHERE key=?",
@@ -227,6 +362,11 @@ def _refresh_sources(store, *, force=False):
             durable_json(folder / "record.json", record)
             # The receipt and output survive removal of the evaluator workspace.
             durable_bytes(folder / "input.json", raw)
+            for name, data in (proof_files or {}).items():
+                (folder / "proof" / name).parent.mkdir(parents=True, exist_ok=True)
+                durable_bytes(folder / "proof" / name, data)
+            if external:
+                validation_import.verify_saved(folder, task)
             with store.transaction():
                 store.db.execute(
                     "INSERT OR IGNORE INTO metadata VALUES(?,?)",
@@ -248,22 +388,45 @@ def _refresh_sources(store, *, force=False):
                         "INSERT OR REPLACE INTO metadata VALUES(?,?)",
                         (namespace + ":" + key, encode(record)),
                     )
-                state = {"signature": signature, "recorded_at": time.time(), "error": None}
+                state = {
+                    "signature": signature,
+                    "recorded_at": time.time(),
+                    "error": None,
+                    "target": key,
+                }
                 store.db.execute(
                     "INSERT OR REPLACE INTO metadata VALUES(?,?)",
-                    (namespace + "_sync:" + key, encode(state)),
+                    (sync_key, encode(state)),
                 )
-                store.event(
-                    key,
-                    namespace + "_indexed",
-                    {"record": record_id, "source": value["source_sha256"]},
-                )
+                if external:
+                    store.db.execute(
+                        "INSERT OR REPLACE INTO metadata VALUES(?,?)",
+                        (namespace + "_sync:" + key, encode(state)),
+                    )
+                if not existing:
+                    store.event(
+                        key,
+                        namespace + "_indexed",
+                        {"record": record_id, "source": value["source_sha256"]},
+                    )
         except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError) as exc:
-            state = {"signature": signature, "recorded_at": time.time(), "error": str(exc)}
+            state = {
+                "signature": signature,
+                "recorded_at": time.time(),
+                "error": str(exc),
+                "target": key,
+            }
             if previous.get("error") == state["error"] and previous.get("signature") == signature:
                 continue
             store.db.execute(
                 "INSERT OR REPLACE INTO metadata VALUES(?,?)",
-                (namespace + "_sync:" + key, encode(state)),
+                (sync_key, encode(state)),
             )
+            if external:
+                store.db.execute(
+                    "INSERT OR REPLACE INTO metadata VALUES(?,?)",
+                    (namespace + "_sync:" + key, encode(state)),
+                )
             store.event(key, namespace + "_sync_failed", state)
+
+    sync_health(store)
