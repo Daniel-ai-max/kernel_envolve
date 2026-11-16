@@ -180,6 +180,8 @@ Agent 适配器从 stdin 接收恢复提示；执行记录自动保留，研究�
 
 前台 bridge 配置实际 `host_command` 后可在剩余预算内自动接续模型会话，沿用工作区、结果与累计用量，见[预算内自动接续](docs/optimization-manager.md#预算内自动接续)。前台 bridge 可直接提交下一实验，前一请求终态后无需独立 consume。对结果的分析可随下一请求保存；状态查询只读，pending 也能返回日志尾部和完整路径，详见[前台宿主接续](docs/optimization-manager.md#前台宿主接续)。
 
+可选[有界研究策略](docs/bounded-research-policy.md)支持固定4小时、无达标交付时最多延长一次到原起点8小时，并在完整验收、独立确认和同源码PR交付后停止；研究启动无需评测器。
+
 部署、控制命令和恢复规则见[管理层文档](docs/optimization-manager.md)，数据一致性与刷新策略见[自动更新契约](docs/optimization-manager.md#自动更新契约)。
 
 ## 任务配置

@@ -62,6 +62,30 @@ def parser():
     )
     serve.add_argument("--port", type=int, default=8787)
     commands.add_parser("status")
+    policy = commands.add_parser(
+        "policy-install", help="Opt in to fixed 4h + conditional 4h research"
+    )
+    policy.add_argument("task")
+    policy.add_argument("--started-at", type=float, required=True)
+    policy.add_argument(
+        "--min-gain",
+        type=float,
+        required=True,
+        help="Minimum median latency reduction in full and confirmation",
+    )
+    policy.add_argument(
+        "--deadline-command", required=True, help="Trusted host deadline adapter JSON argv"
+    )
+    binding = commands.add_parser(
+        "policy-bind-delivery",
+        help="Link independent native delivery without transferring qualification",
+    )
+    binding.add_argument("task")
+    binding.add_argument("--delivery-task", required=True)
+    binding.add_argument("--source-root", required=True)
+    for name in ("policy-tick", "policy-show"):
+        command = commands.add_parser(name)
+        command.add_argument("task")
     narrator = commands.add_parser(
         "narrate", help="Shared asynchronous progress narrator; no research execution"
     )
@@ -218,9 +242,31 @@ def main(argv=None):
             print(json.dumps({"error_type": "gpu_duration_admission", "error": str(exc)}))
             return 2
     query = args.action == "bridge-request" and not args.file and not args.consume_file
-    store = Store(args.state, readonly=query or args.action in ("status", "archive", "serve"))
+    store = Store(
+        args.state, readonly=query or args.action in ("status", "archive", "serve", "policy-show")
+    )
     try:
-        if args.action.startswith("bridge"):
+        if args.action.startswith("policy-"):
+            from . import research_policy
+
+            if args.action == "policy-install":
+                value = research_policy.install(
+                    store,
+                    args.task,
+                    started_at=args.started_at,
+                    min_gain=args.min_gain,
+                    deadline_command=json.loads(args.deadline_command),
+                )
+            elif args.action == "policy-bind-delivery":
+                value = research_policy.bind_delivery(
+                    store, args.task, args.delivery_task, args.source_root
+                )
+            elif args.action == "policy-tick":
+                value = research_policy.tick(store, args.task)
+            else:
+                value = research_policy.get(store, args.task)
+            print(json.dumps(value, ensure_ascii=False, indent=2))
+        elif args.action.startswith("bridge"):
             from . import bridge
 
             if args.action == "bridge":

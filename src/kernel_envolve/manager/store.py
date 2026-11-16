@@ -214,8 +214,12 @@ class Store:
                     )
                     self.event(task["id"], "registered", task["baseline"])
 
-    def control(self, key, action, changes=None):
+    def control(self, key, action, changes=None, *, _policy=None):
         with self.transaction():
+            policy_key = "research_policy:" + key
+            policy_row = self.one("SELECT data FROM metadata WHERE key=?", (policy_key,))
+            if _policy is not None and (not policy_row or policy_row["data"] != encode(_policy[0])):
+                raise ValueError("Research policy changed during control; retry from current state")
             task = self.task(key)
             if task["superseded_by"] or task["desired"] == "superseded":
                 if action == "pause":
@@ -265,6 +269,31 @@ class Store:
             else:
                 raise ValueError("Unknown action")
             self.event(key, action, changes or {})
+            if policy_row:
+                prior = json.loads(policy_row["data"])
+                value = (
+                    _policy[1]
+                    if _policy is not None
+                    else prior
+                    if action == "pause"
+                    and prior["phase"] in {"succeeded", "exhausted", "suspended"}
+                    else prior | {"phase": "suspended", "suspended_by": action}
+                )
+                self.db.execute(
+                    "UPDATE metadata SET data=? WHERE key=?", (encode(value), policy_key)
+                )
+                self.event(
+                    key,
+                    "research_policy_control",
+                    {
+                        "phase": value["phase"],
+                        "action": action,
+                        "automatic": _policy is not None,
+                        "extension_used": value["extension_used"],
+                        "started_at": value["started_at"],
+                        "maximum_end": value["maximum_end"],
+                    },
+                )
 
     def supersede(self, key, replacement):
         """Retire an existing identity without transferring usage or allocating new budget."""
