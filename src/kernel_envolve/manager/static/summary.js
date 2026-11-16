@@ -29,7 +29,7 @@ export function scopedAssessment(task) {
 // Host-checked provenance does not validate any numerical claim in this summary.
 export function researchResult(task) {
   const r = task?.research_result;
-  if (!r || r.schema !== "research-result-v1" || r.status !== "research" ||
+  if (task.evidence_error || !r || r.schema !== "research-result-v1" || r.status !== "research" ||
       r.promotion !== false || r.task !== task.id || r.baseline_revision !== task.spec?.baseline?.revision ||
       !Number.isFinite(r.recorded_at) || r.recorded_at <= 0 ||
       typeof r.summary !== "string" || typeof r.scope !== "string" ||
@@ -48,7 +48,13 @@ export function evidenceSummary(task) {
 export function taskBenefit(task) {
   if (task.best) return {label: benefitLabel(task.best), detail: "", positive: task.best.baseline_speedup > 1};
   const a = scopedAssessment(task);
-  if (!a) return {label: benefitLabel(null), detail: "", positive: false};
+  if (!a) {
+    const r = researchResult(task);
+    // Show the source-bound claim where users look for gains. Do not parse it
+    // into a speedup or give it the styling of a verified improvement.
+    if (r) return {label: r.summary, detail: "阶段测量 · 未完整验收", positive: false, research: true};
+    return {label: benefitLabel(null), detail: "", positive: false};
+  }
   return {label: `${a.metrics[0].label} ${a.metrics[0].baseline_speedup.toFixed(3)}×`,
     detail: a.metrics.slice(1).map(m => `${m.label} ${m.baseline_speedup.toFixed(3)}×`).join(" · "),
     positive: a.metrics[0].baseline_speedup > 1};
