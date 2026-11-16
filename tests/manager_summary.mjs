@@ -170,3 +170,16 @@ test("new findings outrank older cited failures and stopped tasks have no next s
       next: {text: "旧计划", sources: ["old"]}}}};
   assert.equal(extra.narrationText(task), "新结论");
 });
+
+
+test("system fallback keeps its own source timestamp without a narrator", async () => {
+  const {progressSource} = await import("../src/kernel_envolve/manager/static/summary.js");
+  const t = {id: "toy", spec: {baseline: {revision: "base"}}, latest_validation: {
+    schema: "validation-result-v1", task: "toy", promotion: false, baseline_revision: "base",
+    status: "no_benefit", recorded_at: 42, summary: "no gain", scope: "full call",
+    source_sha256: "a".repeat(64), evidence_sha256: "b".repeat(64)}};
+  const source = progressSource(t);
+  assert.equal(source.kind, "validation");
+  assert.equal(source.at, 42);
+  assert.match(source.text, /no gain/);
+});

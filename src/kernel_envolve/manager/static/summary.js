@@ -18,6 +18,9 @@ export function narrationFor(task) {
   return n;
 }
 export function narrationText(task) {
+  return progressSource(task).text;
+}
+export function progressSource(task) {
   const n = narrationFor(task);
   const validation = validationResult(task);
   const time = c => c ? Math.max(...c.sources.map(ref => n.sources[ref].at || 0)) : 0;
@@ -26,9 +29,9 @@ export function narrationText(task) {
   // A freshly imported system fact wins over an older failure, including when
   // the model adapter is unavailable or retained its old failure claim.
   if (validation && (!claims.length || validation.recorded_at >= time(claims[0])))
-    return resultSummary(validation);
-  return n ? [claims[0], canContinue(task) ? n.claims.next : null]
-    .filter(Boolean).map(c => c.text).join(" ") : "";
+    return {text: resultSummary(validation), kind: "validation", at: validation.recorded_at};
+  return {text: n ? [claims[0], canContinue(task) ? n.claims.next : null]
+    .filter(Boolean).map(c => c.text).join(" ") : "", kind: "narration", at: n?.updated_at};
 }
 export function canContinue(task) {
   return !["paused", "superseded"].includes(task.desired) && !task.archived &&
