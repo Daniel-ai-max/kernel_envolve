@@ -52,3 +52,42 @@ test("evaluator result survives its enclosing GPU wrapper completion", () => {
   task.recent_execution.status="failed";
   assert.equal(extra.recentResult(task),task.recent_execution);
 });
+
+const scopedTask = () => ({id:"example", spec:{baseline:{revision:"base"}}, best:null,
+  verified_assessment:{schema:"scoped-assessment-v1", status:"verified", promotion:false,
+    task:"example", baseline_revision:"base", source_sha256:"a".repeat(64), evidence_sha256:"b".repeat(64), recorded_at:100,
+    metrics:[{label:"算子",baseline_speedup:1.4,cases:46,slower_cases:0},{label:"Graph",baseline_speedup:1.05,cases:46,slower_cases:11,worst_slowdown_percent:4.2}],
+    checkpoints:[{minutes:60,eager_ratio:1/1.4,graph_ratio:1/1.05}],
+    scenarios:[{name:"example",mode:"前反向",group:"forward_backward",baseline_us:10,candidate_us:9}]}});
+test("verified scoped evidence is displayed without promoting best", () => {
+  const task=scopedTask(), before=structuredClone(task);
+  assert.deepEqual(extra.taskBenefit(task),{label:"算子 1.400×",detail:"Graph 1.050×",positive:true});
+  assert.equal(extra.recentResult(task).kind,"scoped_assessment");
+  assert.equal(extra.resultSummary(extra.recentResult(task)),"46 场景验收 · Graph 11 场景退化");
+  assert.equal(extra.scopedAssessment(task).metrics[1].slower_cases,11);
+  assert.deepEqual(task,before);
+  task.best={baseline_speedup:1.8};
+  assert.equal(extra.taskBenefit(task).label,"1.800×");
+  task.recent_execution={recorded_at:110,kind:"gpu_job",status:"failed"};
+  assert.equal(extra.recentResult(task),task.recent_execution);
+});
+test("invalid, mismatched, failed or malformed scoped evidence is never displayed", () => {
+  const mutations=[t=>t.id="different",t=>t.spec.baseline.revision="other",t=>t.evidence_error="modified",
+    t=>t.verified_assessment.status="failed",t=>t.verified_assessment.promotion=true,
+    t=>t.verified_assessment.source_sha256="short",t=>t.verified_assessment.evidence_sha256="",
+    t=>t.verified_assessment.recorded_at=NaN,t=>t.verified_assessment.metrics=[],
+    t=>t.verified_assessment.metrics=[null],t=>t.verified_assessment.metrics[0].baseline_speedup=Infinity,
+    t=>t.verified_assessment.metrics[0].slower_cases=47,t=>t.verified_assessment.metrics[0].worst_slowdown_percent=NaN,
+    t=>t.verified_assessment.checkpoints=[null],t=>t.verified_assessment.checkpoints[0].eager_ratio=0,
+    t=>t.verified_assessment.scenarios=[null],t=>t.verified_assessment.scenarios[0].baseline_us=0,
+    t=>t.verified_assessment.scenarios[0].group="unrecognized"];
+  for (const mutate of mutations) {
+    const task=scopedTask();mutate(task);
+    assert.equal(extra.scopedAssessment(task),null);
+    assert.equal(extra.taskBenefit(task).label,"尚无完整验收收益");
+  }
+});
+test("deadline and explicit stop remain distinct", () => {
+  assert.equal(extra.phaseLabel({phase:"paused",reason:"task deadline reached"}),"预算结束");
+  assert.equal(extra.phaseLabel({phase:"paused",reason:"user stop"}),"已停止");
+});
