@@ -195,6 +195,12 @@ def task_view(store, key, now=None, predecessors=None, usage=None):
         "SELECT data FROM metadata WHERE key=?", ("research_result_sync:" + key,)
     )
     task["research_result_sync"] = json.loads(research_sync["data"]) if research_sync else None
+    validation = store.one("SELECT data FROM metadata WHERE key=?", ("validation:" + key,))
+    task["latest_validation"] = json.loads(validation["data"])["validation"] if validation else None
+    validation_sync = store.one(
+        "SELECT data FROM metadata WHERE key=?", ("validation_sync:" + key,)
+    )
+    task["validation_sync"] = json.loads(validation_sync["data"]) if validation_sync else None
     narration = store.one("SELECT data FROM metadata WHERE key=?", ("narration:" + key,))
     task["narration"] = json.loads(narration["data"]) if narration else None
     if task["narration"] and task["narration"]["baseline"] != task["spec"]["baseline"]["revision"]:
@@ -414,6 +420,16 @@ def detail(store, key, now=None):
             "SELECT data FROM metadata WHERE key GLOB ?", ("research_result_history:" + key + ":*",)
         )
     ]
+    task["validation_history"] = sorted(
+        [
+            json.loads(row["data"])
+            for row in store.rows(
+                "SELECT data FROM metadata WHERE key GLOB ?", ("validation_history:" + key + ":*",)
+            )
+        ],
+        key=lambda record: record["validation"]["recorded_at"],
+        reverse=True,
+    )
     for directory in ("task_dir", "workspace"):
         notes = Path(task["spec"][directory]) / "notes.md"
         if notes.is_file():

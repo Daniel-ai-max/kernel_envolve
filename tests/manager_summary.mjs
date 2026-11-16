@@ -145,3 +145,28 @@ test("narration is cited explanation and never a benefit or activity signal", ()
   changed.narration.claims.finding.sources = ["missing"];
   assert.equal(extra.narrationFor(changed), null);
 });
+
+test("external outcomes override stale narration without adding verified gains", () => {
+  const task = {id: "toy", desired: "paused", phase: "paused", spec: {baseline: {revision: "base"}}, latest_validation: {
+    schema: "validation-result-v1", task: "toy", baseline_revision: "base", promotion: false,
+    source_sha256: "a".repeat(64), evidence_sha256: "b".repeat(64), recorded_at: 30,
+    status: "no_benefit", scope: "public F+B", summary: "调用链没有收益"},
+    narration: {schema: "narration-v1", task: "toy", baseline: "base", updated_at: 40, source_at: 10,
+      sources: {old: {at: 10}}, claims: {direction: null, finding: null,
+        failure: {text: "旧编译故障", sources: ["old"]}, next: {text: "旧计划", sources: ["old"]}}}};
+  assert.match(extra.narrationText(task), /调用链没有收益/);
+  assert.doesNotMatch(extra.narrationText(task), /旧编译故障|旧计划/);
+  assert.equal(extra.recentResult(task).kind, "validation");
+  assert.equal(extra.taskBenefit(task).label, "—");
+  assert.equal(extra.validationResult({...task, spec: {baseline: {revision: "other"}}}), null);
+  assert.match(extra.narrationText({...task, narration: null}), /调用链没有收益/);
+});
+
+test("new findings outrank older cited failures and stopped tasks have no next step", () => {
+  const task = {id: "toy", desired: "paused", phase: "paused", spec: {baseline: {revision: "base"}}, narration: {
+    schema: "narration-v1", task: "toy", baseline: "base", updated_at: 40, source_at: 30,
+    sources: {old: {at: 10}, fresh: {at: 30}}, claims: {direction: null,
+      finding: {text: "新结论", sources: ["fresh"]}, failure: {text: "旧故障", sources: ["old"]},
+      next: {text: "旧计划", sources: ["old"]}}}};
+  assert.equal(extra.narrationText(task), "新结论");
+});

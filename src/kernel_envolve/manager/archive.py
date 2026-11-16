@@ -85,7 +85,7 @@ def export_archive(store, destination, *, attachments=(), include_logs=False, au
                 with saved.transaction(readonly=True):
                     assessment_records = saved.rows(
                         "SELECT key,data FROM metadata WHERE key LIKE 'assessment_history:%' "
-                        "OR key LIKE 'research_result_history:%'"
+                        "OR key LIKE 'research_result_history:%' OR key LIKE 'validation_history:%'"
                     )
                     research_bindings = {
                         row["key"].removeprefix("research_source:"): json.loads(row["data"])
@@ -127,7 +127,9 @@ def export_archive(store, destination, *, attachments=(), include_logs=False, au
                 if len(record_id) != 64 or any(c not in "0123456789abcdef" for c in record_id):
                     raise ValueError("Invalid assessment record identity")
                 directory = (
-                    "research-results"
+                    "validations"
+                    if row["key"].startswith("validation_")
+                    else "research-results"
                     if row["key"].startswith("research_result_")
                     else "assessments"
                 )
@@ -141,10 +143,21 @@ def export_archive(store, destination, *, attachments=(), include_logs=False, au
                 target.mkdir(parents=True)
                 for name in ("input.json", "record.json"):
                     shutil.copyfile(source / name, target / name)
+                if record.get("proof_files"):
+                    from .validation_import import verify_saved
+
+                    validation_task = store.task(record["validation"]["task"])
+                    verify_saved(source, validation_task)
+                    for name in record["proof_files"]:
+                        destination_file = target / "proof" / name
+                        destination_file.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copyfile(source / "proof" / name, destination_file)
+                    verify_saved(target, validation_task)
             # Periodic dashboard snapshots keep lightweight ledger references.
             # Explicit/terminal exports also carry the bounded, deduplicated source
             # deltas; baseline Git objects are intentionally retained separately.
             unbound_research_receipts = []
+            unverified_validation_receipts = []
             if not automatic:
                 source_blobs = set()
                 bound_research_records = {}
@@ -160,6 +173,30 @@ def export_archive(store, destination, *, attachments=(), include_logs=False, au
                     ):
                         raise ValueError("Bound research source receipt changed or missing")
                     bound_research_records[job] = json.loads(receipt.read_text())
+                    from .validation_import import export_receipt, receipt_bytes
+
+                    try:
+                        validation_raw = export_receipt(store.root, job)
+                    except (OSError, ValueError, KeyError, TypeError) as exc:
+                        # A killed runner can leave a partial receipt. Preserve
+                        # the dashboard and diagnosis without publishing that
+                        # artifact at the importer's validated receipt path.
+                        validation_raw = None
+                        problem = {"job": job, "reason": str(exc)}
+                        try:
+                            raw = receipt_bytes({"state": str(store.root), "job": job})
+                            target = stage / "unverified-validations" / job / "validation.json"
+                            target.parent.mkdir(parents=True, exist_ok=True)
+                            durable_bytes(target, raw)
+                            problem["artifact"] = str(target.relative_to(stage))
+                            problem["sha256"] = hash_file(target)
+                        except (OSError, ValueError, KeyError, TypeError) as read_error:
+                            problem["artifact_error"] = str(read_error)
+                        unverified_validation_receipts.append(problem)
+                    if validation_raw is not None:
+                        target = stage / "research-jobs" / job / "validation.json"
+                        target.parent.mkdir(parents=True, exist_ok=True)
+                        durable_bytes(target, validation_raw)
                 for source in (store.root / "jobs").glob("*/research-source*.json"):
                     if source.is_symlink() or source.parent.is_symlink():
                         raise ValueError("Research receipts must be regular files")
@@ -244,6 +281,7 @@ def export_archive(store, destination, *, attachments=(), include_logs=False, au
                 "automatic": automatic,
                 "research_source_artifacts_included": not automatic,
                 "unbound_research_source_receipts": unbound_research_receipts,
+                "unverified_validation_receipts": unverified_validation_receipts,
                 "created_at": now,
                 "attachments": copied,
                 "files": {},
@@ -357,7 +395,7 @@ def checkpoint(store, *, force=False):
                 "runs": store.rows("SELECT path,data,error FROM runs ORDER BY path"),
                 "events": store.one("SELECT MAX(seq) AS seq FROM events"),
                 "records": store.rows(
-                    "SELECT key,data FROM metadata WHERE key LIKE 'assessment:%' OR key LIKE 'assessment_sync:%' OR key LIKE 'allocation:%' OR key LIKE 'publication:%' OR key LIKE 'saved_notes:%' OR key LIKE 'research_result:%' OR key LIKE 'research_result_sync:%' OR key LIKE 'narration:%' ORDER BY key"
+                    "SELECT key,data FROM metadata WHERE key LIKE 'assessment:%' OR key LIKE 'assessment_sync:%' OR key LIKE 'allocation:%' OR key LIKE 'publication:%' OR key LIKE 'saved_notes:%' OR key LIKE 'research_result:%' OR key LIKE 'research_result_sync:%' OR key LIKE 'validation:%' OR key LIKE 'validation_sync:%' OR key LIKE 'narration:%' ORDER BY key"
                 ),
             }
         )

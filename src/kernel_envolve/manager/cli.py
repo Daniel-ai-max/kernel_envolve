@@ -77,9 +77,18 @@ def parser():
     watch.add_argument(
         "--research", action="store_true", help="Index research claims, never verified correctness"
     )
+    watch.add_argument(
+        "--validation", action="store_true", help="Index external validation outcomes"
+    )
     watch.add_argument("task")
     watch.add_argument("--receipt", type=Path, required=True)
     watch.add_argument("--verifier", type=Path, required=True)
+    external = commands.add_parser(
+        "watch-validation", help="Follow a source-bound external manager once"
+    )
+    external.add_argument("task")
+    external.add_argument("--source-state", type=Path, required=True)
+    external.add_argument("--source-task", required=True)
     publication = commands.add_parser(
         "sync-pr", help="Bind a verified best to its implementation PR"
     )
@@ -284,7 +293,20 @@ def main(argv=None):
         elif args.action == "watch-assessment":
             from .assessment import refresh_sources, watch
 
-            watch(store, args.task, args.receipt, args.verifier, research=args.research)
+            watch(
+                store,
+                args.task,
+                args.receipt,
+                args.verifier,
+                research=args.research,
+                validation=args.validation,
+            )
+            refresh_sources(store)
+        elif args.action == "watch-validation":
+            from .assessment import refresh_sources
+            from .validation_import import watch_external
+
+            watch_external(store, args.task, args.source_state, args.source_task)
             refresh_sources(store)
         elif args.action == "init":
             deployment = validate(read_json(args.config), args.config.resolve().parent)

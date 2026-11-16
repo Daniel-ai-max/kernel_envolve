@@ -19,8 +19,30 @@ export function narrationFor(task) {
 }
 export function narrationText(task) {
   const n = narrationFor(task);
-  return n ? [n.claims.failure || n.claims.finding || n.claims.direction, n.claims.next]
+  const validation = validationResult(task);
+  const time = c => c ? Math.max(...c.sources.map(ref => n.sources[ref].at || 0)) : 0;
+  const claims = n ? [n.claims.failure, n.claims.finding, n.claims.direction].filter(Boolean)
+    .sort((a, b) => time(b) - time(a)) : [];
+  // A freshly imported system fact wins over an older failure, including when
+  // the model adapter is unavailable or retained its old failure claim.
+  if (validation && (!claims.length || validation.recorded_at >= time(claims[0])))
+    return resultSummary(validation);
+  return n ? [claims[0], canContinue(task) ? n.claims.next : null]
     .filter(Boolean).map(c => c.text).join(" ") : "";
+}
+export function canContinue(task) {
+  return !["paused", "superseded"].includes(task.desired) && !task.archived &&
+    !["archived", "paused", "budget", "blocked"].includes(task.phase);
+}
+export function validationResult(task) {
+  const v = task?.latest_validation;
+  if (!v || v.schema !== "validation-result-v1" || v.task !== task.id || v.promotion !== false ||
+      v.baseline_revision !== task.spec?.baseline?.revision ||
+      !["passed", "no_benefit", "failed", "interrupted", "inconclusive"].includes(v.status) ||
+      !Number.isFinite(v.recorded_at) || v.recorded_at <= 0 ||
+      typeof v.summary !== "string" || typeof v.scope !== "string" ||
+      !/^[a-f0-9]{64}$/.test(v.source_sha256) || !/^[a-f0-9]{64}$/.test(v.evidence_sha256)) return null;
+  return {...v, kind: "validation"};
 }
 // Optional, server-verified scoped evidence in a read-only replay. Never a best
 // promotion, a parsed agent report, or an external evaluator admission mechanism.
@@ -58,6 +80,8 @@ export function researchResult(task) {
 export function evidenceSummary(task) {
   const r = task.latest_evaluation;
   if (task.evidence_error || r?.evidence_error) return "证据异常";
+  const validation = validationResult(task);
+  if (validation && validation.recorded_at >= (r?.recorded_at || 0)) return executionLabelFor(validation);
   if (!r) return researchResult(task) ? "阶段结果" : "当前契约尚无评测记录";
   const status = r.execution === "error" ? "执行失败"
     : r.correctness === "fail" ? "正确性失败"
@@ -81,6 +105,7 @@ export function noteSnippet(value, fallback) {
 export function executionLabelFor(record) {
   if (!record) return "尚无执行记录";
   if (record.kind === "research_result") return "阶段结果";
+  if (record.kind === "validation") return `外部验收 · ${({passed: "范围检查通过", no_benefit: "无收益，已跳过后续门禁", failed: "失败", interrupted: "中断", inconclusive: "尚无结论"})[record.status]}`;
   if (record.kind === "assessment_sync") return "验收同步失败";
   if (record.kind === "scoped_assessment") return "算子验收 · 正确性通过";
   if (record.kind === "cpu_request") return `本地诊断 · ${jobLabel(record.status)}`;
@@ -96,6 +121,7 @@ export const visibleTask = (task, showHistory = false) => showHistory || task.de
 export function resultSummary(record) {
   const label = executionLabelFor(record);
   if (record?.kind === "research_result") return `阶段结果 · ${record.summary}`;
+  if (record?.kind === "validation") return `${label} · ${record.summary}`;
   if (record?.kind === "scoped_assessment") return record.summary || label;
   if (!record || record.evidence_error || record.execution === "error" || record.correctness !== "pass") return label;
   if (record.mode === "quick" && typeof record.incremental_speedup === "number" && Number.isFinite(record.incremental_speedup))
@@ -113,6 +139,9 @@ export function phaseLabel(task) {
 }
 
 export function recentResult(task) {
+  const validation = validationResult(task);
+  if (validation && validation.recorded_at >= Math.max(task.research_result?.recorded_at || 0,
+      task.recent_evaluation?.recorded_at || 0, task.verified_assessment?.recorded_at || 0)) return validation;
   if (task.assessment_sync?.error && !researchResult(task)) return {kind: "assessment_sync", task: task.id, recorded_at: task.assessment_sync.recorded_at};
   const recent = task.recent_execution, evaluated = task.recent_evaluation;
   const assessed = scopedAssessment(task), research = researchResult(task);

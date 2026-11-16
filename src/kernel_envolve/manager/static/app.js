@@ -1,6 +1,6 @@
 import { patch, poller } from "/sync.js";
 import { executionLabel, jobLabel, noteSnippet, executionLabelFor, visibleTask, resultSummary, phaseLabel, recentResult, scopedAssessment, taskBenefit, researchResult, evidenceSummary } from "/summary.js";
-import { narrationFor, narrationText } from "/summary.js";
+import { narrationFor, narrationText, validationResult, canContinue } from "/summary.js";
 /* All external text passes through textContent or escaping. No HTML from agent reports. */
 const $ = (id) => document.getElementById(id);
 const escape = (s) =>
@@ -76,10 +76,10 @@ function render() {
         const record = t.research_record, recent = recentResult(t), baseline = t.spec.baseline;
         const outcome = resultSummary(recent), benefit = taskBenefit(t), assessment = scopedAssessment(t);
         const direction = noteSnippet(t.current_work || record?.hypothesis, assessment ? "验收完成" : phaseLabel(t));
-        const next = noteSnippet(record?.next_action, "");
+        const next = canContinue(t) ? noteSnippet(record?.next_action, "") : "";
         const narration = narrationFor(t), progress = narrationText(t);
         return `<tr data-key="${escape(t.id)}">
-          <td data-label="算子"><button class="name" data-task="${escape(t.id)}">${escape(t.spec.name)}</button>${t.spec.kind === "research" ? `<small>${assessment ? "探索 · 已有范围验收" : "探索 · 未接入验收"}</small>` : ""}</td>
+          <td data-label="算子"><button class="name" data-task="${escape(t.id)}">${escape(t.spec.name)}</button>${t.spec.kind === "research" ? `<small>${assessment ? "探索 · 已有范围验收" : validationResult(t) ? "探索 · 外部验收有结果" : "探索 · 未接入验收"}</small>` : ""}</td>
           <td data-label="阶段">${escape(phaseLabel(t))}</td>
           <td data-label="基线"><div title="${escape(baseline.revision)}"><code>${escape(baseline.revision.slice(0, 8))}</code></div><small>${link(baseline.repository, baseline.repository.split("/").filter(Boolean).pop())}</small></td>
           <td class="benefit ${benefit.positive ? "good" : "muted"}" data-label="收益">${escape(benefit.label)}${benefit.detail ? `<small>${escape(benefit.detail)}</small>` : ""}</td>
@@ -160,6 +160,16 @@ function assessmentDetail(t) {
     ${cases.length ? `<details><summary>逐场景性能</summary><div class="scroll"><table><thead><tr><th>场景</th><th>方式</th><th>基线 μs</th><th>候选 μs</th><th>延迟下降</th></tr></thead><tbody>${cases.map(c => `<tr><td>${escape(c.name)}</td><td>${escape(c.mode)}</td><td>${c.baseline_us.toFixed(3)}</td><td>${c.candidate_us.toFixed(3)}</td><td>${pct(c.candidate_us / c.baseline_us)}</td></tr>`).join("")}</tbody></table></div></details>` : ""}
     <details><summary>验收来源</summary><pre>${escape(JSON.stringify({source: a.source_sha256, evidence: a.evidence_sha256, qualification: a.qualification}, null, 2))}</pre></details></article>`;
 }
+function validationDetail(t) {
+  const current = validationResult(t);
+  if (!current) return "";
+  const history = t.validation_history?.length ? t.validation_history : [{validation: current}];
+  return `<article class="card"><h3>外部验收结果</h3><p>${escape(resultSummary(current))}</p><p>仅记录所列范围，不更新完整验收或已验收益。</p>${history.map(record => {
+    const v = validationResult({...t, latest_validation: record.validation});
+    if (!v) return "";
+    return `<details><summary>${escape(stamp(v.recorded_at))} · ${escape(executionLabelFor(v))}</summary><p>${escape(v.scope)}</p><p>${escape(v.summary)}</p><p>${escape((v.limitations || []).join("；"))}</p><ul>${(v.checks || []).map(c => `<li>${escape(c.name)} · ${escape(c.status)}</li>`).join("")}</ul><pre>${escape(JSON.stringify({external: v.external, source: v.source_sha256, evidence: v.evidence_sha256}, null, 2))}</pre></details>`;
+  }).join("")}</article>`;
+}
 function researchRows(t) {
   return (t.research_result_history || []).map(record => {
     const r = researchResult({...t, research_result: record.research_result});
@@ -171,7 +181,7 @@ function narrationDetail(t) {
   const n = narrationFor(t);
   if (!n) return "";
   const labels = {direction: "方向", finding: "发现", failure: "问题", next: "下一步"};
-  return `<article class="card"><h3>当前进展</h3><small>旁白 · ${escape(stamp(n.updated_at))} · 来源截至 ${escape(stamp(n.source_at))}</small><dl>${Object.entries(labels).filter(([k]) => n.claims[k]).map(([k, label]) => `<dt>${label}</dt><dd>${escape(n.claims[k].text)}<details><summary>来源</summary>${n.claims[k].sources.map(ref => `<p><code>${escape(ref)}</code> · ${escape(stamp(n.sources[ref].at))}</p><pre>${escape(n.sources[ref].text)}</pre>`).join("")}</details></dd>`).join("")}</dl></article>`;
+  return `<article class="card"><h3>当前进展</h3><small>旁白 · ${escape(stamp(n.updated_at))} · 来源截至 ${escape(stamp(n.source_at))}</small><dl>${Object.entries(labels).filter(([k]) => n.claims[k] && (k !== "next" || canContinue(t))).map(([k, label]) => `<dt>${label}</dt><dd>${escape(n.claims[k].text)}<details><summary>来源</summary>${n.claims[k].sources.map(ref => `<p><code>${escape(ref)}</code> · ${escape(stamp(n.sources[ref].at))}</p><pre>${escape(n.sources[ref].text)}</pre>`).join("")}</details></dd>`).join("")}</dl></article>`;
 }
 
 function renderDetail(t) {
@@ -185,8 +195,10 @@ function renderDetail(t) {
     <div class="detail-summary"><span>${executionLabel(t.execution_state)}</span><span>${assessment ? "算子验收通过" : evidenceSummary(t)}</span><span>${escape(benefit.label)}</span></div>
     ${t.superseded_by ? `<p>历史契约 · 后续任务：<button class="source-link" data-task="${escape(t.superseded_by)}">${escape(t.superseded_by)}</button></p>` : ""}
     ${assessmentDetail(t)}
+    ${validationDetail(t)}
     ${narrationDetail(t)}
     ${t.research_result_sync?.error ? `<p class="warn">阶段结果同步失败 · ${escape(t.research_result_sync.error)}</p>` : ""}
+    ${t.validation_sync?.error ? `<p class="warn">外部验收同步失败 · ${escape(t.validation_sync.error)}</p>` : ""}
     ${t.assessment_sync?.error ? `<p class="warn">验收同步失败 · ${escape(t.assessment_sync.error)}</p>` : ""}
     ${t.allocation_usage?.breakdown ? `<article class="card"><h3>卡时</h3><p>${escape(t.allocation_usage.breakdown)}</p></article>` : ""}
     <article class="card"><h3>当前工作</h3><p>${escape(t.current_work || (assessment ? "验收完成" : phaseLabel(t)))}</p><p>${escape(resultSummary(recentResult(t)))}</p>${record?.inherited ? `<p>来源：<button class="source-link" data-task="${escape(record.task)}">${escape(record.task)}</button>（历史契约）</p>` : ""}<dl>${fields([["记录时间", record ? stamp(record.recorded_at) : ""], ["方向", record?.hypothesis], ["结论", record?.outcome], ["下一步", record?.next_action]])}${t.report.pr_urls?.length ? `<dt>PR</dt><dd>${t.report.pr_urls.map(u => link(u, u.replace("https://github.com/", "").replace("/pull/", "#"))).join("<br>")}</dd>` : ""}</dl></article>

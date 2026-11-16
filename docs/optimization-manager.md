@@ -623,3 +623,23 @@ kernel-envolve manage --state /work/manager-state narrate --once
 ```
 
 旁白和引用摘录随现有 SQLite、看板归档保存，归档重开无需模型或 GPU。它是有来源的模型解释，不是数值验收；模型无依据时应留空，作业状态、卡时、指标、正式验收和 PR 继续读取系统记录。
+
+### 外部验收结果回流
+
+使用 `validate_candidate` 的本地作业自动归入原任务。验收在另一个 manager 运行时，
+宿主只需绑定一次来源，后续已结束作业自动增量导入：
+
+```sh
+kernel-envolve manage --state /path/to/research-state watch-validation operator-a \
+  --source-state /path/to/validation-state --source-task validation-task
+```
+
+来源可以是 manager 状态目录，也可以是带完整日志的官方归档目录；远程状态通过已有
+持久化同步到宿主，不由此命令申请 GPU 或启动验收。绑定要求两边基线相同，来源安装
+在候选工作区之外。每条记录检查终态作业、前后源码身份、数据库固定收据、完整日志
+及结果哈希；无收益、失败、中断和通过均保留历史，但不写 best 或已验证收益。
+
+重复刷新不重复发事件。旧结果不覆盖新结论，晚到结果不恢复终态任务或改变预算。
+旁白失败时看板直接显示系统结论。不可用来源恢复后自动清除连接故障；不完整收据
+单独归档，不能阻止其他任务复盘。已有自定义宿主 verifier 可用
+`watch-assessment --validation` 输出 `validation-result-v1`；旧数据不伪造新的作业绑定。
