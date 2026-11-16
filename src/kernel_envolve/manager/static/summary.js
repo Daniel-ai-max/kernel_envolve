@@ -3,6 +3,25 @@ export const executionLabel = (state) => ({archived: "历史记录", running: "G
 export const jobLabel = (status) => ({running: "执行中", succeeded: "已完成", failed: "失败", cancelled: "已取消", interrupted: "已中断"})[status] || status || "状态未记录";
 export const benefitLabel = (best) => typeof best?.baseline_speedup === "number" && Number.isFinite(best.baseline_speedup)
   ? `${best.baseline_speedup.toFixed(3)}×` : "尚无完整验收收益";
+// Explanatory text never participates in taskBenefit, phase or progress clocks.
+export function narrationFor(task) {
+  const n = task?.narration;
+  if (!n || n.schema !== "narration-v1" || n.task !== task.id ||
+      n.baseline !== task.spec?.baseline?.revision || !n.claims || !n.sources ||
+      !Number.isFinite(n.updated_at) || !Number.isFinite(n.source_at)) return null;
+  const fields = ["direction", "finding", "failure", "next"];
+  if (Object.keys(n.claims).length !== fields.length || !fields.every(k => Object.hasOwn(n.claims, k))) return null;
+  for (const c of Object.values(n.claims)) {
+    if (c !== null && (!c || typeof c.text !== "string" || !c.text.trim() || c.text.length > 120 ||
+        !Array.isArray(c.sources) || !c.sources.length || c.sources.some(id => !Object.hasOwn(n.sources, id)))) return null;
+  }
+  return n;
+}
+export function narrationText(task) {
+  const n = narrationFor(task);
+  return n ? [n.claims.failure || n.claims.finding || n.claims.direction, n.claims.next]
+    .filter(Boolean).map(c => c.text).join(" ") : "";
+}
 // Optional, server-verified scoped evidence in a read-only replay. Never a best
 // promotion, a parsed agent report, or an external evaluator admission mechanism.
 export function scopedAssessment(task) {

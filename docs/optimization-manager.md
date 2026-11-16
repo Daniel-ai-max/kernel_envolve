@@ -597,3 +597,29 @@ experiment time, runs, promotions or best. A later cleanup job does not erase th
 last semantic research/assessment result; execution failures remain in the job
 history. Failed research updates retain the previous result and show the sync
 error in details. Both the original input and host output are saved in archives.
+
+## 共享进展旁白
+
+旁白异步整理已有 trace、实验日志和评测记录，在现有“当前进展”栏解释方向、发现、问题和下一步。每条结论附原记录摘录及时间；它不参与收益计算、正式 best、任务状态、接续判断或 PR 发布，也不要求研究 Agent 增加报告。
+
+宿主配置一次文本模型，随后正常启动 `dashboard` 或 `manage run`：
+
+```bash
+export NARRATOR_MODEL='<轻量文本模型>'
+export NARRATOR_RESPONSES_URL='https://<已授权模型服务>/v1/responses'
+# NARRATOR_API_KEY 由宿主凭据环境注入。
+kernel-envolve dashboard --research /work/operator-checkout --device GPU-... --seconds 3600 -- /opt/model-host-adapter
+```
+
+内置适配器按 [Responses API](https://developers.openai.com/api/reference/resources/responses/methods/create) 发起无工具、非流式文本请求，不创建远端会话，不保存凭据。也可用 `KERNEL_ENVOLVE_NARRATOR_COMMAND` 指定可信模型适配器的 JSON argv；输入为 stdin JSON（`instructions`、`tasks`），输出为任务 ID 到四项摘要的 JSON。每项为 `null` 或 `{"text":"简短结论","sources":["输入中的证据ID"]}`，字段为 `direction`、`finding`、`failure`、`next`。适配器只负责模型推理，不授予模型 shell 或研究工具。
+
+一个管理状态共用旁白执行锁，每批最多八个任务。后台尾随持久事件，合并短时间内的更新；每 30 秒检查有界日志增量，补上只写 trace、未产生事件的变化。没有新内容不调用模型；同一失败输入或不确定请求不自动重发，新输入可继续处理。模型调用不占数据库写锁，45 秒超时，退出清理子进程。旁白失败保留上条摘要及其时间，优化照常推进。
+
+已有多任务管理器可单独运行同一个旁白服务；已结束任务可补录一次：
+
+```bash
+kernel-envolve manage --state /work/manager-state narrate
+kernel-envolve manage --state /work/manager-state narrate --once
+```
+
+旁白和引用摘录随现有 SQLite、看板归档保存，归档重开无需模型或 GPU。它是有来源的模型解释，不是数值验收；模型无依据时应留空，作业状态、卡时、指标、正式验收和 PR 继续读取系统记录。

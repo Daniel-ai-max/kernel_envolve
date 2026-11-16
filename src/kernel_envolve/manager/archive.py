@@ -357,7 +357,7 @@ def checkpoint(store, *, force=False):
                 "runs": store.rows("SELECT path,data,error FROM runs ORDER BY path"),
                 "events": store.one("SELECT MAX(seq) AS seq FROM events"),
                 "records": store.rows(
-                    "SELECT key,data FROM metadata WHERE key LIKE 'assessment:%' OR key LIKE 'assessment_sync:%' OR key LIKE 'allocation:%' OR key LIKE 'publication:%' OR key LIKE 'saved_notes:%' OR key LIKE 'research_result:%' OR key LIKE 'research_result_sync:%' ORDER BY key"
+                    "SELECT key,data FROM metadata WHERE key LIKE 'assessment:%' OR key LIKE 'assessment_sync:%' OR key LIKE 'allocation:%' OR key LIKE 'publication:%' OR key LIKE 'saved_notes:%' OR key LIKE 'research_result:%' OR key LIKE 'research_result_sync:%' OR key LIKE 'narration:%' ORDER BY key"
                 ),
             }
         )

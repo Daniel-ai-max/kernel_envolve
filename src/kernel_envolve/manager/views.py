@@ -195,6 +195,10 @@ def task_view(store, key, now=None, predecessors=None, usage=None):
         "SELECT data FROM metadata WHERE key=?", ("research_result_sync:" + key,)
     )
     task["research_result_sync"] = json.loads(research_sync["data"]) if research_sync else None
+    narration = store.one("SELECT data FROM metadata WHERE key=?", ("narration:" + key,))
+    task["narration"] = json.loads(narration["data"]) if narration else None
+    if task["narration"] and task["narration"]["baseline"] != task["spec"]["baseline"]["revision"]:
+        task["narration"] = None
     task["best"] = best(store, task)
     task["implementation_pr"] = publication_view(store, key, task["best"])
     evidence = store.one("SELECT data FROM metadata WHERE key=?", (f"evidence:{key}",))

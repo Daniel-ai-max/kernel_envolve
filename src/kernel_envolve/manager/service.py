@@ -127,6 +127,9 @@ def run(store, once=False, *, observe=False):
         future, last_scan = None, 0
         evidence_error = None
         completed_once = False
+        from .narrator import start as start_narrator
+
+        narration = start_narrator(store.root, stopped)
 
         def scan():
             from .evidence import refresh
@@ -217,6 +220,8 @@ def run(store, once=False, *, observe=False):
             if cancel_scan:
                 stopped.set()
             pool.shutdown(wait=True, cancel_futures=cancel_scan)
+            stopped.set()
+            narration.join(timeout=2)
             from .archive import checkpoint
 
             checkpoint(store, force=True)
