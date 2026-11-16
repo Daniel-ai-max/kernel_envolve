@@ -146,6 +146,15 @@ def validate_candidate(
     }
 
     def save():
+        if record["status"] in ("passed", "no_benefit", "inconclusive", "failed"):
+            print(
+                json.dumps(
+                    {"validation_status": record["status"], "summary": record["summary"]},
+                    ensure_ascii=False,
+                    allow_nan=False,
+                ),
+                flush=True,
+            )
         durable_json(path, record)
         print(MARKER + hashlib.sha256(path.read_bytes()).hexdigest(), flush=True)
 

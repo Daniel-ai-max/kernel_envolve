@@ -52,7 +52,9 @@ def test_no_benefit_stops_native_gates_and_persists(attempt, capsys):
     ]
     raw = (folder / "validation.json").read_bytes()
     assert json.loads(raw) == result
-    assert capsys.readouterr().out.splitlines()[-1] == MARKER + hashlib.sha256(raw).hexdigest()
+    lines = capsys.readouterr().out.splitlines()
+    assert lines[-1] == MARKER + hashlib.sha256(raw).hexdigest()
+    assert json.loads(lines[-2])["validation_status"] == "no_benefit"
     with pytest.raises(FileExistsError):
         run(report, [("expensive", lambda: True)])
 
