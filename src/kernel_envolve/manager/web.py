@@ -12,9 +12,15 @@ from .store import Store
 from .views import detail, snapshot
 
 
-def server(root, port=8787):
-    initial = Store(root)
-    initial.close()
+def server(root, port=8787, *, archive=False, readonly=False):
+    saved = None
+    if archive:
+        from .archive import Archive
+
+        saved = Archive(root)
+    else:
+        initial = Store(root, readonly=readonly)
+        initial.close()
     token = secrets.token_urlsafe(32)
 
     class Handler(BaseHTTPRequestHandler):
@@ -62,6 +68,26 @@ def server(root, port=8787):
                 "/summary.js": ("summary.js", "text/javascript; charset=utf-8"),
                 "/style.css": ("style.css", "text/css; charset=utf-8"),
             }
+            if saved:
+                try:
+                    document = saved.read()
+                    if path in assets:
+                        name, kind = assets[path]
+                        self.send(200, saved.assets[name], kind)
+                    elif path == "/api/state":
+                        selected = parse_qs(urlsplit(self.path).query).get("task", [None])[0]
+                        if selected and selected not in document["details"]:
+                            raise ValueError("Unknown archived task")
+                        self.send(
+                            200, document["state"] | {"detail": document["details"].get(selected)}
+                        )
+                    elif path.startswith("/api/tasks/"):
+                        self.send(200, document["details"][path.removeprefix("/api/tasks/")])
+                    else:
+                        self.send(404, {"error": "Not found"})
+                except (OSError, ValueError, KeyError, TypeError) as exc:
+                    self.send(400, {"error": str(exc)})
+                return
             if path in assets:
                 name, kind = assets[path]
                 self.send(
@@ -85,6 +111,9 @@ def server(root, port=8787):
                 store.close()
 
         def do_POST(self):
+            if saved or readonly:
+                self.send(405, {"error": "Dashboard is read-only"})
+                return
             if not self.allowed() or not secrets.compare_digest(
                 self.headers.get("X-Manager-Token", ""), token
             ):
@@ -122,8 +151,8 @@ def server(root, port=8787):
     return result
 
 
-def serve(root, port):
-    with server(root, port) as http:
+def serve(root, port, *, archive=False, readonly=False):
+    with server(root, port, archive=archive, readonly=readonly) as http:
         print(f"Kernel Envolve: http://127.0.0.1:{http.server_port}", flush=True)
         try:
             http.serve_forever()

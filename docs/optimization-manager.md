@@ -18,7 +18,7 @@ kernel-envolve dashboard --task /work/kernel-task --state /work/manager-state
 ```
 
 `task.json` 与 `native.json` 均可使用此入口。它复用同一个管理器、记录索引和 HTTP 看板，不创建另一套界面。
-默认状态保存到 `~/.cache/kernel-envolve/dashboards/<任务路径摘要>`，服务地址默认
+新任务默认状态保存到 `${XDG_DATA_HOME:-~/.local/share}/kernel-envolve/dashboards/<任务路径摘要>`；已有 `~/.cache` 状态会继续复用，不重置记录或预算。服务地址默认
 `http://127.0.0.1:8787`，可用 `--port` 调整。原生任务的工作区默认包含任务目录和所有 candidate 源码根，必要时用 `--workspace` 指定专用父目录。
 
 带命令时，宿主遵循下文的[自动接续协议](#预算内自动接续)：从 stdin 读取恢复上下文，真实模型会话结束后退出。默认预算一小时；`--seconds` 只在首次配置执行器时设置累计会话额度和绝对截止时间。
@@ -33,9 +33,42 @@ CUDA 任务使用 `--device GPU-...` 选择物理设备；仅一个可见设备�
 GPU 隔离后宿主仍可做 CPU 诊断，GPU 准入保持关闭；无法恢复时显示恢复失败。
 卡时沿用平台分配账本，缺少用量记录时显示 `—`，不会以 GPU 命令耗时冒充总占卡时间。
 
-只读归档可展示可信适配器从验收产物导出的 `verified_assessment`（`scoped-assessment-v1`）。
-它绑定任务、baseline、源码摘要、证据摘要与验收时间，在原有收益列和详情页展示算子范围、逐场景性能、退化与研究时间点；正式 best 仍优先。适配器必须先核验原始产物和完整输入覆盖，前端仅检查结构及身份匹配，不承担证据真实性验证。此展示字段不写入 best，不绕过晋升门禁，也不是通用外部评测导入 API。
-归档显示实际记录时间和最终卡时；任务研究与共享验收分项计量，不能把整次对照成本算到单个任务。
+## 持久化与复盘
+
+协调器与单任务看板在后台保存一致的 SQLite、收益与评测摘要、研究记录、PR、卡时和页面资源。GPU 作业进行中让路，归档最多每分钟更新一次，记录未变则跳过；退出时补存。自动归档保留最近两份完整快照，每份 SQLite 都包含全部历史记录；任务终态和显式导出的快照不会被自动清理。运行状态仍以实际作业与最近实验为准，历史快照不显示为正在执行。
+
+```sh
+# 原状态库仍在：只读查看，不启动协调器、模型或 GPU
+kernel-envolve dashboard --state /persistent/manager-state
+
+# 查看自动归档；也可拷贝到另一台机器后打开
+kernel-envolve dashboard --archive /persistent/manager-state/dashboard-archive
+
+# 交付归档：补存完整作业日志及所需原始证据文件
+kernel-envolve manage --state /persistent/manager-state archive \
+  --output /persistent/review --include-logs --attach /persistent/assessment.tar.gz
+kernel-envolve dashboard --archive /persistent/review
+# 必要时选择某份历史快照
+kernel-envolve dashboard --archive /persistent/review/snapshot-<id>
+```
+
+临时 GPU 节点应将 `--state` 指向持久卷，或设置 `KERNEL_ENVOLVE_ARCHIVE=/persistent/review`。仅存在节点 `/tmp` 内的文件不能在节点销毁后恢复。归档带校验清单，完整写入后才原子切换；复制整个目录即可恢复，不需要原源码路径或执行主机身份。读取归档不会修改原始账本，也不提供执行控制接口。表格保留最近记录，随包 SQLite 保留完整账本；原始张量及源码产物仍由 evaluator 的产物目录保存，需要离线复现时用 `--attach` 一并带走。
+
+## 独立验收接入
+
+内置 evaluator 继续自动索引原有收据。外部验收只需由部署者一次性安装可信校验脚本，之后收据发布会被后台自动识别，不要求研究 Agent 再写报告或确认结果：
+
+```sh
+kernel-envolve manage --state /persistent/manager-state watch-assessment operator-a \
+  --receipt /persistent/results/final-receipt.json \
+  --verifier /opt/trusted/verify-assessment.py
+```
+
+校验脚本放在候选工作区外，注册时固定其 SHA；通过 stdin 接收 `task`、`baseline`、`receipt`，核验原始产物、输入覆盖、正确性及计时后，只向 stdout 输出 `scoped-assessment-v1`。脚本须自行固定并校验依赖与评测契约。管理器限制执行时间和输出大小，校验任务及基线绑定、有限数值与字段结构，持久化原始输入、结构化结果和校验器身份。它不会把未经核验的 Agent 文字当作收益。脚本失败、变更或结果错配会显示“验收同步失败”，保留旧成果及失败原因；相同失败输入不反复执行，修复证据后可用 `manage refresh --force` 明确重验。
+
+`scoped-assessment-v1` 的字段沿用看板：`schema`、`status="verified"`、`promotion=false`、`task`、`baseline_revision`、`source_sha256`、`evidence_sha256`、`recorded_at`、`metrics`，以及可选的 `scope_label`、`qualification`、`scenarios`、`checkpoints`。每项 metric 包含 `label`、`baseline_speedup`、`cases`，可附 `slower_cases`、`worst_slowdown_percent`。场景包含 `name`、`mode`、`baseline_us`、`candidate_us`；时间点包含 `minutes`、`eager_ratio`、`graph_ratio`。
+
+算子范围验收与全链晋升保持分离，正式 best 优先；导入不修改 best 或晋升门禁。任务已经结束也允许补入后到的独立验收，累计预算和停止状态不变。无人运行的进程不会继续同步：远端收尾应在销毁节点前完成最后一次 `manage refresh` 与 `manage archive`，由执行宿主完成，不增加 Agent 每轮操作。
 
 ## 启动
 

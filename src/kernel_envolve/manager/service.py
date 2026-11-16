@@ -138,6 +138,9 @@ def run(store, once=False, *, observe=False):
                     from .publication import refresh_publications
 
                     refresh_publications(local)
+                    from .archive import checkpoint
+
+                    checkpoint(local)
             finally:
                 local.close()
 
@@ -214,6 +217,9 @@ def run(store, once=False, *, observe=False):
             if cancel_scan:
                 stopped.set()
             pool.shutdown(wait=True, cancel_futures=cancel_scan)
+            from .archive import checkpoint
+
+            checkpoint(store, force=True)
             for sig, handler in handlers.items():
                 signal.signal(sig, handler)
         # Round supervisors intentionally survive a coordinator restart. Pause tasks to stop them.

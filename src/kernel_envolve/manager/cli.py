@@ -55,6 +55,16 @@ def parser():
     )
     serve.add_argument("--port", type=int, default=8787)
     commands.add_parser("status")
+    archive = commands.add_parser("archive", help="Save a portable read-only dashboard archive")
+    archive.add_argument("--output", type=Path, required=True)
+    archive.add_argument("--attach", type=Path, action="append", default=[])
+    archive.add_argument("--include-logs", action="store_true")
+    watch = commands.add_parser(
+        "watch-assessment", help="Install a trusted host verifier for independent assessments"
+    )
+    watch.add_argument("task")
+    watch.add_argument("--receipt", type=Path, required=True)
+    watch.add_argument("--verifier", type=Path, required=True)
     publication = commands.add_parser(
         "sync-pr", help="Bind a verified best to its implementation PR"
     )
@@ -161,7 +171,7 @@ def main(argv=None):
             print(json.dumps({"error_type": "gpu_duration_admission", "error": str(exc)}))
             return 2
     query = args.action == "bridge-request" and not args.file and not args.consume_file
-    store = Store(args.state, readonly=query or args.action == "status")
+    store = Store(args.state, readonly=query or args.action in ("status", "archive", "serve"))
     try:
         if args.action.startswith("bridge"):
             from . import bridge
@@ -222,6 +232,22 @@ def main(argv=None):
                     args.next_action,
                 )
             print(json.dumps(value, ensure_ascii=False, indent=2))
+        elif args.action == "archive":
+            from .archive import export_archive
+
+            print(
+                json.dumps(
+                    export_archive(
+                        store, args.output, attachments=args.attach, include_logs=args.include_logs
+                    ),
+                    ensure_ascii=False,
+                )
+            )
+        elif args.action == "watch-assessment":
+            from .assessment import refresh_sources, watch
+
+            watch(store, args.task, args.receipt, args.verifier)
+            refresh_sources(store)
         elif args.action == "init":
             deployment = validate(read_json(args.config), args.config.resolve().parent)
             for task in deployment["tasks"]:
@@ -280,7 +306,7 @@ def main(argv=None):
         elif args.action == "serve":
             from .web import serve
 
-            serve(store.root, args.port)
+            serve(store.root, args.port, readonly=True)
         elif args.action == "sync-pr":
             from .evidence import refresh
             from .publication import sync_pr

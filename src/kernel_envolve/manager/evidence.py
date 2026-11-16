@@ -424,4 +424,8 @@ def refresh(store, force=False, stop=None, yield_to_gpu=False, task_id=None):
         finally:
             scan.update(running=False, task=None, finished_at=time.time())
             publish()
+    from .assessment import refresh_sources
+
+    if not yield_to_gpu or not gpu_work_pending(store):
+        refresh_sources(store, force=force)
     return True

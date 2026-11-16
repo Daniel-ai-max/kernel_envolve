@@ -98,3 +98,17 @@ def test_cli_import_preserves_source(replaced, tmp_path):
     path.write_text(json.dumps(receipt()))
     assert main(["--state", str(replaced.root), "import-usage", "--file", str(path)]) == 0
     assert overview(replaced)["allocation_usage"]["sources"] == ["platform-observation.json"]
+
+
+def test_shared_assessment_cost_is_retained_without_charging_one_research_task(replaced):
+    import_usage(replaced, receipt(ended=True))
+    shared = receipt(id="shared-final", scope="shared", tasks={}, gpus=1, ended=True)
+    import_usage(replaced, shared)
+    import_usage(replaced, shared)
+    assert usage_view(allocations(replaced))["gpu_hours"] == 3
+    assert detail(replaced, "old")["allocation_usage"]["gpu_hours"] == 1
+    assert "实验合计 3.00" in detail(replaced, "old")["allocation_usage"]["breakdown"]
+    assert "含共享用量" == overview(replaced)["allocation_usage"]["scope_label"]
+    with pytest.raises(ValueError):
+        import_usage(replaced, receipt(id="shared-final", scope="shared", tasks={"old": 1}, gpus=1))
+    assert replaced.task("old")["gpu_seconds"] == 10
