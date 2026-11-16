@@ -84,6 +84,18 @@ def checkpoint(store, task, job):
         "The command verifies implementation and confirmation evidence; no separate refresh "
         "or duplicate dashboard report is needed. Reverify the binding after PR changes."
     )
+    from .research_policy import get as research_policy
+
+    policy = research_policy(store, task["id"])
+    outcome_guidance = (
+        "The installed host policy may stop this lane only after independent native full "
+        "acceptance, independent confirmation and same-source implementation PR meet its "
+        "threshold. Its original start and final deadline never reset. Research/scoped "
+        "summaries are not delivery. Continue freely until the manager stops this lane. "
+        f"Policy phase: {policy['phase']}; maximum_end: {policy['maximum_end']}."
+        if policy
+        else ""
+    )
     return f"""Continue kernel optimization task {spec["name"]} within its existing scope and budgets.
 Task ID: {task["id"]}; round: {job["id"]}; task kind: {spec["kind"]}.
 Workspace: {spec["workspace"]}; task directory: {spec["task_dir"]}.
@@ -91,6 +103,7 @@ Fixed baseline: {json.dumps(spec["baseline"], ensure_ascii=False)}
 Use the kernel-envolve Skill and existing source, jobs and evidence as needed.
 The CLI/manager handles updates; use this round's fixed release.
 {validation_guidance}
+{outcome_guidance}
 Local signals do not establish delivery correctness or training speedup.
 All GPU commands must use:
   kernel-envolve manage gpu-run --expected-seconds <duration> -- <command> <arguments...>

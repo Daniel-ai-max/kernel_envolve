@@ -123,9 +123,11 @@ def run(store, once=False, *, observe=False):
 
         handlers = {s: signal.signal(s, on_signal) for s in (signal.SIGINT, signal.SIGTERM)}
         children = []
-        pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="evidence")
+        pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix="manager-scan")
         future, last_scan = None, 0
+        policy_future, last_policy_scan = None, 0
         evidence_error = None
+        policy_error = None
         completed_once = False
         from .narrator import start as start_narrator
 
@@ -144,6 +146,16 @@ def run(store, once=False, *, observe=False):
                     from .archive import checkpoint
 
                     checkpoint(local)
+            finally:
+                local.close()
+
+        def scan_policy():
+            from .research_policy import refresh as refresh_policies
+
+            local = Store(store.root)
+            try:
+                if not stopped.is_set():
+                    refresh_policies(local)
             finally:
                 local.close()
 
@@ -180,6 +192,23 @@ def run(store, once=False, *, observe=False):
                 if future is None and time.monotonic() - last_scan >= 5:
                     future = pool.submit(scan)
                     last_scan = time.monotonic()
+                # Deadline handoff cannot queue behind a large evaluator/archive scan.
+                if policy_future is not None and policy_future.done():
+                    try:
+                        policy_future.result()
+                        policy_error = None
+                    except Exception as exc:
+                        policy_error = str(exc)
+                    policy_future = None
+                    last_policy_scan = time.monotonic()
+                if (
+                    not observe
+                    and policy_future is None
+                    and time.monotonic() - last_policy_scan >= 5
+                ):
+                    policy_future = pool.submit(scan_policy)
+                    last_policy_scan = time.monotonic()
+                health["policy_error"] = policy_error
                 health["evidence_error"] = evidence_error
                 store.db.execute(
                     "INSERT OR REPLACE INTO metadata VALUES(?,?)", (role, encode(health))
