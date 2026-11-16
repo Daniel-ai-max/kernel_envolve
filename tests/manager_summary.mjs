@@ -212,3 +212,16 @@ test("all narrated columns switch together when new system facts arrive", () => 
   assert.equal(retained.benefit.detail, "已保留最佳方案");
   assert.match(retained.outcome, /整链无收益/);
 });
+
+test("pending narration falls back to the new research result, with its real timestamp", () => {
+  const task = {id: "toy", row_facts: {revision: "new"}, spec: {baseline: {revision: "base"}},
+    research_result: {schema: "research-result-v1", task: "toy", status: "research", promotion: false,
+      baseline_revision: "base", recorded_at: 30, source_sha256: "a".repeat(64),
+      evidence_sha256: "b".repeat(64), scope: "including preparation", summary: "新候选没有改善"}};
+  const row = extra.narratedRow(task);
+  assert.equal(row.progress.text, row.outcome);
+  assert.equal(row.progress.kind, "research_result");
+  assert.equal(row.progress.at, 30);
+  assert.equal(row.outcomeAt, 30);
+  assert.equal(row.benefit.label, "—");
+});

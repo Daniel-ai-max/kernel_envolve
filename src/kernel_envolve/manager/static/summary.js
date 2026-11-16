@@ -32,6 +32,10 @@ export function narrationText(task) {
 export function progressSource(task) {
   const n = narrationFor(task);
   if (n?.row) return {text: n.claims.finding.text, kind: "narration", at: n.updated_at};
+  if (task.row_facts && !n) {
+    const recent = recentResult(task);
+    if (recent) return {text: resultSummary(recent), kind: recent.kind, at: recent.recorded_at};
+  }
   const validation = validationResult(task);
   const time = c => c ? Math.max(...c.sources.map(ref => n.sources[ref].at || 0)) : 0;
   const claims = n ? [n.claims.failure, n.claims.finding, n.claims.direction].filter(Boolean)
