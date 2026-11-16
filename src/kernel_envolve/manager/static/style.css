@@ -382,3 +382,13 @@ summary {
 }
 
 #overview .execution-link { font-size: 11px; line-height: 1.6; }
+
+.metric strong small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font: 11px/1.5 var(--sans);
+}
+.assessment .scroll + h3 {
+  margin-top: 20px;
+}
