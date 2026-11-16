@@ -1,6 +1,6 @@
 import { patch, poller } from "/sync.js";
 import { executionLabel, jobLabel, noteSnippet, executionLabelFor, visibleTask, resultSummary, phaseLabel, recentResult, scopedAssessment, taskBenefit, researchResult, evidenceSummary } from "/summary.js";
-import { narrationFor, narrationText, validationResult, canContinue, progressSource } from "/summary.js";
+import { narrationFor, narrationText, validationResult, canContinue, narratedRow } from "/summary.js";
 /* All external text passes through textContent or escaping. No HTML from agent reports. */
 const $ = (id) => document.getElementById(id);
 const escape = (s) =>
@@ -73,20 +73,20 @@ function render() {
     $("tasks"),
     filtered
       .map((t) => {
-        const record = t.research_record, recent = recentResult(t), baseline = t.spec.baseline;
-        const outcome = resultSummary(recent), benefit = taskBenefit(t), assessment = scopedAssessment(t);
+        const row = narratedRow(t), {recent, outcome, benefit, pr} = row;
+        const record = t.research_record, baseline = t.spec.baseline, assessment = scopedAssessment(t);
         const direction = noteSnippet(t.current_work || record?.hypothesis, assessment ? "验收完成" : phaseLabel(t));
         const next = canContinue(t) ? noteSnippet(record?.next_action, "") : "";
-        const source = progressSource(t), progress = source.text;
+        const source = row.progress, progress = source.text;
         return `<tr data-key="${escape(t.id)}">
           <td data-label="算子"><button class="name" data-task="${escape(t.id)}">${escape(t.spec.name)}</button>${t.spec.kind === "research" ? `<small>${assessment ? "探索 · 已有范围验收" : validationResult(t) ? "探索 · 外部验收有结果" : "探索 · 未接入验收"}</small>` : ""}</td>
           <td data-label="阶段">${escape(phaseLabel(t))}</td>
           <td data-label="基线"><div title="${escape(baseline.revision)}"><code>${escape(baseline.revision.slice(0, 8))}</code></div><small>${link(baseline.repository, baseline.repository.split("/").filter(Boolean).pop())}</small></td>
           <td class="benefit ${benefit.positive ? "good" : "muted"}" data-label="收益">${escape(benefit.label)}${benefit.detail ? `<small>${escape(benefit.detail)}</small>` : ""}</td>
-          <td data-label="优化 PR">${t.implementation_pr ? `${link(t.implementation_pr.url, "PR #" + t.implementation_pr.url.split("/").pop())}${t.implementation_pr.current_head_verified === false ? `<small>${link(t.implementation_pr.commit_url, "已验 " + t.implementation_pr.head.slice(0, 7))}</small>` : ""}<small>${escape(stamp(t.implementation_pr.updated_at))}</small>` : "—"}</td>
+          <td data-label="优化 PR">${pr ? `${link(pr.url, "PR #" + pr.url.split("/").pop())}${pr.current_head_verified === false ? `<small>${link(pr.commit_url, "已验 " + pr.head.slice(0, 7))}</small>` : ""}<small>${escape(stamp(pr.updated_at))}</small>` : "—"}</td>
           <td data-label="消耗卡时" title="${escape(t.allocation_usage ? `含准备与空闲占卡 · 截至 ${stamp(t.allocation_usage.observed_at)}` : "尚无占卡用量记录")}">${cardHours(t.allocation_usage)}${t.allocation_usage?.scope_label ? `<small>${escape(t.allocation_usage.scope_label)}</small>` : ""}</td>
           <td class="research" data-label="当前进展"><div class="snippet" title="${escape(progress || t.current_work || record?.hypothesis || "")}">${escape(progress || direction)}</div>${source.at ? `<small><button class="source-link" data-task="${escape(t.id)}" title="${escape(stamp(source.at))}">${source.kind === "validation" ? "验收" : "旁白"} · ${shortTime(source.at)}</button></small>` : next ? `<small class="snippet" title="${escape(record.next_action)}">下一步：${escape(next)}</small>` : ""}</td>
-          <td class="research" data-label="最近结果"><div class="snippet" title="${escape(recent ? resultSummary(recent) : "")}">${escape(outcome)}</div>${recent ? `<small><button class="source-link execution-link" data-task="${escape(recent.task)}" title="${escape(stamp(recent.recorded_at))}">${escape(executionLabelFor(recent))} · ${shortTime(recent.recorded_at)}${recent.inherited ? " · 历史" : ""}</button></small>` : ""}</td>
+          <td class="research" data-label="最近结果"><div class="snippet" title="${escape(outcome)}">${escape(outcome)}</div>${recent ? `<small><button class="source-link execution-link" data-task="${escape(recent.task)}" title="${escape(stamp(row.outcomeAt))}">${escape(executionLabelFor(recent))} · ${shortTime(row.outcomeAt)}${recent.inherited ? " · 历史" : ""}</button></small>` : ""}</td>
         </tr>`;
       })
       .join(""),
@@ -180,8 +180,9 @@ function researchRows(t) {
 function narrationDetail(t) {
   const n = narrationFor(t);
   if (!n) return "";
-  const labels = {direction: "方向", finding: "发现", failure: "问题", next: "下一步"};
-  return `<article class="card"><h3>当前进展</h3><small>旁白 · ${escape(stamp(n.updated_at))} · 来源截至 ${escape(stamp(n.source_at))}</small><dl>${Object.entries(labels).filter(([k]) => n.claims[k] && (k !== "next" || canContinue(t))).map(([k, label]) => `<dt>${label}</dt><dd>${escape(n.claims[k].text)}<details><summary>来源</summary>${n.claims[k].sources.map(ref => `<p><code>${escape(ref)}</code> · ${escape(stamp(n.sources[ref].at))}</p><pre>${escape(n.sources[ref].text)}</pre>`).join("")}</details></dd>`).join("")}</dl></article>`;
+  const labels = {direction: "方向", finding: "结论", failure: "问题", next: "下一步", latest_result: "最近结果"};
+  const claims = {...n.claims, latest_result: n.row?.latest_result};
+  return `<article class="card"><h3>当前进展</h3><small>旁白 · ${escape(stamp(n.updated_at))} · 来源截至 ${escape(stamp(n.source_at))}</small><dl>${Object.entries(labels).filter(([k]) => claims[k] && (k !== "next" || canContinue(t))).map(([k, label]) => `<dt>${label}</dt><dd>${escape(claims[k].text)}<details><summary>来源</summary>${claims[k].sources.map(ref => `<p><code>${escape(ref)}</code> · ${escape(stamp(n.sources[ref].at))}</p><pre>${escape(n.sources[ref].text)}</pre>`).join("")}</details></dd>`).join("")}</dl></article>`;
 }
 
 function renderDetail(t) {

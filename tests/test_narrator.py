@@ -93,7 +93,11 @@ def test_failure_retains_previous_and_never_replays_same_input(managed):
     assert n.step(store, [], call=broken) == 0 and len(calls) == 1
     assert n.get(store, "narrator_attempt")["error"] == "TimeoutError"
     record(store)
-    assert n.step(store, [], call=explain) == 0  # identical cited finding retains its timestamp
+
+    def unchanged(*args):
+        return {"toy": saved["claims"]}
+
+    assert n.step(store, [], call=unchanged) == 0  # identical cited finding retains its timestamp
 
 
 @pytest.mark.parametrize(
@@ -101,7 +105,7 @@ def test_failure_retains_previous_and_never_replays_same_input(managed):
     [
         lambda v: v["toy"].update(best={"baseline_speedup": 2}),
         lambda v: v["toy"]["finding"].update(sources=["event:not-in-input"]),
-        lambda v: v["toy"]["finding"].update(text="x" * 121),
+        lambda v: v["toy"]["finding"].update(text="x" * 161),
         lambda v: v.update(other=v.pop("toy")),
     ],
 )
@@ -135,7 +139,7 @@ def test_incremental_trace_reads_rotation_and_no_information(managed, tmp_path):
     assert value["start"] == 0 and value["text"] == "new"
     path.write_text("x" * 10000)
     value, _ = n.read_delta(path, cursor)
-    assert len(value["text"]) == 2048 and value["truncated"]
+    assert len(value["text"]) == 8192 and value["truncated"]
     link = tmp_path / "symlink"
     link.symlink_to(path)
     assert n.read_delta(link, {})[0] is None
@@ -250,7 +254,9 @@ def test_responses_adapter_is_tool_free_bounded_and_rejects_incomplete(monkeypat
             assert respond({"instructions": "JSON only", "tasks": []}) == {"toy": None}
             assert seen[0]["tools"] == [] and seen[0]["store"] is False
             assert seen[0]["stream"] is False
-            assert seen[0]["max_output_tokens"] == 4096
+            assert seen[0]["text"]["format"]["strict"] is True
+            assert seen[0]["text"]["format"]["type"] == "json_schema"
+            assert seen[0]["max_output_tokens"] == 8192
             incomplete[0] = True
             with pytest.raises(ValueError, match="incomplete"):
                 respond({"instructions": "JSON only", "tasks": []})

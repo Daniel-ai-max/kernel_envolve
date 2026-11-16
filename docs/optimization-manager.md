@@ -600,7 +600,9 @@ error in details. Both the original input and host output are saved in archives.
 
 ## 共享进展旁白
 
-旁白异步整理已有 trace、实验日志和评测记录，在现有“当前进展”栏解释方向、发现、问题和下一步。每条结论附原记录摘录及时间；它不参与收益计算、正式 best、任务状态、接续判断或 PR 发布，也不要求研究 Agent 增加报告。
+旁白异步整理已有 trace、实验日志和评测记录，统一组织收益、优化 PR、当前进展和最近结果。按“改了什么 → 测到什么 → 保留还是放弃”解释研究结论，保留测量范围、真实数字和退化；结束任务展示最终结论。收益、PR、状态仍由系统提供，旁白只能引用，不能修改正式 best 或发布 PR，也不要求研究 Agent 增加报告。
+
+四列绑定同一事实版本。新验收、源码结果、PR 或任务状态变化后，旧旁白整组退出展示，先显示当前系统事实，再异步生成新的整行摘要。模型调用期间事实变化时，过期输出只存历史。最新尝试无收益不会抹掉已保留的真实最佳方案；局部加速也不能升级为完整调用链收益。
 
 宿主配置一次文本模型，随后正常启动 `dashboard` 或 `manage run`：
 
@@ -611,9 +613,9 @@ export NARRATOR_RESPONSES_URL='https://<已授权模型服务>/v1/responses'
 kernel-envolve dashboard --research /work/operator-checkout --device GPU-... --seconds 3600 -- /opt/model-host-adapter
 ```
 
-内置适配器按 [Responses API](https://developers.openai.com/api/reference/resources/responses/methods/create) 发起无工具、非流式文本请求，不创建远端会话，不保存凭据。也可用 `KERNEL_ENVOLVE_NARRATOR_COMMAND` 指定可信模型适配器的 JSON argv；输入为 stdin JSON（`instructions`、`tasks`），输出为任务 ID 到四项摘要的 JSON。每项为 `null` 或 `{"text":"简短结论","sources":["输入中的证据ID"]}`，字段为 `direction`、`finding`、`failure`、`next`。适配器只负责模型推理，不授予模型 shell 或研究工具。
+内置适配器按 [Responses API](https://developers.openai.com/api/reference/resources/responses/methods/create) 使用[结构化输出](https://developers.openai.com/api/docs/guides/structured-outputs?api-mode=responses)约束字段和证据引用，发起无工具、非流式文本请求，不创建远端会话，不保存凭据。也可用 `KERNEL_ENVOLVE_NARRATOR_COMMAND` 指定可信模型适配器的 JSON argv；输入为 stdin JSON（`instructions`、`tasks`），输出为任务 ID 到四项摘要的 JSON。每项为 `null` 或 `{"text":"简短结论","sources":["输入中的证据ID"]}`，字段为 `direction`、`finding`、`failure`、`next`。同时返回 `row`：绑定输入 `row_facts.revision`，用 `system:benefit`、`system:optimization_pr` 引用系统字段，`current_progress` 引用 `finding`，`latest_result` 提供引用 `system:latest_result` 的短结论与来源。模型不可填写收益值或 PR 地址。旧四项摘要仍可读取历史归档，新事实版本下须生成整行摘要。适配器只负责模型推理，不授予模型 shell 或研究工具。
 
-一个管理状态共用旁白执行锁，每批最多八个任务。后台尾随持久事件，合并短时间内的更新；每 30 秒检查有界日志增量，补上只写 trace、未产生事件的变化。没有新内容不调用模型；同一失败输入或不确定请求不自动重发，新输入可继续处理。模型调用不占数据库写锁，45 秒超时，退出清理子进程。旁白失败保留上条摘要及其时间，优化照常推进。
+一个管理状态共用旁白执行锁，每批最多八个任务，来源合计不超过 48 KB，单任务不超过 40 KB；优先保留验收和候选结论。后台尾随持久事件，合并短时间内的更新；每 30 秒检查有界日志增量，补上只写 trace、未产生事件的变化。没有新内容不调用模型；同一失败输入或不确定请求不自动重发，新输入可继续处理。模型调用不占数据库写锁，45 秒超时，退出清理子进程。旁白失败保留历史；仅当事实版本仍匹配时展示原摘要，否则使用系统事实，优化照常推进。
 
 已有多任务管理器可单独运行同一个旁白服务；已结束任务可补录一次：
 

@@ -7,6 +7,62 @@ import urllib.request
 from urllib.parse import urlsplit
 
 
+def response_format(tasks):
+    """Constrain shape and references at generation; semantic checks remain local."""
+
+    def obj(properties):
+        return {
+            "type": "object",
+            "properties": properties,
+            "required": list(properties),
+            "additionalProperties": False,
+        }
+
+    def fixed(value):
+        return {"type": "string", "enum": [value]}
+
+    properties = {}
+    for task in tasks:
+        claim = obj(
+            {
+                "text": {"type": "string", "minLength": 1, "maxLength": 120},
+                "sources": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 3,
+                    "items": {"type": "string", "enum": list(task["sources"])},
+                },
+            }
+        )
+        optional = {"anyOf": [claim, {"type": "null"}]}
+        fields = {k: optional for k in ("direction", "finding", "failure", "next")}
+        if task.get("row_facts"):
+            fields["finding"] = obj(
+                {
+                    **claim["properties"],
+                    "text": {"type": "string", "minLength": 1, "maxLength": 160},
+                }
+            )
+            fields["row"] = obj(
+                {
+                    "revision": fixed(task["row_facts"]["revision"]),
+                    "benefit": fixed("system:benefit"),
+                    "optimization_pr": fixed("system:optimization_pr"),
+                    "current_progress": fixed("finding"),
+                    "latest_result": obj(
+                        {"ref": fixed("system:latest_result"), **claim["properties"]}
+                    ),
+                }
+            )
+        properties[task["task"]] = {"anyOf": [obj(fields), {"type": "null"}]}
+    return {
+        "type": "json_schema",
+        "name": "research_rows",
+        "strict": True,
+        "schema": obj(properties),
+    }
+
+
 def respond(request):
     endpoint = os.environ["NARRATOR_RESPONSES_URL"]
     parsed = urlsplit(endpoint)
@@ -25,8 +81,8 @@ def respond(request):
         "tools": [],
         "store": False,
         "stream": False,
-        "max_output_tokens": 4096,
-        "text": {"format": {"type": "json_object"}},
+        "max_output_tokens": 8192,
+        "text": {"format": response_format(request["tasks"])},
     }
     req = urllib.request.Request(
         endpoint,
