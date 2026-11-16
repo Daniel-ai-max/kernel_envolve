@@ -3,9 +3,9 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 const source = await readFile(new URL("../src/kernel_envolve/manager/static/summary.js", import.meta.url), "utf8");
 const { executionLabel, executionLabelFor, benefitLabel, noteSnippet, visibleTask } = await import("data:text/javascript;base64," + Buffer.from(source).toString("base64"));
-test("empty verified best has an explicit label, never a parsed report speedup", () => {
-  assert.equal(benefitLabel(null), "尚无完整验收收益");
-  assert.equal(benefitLabel({outcome: "快20%"}), "尚无完整验收收益");
+test("empty verified best uses a placeholder, never a parsed report speedup", () => {
+  assert.equal(benefitLabel(null), "—");
+  assert.equal(benefitLabel({outcome: "快20%"}), "—");
   assert.equal(benefitLabel({baseline_speedup: 1.2}), "1.200×");
 });
 test("GPU job status and evaluator result remain separate", () => {
@@ -40,7 +40,7 @@ test("local signal is distinct from verified best and failure never shows speed"
   assert.doesNotMatch(extra.resultSummary({...quick,evidence_error:"changed"}), /1.200/);
   assert.doesNotMatch(extra.resultSummary({...quick,execution:"error"}), /1.200/);
   assert.doesNotMatch(extra.resultSummary({...quick,correctness:"fail"}), /1.200/);
-  assert.equal(benefitLabel(null), "尚无完整验收收益");
+  assert.equal(benefitLabel(null), "—");
 });
 test("evaluator result survives its enclosing GPU wrapper completion", () => {
   const evalRecord={kind:"evaluation",mode:"full",recorded_at:15};
@@ -84,7 +84,7 @@ test("invalid, mismatched, failed or malformed scoped evidence is never displaye
   for (const mutate of mutations) {
     const task=scopedTask();mutate(task);
     assert.equal(extra.scopedAssessment(task),null);
-    assert.equal(extra.taskBenefit(task).label,"尚无完整验收收益");
+    assert.equal(extra.taskBenefit(task).label,"—");
   }
 });
 test("deadline and explicit stop remain distinct", () => {
@@ -101,12 +101,12 @@ test("deadline and explicit stop remain distinct", () => {
     assessment_sync: {error: "Independent assessment failed", recorded_at: 40}};
   assert.equal(extra.recentResult(task).kind, "research_result");
   assert.equal(extra.resultSummary(extra.recentResult(task)), "阶段结果 · 100 → 80 µs");
-  assert.equal(extra.executionLabelFor(extra.recentResult(task)), "阶段结果 · 未完整验收");
-  assert.deepEqual(extra.taskBenefit(task), {label: "100 → 80 µs", detail: "阶段测量 · 未完整验收", positive: false, research: true});
+  assert.equal(extra.executionLabelFor(extra.recentResult(task)), "阶段结果");
+  assert.deepEqual(extra.taskBenefit(task), {label: "—", detail: "", positive: false});
   assert.equal(task.best, undefined);
-  assert.equal(extra.taskBenefit({...task, evidence_error: "changed"}).label, "尚无完整验收收益");
+  assert.equal(extra.taskBenefit({...task, evidence_error: "changed"}).label, "—");
   assert.equal(extra.taskBenefit({...task, best: {baseline_speedup: 1.2}}).label, "1.200×");
-  assert.equal(extra.taskBenefit({...task, research_result: {...research, baseline_revision: "other"}}).label, "尚无完整验收收益");
+  assert.equal(extra.taskBenefit({...task, research_result: {...research, baseline_revision: "other"}}).label, "—");
   assert.equal(extra.scopedAssessment(task), null);
   const assessed = scopedTask();
   assessed.research_result = {...research, task: assessed.id, recorded_at: 90};
@@ -123,7 +123,7 @@ test("detail headline acknowledges research without implying full qualification"
     schema: "research-result-v1", status: "research", promotion: false, task: "research",
     baseline_revision: "base", source_sha256: "a".repeat(64), evidence_sha256: "b".repeat(64),
     recorded_at: 10, scope: "stage", summary: "partial result"}};
-  assert.equal(extra.evidenceSummary(task), "阶段结果 · 未完整验收");
+  assert.equal(extra.evidenceSummary(task), "阶段结果");
   assert.equal(extra.evidenceSummary({...task, research_result: null}), "当前契约尚无评测记录");
   assert.equal(extra.evidenceSummary({...task, evidence_error: "changed"}), "证据异常");
   assert.equal(extra.evidenceSummary({...task, latest_evaluation: {mode: "full", correctness: "fail"}}), "完整评测 · 正确性失败");
@@ -136,7 +136,7 @@ test("narration is cited explanation and never a benefit or activity signal", ()
     claims: {direction: null, finding: {text: "长序列改善；短序列未改善", sources: ["event:1"]}, failure: null, next: null}
   }};
   assert.equal(extra.narrationText(task), "长序列改善；短序列未改善");
-  assert.equal(extra.taskBenefit(task).label, "尚无完整验收收益");
+  assert.equal(extra.taskBenefit(task).label, "—");
   assert.equal(extra.narrationFor({...task, spec: {baseline: {revision: "new"}}}), null);
   const failed = structuredClone(task);
   failed.narration.claims.failure = {text: "布局编译失败", sources: ["event:1"]};
