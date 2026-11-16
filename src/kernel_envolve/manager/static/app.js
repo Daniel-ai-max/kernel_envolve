@@ -105,7 +105,7 @@ function render() {
     state.resources
       .map(
         (r) =>
-          `<article data-key="${escape(r.id)}" class="card"><div class="resource-head"><h3>${escape(r.id)}</h3><span>${r.problem ? "资源异常" : r.released ? "已回收" : r.jobs.some(j => j.kind === "gpu" && j.status === "running") ? "执行中" : "空闲"}</span></div><p>${r.allocation_usage ? cardHours(r.allocation_usage) : `GPU 作业 ${duration(r.gpu_seconds)}`}</p><div class="scroll"><table><thead><tr><th>任务</th><th>类型</th><th>状态</th><th>用时</th></tr></thead><tbody>${r.jobs.map(j => `<tr><td>${escape(j.task)}</td><td>${j.kind === "agent" ? "会话" : "GPU"}</td><td>${j.status === "running" ? "运行" : "排队"}</td><td>${duration(j.seconds)}</td></tr>`).join("") || '<tr><td colspan="4">—</td></tr>'}</tbody></table></div><details><summary>设备详情</summary><p><code>${escape(r.spec.devices ? r.spec.devices.join(", ") : r.spec.device)}</code> · ${r.spec.sessions} 个会话</p>${r.problem ? `<pre>${escape(r.problem)}</pre>` : ""}</details></article>`,
+          `<article data-key="${escape(r.id)}" class="card"><div class="resource-head"><h3>${escape(r.id)}</h3><span>${r.problem ? "资源异常" : r.archived ? "历史记录" : r.released ? "已回收" : r.jobs.some(j => j.kind === "gpu" && j.status === "running") ? "执行中" : "空闲"}</span></div><p>${r.allocation_usage ? cardHours(r.allocation_usage) : `GPU 作业 ${duration(r.gpu_seconds)}`}</p><div class="scroll"><table><thead><tr><th>任务</th><th>类型</th><th>状态</th><th>用时</th></tr></thead><tbody>${r.jobs.map(j => `<tr><td>${escape(j.task)}</td><td>${j.kind === "agent" ? "会话" : "GPU"}</td><td>${j.status === "running" ? "运行" : "排队"}</td><td>${duration(j.seconds)}</td></tr>`).join("") || '<tr><td colspan="4">—</td></tr>'}</tbody></table></div><details><summary>设备详情</summary><p><code>${escape(r.spec.devices ? r.spec.devices.join(", ") : r.spec.device)}</code> · ${r.spec.sessions} 个会话</p>${r.problem ? `<pre>${escape(r.problem)}</pre>` : ""}</details></article>`,
       )
       .join("") || '<p class="empty">尚未配置计算资源。</p>',
   );
@@ -125,9 +125,9 @@ function renderStatus() {
     ? (live ? `在线 · ${shortTime(state.as_of)}` : observing ? `同步在线 · ${shortTime(state.as_of)}` : `离线 · 最后观测 ${stamp(state?.coordinator?.heartbeat)}`)
     : `连接中断 · ${shortTime(state?.as_of)}`;
   $("updated").classList.toggle("warn", !connected || (!live && !observing));
-  const problem = (live ? state?.coordinator : state?.observer)?.error || (live ? state?.coordinator : state?.observer)?.evidence_error;
+  const problem = state?.archive_status?.error || (live ? state?.coordinator : state?.observer)?.error || (live ? state?.coordinator : state?.observer)?.evidence_error;
   $("error").hidden = !problem;
-  if (problem) { $("error").textContent = "服务异常"; $("error").title = String(problem); }
+  if (problem) { $("error").textContent = state?.archive_status?.error ? "归档保存失败" : "服务异常"; $("error").title = String(problem); }
 }
 
 function chart(history) {
@@ -172,12 +172,13 @@ function renderDetail(t) {
   const b = t.spec.baseline, r = t.latest_evaluation, record = t.research_record, assessment = scopedAssessment(t), benefit = taskBenefit(t);
   const rows = t.best?.decision?.cases || [];
   const fields = (pairs) => pairs.filter(([, value]) => value).map(([label, value]) => `<dt>${label}</dt><dd>${escape(value)}</dd>`).join("");
-  const diagnoses = {session: phaseLabel(t), reason: t.reason, evidence_error: t.evidence_error, latest: r, recovery: t.recovery, current_work_argv: t.current_work_argv};
+  const diagnoses = {session: phaseLabel(t), reason: t.reason, evidence_error: t.evidence_error, latest: r, recovery: t.recovery, current_work_argv: t.current_work_argv, assessment_sync: t.assessment_sync};
   patch($("detail"), `
     <div class="section-head"><h2>${escape(t.spec.name)}</h2><button id="close-detail">返回</button></div>
     <div class="detail-summary"><span>${executionLabel(t.execution_state)}</span><span>${assessment ? "算子验收通过" : evidenceSummary(t)}</span><span>${escape(benefit.label)}</span></div>
     ${t.superseded_by ? `<p>历史契约 · 后续任务：<button class="source-link" data-task="${escape(t.superseded_by)}">${escape(t.superseded_by)}</button></p>` : ""}
     ${assessmentDetail(t)}
+    ${t.assessment_sync?.error ? `<p class="warn">验收同步失败 · ${escape(t.assessment_sync.error)}</p>` : ""}
     ${t.allocation_usage?.breakdown ? `<article class="card"><h3>卡时</h3><p>${escape(t.allocation_usage.breakdown)}</p></article>` : ""}
     <article class="card"><h3>当前工作</h3><p>${escape(t.current_work || (assessment ? "验收完成" : phaseLabel(t)))}</p><p>${escape(resultSummary(recentResult(t)))}</p>${record?.inherited ? `<p>来源：<button class="source-link" data-task="${escape(record.task)}">${escape(record.task)}</button>（历史契约）</p>` : ""}<dl>${fields([["记录时间", record ? stamp(record.recorded_at) : ""], ["方向", record?.hypothesis], ["结论", record?.outcome], ["下一步", record?.next_action]])}${t.report.pr_urls?.length ? `<dt>PR</dt><dd>${t.report.pr_urls.map(u => link(u, u.replace("https://github.com/", "").replace("/pull/", "#"))).join("<br>")}</dd>` : ""}</dl></article>
     ${t.best ? `<article class="card"><h3>加速趋势</h3>${chart(t.history)}</article><details><summary>逐用例性能</summary><div class="scroll"><table><thead><tr><th>用例</th><th>批次</th><th>基线 μs</th><th>上一版 μs</th><th>最优 μs</th><th>加速</th></tr></thead><tbody>${rows.map(c => {

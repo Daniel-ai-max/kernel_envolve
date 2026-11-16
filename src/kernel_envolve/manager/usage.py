@@ -23,7 +23,7 @@ def import_usage(store, document):
     seen = set()
     with store.transaction():
         for entry in document["allocations"]:
-            if set(entry) != {
+            if set(entry) - {"scope"} != {
                 "id",
                 "started_at",
                 "observed_at",
@@ -33,6 +33,9 @@ def import_usage(store, document):
                 "source",
             }:
                 raise ValueError("Invalid allocation receipt fields")
+            scope = entry.get("scope", "task")
+            if scope not in ("task", "shared"):
+                raise ValueError("Allocation scope must be task or shared")
             for field in ("id", "source"):
                 if not isinstance(entry[field], str) or not entry[field].strip():
                     raise ValueError(f"{field} must be nonempty text")
@@ -47,14 +50,20 @@ def import_usage(store, document):
                 raise ValueError("Invalid allocation observation interval")
             if type(entry["ended"]) is not bool or type(entry["gpus"]) is not int:
                 raise ValueError("ended must be boolean and gpus must be an integer")
-            if not isinstance(entry["tasks"], dict) or not entry["tasks"]:
+            if (
+                not isinstance(entry["tasks"], dict)
+                or (not entry["tasks"] and scope != "shared")
+                or (scope == "shared" and entry["tasks"])
+            ):
                 raise ValueError("Explicit task attribution is required")
             for task, cards in entry["tasks"].items():
                 if not store.one("SELECT id FROM tasks WHERE id=?", (task,)):
                     raise ValueError(f"Unknown task: {task}")
                 if type(cards) not in (int, float) or not math.isfinite(cards) or cards <= 0:
                     raise ValueError("Task GPU shares must be finite and positive")
-            if not math.isclose(sum(entry["tasks"].values()), entry["gpus"], abs_tol=1e-9):
+            if scope != "shared" and not math.isclose(
+                sum(entry["tasks"].values()), entry["gpus"], abs_tol=1e-9
+            ):
                 raise ValueError("Task GPU shares must sum to allocated GPUs")
             key = "allocation:" + entry["id"]
             previous = store.one("SELECT data FROM metadata WHERE key=?", (key,))
@@ -65,6 +74,7 @@ def import_usage(store, document):
                 if (
                     old["ended"]
                     or entry["observed_at"] < old["observed_at"]
+                    or old.get("scope", "task") != scope
                     or any(old[field] != entry[field] for field in ("started_at", "gpus", "tasks"))
                 ):
                     raise ValueError("Cannot rewrite allocation attribution or decrease usage")
@@ -78,7 +88,11 @@ def usage_view(entries, tasks=None):
         return None
     seconds = sum(
         (e["observed_at"] - e["started_at"])
-        * sum(cards for task, cards in e["tasks"].items() if tasks is None or task in tasks)
+        * (
+            e["gpus"]
+            if tasks is None
+            else sum(cards for task, cards in e["tasks"].items() if task in tasks)
+        )
         for e in selected
     )
     return {
@@ -88,4 +102,7 @@ def usage_view(entries, tasks=None):
         else max(e["observed_at"] for e in selected),
         "ended": all(e["ended"] for e in selected),
         "sources": [e["source"] for e in selected],
+        "scope_label": "含共享用量"
+        if tasks is None and any(e.get("scope") == "shared" for e in selected)
+        else "",
     }

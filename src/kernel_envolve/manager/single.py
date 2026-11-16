@@ -20,7 +20,11 @@ from .store import Store, encode
 
 def parser():
     result = argparse.ArgumentParser(description="Open the existing dashboard for one kernel")
-    result.add_argument("--task", type=Path, required=True)
+    source = result.add_mutually_exclusive_group()
+    source.add_argument("--task", type=Path)
+    source.add_argument(
+        "--archive", type=Path, help="Open a portable dashboard archive without research or GPU"
+    )
     result.add_argument("--state", type=Path, default=os.environ.get("KERNEL_ENVOLVE_STATE"))
     result.add_argument("--workspace", type=Path)
     result.add_argument("--device", help="Physical GPU UUID (auto-select only one visible GPU)")
@@ -188,12 +192,31 @@ def prepare(store, args):
 
 def main(argv=None):
     args = parser().parse_args(argv)
+    if args.archive or not args.task:
+        if not args.archive and not args.state:
+            raise ValueError("Choose --task, --state or --archive")
+        if (
+            args.command
+            or args.seconds is not None
+            or args.device
+            or args.workspace
+            or (args.archive and args.state)
+        ):
+            raise ValueError("History viewing does not accept execution settings")
+        from .web import serve
+
+        serve(args.archive or args.state, args.port, archive=bool(args.archive), readonly=True)
+        return 0
     task = args.task.resolve()
     if args.state is None:
+        name = hashlib.sha256(str(task).encode()).hexdigest()[:16]
+        legacy = Path.home() / ".cache/kernel-envolve/dashboards" / name
         args.state = (
-            Path.home()
-            / ".cache/kernel-envolve/dashboards"
-            / hashlib.sha256(str(task).encode()).hexdigest()[:16]
+            legacy
+            if (legacy / "manager.sqlite").is_file()
+            else Path(os.environ.get("XDG_DATA_HOME", str(Path.home() / ".local/share")))
+            / "kernel-envolve/dashboards"
+            / name
         )
     store = Store(args.state)
     try:

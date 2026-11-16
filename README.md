@@ -122,6 +122,14 @@ kernel-envolve dashboard --task /work/kernel-task --seconds 3600 -- /opt/model-h
 
 宿主接入见[单任务启动](docs/optimization-manager.md#单任务启动)。已有管理状态用 `--state /work/manager-state` 直接复用；重开不重置预算或恢复已停止任务。当前工作和最近结果自动读取执行记录，无需额外报告或确认。
 
+任务结束后，记录可独立复盘，无需原 GPU 或工作区：
+
+```bash
+kernel-envolve dashboard --archive /persistent/manager-state/dashboard-archive
+```
+
+自动归档、完整日志导出与独立验收接入见[持久化与复盘](docs/optimization-manager.md#持久化与复盘)。
+
 ### 多算子管理与面板
 
 管理层面向单台 POSIX 主机：每个算子使用独立工作区和 Agent 命令，每张物理 GPU 配置 1–2 个会话。会话可并行分析和修改代码，受管理的 GPU 作业按队列串行执行。

@@ -183,6 +183,10 @@ def task_view(store, key, now=None, predecessors=None, usage=None):
         if task["history_complete"]
         else None
     )
+    assessed = store.one("SELECT data FROM metadata WHERE key=?", ("assessment:" + key,))
+    task["verified_assessment"] = json.loads(assessed["data"])["assessment"] if assessed else None
+    synced = store.one("SELECT data FROM metadata WHERE key=?", ("assessment_sync:" + key,))
+    task["assessment_sync"] = json.loads(synced["data"]) if synced else None
     task["best"] = best(store, task)
     task["implementation_pr"] = publication_view(store, key, task["best"])
     evidence = store.one("SELECT data FROM metadata WHERE key=?", (f"evidence:{key}",))
@@ -322,8 +326,11 @@ def overview(store, *, compact=False, now=None):
             f"SELECT COALESCE(SUM(seconds * {count}),0) FROM jobs WHERE resource=? AND kind='gpu'",
             (row["id"],),
         ).fetchone()[0]
+        resource["allocation_usage"] = usage_view(usage, set(resource["tasks"]))
         resources.append(resource)
+    archive = store.one("SELECT data FROM metadata WHERE key='dashboard_archive'")
     return {
+        "archive_status": json.loads(archive["data"]) if archive else None,
         "coordinator": coordinator,
         "observer": observer,
         "allocation_usage": usage_view(usage),
@@ -368,7 +375,23 @@ def detail(store, key, now=None):
     for row in task["rounds"]:
         report = store.one("SELECT data FROM metadata WHERE key=?", ("round_report:" + row["id"],))
         row["report"] = json.loads(report["data"]) if report else None
-    task["notes"] = ""
+    saved_notes = store.one("SELECT data FROM metadata WHERE key=?", ("saved_notes:" + key,))
+    task["notes"] = json.loads(saved_notes["data"]) if saved_notes else ""
+    all_usage = allocations(store)
+    shared = [e for e in all_usage if e.get("scope") == "shared"]
+    if shared and task["allocation_usage"]:
+        parts = [f"{e['source']}：{usage_view([e])['gpu_hours']:.2f}" for e in shared]
+        task["allocation_usage"]["breakdown"] = (
+            f"本任务 {task['allocation_usage']['gpu_hours']:.2f}；"
+            + "；".join(parts)
+            + f"。实验合计 {usage_view(all_usage)['gpu_hours']:.2f} GPU·小时。共享用量未计入本任务。"
+        )
+    task["assessment_history"] = [
+        json.loads(row["data"])
+        for row in store.rows(
+            "SELECT data FROM metadata WHERE key GLOB ?", ("assessment_history:" + key + ":*",)
+        )
+    ]
     for directory in ("task_dir", "workspace"):
         notes = Path(task["spec"][directory]) / "notes.md"
         if notes.is_file():

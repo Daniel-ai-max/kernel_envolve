@@ -346,3 +346,40 @@ def test_auto_device_respects_visible_inventory(monkeypatch, visible, expected):
     else:
         with pytest.raises(ValueError):
             device_for({"device": "cuda:0"}, None)
+
+
+def test_archive_cli_restores_without_task_directory_or_writable_state(managed, tmp_path):
+    from kernel_envolve.manager.archive import export_archive
+
+    store, _, work = managed
+    destination = tmp_path / "archive"
+    export_archive(store, destination)
+    import shutil
+
+    shutil.rmtree(work)
+    process = subprocess.Popen(
+        [
+            sys.executable,
+            "-m",
+            "kernel_envolve.cli",
+            "dashboard",
+            "--archive",
+            str(destination),
+            "--port",
+            "0",
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    try:
+        line = process.stdout.readline().strip()
+        assert line.startswith("Kernel Envolve: http://127.0.0.1:")
+        url = line.split(": ", 1)[1]
+        with urllib.request.urlopen(url + "/api/state", timeout=5) as response:
+            data = json.load(response)
+        assert data["archived"] and len(data["tasks"]) == 1
+        assert data["tasks"][0]["best"] is None
+    finally:
+        process.terminate()
+        process.communicate(timeout=10)

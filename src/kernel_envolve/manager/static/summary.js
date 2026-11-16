@@ -1,5 +1,5 @@
 /* Presentation only: report prose never becomes validated performance evidence. */
-export const executionLabel = (state) => ({running: "GPU 执行中", queued: "GPU 排队", idle: "无 GPU 作业"})[state] || "无 GPU 作业";
+export const executionLabel = (state) => ({archived: "历史记录", running: "GPU 执行中", queued: "GPU 排队", idle: "无 GPU 作业"})[state] || "无 GPU 作业";
 export const jobLabel = (status) => ({running: "执行中", succeeded: "已完成", failed: "失败", cancelled: "已取消", interrupted: "已中断"})[status] || status || "状态未记录";
 export const benefitLabel = (best) => typeof best?.baseline_speedup === "number" && Number.isFinite(best.baseline_speedup)
   ? `${best.baseline_speedup.toFixed(3)}×` : "尚无完整验收收益";
@@ -41,6 +41,7 @@ export function noteSnippet(value, fallback) {
 }
 export function executionLabelFor(record) {
   if (!record) return "尚无执行记录";
+  if (record.kind === "assessment_sync") return "验收同步失败";
   if (record.kind === "scoped_assessment") return "算子验收 · 正确性通过";
   if (record.kind === "cpu_request") return `本地诊断 · ${jobLabel(record.status)}`;
   if (record.kind === "gpu_job") return `GPU 作业 · ${jobLabel(record.status)}`;
@@ -63,7 +64,7 @@ export function resultSummary(record) {
 export function phaseLabel(task) {
   if (task.stale) return "会话失联";
   if (task.phase === "paused" && task.reason === "task deadline reached") return "预算结束";
-  return ({active: "持续优化", cooldown: "准备下一轮", resource_blocked: "资源异常",
+  return ({archived: "历史快照", active: "持续优化", cooldown: "准备下一轮", resource_blocked: "资源异常",
     paused: "已停止", superseded: "历史版本", budget: "预算结束", blocked: "恢复失败",
     gpu_running: "GPU 执行", waiting_gpu: "等待 GPU", cpu_running: "本地诊断",
     agent_running: "会话在线", awaiting_progress: "暂无新实验", observing: "记录同步",
@@ -71,6 +72,7 @@ export function phaseLabel(task) {
 }
 
 export function recentResult(task) {
+  if (task.assessment_sync?.error) return {kind: "assessment_sync", task: task.id, recorded_at: task.assessment_sync.recorded_at};
   const recent = task.recent_execution, evaluated = task.recent_evaluation;
   const assessed = scopedAssessment(task);
   if (assessed && assessed.recorded_at >= Math.max(recent?.recorded_at || 0, evaluated?.recorded_at || 0))
