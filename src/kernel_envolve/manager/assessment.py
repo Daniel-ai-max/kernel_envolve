@@ -122,7 +122,15 @@ def verify(source, task):
     )
     with tempfile.TemporaryFile() as stdout, tempfile.TemporaryFile() as stderr:
         process = subprocess.Popen(
-            [sys.executable, "-I", str(verifier)],
+            [
+                sys.executable,
+                "-I",
+                "-c",
+                "import resource,runpy,sys; "
+                "resource.setrlimit(resource.RLIMIT_FSIZE,(2097152,2097152)); "
+                "runpy.run_path(sys.argv[1],run_name='__main__')",
+                str(verifier),
+            ],
             stdin=subprocess.PIPE,
             stdout=stdout,
             stderr=stderr,

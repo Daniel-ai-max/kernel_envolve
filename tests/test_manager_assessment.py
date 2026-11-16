@@ -123,3 +123,20 @@ def test_verified_receipt_and_summary_remain_in_portable_archive(managed, tmp_pa
     assert view["details"]["toy"]["verified_assessment"] == value
     saved_input = list((root / result["generation"] / "assessments").glob("*/input.json"))
     assert len(saved_input) == 1 and hash_file(saved_input[0]) == original_hash
+
+
+@pytest.mark.parametrize("stream", [1, 2])
+def test_verifier_output_is_limited_during_execution(managed, tmp_path, stream):
+    from kernel_envolve.manager.archive import hash_file
+    from kernel_envolve.manager.assessment import verify
+
+    store, _, _ = managed
+    receipt, verifier, _, value = setup_source(store, tmp_path)
+    verifier.write_text(
+        "import os\n"
+        f"for _ in range(12): os.write({stream}, b'x' * (256 * 1024))\n"
+        f"print({json.dumps(value)!r})\n"
+    )
+    source = dict(receipt=str(receipt), verifier=str(verifier), verifier_sha256=hash_file(verifier))
+    with pytest.raises(ValueError, match="verifier failed"):
+        verify(source, store.task("toy"))
