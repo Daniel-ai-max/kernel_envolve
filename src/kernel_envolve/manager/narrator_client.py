@@ -25,7 +25,12 @@ def response_format(tasks):
     for task in tasks:
         claim = obj(
             {
-                "text": {"type": "string", "minLength": 1, "maxLength": 120},
+                "text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120,
+                    "description": "1–2 complete short sentences; aim for 50–80 Chinese characters, not the maximum.",
+                },
                 "sources": {
                     "type": "array",
                     "minItems": 1,
@@ -41,7 +46,12 @@ def response_format(tasks):
             fields["finding"] = obj(
                 {
                     **claim["properties"],
-                    "text": {"type": "string", "minLength": 1, "maxLength": 160},
+                    "text": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 160,
+                        "description": "1–2 complete short sentences; aim for 60–90 Chinese characters, not the maximum.",
+                    },
                 }
             )
             fields["row"] = obj(

@@ -63,6 +63,7 @@ def test_final_summary_once_and_archive_revision(managed):
         lambda r: r["row"].update(optimization_pr="https://example.com/pr/9"),
         lambda r: r["row"]["latest_result"].update(ref="system:other"),
         lambda r: r["finding"].update(text="加速99.3%"),
+        lambda r: r["finding"].update(text="结论" * 80),
         lambda r: r["row"]["latest_result"].update(sources=[["invalid"]]),
     ],
 )
