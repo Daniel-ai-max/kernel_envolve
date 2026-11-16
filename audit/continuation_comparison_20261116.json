@@ -1,0 +1,85 @@
+{
+  "schema": "sanitized-continuation-comparison-v1",
+  "date": "2026-11-16",
+  "framework_revision": "2ca6b62f8274735c1c6d228df2aa4660e1f18bc1",
+  "model": "GPT-6 Astra",
+  "reasoning": "medium",
+  "independent_pairs": 1,
+  "research_minutes_per_arm": 60,
+  "research_gpu": "B300",
+  "unique_candidates_assessed": 5,
+  "checkpoints": [
+    {
+      "minutes": 20,
+      "arm": "bare",
+      "nine_phases_passed": true,
+      "unseen_eager_latency_reduction_percent": 9.404368880010717,
+      "unseen_graph_latency_reduction_percent": -1.2214898456237133,
+      "eager_worst_slowdown_percent": 77.42176043967697,
+      "graph_worst_slowdown_percent": 80.28170488422694
+    },
+    {
+      "minutes": 20,
+      "arm": "managed",
+      "nine_phases_passed": true,
+      "unseen_eager_latency_reduction_percent": 13.744365174570694,
+      "unseen_graph_latency_reduction_percent": 4.580481839073059,
+      "eager_worst_slowdown_percent": 0,
+      "graph_worst_slowdown_percent": 2.721857973958808
+    },
+    {
+      "minutes": 40,
+      "arm": "bare",
+      "nine_phases_passed": true,
+      "unseen_eager_latency_reduction_percent": 10.63672994284277,
+      "unseen_graph_latency_reduction_percent": -1.2617400117992839,
+      "eager_worst_slowdown_percent": 76.4139180349233,
+      "graph_worst_slowdown_percent": 80.21056408118295
+    },
+    {
+      "minutes": 40,
+      "arm": "managed",
+      "nine_phases_passed": true,
+      "unseen_eager_latency_reduction_percent": 14.120629847182087,
+      "unseen_graph_latency_reduction_percent": 5.099954784009142,
+      "eager_worst_slowdown_percent": 0,
+      "graph_worst_slowdown_percent": 1.2842896563826756
+    },
+    {
+      "minutes": 60,
+      "arm": "bare",
+      "nine_phases_passed": true,
+      "unseen_eager_latency_reduction_percent": 10.63672994284277,
+      "unseen_graph_latency_reduction_percent": -1.2617400117992839,
+      "eager_worst_slowdown_percent": 76.4139180349233,
+      "graph_worst_slowdown_percent": 80.21056408118295
+    },
+    {
+      "minutes": 60,
+      "arm": "managed",
+      "nine_phases_passed": true,
+      "unseen_eager_latency_reduction_percent": 29.528873903100582,
+      "unseen_graph_latency_reduction_percent": 4.957059459151347,
+      "eager_worst_slowdown_percent": 0,
+      "graph_worst_slowdown_percent": 4.22336894713633
+    }
+  ],
+  "unseen_cases_per_mode": 46,
+  "unseen_feedback_to_researchers": false,
+  "all_raw_persistence_hashes_rechecked": true,
+  "research_gpu_hours": 2.1994444444444445,
+  "assessment_allocation_gpu_hours": 5.989444444444445,
+  "assessment_computation_seconds": 6266.100553034805,
+  "post_completion_allocated_seconds": 14975.10203576088,
+  "total_gpu_hours": 8.18888888888889,
+  "natural_exit_continuation_triggered_in_gpu_run": false,
+  "manual_consume_or_round_report_required": false,
+  "full_training_chain_promoted": false,
+  "statistical_winner_established": false,
+  "deployment_auto_release_fix_gpu_validated": false,
+  "timing_definition": "Equal-weight geometric mean of per-scenario candidate/baseline wall latency; positive reduction means faster. Eager and Graph remain separate.",
+  "sampling_note": "Bare 40/60 minutes share one immutable candidate and one assessment, not independent repeats.",
+  "trace_note": "Both arms batch hypotheses, repair counterexamples and overlap local preparation with GPU experiments. Heterogeneous request counts/feedback timings are not causal efficiency estimates.",
+  "isolation_note": "Both end-of-run git status commands exposed sibling path names through a shared parent repository; no sibling content read was observed.",
+  "resource_failure": "Host-dependent stop was delayed after assessment completion; the original hard deadline released the allocation. Node-side automatic release is prepared and CPU-validated, not validated in this GPU run."
+}
