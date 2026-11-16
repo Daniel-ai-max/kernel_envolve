@@ -548,3 +548,52 @@ stdout/stderr 默认各末尾 4096 字节，`--log-bytes 0` 只取元数据，�
 
 `bridge-consume` 与 `--consume-file` 保留旧客户端兼容；新流程使用可选的请求内 analysis，
 不把独立消费作为继续实验的前置条件。
+
+
+### Display source-bound research results
+
+The existing recent-result column and result-detail table can show a stage result
+without a full evaluator. Install a trusted **host** adapter once, outside the
+candidate workspace, using the existing receipt watcher:
+
+```sh
+kernel-envolve manage --state /path/to/state watch-assessment task-id \
+  --research --receipt /path/to/host-index.json --verifier /path/to/host-adapter.py
+```
+
+The host adapter reads existing experiment artifacts and emits `research-result-v1`.
+This is an optional host integration, not a mandatory agent report/consume step;
+the framework does not automatically understand arbitrary benchmark output.
+It reuses the pinned verifier, CPU-only execution limit, receipt-change detection,
+append-only history and dashboard archive. HTTP readers never execute adapters.
+
+The output fields are `schema`, `status: "research"`, `promotion: false`, `task`,
+`baseline_revision`, `source_sha256`, `evidence_sha256`, `recorded_at`, `scope`,
+`summary`, `limitations`, and `binding`. SHA fields are lowercase SHA-256.
+`recorded_at` is the original experiment time, not the import time. Numerical
+claims in `summary` remain research claims: provenance checks do not establish
+correctness, a holdout result, current-source validity or full-chain speedup.
+
+Two bindings are supported:
+
+- `manager_job`: `job`, `receipt_sha256`, `log_sha256`. The host verifies the
+  artifacts; the manager additionally checks its DB-pinned source receipt,
+  unchanged/complete source endpoints, stdout hash, terminal job and original end time.
+- `transport_archive`: `request`, `request_sha256`, `archive_sha256`,
+  `receipt_sha256`, `log_sha256`. A pinned host adapter validates legacy archives,
+  exact source membership, request/receipt identity and original logs. It must use
+  bounded, allowlisted local artifacts; the framework never follows paths or URLs
+  from its output. This does not manufacture a new manager-job source receipt.
+
+Task/job identities in bindings are 32 lowercase hexadecimal characters. Claims
+and scopes are bounded text; arbitrary fields and verified-assessment schemas are
+rejected in research mode. The adapter is trusted host code, not a sandbox for
+candidate-authored Python. Preserve referenced source archives/logs with the
+existing archive attachments when moving the review to another machine.
+
+Late imports and amended audit descriptions are allowed after a task ends. They
+append a distinct `indexed_at` audit time without changing task state, budgets,
+experiment time, runs, promotions or best. A later cleanup job does not erase the
+last semantic research/assessment result; execution failures remain in the job
+history. Failed research updates retain the previous result and show the sync
+error in details. Both the original input and host output are saved in archives.

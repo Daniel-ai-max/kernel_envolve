@@ -84,7 +84,8 @@ def export_archive(store, destination, *, attachments=(), include_logs=False, au
             try:
                 with saved.transaction(readonly=True):
                     assessment_records = saved.rows(
-                        "SELECT key,data FROM metadata WHERE key LIKE 'assessment_history:%'"
+                        "SELECT key,data FROM metadata WHERE key LIKE 'assessment_history:%' "
+                        "OR key LIKE 'research_result_history:%'"
                     )
                     research_bindings = {
                         row["key"].removeprefix("research_source:"): json.loads(row["data"])
@@ -125,13 +126,18 @@ def export_archive(store, destination, *, attachments=(), include_logs=False, au
                 record_id = row["key"].rsplit(":", 1)[1]
                 if len(record_id) != 64 or any(c not in "0123456789abcdef" for c in record_id):
                     raise ValueError("Invalid assessment record identity")
-                source = store.root / "assessments" / record_id
+                directory = (
+                    "research-results"
+                    if row["key"].startswith("research_result_")
+                    else "assessments"
+                )
+                source = store.root / directory / record_id
                 if (
                     hash_file(source / "input.json") != record["input_sha256"]
                     or json.loads((source / "record.json").read_text()) != record
                 ):
                     raise ValueError("Saved assessment receipt changed")
-                target = stage / "assessments" / record_id
+                target = stage / directory / record_id
                 target.mkdir(parents=True)
                 for name in ("input.json", "record.json"):
                     shutil.copyfile(source / name, target / name)
@@ -351,7 +357,7 @@ def checkpoint(store, *, force=False):
                 "runs": store.rows("SELECT path,data,error FROM runs ORDER BY path"),
                 "events": store.one("SELECT MAX(seq) AS seq FROM events"),
                 "records": store.rows(
-                    "SELECT key,data FROM metadata WHERE key LIKE 'assessment:%' OR key LIKE 'assessment_sync:%' OR key LIKE 'allocation:%' OR key LIKE 'publication:%' OR key LIKE 'saved_notes:%' ORDER BY key"
+                    "SELECT key,data FROM metadata WHERE key LIKE 'assessment:%' OR key LIKE 'assessment_sync:%' OR key LIKE 'allocation:%' OR key LIKE 'publication:%' OR key LIKE 'saved_notes:%' OR key LIKE 'research_result:%' OR key LIKE 'research_result_sync:%' ORDER BY key"
                 ),
             }
         )

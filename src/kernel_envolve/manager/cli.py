@@ -69,6 +69,9 @@ def parser():
     watch = commands.add_parser(
         "watch-assessment", help="Install a trusted host verifier for independent assessments"
     )
+    watch.add_argument(
+        "--research", action="store_true", help="Index research claims, never verified correctness"
+    )
     watch.add_argument("task")
     watch.add_argument("--receipt", type=Path, required=True)
     watch.add_argument("--verifier", type=Path, required=True)
@@ -253,7 +256,7 @@ def main(argv=None):
         elif args.action == "watch-assessment":
             from .assessment import refresh_sources, watch
 
-            watch(store, args.task, args.receipt, args.verifier)
+            watch(store, args.task, args.receipt, args.verifier, research=args.research)
             refresh_sources(store)
         elif args.action == "init":
             deployment = validate(read_json(args.config), args.config.resolve().parent)
