@@ -924,6 +924,10 @@ def test_cpu_launch_failure_is_not_activity_but_command_failure_is(managed, star
     receipt = send(store, root, job, "failed-command", payload)
     assert receipt["status"] == "failed"
     assert receipt["returncode"] == (7 if started else None)
+    if started:
+        # The immutable receipt is published before its asynchronous ledger projection.
+        # Observe that event, rather than relying on the subprocess winning this race.
+        wait_for(lambda: store.rows("SELECT data FROM events WHERE kind='bridge_execution'"))
     events = store.rows("SELECT data FROM events WHERE kind='bridge_execution'")
     assert len(events) == int(started)
     if started:

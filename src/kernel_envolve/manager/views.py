@@ -1,10 +1,10 @@
 """UI projections use evaluator facts, supervisor state and separately labeled agent notes."""
 
 import json
-import shlex
 import time
 from pathlib import Path
 
+from .command_view import command_summary
 from .publication import publication_view
 from .usage import allocations, usage_view
 
@@ -265,11 +265,13 @@ def task_view(store, key, now=None, predecessors=None, usage=None):
         task["phase"] = "awaiting_progress"
     active_gpu = next((j for j in jobs if j["kind"] == "gpu"), None)
     if active_gpu:
-        task["current_work"] = shlex.join(json.loads(active_gpu["command"]))[:500]
+        command = json.loads(active_gpu["command"])
     elif cpu and cpu["status"] == "running":
-        task["current_work"] = shlex.join(cpu["command"])[:500]
+        command = cpu["command"]
     else:
-        task["current_work"] = None
+        command = None
+    task["current_work"] = command_summary(command) if command else None
+    task["current_work_argv"] = command
     task["last_promotion"] = store.one(
         "SELECT at,data FROM promotions WHERE task=? ORDER BY at DESC LIMIT 1", (key,)
     )
