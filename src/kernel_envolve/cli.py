@@ -198,6 +198,8 @@ def evaluate(
 def promote(run):
     run = Path(run).resolve()
     result = read_json(run / "result.json")
+    if result.get("research_only"):
+        raise ValueError("Research results cannot be promoted")
     task = Path(result["task_root"]).resolve()
     state = task / ".kernel_envolve"
     if not run.is_relative_to(state / "runs"):

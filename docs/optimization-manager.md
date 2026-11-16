@@ -17,6 +17,18 @@ kernel-envolve dashboard --task /work/kernel-task --seconds 3600 -- /opt/model-h
 kernel-envolve dashboard --task /work/kernel-task --state /work/manager-state
 ```
 
+没有 evaluator 时，可直接从源码工作区启动：
+
+```bash
+kernel-envolve dashboard --research /work/operator-checkout --baseline HEAD --device GPU-... --seconds 3600 -- /opt/model-host-adapter
+```
+
+`--research` 选择独立 Git checkout，首次将 `--baseline`（默认 HEAD）解析为固定提交。源码已有修改保留，不自动 checkout、复制仓库或加载项目。只需工作区、baseline、已分配设备和真实宿主命令；不要求 `task.json`、`task.py`、`candidate.py`、`native.json` 或 adapter。CPU 管理回归可用 `--device cpu`。省略宿主命令仅观察记录，不探测或占用 GPU。
+
+研究任务以 `kind=research` 注册到同一个 Store、bridge、GPU 队列和看板。源码身份摘要用于重开同一任务，**不是数值正确性契约**；执行退出码、原始日志和研究说明不会成为 verified best。源目录里即使存在 evaluator 收据或 best 指针，也不导入到研究任务。正式验收继续使用独立的 generic/native 任务；本入口不自动转换任务类型或继承验收资格。已有研究任务重开时不重新选 baseline、不续加预算、不恢复暂停；预算和控制仍用现有管理命令。可信外部 verifier 可通过现有 `watch-assessment` 延迟接入，展示有明确范围的已验证结果，但不改变任务类型或产生 best。
+
+每个受管研究 GPU 命令自动保存执行前后源码记录：固定 Git baseline、tracked binary diff 与非 ignored 的新增源代码/脚本。内容按 SHA 去重，绑定作业 ID、argv、退出状态和有上限的日志哈希；前后变化会标明。Git 输出、单文件和总读取量均有运行中上限，超大、超额、读取失败或并发变化会记录缺口，探索仍可继续。ignored 文件、非源码的 untracked 文件、外部依赖及子模块内容不属于此记录，baseline Git 对象须单独保留；这不是正式 evaluator 快照。源码修改用于原有恢复判断，不自动复活暂停、预算耗尽或 blocked 任务。周期看板归档只保留引用，终态/显式归档自动带去重增量；完整日志仍可用 `--include-logs` 导出。
+
 `task.json` 与 `native.json` 均可使用此入口。它复用同一个管理器、记录索引和 HTTP 看板，不创建另一套界面。
 新任务默认状态保存到 `${XDG_DATA_HOME:-~/.local/share}/kernel-envolve/dashboards/<任务路径摘要>`；已有 `~/.cache` 状态会继续复用，不重置记录或预算。服务地址默认
 `http://127.0.0.1:8787`，可用 `--port` 调整。原生任务的工作区默认包含任务目录和所有 candidate 源码根，必要时用 `--workspace` 指定专用父目录。

@@ -132,7 +132,7 @@ def validate(raw, base):
         identifier(task["id"])
         if not isinstance(task["name"], str) or not task["name"].strip():
             raise ValueError("Task name is required")
-        if task["resource"] not in ids or task["kind"] not in ("generic", "native"):
+        if task["resource"] not in ids or task["kind"] not in ("generic", "native", "research"):
             raise ValueError("Unknown resource or evaluator kind")
         for key in ("workspace", "task_dir"):
             path = (Path(base) / task[key]).resolve()
@@ -183,6 +183,10 @@ def validate(raw, base):
             raise ValueError("Introduction evidence must be an HTTPS URL or null")
         if baseline["introduced_on"] and not url:
             raise ValueError("An introduction date needs a source URL; otherwise use null")
+        if task["kind"] == "research":
+            from .research_task import validate_task
+
+            validate_task(task)
         task["identity"] = digest(
             {
                 k: task[k]

@@ -18,6 +18,8 @@ class ScanCancelled(Exception):
 
 
 def state_path(spec):
+    if spec["kind"] == "research":
+        raise ValueError("Research tasks have no evaluator state or verified best")
     return Path(spec["task_dir"]) / (
         ".kernel_native" if spec["kind"] == "native" else ".kernel_envolve"
     )
@@ -32,6 +34,8 @@ def within(root, relative):
 
 
 def inspect_run(path, spec, checkpoint=None):
+    if spec["kind"] == "research":
+        raise ValueError("Research records cannot be accepted as evaluator evidence")
     checkpoint = checkpoint or (lambda: None)
     checkpoint()
     if path.is_symlink():
@@ -185,6 +189,10 @@ def refresh_task(store, task, force=False, checkpoint=None):
     checkpoint = checkpoint or (lambda: None)
     checkpoint()
     spec = task["spec"]
+    if spec["kind"] == "research":
+        # Local experiments remain job/log evidence. Never inspect a coincidental
+        # task.json, receipt or best pointer in the source checkout.
+        return
     state = state_path(spec)
     problems = []
     best_projection = None

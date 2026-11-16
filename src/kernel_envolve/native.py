@@ -688,7 +688,10 @@ def native_decision(result, cfg):
 
 def promote_native(run):
     run = Path(run).resolve()
-    result, cfg = read_json(run / "result.json"), read_json(run / "config.json")
+    result = read_json(run / "result.json")
+    if result.get("research_only"):
+        raise ValueError("Research results cannot be promoted")
+    cfg = read_json(run / "config.json")
     task = Path(result["task_root"])
     state = task / ".kernel_native"
     if not run.is_relative_to((state / "runs").resolve()):

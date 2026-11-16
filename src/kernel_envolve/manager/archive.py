@@ -86,6 +86,12 @@ def export_archive(store, destination, *, attachments=(), include_logs=False, au
                     assessment_records = saved.rows(
                         "SELECT key,data FROM metadata WHERE key LIKE 'assessment_history:%'"
                     )
+                    research_bindings = {
+                        row["key"].removeprefix("research_source:"): json.loads(row["data"])
+                        for row in saved.rows(
+                            "SELECT key,data FROM metadata WHERE key LIKE 'research_source:%'"
+                        )
+                    }
                     now = time.time()
                     state = overview(saved, compact=True, now=now)
                     details = {t["id"]: detail(saved, t["id"], now) for t in state["tasks"]}
@@ -129,6 +135,86 @@ def export_archive(store, destination, *, attachments=(), include_logs=False, au
                 target.mkdir(parents=True)
                 for name in ("input.json", "record.json"):
                     shutil.copyfile(source / name, target / name)
+            # Periodic dashboard snapshots keep lightweight ledger references.
+            # Explicit/terminal exports also carry the bounded, deduplicated source
+            # deltas; baseline Git objects are intentionally retained separately.
+            unbound_research_receipts = []
+            if not automatic:
+                source_blobs = set()
+                bound_research_records = {}
+                for job, binding in research_bindings.items():
+                    if Path(job).name != job:
+                        raise ValueError("Invalid research source job identity")
+                    receipt = store.root / "jobs" / job / "research-source.json"
+                    if (
+                        receipt.is_symlink()
+                        or receipt.parent.is_symlink()
+                        or not receipt.is_file()
+                        or hash_file(receipt) != binding["sha256"]
+                    ):
+                        raise ValueError("Bound research source receipt changed or missing")
+                    bound_research_records[job] = json.loads(receipt.read_text())
+                for source in (store.root / "jobs").glob("*/research-source*.json"):
+                    if source.is_symlink() or source.parent.is_symlink():
+                        raise ValueError("Research receipts must be regular files")
+                    value = json.loads(source.read_text())
+                    bound = bound_research_records.get(source.parent.name)
+                    if bound is None:
+                        unbound_research_receipts.append(str(source.relative_to(store.root)))
+                    elif source.name == "research-source-before.json" and value != bound["before"]:
+                        raise ValueError("Bound research source before receipt changed")
+                    elif (
+                        source.name == "research-source.json"
+                        and hash_file(source) != research_bindings[source.parent.name]["sha256"]
+                    ):
+                        raise ValueError("Bound research source receipt changed during archive")
+                    endpoints = (
+                        [value]
+                        if value.get("schema") == "research-source-v1"
+                        else [value["before"], value["after"]]
+                    )
+                    for endpoint in endpoints:
+                        blobs = [
+                            endpoint.get("tracked_patch"),
+                            *endpoint.get("untracked_scripts", {}).values(),
+                        ]
+                        for blob in blobs:
+                            if blob is not None:
+                                source_blobs.add(blob["sha256"])
+                    target = stage / "research-jobs" / source.parent.name / source.name
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copyfile(source, target)
+                    if bound is not None:
+                        if (
+                            source.name == "research-source.json"
+                            and hash_file(target) != research_bindings[source.parent.name]["sha256"]
+                        ):
+                            raise ValueError("Bound research source receipt changed during copy")
+                        if (
+                            source.name == "research-source-before.json"
+                            and json.loads(target.read_text()) != bound["before"]
+                        ):
+                            raise ValueError(
+                                "Bound research source before receipt changed during copy"
+                            )
+                for sha in source_blobs:
+                    if len(sha) != 64 or any(c not in "0123456789abcdef" for c in sha):
+                        raise ValueError("Invalid research source blob identity")
+                    source = store.root / "research-sources" / sha
+                    from .research_source import MAX_BYTES
+
+                    if (
+                        source.is_symlink()
+                        or not source.is_file()
+                        or source.stat().st_size > MAX_BYTES
+                        or hash_file(source) != sha
+                    ):
+                        raise ValueError("Research source blob changed")
+                    target = stage / "research-sources" / sha
+                    target.parent.mkdir(exist_ok=True)
+                    shutil.copyfile(source, target)
+                    if hash_file(target) != sha:
+                        raise ValueError("Research source blob changed during copy")
             copied = []
             for index, source in enumerate(attachments):
                 source = Path(source)
@@ -150,6 +236,8 @@ def export_archive(store, destination, *, attachments=(), include_logs=False, au
             manifest = {
                 "schema": "dashboard-archive-v1",
                 "automatic": automatic,
+                "research_source_artifacts_included": not automatic,
+                "unbound_research_source_receipts": unbound_research_receipts,
                 "created_at": now,
                 "attachments": copied,
                 "files": {},
