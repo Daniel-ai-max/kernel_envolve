@@ -27,8 +27,6 @@ def response_format(tasks):
             {
                 "text": {
                     "type": "string",
-                    "minLength": 1,
-                    "maxLength": 120,
                     "description": "1–2 complete short sentences; aim for 50–80 Chinese characters, not the maximum.",
                 },
                 "sources": {
@@ -48,8 +46,6 @@ def response_format(tasks):
                     **claim["properties"],
                     "text": {
                         "type": "string",
-                        "minLength": 1,
-                        "maxLength": 160,
                         "description": "1–2 complete short sentences; aim for 60–90 Chinese characters, not the maximum.",
                     },
                 }
