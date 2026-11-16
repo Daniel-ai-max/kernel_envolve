@@ -47,6 +47,11 @@ def migrate_legacy(store, task):
 
 def implementation(task):
     """Fingerprint only declared implementation, never notes or report timestamps."""
+    if task["spec"]["kind"] == "research":
+        from .research_source import capture
+
+        source = capture(task, code_only=True)
+        return {"source": source["fingerprint"]} if source["complete"] else None
     directory = Path(task["spec"]["task_dir"])
     if task["spec"]["kind"] == "generic":
         selected = [directory / "candidate.py"]

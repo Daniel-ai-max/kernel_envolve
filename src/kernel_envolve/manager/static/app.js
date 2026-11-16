@@ -86,7 +86,7 @@ function render() {
         const direction = noteSnippet(t.current_work || record?.hypothesis, assessment ? "验收完成" : phaseLabel(t));
         const next = noteSnippet(record?.next_action, "");
         return `<tr data-key="${escape(t.id)}">
-          <td data-label="算子"><button class="name" data-task="${escape(t.id)}">${escape(t.spec.name)}</button></td>
+          <td data-label="算子"><button class="name" data-task="${escape(t.id)}">${escape(t.spec.name)}</button>${t.spec.kind === "research" ? `<small>${assessment ? "探索 · 已有范围验收" : "探索 · 未接入验收"}</small>` : ""}</td>
           <td data-label="阶段">${escape(phaseLabel(t))}</td>
           <td data-label="基线"><div title="${escape(baseline.revision)}"><code>${escape(baseline.revision.slice(0, 8))}</code></div><small>${link(baseline.repository, baseline.repository.split("/").filter(Boolean).pop())}</small></td>
           <td class="benefit ${benefit.positive ? "good" : "muted"}" data-label="已验证加速">${escape(benefit.label)}${benefit.detail ? `<small>${escape(benefit.detail)}</small>` : ""}</td>

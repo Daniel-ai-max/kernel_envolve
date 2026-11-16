@@ -11,8 +11,14 @@ from .config import resource_devices, validate
 from .store import Store
 
 
-def task_contract(task, kind):
+def task_contract(task, kind, baseline=None):
     task = Path(task).resolve()
+    if kind == "research":
+        from .research_task import baseline_revision, source_identity
+
+        return source_identity(task, baseline_revision(task, baseline or "HEAD"))
+    if baseline is not None:
+        raise ValueError("--baseline requires --kind research")
     if kind == "generic":
         return contract(task, config(task))
     from ..native import snapshot
@@ -42,10 +48,11 @@ def parser():
     init = commands.add_parser("init", help="Validate and idempotently register a deployment")
     init.add_argument("config", type=Path)
     identity = commands.add_parser(
-        "contract", help="Print the evaluator's current immutable contract"
+        "contract", help="Print an evaluator contract or research source identity"
     )
     identity.add_argument("--task", type=Path, required=True)
-    identity.add_argument("--kind", choices=("generic", "native"), default="generic")
+    identity.add_argument("--kind", choices=("generic", "native", "research"), default="generic")
+    identity.add_argument("--baseline", help="Research baseline Git ref; defaults to HEAD")
     run = commands.add_parser(
         "run", help="Run the single coordinator; round supervisors survive its restart"
     )
@@ -153,7 +160,7 @@ def parser():
 def main(argv=None):
     args = parser().parse_args(argv)
     if args.action == "contract":
-        print(task_contract(args.task, args.kind))
+        print(task_contract(args.task, args.kind, args.baseline))
         return 0
     if args.action == "gpu-run":
         from .gpu import DurationAdmissionError, run
@@ -251,6 +258,10 @@ def main(argv=None):
         elif args.action == "init":
             deployment = validate(read_json(args.config), args.config.resolve().parent)
             for task in deployment["tasks"]:
+                if task["kind"] == "research":
+                    # config.validate already checked the immutable source identity.
+                    # No evaluator files, imports or source copies are needed.
+                    continue
                 if task["kind"] == "native":
                     from ..native_config import load_config
 

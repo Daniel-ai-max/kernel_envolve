@@ -106,6 +106,16 @@ CUDA 原生评测在计时外缓存只读输入的精确字节副本，减少反
 
 ### 单算子启动
 
+从源码开始研究时，无需先写 evaluator、adapter 或输入矩阵：
+
+```bash
+kernel-envolve dashboard --research /work/operator-checkout --device GPU-... --seconds 3600 -- /opt/model-host-adapter
+```
+
+首次启动固定当前 Git HEAD 为 baseline；可用 `--baseline <提交或分支>` 指定。工作区须是独立 Git checkout，已有修改作为探索候选保留。此入口复用执行记录、预算、GPU 队列和看板，不复制源码树，不运行评测。原生测试、微基准或 profiler 可直接经 `manage gpu-run` 批量执行。研究任务不能将日志或局部信号晋升为 verified best；需要时可直接接入现有可信 verifier 的范围验收，full best 仍需独立的正式评测契约。
+
+不传宿主命令时只查看研究记录；重开同一工作区沿用已固定的 baseline、预算与停止状态。
+
 直接打开已有任务的看板，无需编写调度配置：
 
 ```bash

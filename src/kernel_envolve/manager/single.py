@@ -23,6 +23,10 @@ def parser():
     source = result.add_mutually_exclusive_group()
     source.add_argument("--task", type=Path)
     source.add_argument(
+        "--research", type=Path, help="Explore a Git workspace without an evaluator"
+    )
+    result.add_argument("--baseline", help="Research baseline Git ref; new tasks default to HEAD")
+    source.add_argument(
         "--archive", type=Path, help="Open a portable dashboard archive without research or GPU"
     )
     result.add_argument("--state", type=Path, default=os.environ.get("KERNEL_ENVOLVE_STATE"))
@@ -63,7 +67,12 @@ def device_for(cfg, requested):
 
 
 def prepare(store, args):
-    task_dir = args.task.resolve()
+    research = args.research is not None
+    if args.baseline is not None and not research:
+        raise ValueError("--baseline requires --research")
+    if research and args.workspace is not None:
+        raise ValueError("--research already selects the dedicated workspace")
+    task_dir = (args.research if research else args.task).resolve()
     command = args.command[1:] if args.command[:1] == ["--"] else args.command
     matches = [
         store.task(row["id"])
@@ -74,6 +83,13 @@ def prepare(store, args):
     if len(matches) > 1:
         raise ValueError("Multiple task identities match; use the existing manager state directly")
     old = matches[0] if matches else None
+    if old and (old["spec"]["kind"] == "research") != research:
+        raise ValueError("Reuse the task's original --research or --task entry point")
+    if old and research and args.baseline is not None:
+        from .research_task import baseline_revision
+
+        if baseline_revision(task_dir, args.baseline) != old["spec"]["baseline"]["revision"]:
+            raise ValueError("Research baseline changed; establish a separate task identity")
     if old and (not command or not old["spec"].get("observe_only")):
         if command and old["spec"].get("host_command") != command:
             raise ValueError("Task already has an executor; reuse it without a new command")
@@ -88,24 +104,38 @@ def prepare(store, args):
         positive(args.seconds, "seconds")
     if not command and (args.seconds is not None or args.device is not None):
         raise ValueError("A device or research budget requires an agent command after --")
-    native = (task_dir / "native.json").is_file()
+    native = not research and (task_dir / "native.json").is_file()
     if native and (task_dir / "task.json").exists():
         raise ValueError("Ambiguous task: both task.json and native.json exist")
-    if native:
-        from ..native_config import load_config
+    if research:
+        from .research_task import baseline_revision, source_identity
 
-        cfg = load_config(task_dir)
-        roots = [task_dir, *(Path(p) for p in cfg["sources"]["candidate"].values())]
-    else:
-        cfg = config(task_dir)
+        revision = (
+            old["spec"]["baseline"]["revision"]
+            if old
+            else baseline_revision(task_dir, args.baseline or "HEAD")
+        )
+        cfg = {"name": task_dir.name, "device": "cpu" if args.device == "cpu" else "cuda:0"}
         roots = [task_dir]
+        kind = "research"
+        frozen = source_identity(task_dir, revision)
+    else:
+        if native:
+            from ..native_config import load_config
+
+            cfg = load_config(task_dir)
+            roots = [task_dir, *(Path(p) for p in cfg["sources"]["candidate"].values())]
+        else:
+            cfg = config(task_dir)
+            roots = [task_dir]
+        kind = "native" if native else "generic"
     workspace = (args.workspace or Path(os.path.commonpath(roots))).resolve()
     if workspace == Path(workspace.anchor) or any(
         not p.resolve().is_relative_to(workspace) for p in roots
     ):
         raise ValueError("Choose a dedicated workspace containing the task and candidate roots")
-    kind = "native" if native else "generic"
-    frozen = task_contract(task_dir, kind)
+    if not research:
+        frozen = task_contract(task_dir, kind)
     if old and (
         old["spec"]["workspace"] != str(workspace) or old["spec"]["baseline"]["contract"] != frozen
     ):
@@ -130,8 +160,12 @@ def prepare(store, args):
         if old
         else {
             "repository": str(task_dir),
-            "revision": frozen,
-            "entrypoint": "adapter.py" if native else "task.py:baseline",
+            "revision": revision if research else frozen,
+            "entrypoint": "research commands (no evaluator)"
+            if research
+            else "adapter.py"
+            if native
+            else "task.py:baseline",
             "introduced_on": None,
             "introduction_url": None,
             "frozen_on": dt.datetime.now(dt.timezone.utc).date().isoformat(),
@@ -192,14 +226,15 @@ def prepare(store, args):
 
 def main(argv=None):
     args = parser().parse_args(argv)
-    if args.archive or not args.task:
+    if args.archive or not (args.task or args.research):
         if not args.archive and not args.state:
-            raise ValueError("Choose --task, --state or --archive")
+            raise ValueError("Choose --research, --task, --state or --archive")
         if (
             args.command
             or args.seconds is not None
             or args.device
             or args.workspace
+            or args.baseline
             or (args.archive and args.state)
         ):
             raise ValueError("History viewing does not accept execution settings")
@@ -207,7 +242,7 @@ def main(argv=None):
 
         serve(args.archive or args.state, args.port, archive=bool(args.archive), readonly=True)
         return 0
-    task = args.task.resolve()
+    task = (args.research or args.task).resolve()
     if args.state is None:
         name = hashlib.sha256(str(task).encode()).hexdigest()[:16]
         legacy = Path.home() / ".cache/kernel-envolve/dashboards" / name

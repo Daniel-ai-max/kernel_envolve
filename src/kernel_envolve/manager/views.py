@@ -33,6 +33,8 @@ def progress_time(store, task):
 
 
 def best(store, task):
+    if task["spec"]["kind"] == "research":
+        return None
     projection = store.one("SELECT data FROM metadata WHERE key=?", (f"best:{task['id']}",))
     projection = json.loads(projection["data"]) if projection else None
     if not projection:
@@ -109,7 +111,7 @@ def research_summary(store, task, predecessors):
     for entry in lineage:
         key = entry["task"]
         latest = store.one("SELECT data FROM metadata WHERE key=?", (f"latest:{key}",))
-        if latest:
+        if latest and task["spec"]["kind"] != "research":
             data = json.loads(latest["data"])
             if isinstance(data, dict) and data:
                 evaluations.append({**data, "task": key, "inherited": entry["inherited"]})
@@ -213,6 +215,10 @@ def task_view(store, key, now=None, predecessors=None, usage=None):
     )
     latest = store.one("SELECT data FROM metadata WHERE key=?", (f"latest:{key}",))
     task["latest_evaluation"] = json.loads(latest["data"]) if latest else None
+    if task["spec"]["kind"] == "research":
+        task["evidence_status"] = "not_attached"
+        task["evidence_stale"] = False
+        task["latest_evaluation"] = None
     report = store.one("SELECT MAX(at) AS at FROM events WHERE task=? AND kind='report'", (key,))
     task["report_as_of"] = report["at"]
     task["phase"] = task["desired"]

@@ -70,6 +70,8 @@ def sync_pr(store, task, run, url, *, source_root, base_branch):
         raise ValueError("Expected a GitHub pull request URL")
     if not base_branch or not source_root:
         raise ValueError("Declare source_root and expected base_branch")
+    if store.task(task)["spec"]["kind"] == "research":
+        raise ValueError("Research tasks cannot bind a verified best or implementation PR")
     current = best(store, store.task(task))
     if not current or current["run"] != run:
         raise ValueError("PR must be bound to the current verified best run")
