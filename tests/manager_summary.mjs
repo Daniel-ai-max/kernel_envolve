@@ -113,3 +113,14 @@ test("deadline and explicit stop remain distinct", () => {
   assert.equal(extra.researchResult({...task, research_result: {...research, status: "verified"}}), null);
   assert.equal(extra.researchResult({...task, research_result: {...research, task: "other"}}), null);
 }
+
+test("detail headline acknowledges research without implying full qualification", () => {
+  const task = {id: "research", spec: {baseline: {revision: "base"}}, research_result: {
+    schema: "research-result-v1", status: "research", promotion: false, task: "research",
+    baseline_revision: "base", source_sha256: "a".repeat(64), evidence_sha256: "b".repeat(64),
+    recorded_at: 10, scope: "stage", summary: "partial result"}};
+  assert.equal(extra.evidenceSummary(task), "阶段结果 · 未完整验收");
+  assert.equal(extra.evidenceSummary({...task, research_result: null}), "当前契约尚无评测记录");
+  assert.equal(extra.evidenceSummary({...task, evidence_error: "changed"}), "证据异常");
+  assert.equal(extra.evidenceSummary({...task, latest_evaluation: {mode: "full", correctness: "fail"}}), "完整评测 · 正确性失败");
+});

@@ -1,5 +1,5 @@
 import { patch, poller } from "/sync.js";
-import { executionLabel, jobLabel, noteSnippet, executionLabelFor, visibleTask, resultSummary, phaseLabel, recentResult, scopedAssessment, taskBenefit, researchResult } from "/summary.js";
+import { executionLabel, jobLabel, noteSnippet, executionLabelFor, visibleTask, resultSummary, phaseLabel, recentResult, scopedAssessment, taskBenefit, researchResult, evidenceSummary } from "/summary.js";
 /* All external text passes through textContent or escaping. No HTML from agent reports. */
 const $ = (id) => document.getElementById(id);
 const escape = (s) =>
@@ -41,15 +41,6 @@ async function request(url, signal) {
 }
 function metric(label, value) {
   return `<div class="metric"><span>${label}</span><strong>${value}</strong></div>`;
-}
-function evidenceSummary(t) {
-  const r = t.latest_evaluation;
-  if (t.evidence_error || r?.evidence_error) return "证据异常";
-  if (!r) return "当前契约尚无评测记录";
-  const status = r.execution === "error" ? "执行失败"
-    : r.correctness === "fail" ? "正确性失败"
-    : r.correctness === "pass" ? "正确性通过" : "未完成";
-  return `${escape(mode(r.mode))} · ${status}`;
 }
 function render() {
   const tasks = state.tasks;

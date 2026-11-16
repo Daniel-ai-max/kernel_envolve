@@ -36,6 +36,15 @@ export function researchResult(task) {
       !/^[a-f0-9]{64}$/.test(r.source_sha256) || !/^[a-f0-9]{64}$/.test(r.evidence_sha256)) return null;
   return {...r, kind: "research_result"};
 }
+export function evidenceSummary(task) {
+  const r = task.latest_evaluation;
+  if (task.evidence_error || r?.evidence_error) return "证据异常";
+  if (!r) return researchResult(task) ? "阶段结果 · 未完整验收" : "当前契约尚无评测记录";
+  const status = r.execution === "error" ? "执行失败"
+    : r.correctness === "fail" ? "正确性失败"
+    : r.correctness === "pass" ? "正确性通过" : "未完成";
+  return `${({quick: "初筛", full: "完整评测"})[r.mode] || "评测"} · ${status}`;
+}
 export function taskBenefit(task) {
   if (task.best) return {label: benefitLabel(task.best), detail: "", positive: task.best.baseline_speedup > 1};
   const a = scopedAssessment(task);
