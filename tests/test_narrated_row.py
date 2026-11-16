@@ -191,4 +191,5 @@ def test_failed_inference_retains_context_for_next_new_event(managed):
     batch = n.collect(store)[0]
     assert any("保持原加法顺序" in s["text"] for s in batch["sources"].values())
     assert n.step(store, [], call=reply) == 1
-    assert n.get(store, "narrator_context:toy") is None
+    assert n.get(store, "narrator_context:toy")["sources"]
+    assert n.collect(store) == []

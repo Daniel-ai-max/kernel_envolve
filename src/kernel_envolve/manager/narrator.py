@@ -488,8 +488,10 @@ def step(store, command, stop=None, *, scan_logs=True, call=invoke):
                         put(store, "narrator_context:" + key, value)
                         continue
                     put(store, "narration:" + key, value)
-                    store.db.execute(
-                        "DELETE FROM metadata WHERE key=?", ("narrator_context:" + key,)
+                    put(
+                        store,
+                        "narrator_context:" + key,
+                        {"sources": batch["sources"], "claims": claims},
                     )
                     changed += 1
                 put(
