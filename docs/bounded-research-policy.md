@@ -24,8 +24,9 @@ a model restarts. The example value must be replaced with that actual timestamp.
 both full evaluation and confirmation. A speedup ratio threshold of 1.03 is
 `1 - 1/1.03 = 0.029126213592233` latency reduction, not 0.03. Installation requires no evaluator,
 adapter, test case list, delivery task, or per-round notes. It does not execute a
-model itself. The coordinator automatically invokes the policy after evidence and
-publication refresh. Once host admission succeeds, existing configure/resume,
+model itself. The coordinator invokes policy checks independently of large
+evidence/archive scans; success still requires deep evidence audit and a fresh
+publication binding. Once host admission succeeds, existing configure/resume,
 schedule and supervisor paths launch the real model host.
 
 Installation is one-time. Reopening the state, retrying an adapter, or reaching a
