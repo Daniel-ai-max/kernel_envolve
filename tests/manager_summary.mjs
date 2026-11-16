@@ -138,6 +138,9 @@ test("narration is cited explanation and never a benefit or activity signal", ()
   assert.equal(extra.narrationText(task), "长序列改善；短序列未改善");
   assert.equal(extra.taskBenefit(task).label, "尚无完整验收收益");
   assert.equal(extra.narrationFor({...task, spec: {baseline: {revision: "new"}}}), null);
+  const failed = structuredClone(task);
+  failed.narration.claims.failure = {text: "布局编译失败", sources: ["event:1"]};
+  assert.equal(extra.narrationText(failed), "布局编译失败");
   const changed = structuredClone(task);
   changed.narration.claims.finding.sources = ["missing"];
   assert.equal(extra.narrationFor(changed), null);

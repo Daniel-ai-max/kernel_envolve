@@ -19,7 +19,7 @@ export function narrationFor(task) {
 }
 export function narrationText(task) {
   const n = narrationFor(task);
-  return n ? [n.claims.finding, n.claims.failure, n.claims.direction, n.claims.next]
+  return n ? [n.claims.failure || n.claims.finding || n.claims.direction, n.claims.next]
     .filter(Boolean).map(c => c.text).join(" ") : "";
 }
 // Optional, server-verified scoped evidence in a read-only replay. Never a best
