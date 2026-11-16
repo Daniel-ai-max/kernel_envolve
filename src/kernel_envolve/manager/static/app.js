@@ -164,10 +164,10 @@ function validationDetail(t) {
   const current = validationResult(t);
   if (!current) return "";
   const history = t.validation_history?.length ? t.validation_history : [{validation: current}];
-  return `<article class="card"><h3>外部验收结果</h3><p>${escape(resultSummary(current))}</p><p>仅记录所列范围，不更新完整验收或已验收益。</p>${history.map(record => {
+  return `<article class="card"><h3>验收结果</h3><p>${escape(resultSummary(current))}</p>${history.map(record => {
     const v = validationResult({...t, latest_validation: record.validation});
     if (!v) return "";
-    return `<details><summary>${escape(stamp(v.recorded_at))} · ${escape(executionLabelFor(v))}</summary><p>${escape(v.scope)}</p><p>${escape(v.summary)}</p><p>${escape((v.limitations || []).join("；"))}</p><ul>${(v.checks || []).map(c => `<li>${escape(c.name)} · ${escape(c.status)}</li>`).join("")}</ul><pre>${escape(JSON.stringify({external: v.external, source: v.source_sha256, evidence: v.evidence_sha256}, null, 2))}</pre></details>`;
+    return `<details><summary>${escape(stamp(v.recorded_at))} · ${escape(executionLabelFor(v))}</summary><p>${escape(v.scope)}</p><p>${escape(v.summary)}</p><p>${escape((v.limitations || []).join("；"))}</p><ul>${(v.checks || []).map(c => `<li>${escape(c.name)} · ${escape(({passed: "通过", failed: "失败", skipped: "未执行", interrupted: "中断", inconclusive: "无结论", no_benefit: "无收益"})[c.status] || c.status)}</li>`).join("")}</ul><pre>${escape(JSON.stringify({external: v.external, source: v.source_sha256, evidence: v.evidence_sha256}, null, 2))}</pre></details>`;
   }).join("")}</article>`;
 }
 function researchRows(t) {
