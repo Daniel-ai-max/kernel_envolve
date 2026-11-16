@@ -193,3 +193,23 @@ def test_failed_inference_retains_context_for_next_new_event(managed):
     assert n.step(store, [], call=reply) == 1
     assert n.get(store, "narrator_context:toy")["sources"]
     assert n.collect(store) == []
+
+
+def test_row_version_ignores_polling_duration_and_large_execution_payloads():
+    task = dict(
+        id="toy",
+        spec={"baseline": {"revision": "base"}},
+        recent_execution={
+            "id": "job",
+            "status": "running",
+            "recorded_at": 10,
+            "seconds": 20,
+            "cases": [{"large": "x" * 10000}],
+        },
+    )
+    first = row_facts(task)
+    task["recent_execution"]["seconds"] = 21
+    assert row_facts(task) == first
+    assert "cases" not in first["execution"]
+    task["recent_execution"]["status"] = "succeeded"
+    assert row_facts(task)["revision"] != first["revision"]

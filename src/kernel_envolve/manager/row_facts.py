@@ -55,7 +55,12 @@ def row_facts(task):
         "task": task["id"],
         "baseline": task["spec"]["baseline"]["revision"],
         "lifecycle": {"desired": task.get("desired"), "phase": task.get("phase")},
-        "execution": task.get("recent_execution"),
+        "execution": {
+            k: v
+            for k, v in (task.get("recent_execution") or {}).items()
+            if k
+            in ("id", "task", "kind", "status", "mode", "execution", "correctness", "recorded_at")
+        },
         "evidence_error": task.get("evidence_error"),
         "benefit": benefit,
         "optimization_pr": {"ref": "system:optimization_pr", "value": pr},
