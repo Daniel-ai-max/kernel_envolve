@@ -18,7 +18,7 @@ kernel-envolve dashboard --task /work/kernel-task --state /work/manager-state
 ```
 
 `task.json` 与 `native.json` 均可使用此入口。它复用同一个管理器、记录索引和 HTTP 看板，不创建另一套界面。
-新任务默认状态保存到 `${XDG_DATA_HOME:-~/.local/share}/kernel-envolve/dashboards/<任务路径摘要>`；已有 `~/.cache` 状态会继续复用，不重置记录或预算。，服务地址默认
+新任务默认状态保存到 `${XDG_DATA_HOME:-~/.local/share}/kernel-envolve/dashboards/<任务路径摘要>`；已有 `~/.cache` 状态会继续复用，不重置记录或预算。服务地址默认
 `http://127.0.0.1:8787`，可用 `--port` 调整。原生任务的工作区默认包含任务目录和所有 candidate 源码根，必要时用 `--workspace` 指定专用父目录。
 
 带命令时，宿主遵循下文的[自动接续协议](#预算内自动接续)：从 stdin 读取恢复上下文，真实模型会话结束后退出。默认预算一小时；`--seconds` 只在首次配置执行器时设置累计会话额度和绝对截止时间。
