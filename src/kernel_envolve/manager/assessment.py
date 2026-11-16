@@ -90,7 +90,7 @@ def validate_assessment(value, task):
     return value
 
 
-def watch(store, key, receipt, verifier):
+def watch(store, key, receipt, verifier, *, research=False):
     task = store.task(key)
     verifier, receipt = Path(verifier).resolve(), Path(receipt).resolve()
     if not verifier.is_file() or verifier.is_relative_to(task["spec"]["workspace"]):
@@ -100,15 +100,18 @@ def watch(store, key, receipt, verifier):
         "verifier": str(verifier),
         "verifier_sha256": hash_file(verifier),
     }
+    namespace = "research_result" if research else "assessment"
+    if research:
+        source["research_only"] = True
     with store.transaction():
-        old = store.one("SELECT data FROM metadata WHERE key=?", ("assessment_source:" + key,))
+        old = store.one("SELECT data FROM metadata WHERE key=?", (namespace + "_source:" + key,))
         if old and json.loads(old["data"]) != source:
             raise ValueError(
                 "Assessment source already pinned; use a new task for a different verifier"
             )
         store.db.execute(
             "INSERT OR IGNORE INTO metadata VALUES(?,?)",
-            ("assessment_source:" + key, encode(source)),
+            (namespace + "_source:" + key, encode(source)),
         )
 
 
@@ -156,6 +159,10 @@ def verify(source, task):
             except ProcessLookupError:
                 pass
             process.wait()
+    if source.get("research_only"):
+        from .research_result import validate
+
+        return validate(value, task)
     return validate_assessment(value, task)
 
 
@@ -168,12 +175,19 @@ def refresh_sources(store, *, force=False):
 
 
 def _refresh_sources(store, *, force=False):
-    for row in store.rows("SELECT key,data FROM metadata WHERE key LIKE 'assessment_source:%'"):
-        key = row["key"].removeprefix("assessment_source:")
+    for row in store.rows(
+        "SELECT key,data FROM metadata WHERE key LIKE 'assessment_source:%' "
+        "OR key LIKE 'research_result_source:%'"
+    ):
+        namespace = row["key"].split("_source:", 1)[0]
+        key = row["key"].split("_source:", 1)[1]
+        research = namespace == "research_result"
+        field = "research_result" if research else "assessment"
+        directory = "research-results" if research else "assessments"
         source = json.loads(row["data"])
         task = store.task(key)
         receipt = Path(source["receipt"])
-        previous = store.one("SELECT data FROM metadata WHERE key=?", ("assessment_sync:" + key,))
+        previous = store.one("SELECT data FROM metadata WHERE key=?", (namespace + "_sync:" + key,))
         previous = json.loads(previous["data"]) if previous else {}
         if not receipt.exists() and not previous:
             continue  # The independently running assessor has not published its receipt yet.
@@ -185,6 +199,10 @@ def _refresh_sources(store, *, force=False):
             if not force and previous.get("signature") == signature:
                 continue  # Do not repeat verification or retry an unchanged failure.
             value = verify(source, task)
+            if research:
+                from .research_result import validate_job
+
+                validate_job(store, task, value)
             raw = receipt.read_bytes()
             if (
                 digest([hashlib.sha256(raw).hexdigest(), hash_file(source["verifier"])])
@@ -192,7 +210,7 @@ def _refresh_sources(store, *, force=False):
             ):
                 raise ValueError("Assessment input changed during verification")
             record = {
-                "assessment": value,
+                field: value,
                 "input_sha256": hashlib.sha256(raw).hexdigest(),
                 "verifier_sha256": source["verifier_sha256"],
                 "indexed_at": time.time(),
@@ -200,11 +218,11 @@ def _refresh_sources(store, *, force=False):
             record_id = digest(record | {"indexed_at": None})
             existing = store.one(
                 "SELECT data FROM metadata WHERE key=?",
-                ("assessment_history:" + key + ":" + record_id,),
+                (namespace + "_history:" + key + ":" + record_id,),
             )
             if existing:
                 record = json.loads(existing["data"])
-            folder = store.root / "assessments" / record_id
+            folder = store.root / directory / record_id
             folder.mkdir(parents=True, exist_ok=True)
             durable_json(folder / "record.json", record)
             # The receipt and output survive removal of the evaluator workspace.
@@ -212,26 +230,32 @@ def _refresh_sources(store, *, force=False):
             with store.transaction():
                 store.db.execute(
                     "INSERT OR IGNORE INTO metadata VALUES(?,?)",
-                    ("assessment_history:" + key + ":" + record_id, encode(record)),
+                    (namespace + "_history:" + key + ":" + record_id, encode(record)),
                 )
-                latest = store.one("SELECT data FROM metadata WHERE key=?", ("assessment:" + key,))
+                latest = store.one(
+                    "SELECT data FROM metadata WHERE key=?", (namespace + ":" + key,)
+                )
                 if (
                     not latest
-                    or json.loads(latest["data"])["assessment"]["recorded_at"]
-                    < value["recorded_at"]
+                    or json.loads(latest["data"])[field]["recorded_at"] < value["recorded_at"]
+                    or (
+                        research
+                        and json.loads(latest["data"])[field]["recorded_at"] == value["recorded_at"]
+                        and json.loads(latest["data"])["indexed_at"] < record["indexed_at"]
+                    )
                 ):
                     store.db.execute(
                         "INSERT OR REPLACE INTO metadata VALUES(?,?)",
-                        ("assessment:" + key, encode(record)),
+                        (namespace + ":" + key, encode(record)),
                     )
                 state = {"signature": signature, "recorded_at": time.time(), "error": None}
                 store.db.execute(
                     "INSERT OR REPLACE INTO metadata VALUES(?,?)",
-                    ("assessment_sync:" + key, encode(state)),
+                    (namespace + "_sync:" + key, encode(state)),
                 )
                 store.event(
                     key,
-                    "assessment_indexed",
+                    namespace + "_indexed",
                     {"record": record_id, "source": value["source_sha256"]},
                 )
         except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError) as exc:
@@ -240,6 +264,6 @@ def _refresh_sources(store, *, force=False):
                 continue
             store.db.execute(
                 "INSERT OR REPLACE INTO metadata VALUES(?,?)",
-                ("assessment_sync:" + key, encode(state)),
+                (namespace + "_sync:" + key, encode(state)),
             )
-            store.event(key, "assessment_sync_failed", state)
+            store.event(key, namespace + "_sync_failed", state)

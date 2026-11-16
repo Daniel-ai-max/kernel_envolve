@@ -1,5 +1,5 @@
 import { patch, poller } from "/sync.js";
-import { executionLabel, jobLabel, noteSnippet, executionLabelFor, visibleTask, resultSummary, phaseLabel, recentResult, scopedAssessment, taskBenefit } from "/summary.js";
+import { executionLabel, jobLabel, noteSnippet, executionLabelFor, visibleTask, resultSummary, phaseLabel, recentResult, scopedAssessment, taskBenefit, researchResult } from "/summary.js";
 /* All external text passes through textContent or escaping. No HTML from agent reports. */
 const $ = (id) => document.getElementById(id);
 const escape = (s) =>
@@ -167,6 +167,13 @@ function assessmentDetail(t) {
     ${cases.length ? `<details><summary>逐场景性能</summary><div class="scroll"><table><thead><tr><th>场景</th><th>方式</th><th>基线 μs</th><th>候选 μs</th><th>延迟下降</th></tr></thead><tbody>${cases.map(c => `<tr><td>${escape(c.name)}</td><td>${escape(c.mode)}</td><td>${c.baseline_us.toFixed(3)}</td><td>${c.candidate_us.toFixed(3)}</td><td>${pct(c.candidate_us / c.baseline_us)}</td></tr>`).join("")}</tbody></table></div></details>` : ""}
     <details><summary>验收来源</summary><pre>${escape(JSON.stringify({source: a.source_sha256, evidence: a.evidence_sha256, qualification: a.qualification}, null, 2))}</pre></details></article>`;
 }
+function researchRows(t) {
+  return (t.research_result_history || []).map(record => {
+    const r = researchResult({...t, research_result: record.research_result});
+    if (!r) return "";
+    return `<tr><td>${escape(stamp(r.recorded_at))}</td><td>阶段结果</td><td>未完整验收</td><td>${escape(r.summary)}</td><td><details><summary>范围与来源</summary><p>${escape(r.scope)}</p><p>${escape(r.limitations.join("；"))}</p><small>实验 ${escape(stamp(r.recorded_at))} · 追记 ${escape(stamp(record.indexed_at))}</small><pre>${escape(JSON.stringify({source: r.source_sha256, evidence: r.evidence_sha256, binding: r.binding}, null, 2))}</pre></details></td></tr>`;
+  }).join("");
+}
 function renderDetail(t) {
   if (!t || t.id !== selected) return;
   const b = t.spec.baseline, r = t.latest_evaluation, record = t.research_record, assessment = scopedAssessment(t), benefit = taskBenefit(t);
@@ -178,6 +185,7 @@ function renderDetail(t) {
     <div class="detail-summary"><span>${executionLabel(t.execution_state)}</span><span>${assessment ? "算子验收通过" : evidenceSummary(t)}</span><span>${escape(benefit.label)}</span></div>
     ${t.superseded_by ? `<p>历史契约 · 后续任务：<button class="source-link" data-task="${escape(t.superseded_by)}">${escape(t.superseded_by)}</button></p>` : ""}
     ${assessmentDetail(t)}
+    ${t.research_result_sync?.error ? `<p class="warn">阶段结果同步失败 · ${escape(t.research_result_sync.error)}</p>` : ""}
     ${t.assessment_sync?.error ? `<p class="warn">验收同步失败 · ${escape(t.assessment_sync.error)}</p>` : ""}
     ${t.allocation_usage?.breakdown ? `<article class="card"><h3>卡时</h3><p>${escape(t.allocation_usage.breakdown)}</p></article>` : ""}
     <article class="card"><h3>当前工作</h3><p>${escape(t.current_work || (assessment ? "验收完成" : phaseLabel(t)))}</p><p>${escape(resultSummary(recentResult(t)))}</p>${record?.inherited ? `<p>来源：<button class="source-link" data-task="${escape(record.task)}">${escape(record.task)}</button>（历史契约）</p>` : ""}<dl>${fields([["记录时间", record ? stamp(record.recorded_at) : ""], ["方向", record?.hypothesis], ["结论", record?.outcome], ["下一步", record?.next_action]])}${t.report.pr_urls?.length ? `<dt>PR</dt><dd>${t.report.pr_urls.map(u => link(u, u.replace("https://github.com/", "").replace("/pull/", "#"))).join("<br>")}</dd>` : ""}</dl></article>
@@ -185,7 +193,7 @@ function renderDetail(t) {
       const base = c.baseline_us ?? c.comparator_us;
       return `<tr><td>${escape(c.case)}${c.performance_role === "guard" ? '<small title="不计入总收益">护栏</small>' : ""}</td><td>${c.batch + 1}</td><td>${base?.toFixed(3) ?? "—"}</td><td>${c.comparator_us?.toFixed(3) ?? "—"}</td><td>${c.candidate_us?.toFixed(3) ?? "—"}</td><td>${base ? speed(base / c.candidate_us) : "—"}</td></tr>`;
     }).join("")}</tbody></table></div></details>` : ""}
-    <article class="card"><h3>评测记录</h3><div class="scroll"><table><thead><tr><th>记录</th><th>模式</th><th>正确性</th><th>性能</th><th>详情</th></tr></thead><tbody>${t.runs.map(run => `<tr data-key="${escape(run.path)}"><td>${escape(run.path.split("/").pop().slice(0, 8))}</td><td>${escape(mode(run.data.mode))}</td><td>${escape(({pass: "通过", fail: "失败", partial: "未完成"})[run.data.correctness] || "—")}</td><td>${escape(({faster: "更快", slower: "更慢", inconclusive: "不确定", not_measured: "未测量"})[run.data.decision?.performance] || run.data.decision?.performance || "—")}</td><td><details><summary>查看</summary><pre>${escape(run.error || run.data.decision?.reasons?.join("\n") || "通过")}\n${escape(run.path)}</pre></details></td></tr>`).join("") || `<tr><td colspan="5">${assessment ? '尚无可晋升的完整契约评测' : '当前契约尚无评测记录，可在历史来源查看此前记录'}</td></tr>`}</tbody></table></div></article>
+    <article class="card"><h3>评测记录</h3><div class="scroll"><table><thead><tr><th>记录</th><th>模式</th><th>正确性</th><th>性能</th><th>详情</th></tr></thead><tbody>${researchRows(t)}${t.runs.map(run => `<tr data-key="${escape(run.path)}"><td>${escape(run.path.split("/").pop().slice(0, 8))}</td><td>${escape(mode(run.data.mode))}</td><td>${escape(({pass: "通过", fail: "失败", partial: "未完成"})[run.data.correctness] || "—")}</td><td>${escape(({faster: "更快", slower: "更慢", inconclusive: "不确定", not_measured: "未测量"})[run.data.decision?.performance] || run.data.decision?.performance || "—")}</td><td><details><summary>查看</summary><pre>${escape(run.error || run.data.decision?.reasons?.join("\n") || "通过")}\n${escape(run.path)}</pre></details></td></tr>`).join("") || (researchRows(t) ? "" : `<tr><td colspan="5">${assessment ? '尚无可晋升的完整契约评测' : '当前契约尚无评测记录，可在历史来源查看此前记录'}</td></tr>`)}</tbody></table></div></article>
     <article class="card"><h3>历史来源</h3>${t.history_complete ? "" : '<p>迁移链异常，已停止追溯无法确认归属的历史记录。</p>'}<div class="lineage">${t.lineage.map(row => `<div><button class="source-link" data-task="${escape(row.task)}">${escape(row.task)}</button><span>${row.inherited ? "历史契约" : "当前契约"} · ${row.run_count} 条评测记录 · ${row.gpu_job_count} 次 GPU 作业</span></div>`).join("")}</div></article>
     <article class="card"><h3>GPU 作业记录</h3><div class="scroll"><table><thead><tr><th>作业</th><th>来源任务</th><th>状态</th><th>开始 / 结束</th><th>用时</th></tr></thead><tbody>${t.gpu_history.map(job => `<tr data-key="${escape(job.id)}"><td><code>${escape(job.id)}</code>${job.error ? `<small>${escape(job.error)}</small>` : ""}</td><td><button class="source-link" data-task="${escape(job.task)}">${escape(job.task)}</button></td><td>${escape(jobLabel(job.status))}</td><td>${stamp(job.started)}<br>${job.ended ? stamp(job.ended) : "尚未结束"}</td><td>${duration(job.seconds)}</td></tr>`).join("") || '<tr><td colspan="5">尚无已启动的 GPU 作业</td></tr>'}</tbody></table></div></article>
     <details><summary>基线与配置</summary><dl>${fields([["仓库", b.repository], ["版本", b.revision], ["入口", b.entrypoint], ["提出日期", b.introduced_on], ["冻结日期", b.frozen_on], ["硬件", b.hardware], ["契约", b.contract], ["已集成", t.report.integrated_revision]])}<dt>会话</dt><dd>${link(t.report.session_url, t.report.session_url || "—")}</dd></dl></details>

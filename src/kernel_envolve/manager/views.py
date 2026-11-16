@@ -189,6 +189,12 @@ def task_view(store, key, now=None, predecessors=None, usage=None):
     task["verified_assessment"] = json.loads(assessed["data"])["assessment"] if assessed else None
     synced = store.one("SELECT data FROM metadata WHERE key=?", ("assessment_sync:" + key,))
     task["assessment_sync"] = json.loads(synced["data"]) if synced else None
+    research = store.one("SELECT data FROM metadata WHERE key=?", ("research_result:" + key,))
+    task["research_result"] = json.loads(research["data"])["research_result"] if research else None
+    research_sync = store.one(
+        "SELECT data FROM metadata WHERE key=?", ("research_result_sync:" + key,)
+    )
+    task["research_result_sync"] = json.loads(research_sync["data"]) if research_sync else None
     task["best"] = best(store, task)
     task["implementation_pr"] = publication_view(store, key, task["best"])
     evidence = store.one("SELECT data FROM metadata WHERE key=?", (f"evidence:{key}",))
@@ -396,6 +402,12 @@ def detail(store, key, now=None):
         json.loads(row["data"])
         for row in store.rows(
             "SELECT data FROM metadata WHERE key GLOB ?", ("assessment_history:" + key + ":*",)
+        )
+    ]
+    task["research_result_history"] = [
+        json.loads(row["data"])
+        for row in store.rows(
+            "SELECT data FROM metadata WHERE key GLOB ?", ("research_result_history:" + key + ":*",)
         )
     ]
     for directory in ("task_dir", "workspace"):

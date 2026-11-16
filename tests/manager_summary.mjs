@@ -69,7 +69,7 @@ test("verified scoped evidence is displayed without promoting best", () => {
   task.best={baseline_speedup:1.8};
   assert.equal(extra.taskBenefit(task).label,"1.800×");
   task.recent_execution={recorded_at:110,kind:"gpu_job",status:"failed"};
-  assert.equal(extra.recentResult(task),task.recent_execution);
+  assert.equal(extra.recentResult(task).kind,"scoped_assessment");
 });
 test("invalid, mismatched, failed or malformed scoped evidence is never displayed", () => {
   const mutations=[t=>t.id="different",t=>t.spec.baseline.revision="other",t=>t.evidence_error="modified",
@@ -91,3 +91,25 @@ test("deadline and explicit stop remain distinct", () => {
   assert.equal(extra.phaseLabel({phase:"paused",reason:"task deadline reached"}),"预算结束");
   assert.equal(extra.phaseLabel({phase:"paused",reason:"user stop"}),"已停止");
 });
+
+{
+  const research = {schema: "research-result-v1", status: "research", promotion: false,
+    task: "research", baseline_revision: "base", source_sha256: "a".repeat(64), evidence_sha256: "b".repeat(64),
+    recorded_at: 20, scope: "dq/dw stage", summary: "100 → 80 µs"};
+  const task = {id: "research", spec: {baseline: {revision: "base"}}, research_result: research,
+    recent_execution: {kind: "gpu_job", status: "succeeded", task: "research", recorded_at: 30},
+    assessment_sync: {error: "Independent assessment failed", recorded_at: 40}};
+  assert.equal(extra.recentResult(task).kind, "research_result");
+  assert.equal(extra.resultSummary(extra.recentResult(task)), "阶段结果 · 100 → 80 µs");
+  assert.equal(extra.executionLabelFor(extra.recentResult(task)), "阶段结果 · 未完整验收");
+  assert.equal(extra.taskBenefit(task).label, "尚无完整验收收益");
+  assert.equal(extra.scopedAssessment(task), null);
+  const assessed = scopedTask();
+  assessed.research_result = {...research, task: assessed.id, recorded_at: 90};
+  assessed.recent_execution = {kind: "gpu_job", status: "failed", recorded_at: 200};
+  assert.equal(extra.recentResult(assessed).kind, "scoped_assessment");
+  assessed.research_result.recorded_at = 110;
+  assert.equal(extra.recentResult(assessed).kind, "research_result");
+  assert.equal(extra.researchResult({...task, research_result: {...research, status: "verified"}}), null);
+  assert.equal(extra.researchResult({...task, research_result: {...research, task: "other"}}), null);
+}

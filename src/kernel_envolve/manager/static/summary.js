@@ -26,6 +26,16 @@ export function scopedAssessment(task) {
         (c.group == null || ["leaf", "forward_backward"].includes(c.group))))) return null;
   return a;
 }
+// Host-checked provenance does not validate any numerical claim in this summary.
+export function researchResult(task) {
+  const r = task?.research_result;
+  if (!r || r.schema !== "research-result-v1" || r.status !== "research" ||
+      r.promotion !== false || r.task !== task.id || r.baseline_revision !== task.spec?.baseline?.revision ||
+      !Number.isFinite(r.recorded_at) || r.recorded_at <= 0 ||
+      typeof r.summary !== "string" || typeof r.scope !== "string" ||
+      !/^[a-f0-9]{64}$/.test(r.source_sha256) || !/^[a-f0-9]{64}$/.test(r.evidence_sha256)) return null;
+  return {...r, kind: "research_result"};
+}
 export function taskBenefit(task) {
   if (task.best) return {label: benefitLabel(task.best), detail: "", positive: task.best.baseline_speedup > 1};
   const a = scopedAssessment(task);
@@ -41,6 +51,7 @@ export function noteSnippet(value, fallback) {
 }
 export function executionLabelFor(record) {
   if (!record) return "尚无执行记录";
+  if (record.kind === "research_result") return "阶段结果 · 未完整验收";
   if (record.kind === "assessment_sync") return "验收同步失败";
   if (record.kind === "scoped_assessment") return "算子验收 · 正确性通过";
   if (record.kind === "cpu_request") return `本地诊断 · ${jobLabel(record.status)}`;
@@ -55,6 +66,7 @@ export const visibleTask = (task, showHistory = false) => showHistory || task.de
 
 export function resultSummary(record) {
   const label = executionLabelFor(record);
+  if (record?.kind === "research_result") return `阶段结果 · ${record.summary}`;
   if (record?.kind === "scoped_assessment") return record.summary || label;
   if (!record || record.evidence_error || record.execution === "error" || record.correctness !== "pass") return label;
   if (record.mode === "quick" && typeof record.incremental_speedup === "number" && Number.isFinite(record.incremental_speedup))
@@ -72,12 +84,14 @@ export function phaseLabel(task) {
 }
 
 export function recentResult(task) {
-  if (task.assessment_sync?.error) return {kind: "assessment_sync", task: task.id, recorded_at: task.assessment_sync.recorded_at};
+  if (task.assessment_sync?.error && !researchResult(task)) return {kind: "assessment_sync", task: task.id, recorded_at: task.assessment_sync.recorded_at};
   const recent = task.recent_execution, evaluated = task.recent_evaluation;
-  const assessed = scopedAssessment(task);
-  if (assessed && assessed.recorded_at >= Math.max(recent?.recorded_at || 0, evaluated?.recorded_at || 0))
+  const assessed = scopedAssessment(task), research = researchResult(task);
+  if (assessed && assessed.recorded_at >= Math.max(research?.recorded_at || 0, evaluated?.recorded_at || 0))
     return {kind: "scoped_assessment", task: task.id, recorded_at: assessed.recorded_at,
       summary: [`${assessed.metrics[0].cases} 场景验收`, ...assessed.metrics.filter(m => m.slower_cases > 0).map(m => `${m.label} ${m.slower_cases} 场景退化`)].join(" · ")};
+  // Later cleanup/diagnostic jobs must not erase an already source-bound result.
+  if (research && research.recorded_at >= (evaluated?.recorded_at || 0)) return research;
   // A wrapper exits after its evaluator writes the receipt: retain that actual result.
   if (recent?.kind === "gpu_job" && recent.status === "succeeded" && evaluated && recent.task === evaluated.task &&
       evaluated.recorded_at >= recent.started && evaluated.recorded_at <= recent.recorded_at)
