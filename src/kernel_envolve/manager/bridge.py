@@ -551,7 +551,6 @@ def run_bridge(store, root, idle_seconds=120):
                     returncode=code,
                     finished_at=time.time(),
                 )
-                atomic(directory / "results" / path.name, receipt)
                 if cpu_child:
                     store.db.execute(
                         "INSERT OR REPLACE INTO metadata VALUES(?,?)",
@@ -571,6 +570,9 @@ def run_bridge(store, root, idle_seconds=120):
                             ),
                         ),
                     )
+                # A visible completion receipt must never precede its terminal
+                # activity state: clients may read the dashboard immediately.
+                atomic(directory / "results" / path.name, receipt)
                 if cpu_child and type(code) is int:
                     # A supervisor can finish without ever starting argv. Only
                     # a command exit, after confirmed group cleanup, is activity.
