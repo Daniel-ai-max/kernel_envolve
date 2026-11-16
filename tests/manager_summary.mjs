@@ -128,3 +128,17 @@ test("detail headline acknowledges research without implying full qualification"
   assert.equal(extra.evidenceSummary({...task, evidence_error: "changed"}), "证据异常");
   assert.equal(extra.evidenceSummary({...task, latest_evaluation: {mode: "full", correctness: "fail"}}), "完整评测 · 正确性失败");
 });
+
+test("narration is cited explanation and never a benefit or activity signal", () => {
+  const task = {id: "toy", spec: {baseline: {revision: "base"}}, narration: {
+    schema: "narration-v1", task: "toy", baseline: "base", updated_at: 20, source_at: 10,
+    sources: {"event:1": {text: "observed probe", at: 10}},
+    claims: {direction: null, finding: {text: "长序列改善；短序列未改善", sources: ["event:1"]}, failure: null, next: null}
+  }};
+  assert.equal(extra.narrationText(task), "长序列改善；短序列未改善");
+  assert.equal(extra.taskBenefit(task).label, "尚无完整验收收益");
+  assert.equal(extra.narrationFor({...task, spec: {baseline: {revision: "new"}}}), null);
+  const changed = structuredClone(task);
+  changed.narration.claims.finding.sources = ["missing"];
+  assert.equal(extra.narrationFor(changed), null);
+});

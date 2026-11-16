@@ -62,6 +62,11 @@ def parser():
     )
     serve.add_argument("--port", type=int, default=8787)
     commands.add_parser("status")
+    narrator = commands.add_parser(
+        "narrate", help="Shared asynchronous progress narrator; no research execution"
+    )
+    narrator.add_argument("--once", action="store_true")
+    narrator.add_argument("command", nargs=argparse.REMAINDER, help="Tool-free model adapter argv")
     archive = commands.add_parser("archive", help="Save a portable read-only dashboard archive")
     archive.add_argument("--output", type=Path, required=True)
     archive.add_argument("--attach", type=Path, action="append", default=[])
@@ -162,6 +167,29 @@ def parser():
 
 def main(argv=None):
     args = parser().parse_args(argv)
+    if args.action == "narrate":
+        import signal
+        import threading
+
+        from .narrator import command_from_env, serve
+
+        command = args.command[1:] if args.command[:1] == ["--"] else args.command
+        command = command or command_from_env()
+        if not command:
+            raise ValueError("Configure KERNEL_ENVOLVE_NARRATOR_COMMAND or pass an adapter command")
+        stopped = threading.Event()
+
+        def interrupt(signum, frame):
+            raise KeyboardInterrupt
+
+        previous = signal.signal(signal.SIGTERM, interrupt)
+        try:
+            serve(args.state, command, stopped, once=args.once)
+        except KeyboardInterrupt:
+            stopped.set()
+        finally:
+            signal.signal(signal.SIGTERM, previous)
+        return 0
     if args.action == "contract":
         print(task_contract(args.task, args.kind, args.baseline))
         return 0
