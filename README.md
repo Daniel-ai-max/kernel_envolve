@@ -130,7 +130,7 @@ kernel-envolve dashboard --task /work/kernel-task
 kernel-envolve dashboard --task /work/kernel-task --seconds 3600 -- /opt/model-host-adapter
 ```
 
-宿主接入见[单任务启动](docs/optimization-manager.md#单任务启动)。已有管理状态用 `--state /work/manager-state` 直接复用；重开不重置预算或恢复已停止任务。当前工作和最近结果自动读取执行记录，无需额外报告或确认。 可配置一个[共享旁白](docs/optimization-manager.md#共享进展旁白)，异步将新增 trace 和实验结果整理为带来源的简短进展，不增加研究步骤。
+宿主接入见[单任务启动](docs/optimization-manager.md#单任务启动)。已有管理状态用 `--state /work/manager-state` 直接复用；重开不重置预算或恢复已停止任务。当前工作和最近结果自动读取执行记录，无需额外报告或确认。 可配置一个[共享旁白](docs/optimization-manager.md#共享进展旁白)，异步将新增 trace 和实验结果整理为整行一致、带来源的研究结论，不增加研究步骤。
 
 任务结束后，记录可独立复盘，无需原 GPU 或工作区：
 

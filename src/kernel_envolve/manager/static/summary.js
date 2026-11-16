@@ -11,10 +11,19 @@ export function narrationFor(task) {
       !Number.isFinite(n.updated_at) || !Number.isFinite(n.source_at)) return null;
   const fields = ["direction", "finding", "failure", "next"];
   if (Object.keys(n.claims).length !== fields.length || !fields.every(k => Object.hasOwn(n.claims, k))) return null;
-  for (const c of Object.values(n.claims)) {
-    if (c !== null && (!c || typeof c.text !== "string" || !c.text.trim() || c.text.length > 120 ||
+  for (const [field, c] of Object.entries(n.claims)) {
+    if (c !== null && (!c || typeof c.text !== "string" || !c.text.trim() || c.text.length > (field === "finding" ? 160 : 120) ||
         !Array.isArray(c.sources) || !c.sources.length || c.sources.some(id => !Object.hasOwn(n.sources, id)))) return null;
   }
+  if (n.row) {
+    const r = n.row, latest = r.latest_result;
+    if (!task.row_facts || r.revision !== task.row_facts.revision ||
+        r.benefit !== "system:benefit" || r.optimization_pr !== "system:optimization_pr" ||
+        r.current_progress !== "finding" || !n.claims.finding ||
+        latest?.ref !== "system:latest_result" || typeof latest.text !== "string" ||
+        !latest.text.trim() || latest.text.length > 120 || !Array.isArray(latest.sources) ||
+        !latest.sources.length || latest.sources.some(id => !Object.hasOwn(n.sources, id))) return null;
+  } else if (task.row_facts) return null; // Old prose cannot accompany a new atomic snapshot.
   return n;
 }
 export function narrationText(task) {
@@ -22,6 +31,11 @@ export function narrationText(task) {
 }
 export function progressSource(task) {
   const n = narrationFor(task);
+  if (n?.row) return {text: n.claims.finding.text, kind: "narration", at: n.updated_at};
+  if (task.row_facts && !n) {
+    const recent = recentResult(task);
+    if (recent) return {text: resultSummary(recent), kind: recent.kind, at: recent.recorded_at};
+  }
   const validation = validationResult(task);
   const time = c => c ? Math.max(...c.sources.map(ref => n.sources[ref].at || 0)) : 0;
   const claims = n ? [n.claims.failure, n.claims.finding, n.claims.direction].filter(Boolean)
@@ -92,12 +106,12 @@ export function evidenceSummary(task) {
   return `${({quick: "初筛", full: "完整评测"})[r.mode] || "评测"} · ${status}`;
 }
 export function taskBenefit(task) {
-  if (task.best) return {label: benefitLabel(task.best), detail: "", positive: task.best.baseline_speedup > 1};
+  if (task.best) return {label: benefitLabel(task.best), detail: validationResult(task) ? "已保留最佳方案" : "", positive: task.best.baseline_speedup > 1};
   const a = scopedAssessment(task);
   // Research findings remain in progress/history, never in verified benefits.
   if (!a) return {label: benefitLabel(null), detail: "", positive: false};
   return {label: `${a.metrics[0].label} ${a.metrics[0].baseline_speedup.toFixed(3)}×`,
-    detail: a.metrics.slice(1).map(m => `${m.label} ${m.baseline_speedup.toFixed(3)}×`).join(" · "),
+    detail: [a.scope_label, a.metrics.slice(1).map(m => `${m.label} ${m.baseline_speedup.toFixed(3)}×`).join(" · ")].filter(Boolean).join(" · "),
     positive: a.metrics[0].baseline_speedup > 1};
 }
 export function noteSnippet(value, fallback) {
@@ -158,4 +172,14 @@ export function recentResult(task) {
       evaluated.recorded_at >= recent.started && evaluated.recorded_at <= recent.recorded_at)
     return evaluated;
   return recent;
+}
+
+// One render decision for all four columns; model text is used only as a whole.
+// Numbers, PR identity and execution status always come from this task snapshot.
+export function narratedRow(task) {
+  const n = narrationFor(task), recent = recentResult(task);
+  return {benefit: taskBenefit(task), pr: task.implementation_pr,
+    progress: progressSource(task), recent,
+    outcomeAt: n?.row ? Math.max(...n.row.latest_result.sources.map(ref => n.sources[ref].at || 0)) : recent?.recorded_at,
+    outcome: n?.row ? n.row.latest_result.text : resultSummary(recent)};
 }

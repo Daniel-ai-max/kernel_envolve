@@ -183,3 +183,45 @@ test("system fallback keeps its own source timestamp without a narrator", async 
   assert.equal(source.at, 42);
   assert.match(source.text, /no gain/);
 });
+
+test("all narrated columns switch together when new system facts arrive", () => {
+  const task = {id: "toy", spec: {baseline: {revision: "base"}}, row_facts: {revision: "one"},
+    narration: {schema: "narration-v1", task: "toy", baseline: "base", updated_at: 20, source_at: 10,
+      claims: {direction: null, finding: {text: "保留局部候选", sources: ["s"]}, failure: null, next: null},
+      sources: {s: {at: 10, text: "局部改善"}}, row: {revision: "one", benefit: "system:benefit",
+        optimization_pr: "system:optimization_pr", current_progress: "finding",
+        latest_result: {ref: "system:latest_result", text: "局部Graph改善", sources: ["s"]}}}};
+  const row = extra.narratedRow(task);
+  assert.equal(row.progress.text, "保留局部候选");
+  assert.equal(row.outcome, "局部Graph改善");
+  assert.equal(row.benefit.label, "—");
+  assert.equal(row.pr, undefined);
+  task.row_facts.revision = "two";
+  task.latest_validation = {schema: "validation-result-v1", task: "toy", baseline_revision: "base",
+    promotion: false, source_sha256: "a".repeat(64), evidence_sha256: "b".repeat(64),
+    recorded_at: 30, status: "no_benefit", scope: "public F+B", summary: "整链无收益"};
+  const updated = extra.narratedRow(task);
+  assert.match(updated.progress.text, /整链无收益/);
+  assert.match(updated.outcome, /整链无收益/);
+  assert.equal(updated.benefit.label, "—");
+  assert.equal(extra.narrationFor(task), null);
+  // A different retained implementation remains a real benefit, explicitly labeled.
+  task.best = {baseline_speedup: 1.2};
+  const retained = extra.narratedRow(task);
+  assert.equal(retained.benefit.label, "1.200×");
+  assert.equal(retained.benefit.detail, "已保留最佳方案");
+  assert.match(retained.outcome, /整链无收益/);
+});
+
+test("pending narration falls back to the new research result, with its real timestamp", () => {
+  const task = {id: "toy", row_facts: {revision: "new"}, spec: {baseline: {revision: "base"}},
+    research_result: {schema: "research-result-v1", task: "toy", status: "research", promotion: false,
+      baseline_revision: "base", recorded_at: 30, source_sha256: "a".repeat(64),
+      evidence_sha256: "b".repeat(64), scope: "including preparation", summary: "新候选没有改善"}};
+  const row = extra.narratedRow(task);
+  assert.equal(row.progress.text, row.outcome);
+  assert.equal(row.progress.kind, "research_result");
+  assert.equal(row.progress.at, 30);
+  assert.equal(row.outcomeAt, 30);
+  assert.equal(row.benefit.label, "—");
+});
