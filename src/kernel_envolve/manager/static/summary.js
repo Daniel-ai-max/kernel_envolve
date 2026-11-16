@@ -108,7 +108,7 @@ export function noteSnippet(value, fallback) {
 export function executionLabelFor(record) {
   if (!record) return "尚无执行记录";
   if (record.kind === "research_result") return "阶段结果";
-  if (record.kind === "validation") return `外部验收 · ${({passed: "范围检查通过", no_benefit: "无收益，已跳过后续门禁", failed: "失败", interrupted: "中断", inconclusive: "尚无结论"})[record.status]}`;
+  if (record.kind === "validation") return `验收 · ${({passed: "检查通过", no_benefit: "无收益", failed: "失败", interrupted: "中断", inconclusive: "无结论"})[record.status]}`;
   if (record.kind === "assessment_sync") return "验收同步失败";
   if (record.kind === "scoped_assessment") return "算子验收 · 正确性通过";
   if (record.kind === "cpu_request") return `本地诊断 · ${jobLabel(record.status)}`;
