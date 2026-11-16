@@ -175,3 +175,20 @@ def test_policy_refresh_recovers_context_after_a_failed_model_call(managed, monk
     batch = n.collect(store)[0]
     assert any("放弃更慢分块" in source["text"] for source in batch["sources"].values())
     assert n.step(store, [], call=reply) == 1
+
+
+def test_failed_inference_retains_context_for_next_new_event(managed):
+    store, _, _ = managed
+    store.event("toy", "research_context", {"text": "转置候选保持原加法顺序"})
+
+    def failed(*args):
+        raise TimeoutError()
+
+    assert n.step(store, [], call=failed) == 0
+    assert n.collect(store) == []  # no automatic retry of identical input
+    for _ in range(35):
+        store.event("toy", "bridge_execution", {"text": "new experiment"})
+    batch = n.collect(store)[0]
+    assert any("保持原加法顺序" in s["text"] for s in batch["sources"].values())
+    assert n.step(store, [], call=reply) == 1
+    assert n.get(store, "narrator_context:toy") is None

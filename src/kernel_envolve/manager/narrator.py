@@ -441,6 +441,13 @@ def step(store, command, stop=None, *, scan_logs=True, call=invoke):
         with store.transaction():
             for batch in batches:
                 put(store, "narrator_cursor:" + batch["task"], batch["cursor"])
+                # Consume transport deltas once, but keep their evidence even if
+                # inference fails. A later update must not lose candidate context.
+                put(
+                    store,
+                    "narrator_context:" + batch["task"],
+                    {"sources": batch["sources"], "claims": batch["previous"]},
+                )
             put(store, "narrator_attempt", attempt)
         try:
             output = validate(call(command, request, stop), batches)
