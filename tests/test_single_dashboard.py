@@ -160,7 +160,7 @@ def test_single_command_http_dashboard_refreshes_without_reports(task, tmp_path)
         assert len(view["tasks"]) == 1
         assert view["tasks"][0]["phase"] == "observing"
         html = urllib.request.urlopen(info["url"], timeout=5).read().decode()
-        assert "<th>最新实现</th>" in html and "<th>消耗卡时</th>" in html
+        assert "<th>优化 PR</th>" in html and "<th>消耗卡时</th>" in html
         run, _ = evaluate(task)
         wait_for(lambda: snapshot()["tasks"][0]["latest_evaluation"], timeout=15)
         view = snapshot()["tasks"][0]

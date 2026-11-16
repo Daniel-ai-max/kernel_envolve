@@ -2,7 +2,7 @@
 export const executionLabel = (state) => ({archived: "历史记录", running: "GPU 执行中", queued: "GPU 排队", idle: "无 GPU 作业"})[state] || "无 GPU 作业";
 export const jobLabel = (status) => ({running: "执行中", succeeded: "已完成", failed: "失败", cancelled: "已取消", interrupted: "已中断"})[status] || status || "状态未记录";
 export const benefitLabel = (best) => typeof best?.baseline_speedup === "number" && Number.isFinite(best.baseline_speedup)
-  ? `${best.baseline_speedup.toFixed(3)}×` : "尚无完整验收收益";
+  ? `${best.baseline_speedup.toFixed(3)}×` : "—";
 // Explanatory text never participates in taskBenefit, phase or progress clocks.
 export function narrationFor(task) {
   const n = task?.narration;
@@ -58,7 +58,7 @@ export function researchResult(task) {
 export function evidenceSummary(task) {
   const r = task.latest_evaluation;
   if (task.evidence_error || r?.evidence_error) return "证据异常";
-  if (!r) return researchResult(task) ? "阶段结果 · 未完整验收" : "当前契约尚无评测记录";
+  if (!r) return researchResult(task) ? "阶段结果" : "当前契约尚无评测记录";
   const status = r.execution === "error" ? "执行失败"
     : r.correctness === "fail" ? "正确性失败"
     : r.correctness === "pass" ? "正确性通过" : "未完成";
@@ -67,13 +67,8 @@ export function evidenceSummary(task) {
 export function taskBenefit(task) {
   if (task.best) return {label: benefitLabel(task.best), detail: "", positive: task.best.baseline_speedup > 1};
   const a = scopedAssessment(task);
-  if (!a) {
-    const r = researchResult(task);
-    // Show the source-bound claim where users look for gains. Do not parse it
-    // into a speedup or give it the styling of a verified improvement.
-    if (r) return {label: r.summary, detail: "阶段测量 · 未完整验收", positive: false, research: true};
-    return {label: benefitLabel(null), detail: "", positive: false};
-  }
+  // Research findings remain in progress/history, never in verified benefits.
+  if (!a) return {label: benefitLabel(null), detail: "", positive: false};
   return {label: `${a.metrics[0].label} ${a.metrics[0].baseline_speedup.toFixed(3)}×`,
     detail: a.metrics.slice(1).map(m => `${m.label} ${m.baseline_speedup.toFixed(3)}×`).join(" · "),
     positive: a.metrics[0].baseline_speedup > 1};
@@ -85,7 +80,7 @@ export function noteSnippet(value, fallback) {
 }
 export function executionLabelFor(record) {
   if (!record) return "尚无执行记录";
-  if (record.kind === "research_result") return "阶段结果 · 未完整验收";
+  if (record.kind === "research_result") return "阶段结果";
   if (record.kind === "assessment_sync") return "验收同步失败";
   if (record.kind === "scoped_assessment") return "算子验收 · 正确性通过";
   if (record.kind === "cpu_request") return `本地诊断 · ${jobLabel(record.status)}`;
