@@ -102,7 +102,11 @@ test("deadline and explicit stop remain distinct", () => {
   assert.equal(extra.recentResult(task).kind, "research_result");
   assert.equal(extra.resultSummary(extra.recentResult(task)), "阶段结果 · 100 → 80 µs");
   assert.equal(extra.executionLabelFor(extra.recentResult(task)), "阶段结果 · 未完整验收");
-  assert.equal(extra.taskBenefit(task).label, "尚无完整验收收益");
+  assert.deepEqual(extra.taskBenefit(task), {label: "100 → 80 µs", detail: "阶段测量 · 未完整验收", positive: false, research: true});
+  assert.equal(task.best, undefined);
+  assert.equal(extra.taskBenefit({...task, evidence_error: "changed"}).label, "尚无完整验收收益");
+  assert.equal(extra.taskBenefit({...task, best: {baseline_speedup: 1.2}}).label, "1.200×");
+  assert.equal(extra.taskBenefit({...task, research_result: {...research, baseline_revision: "other"}}).label, "尚无完整验收收益");
   assert.equal(extra.scopedAssessment(task), null);
   const assessed = scopedTask();
   assessed.research_result = {...research, task: assessed.id, recorded_at: 90};
