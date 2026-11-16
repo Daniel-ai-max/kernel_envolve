@@ -608,12 +608,13 @@ error in details. Both the original input and host output are saved in archives.
 
 ```bash
 export NARRATOR_MODEL='<轻量文本模型>'
+# 支持推理强度配置的模型可选 NARRATOR_REASONING_EFFORT=low。
 export NARRATOR_RESPONSES_URL='https://<已授权模型服务>/v1/responses'
 # NARRATOR_API_KEY 由宿主凭据环境注入。
 kernel-envolve dashboard --research /work/operator-checkout --device GPU-... --seconds 3600 -- /opt/model-host-adapter
 ```
 
-内置适配器按 [Responses API](https://developers.openai.com/api/reference/resources/responses/methods/create) 使用[结构化输出](https://developers.openai.com/api/docs/guides/structured-outputs?api-mode=responses)约束字段和证据引用，发起无工具、非流式文本请求，不创建远端会话，不保存凭据。也可用 `KERNEL_ENVOLVE_NARRATOR_COMMAND` 指定可信模型适配器的 JSON argv；输入为 stdin JSON（`instructions`、`tasks`），输出为任务 ID 到四项摘要的 JSON。每项为 `null` 或 `{"text":"简短结论","sources":["输入中的证据ID"]}`，字段为 `direction`、`finding`、`failure`、`next`。同时返回 `row`：绑定输入 `row_facts.revision`，用 `system:benefit`、`system:optimization_pr` 引用系统字段，`current_progress` 引用 `finding`，`latest_result` 提供引用 `system:latest_result` 的短结论与来源。模型不可填写收益值或 PR 地址。旧四项摘要仍可读取历史归档，新事实版本下须生成整行摘要。适配器只负责模型推理，不授予模型 shell 或研究工具。
+内置适配器按 [Responses API](https://developers.openai.com/api/reference/resources/responses/methods/create) 使用[结构化输出](https://developers.openai.com/api/docs/guides/structured-outputs?api-mode=responses)约束字段和证据引用，发起无工具、非流式文本请求，不创建远端会话，不保存凭据。也可用 `KERNEL_ENVOLVE_NARRATOR_COMMAND` 指定可信模型适配器的 JSON argv；输入为 stdin JSON（`instructions`、`tasks`），输出为任务 ID 到四项摘要的 JSON。每项为 `null` 或 `{"text":"简短结论","sources":["输入中的证据ID"]}`，字段为 `direction`、`finding`、`failure`、`next`。新整行输出仅在 `finding` 和最近结果写正文，其余三项为 `null`，避免重复生成同一结论。同时返回 `row`：绑定输入 `row_facts.revision`，用 `system:benefit`、`system:optimization_pr` 引用系统字段，`current_progress` 引用 `finding`，`latest_result` 提供引用 `system:latest_result` 的短结论与来源。模型不可填写收益值或 PR 地址。旧四项摘要仍可读取历史归档，新事实版本下须生成整行摘要。适配器只负责模型推理，不授予模型 shell 或研究工具。
 
 一个管理状态共用旁白执行锁，每批最多八个任务，来源合计不超过 48 KB，单任务不超过 40 KB；优先保留验收和候选结论。后台尾随持久事件，合并短时间内的更新；每 30 秒检查有界日志增量，补上只写 trace、未产生事件的变化。没有新内容不调用模型；同一失败输入或不确定请求不自动重发，新输入可继续处理。模型调用不占数据库写锁，45 秒超时，退出清理子进程。旁白失败保留历史；仅当事实版本仍匹配时展示原摘要，否则使用系统事实，优化照常推进。
 

@@ -37,6 +37,7 @@ def response_format(tasks):
         optional = {"anyOf": [claim, {"type": "null"}]}
         fields = {k: optional for k in ("direction", "finding", "failure", "next")}
         if task.get("row_facts"):
+            fields = {k: {"type": "null"} for k in fields}
             fields["finding"] = obj(
                 {
                     **claim["properties"],
@@ -84,6 +85,10 @@ def respond(request):
         "max_output_tokens": 8192,
         "text": {"format": response_format(request["tasks"])},
     }
+    if effort := os.environ.get("NARRATOR_REASONING_EFFORT"):
+        if effort not in ("minimal", "low", "medium", "high"):
+            raise ValueError("Unsupported narrator reasoning effort")
+        body["reasoning"] = {"effort": effort}
     req = urllib.request.Request(
         endpoint,
         json.dumps(body).encode(),

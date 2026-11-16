@@ -249,11 +249,13 @@ def test_responses_adapter_is_tool_free_bounded_and_rejects_incomplete(monkeypat
             "NARRATOR_RESPONSES_URL", f"http://127.0.0.1:{server.server_port}/v1/responses"
         )
         monkeypatch.setenv("NARRATOR_MODEL", "fixture-model")
+        monkeypatch.setenv("NARRATOR_REASONING_EFFORT", "low")
         monkeypatch.setenv("NARRATOR_API_KEY", "test-only")
         try:
             assert respond({"instructions": "JSON only", "tasks": []}) == {"toy": None}
             assert seen[0]["tools"] == [] and seen[0]["store"] is False
             assert seen[0]["stream"] is False
+            assert seen[0]["reasoning"] == {"effort": "low"}
             assert seen[0]["text"]["format"]["strict"] is True
             assert seen[0]["text"]["format"]["type"] == "json_schema"
             assert seen[0]["max_output_tokens"] == 8192
