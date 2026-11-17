@@ -31,23 +31,68 @@ def date(value, name):
     return value
 
 
+def resource_devices(resource):
+    """Declared rank order; lock order is independently sorted by physical UUID."""
+    return resource["devices"] if "devices" in resource else [resource["device"]]
+
+
+def validate_host(task):
+    """Optional host launcher settings; also used when enabling an existing paused task."""
+    host_command = task.get("host_command")
+    if host_command is not None:
+        if not task["host_driven"] or not isinstance(host_command, list) or not host_command:
+            raise ValueError("host_command requires host_driven and a nonempty argv array")
+        if any(not isinstance(arg, str) or not arg or "\0" in arg for arg in host_command):
+            raise ValueError("host_command must contain nonempty argv strings")
+        if task["wall_budget_seconds"] is None and task.get("deadline_at") is None:
+            raise ValueError("Automatic host continuation requires a wall budget or deadline_at")
+    positive(task.get("deadline_at"), "deadline_at", nullable=True)
+    command = task["command"]
+    if host_command:
+        try:
+            bridge_index = command.index("bridge")
+            root_index = command.index("--root", bridge_index)
+            if (
+                bridge_index == 0
+                or "manage" not in command[:bridge_index]
+                or root_index + 1 >= len(command)
+            ):
+                raise ValueError
+        except ValueError:
+            raise ValueError(
+                "host_command requires command to run manage bridge --root PATH"
+            ) from None
+
+
 def validate(raw, base):
     if set(raw) - {"version", "resources", "tasks"} or raw.get("version") != 1:
         raise ValueError("Expected version 1 deployment with resources and tasks")
     resources, tasks = [], []
     for item in raw["resources"]:
-        if set(item) - {"id", "device", "sessions"}:
+        if set(item) - {"id", "device", "devices", "sessions"}:
             raise ValueError("Unknown resource setting")
         resource = {"sessions": 2, **item}
         identifier(resource["id"])
-        device = resource["device"]
-        if device != "cpu" and not re.fullmatch(r"GPU-[a-fA-F0-9-]+", device):
-            raise ValueError("Use a physical NVIDIA GPU UUID, not cuda:0 or a MIG slice")
+        if ("device" in resource) == ("devices" in resource):
+            raise ValueError("Declare exactly one of device or devices")
+        devices = resource_devices(resource)
+        if (
+            not isinstance(devices, list)
+            or not devices
+            or any(
+                not isinstance(device, str) or not re.fullmatch(r"GPU-[a-fA-F0-9-]+", device)
+                for device in devices
+            )
+        ) and resource.get("device") not in ("cpu", "unassigned"):
+            raise ValueError("Use physical NVIDIA GPU UUIDs, not indices or MIG slices")
+        if len(set(devices)) != len(devices):
+            raise ValueError("Physical devices must be unique within a resource")
         if type(resource["sessions"]) is not int or not 1 <= resource["sessions"] <= 2:
             raise ValueError("Each resource supports one or two agent sessions")
         resources.append(resource)
     ids = [r["id"] for r in resources]
-    if len(set(ids)) != len(ids) or len({r["device"] for r in resources}) != len(resources):
+    devices = [device for resource in resources for device in resource_devices(resource)]
+    if len(set(ids)) != len(ids) or len(set(devices)) != len(devices):
         raise ValueError("Resource IDs and physical devices must be unique")
     for item in raw["tasks"]:
         allowed = {
@@ -63,6 +108,10 @@ def validate(raw, base):
             "wall_budget_seconds",
             "gpu_budget_seconds",
             "cooldown_seconds",
+            "host_driven",
+            "host_command",
+            "deadline_at",
+            "observe_only",
         }
         if set(item) - allowed:
             raise ValueError("Unknown task setting")
@@ -71,12 +120,19 @@ def validate(raw, base):
             "wall_budget_seconds": None,
             "gpu_budget_seconds": None,
             "cooldown_seconds": 10,
+            "host_driven": False,
             **item,
         }
+        if type(task["host_driven"]) is not bool:
+            raise ValueError("host_driven must be boolean")
+        if type(task.get("observe_only", False)) is not bool:
+            raise ValueError("observe_only must be boolean")
+        if task.get("observe_only") and (task["host_driven"] or task.get("host_command")):
+            raise ValueError("Observation-only tasks cannot launch an agent")
         identifier(task["id"])
         if not isinstance(task["name"], str) or not task["name"].strip():
             raise ValueError("Task name is required")
-        if task["resource"] not in ids or task["kind"] not in ("generic", "native"):
+        if task["resource"] not in ids or task["kind"] not in ("generic", "native", "research"):
             raise ValueError("Unknown resource or evaluator kind")
         for key in ("workspace", "task_dir"):
             path = (Path(base) / task[key]).resolve()
@@ -88,10 +144,17 @@ def validate(raw, base):
         command = task["command"]
         if (
             not isinstance(command, list)
-            or not command
+            or (not command and not task.get("observe_only"))
             or any(not isinstance(arg, str) or not arg or "\0" in arg for arg in command)
         ):
             raise ValueError("command must be a nonempty argv array, never a shell string")
+        if task.get("observe_only") and command:
+            raise ValueError("Observation-only tasks have no agent command")
+        if any(
+            r["id"] == task["resource"] and r.get("device") == "unassigned" for r in resources
+        ) and not task.get("observe_only"):
+            raise ValueError("An executable task needs an assigned device")
+        validate_host(task)
         for key in ("round_timeout_seconds", "cooldown_seconds"):
             positive(task[key], key)
         for key in ("wall_budget_seconds", "gpu_budget_seconds"):
@@ -120,6 +183,10 @@ def validate(raw, base):
             raise ValueError("Introduction evidence must be an HTTPS URL or null")
         if baseline["introduced_on"] and not url:
             raise ValueError("An introduction date needs a source URL; otherwise use null")
+        if task["kind"] == "research":
+            from .research_task import validate_task
+
+            validate_task(task)
         task["identity"] = digest(
             {
                 k: task[k]

@@ -615,3 +615,389 @@ def test_explicit_gate_entry_cannot_be_overlaid_to_fake_pass(native_task, entry)
     assert "overlaps declared check" in result["error"]["message"]
     assert not (run / "workers").exists()
     assert not result["decision"]["eligible_for_best"]
+
+
+def test_native_assertion_rejection_is_completed_failure(native_task):
+    task, candidate = native_task
+    for root in (candidate, candidate.parent / "baseline"):
+        (root / "test_native_contract.py").write_text(
+            "def test_contract():\n raise AssertionError('native gradient threshold exceeded')\n"
+        )
+    run, result = evaluate_native(task, "full", timeout=60)
+    assert result["execution"] == "completed"
+    assert result["correctness"] == "fail"
+    assert result["failed_phase"] == "native_checks"
+    assert result["native_checks"][0]["status"] == "fail"
+    assert result["native_checks"][0]["failures"][0]["test"].endswith("::test_contract")
+    assert not result["samples"]
+    assert not result["decision"]["eligible_for_best"]
+    receipt = json.loads((run / "receipt.json").read_text())
+    assert "native_checks/operator/junit.xml" in receipt["evidence"]
+    with pytest.raises(ValueError, match="Not eligible"):
+        promote_native(run)
+
+
+@pytest.mark.parametrize("rejected", [False, True])
+def test_native_cleanup_error_never_becomes_correctness_verdict(native_task, monkeypatch, rejected):
+    import kernel_envolve.native_checks as checks
+
+    task, candidate = native_task
+    if rejected:
+        for root in (candidate, candidate.parent / "baseline"):
+            (root / "test_native_contract.py").write_text(
+                "def test_contract():\n raise AssertionError('gradient threshold exceeded')\n"
+            )
+    real_stop = checks.stop
+
+    def cleanup(process):
+        real_stop(process)
+        raise AssertionError("cleanup confirmation failed")
+
+    monkeypatch.setattr(checks, "stop", cleanup)
+    run, result = evaluate_native(task, "full", timeout=60)
+    assert result["execution"] == "error" and result["correctness"] == "partial"
+    assert result["failed_phase"] == "native_checks"
+    check = result["native_checks"][0]
+    assert check["status"] == "error" and check["returncode"] == int(rejected)
+    assert check["cleanup_error"]["type"] == "AssertionError"
+    assert len(check["failures"]) == int(rejected)
+    assert check["seconds"] > 0
+    assert not result["samples"] and not result["decision"]["eligible_for_best"]
+    receipt = json.loads((run / "receipt.json").read_text())
+    assert "native_checks/operator/junit.xml" in receipt["evidence"]
+
+
+@pytest.mark.parametrize("wrong_output", [False, True])
+def test_worker_cleanup_failure_keeps_receipt_and_reaps_all(native_task, monkeypatch, wrong_output):
+    import kernel_envolve.native as native
+
+    task, candidate = native_task
+    if wrong_output:
+        (candidate / "toyop.py").write_text("def run(x): return x*3\n")
+    processes = []
+    real_spawn, real_stop = native.spawn, native.stop
+
+    def tracked_spawn(*args, **kwargs):
+        process = real_spawn(*args, **kwargs)
+        processes.append(process)
+        return process
+
+    stopped = []
+
+    def failed_cleanup(process):
+        real_stop(process)
+        stopped.append(process.pid)
+        if len(stopped) == 1:
+            raise OSError("worker cleanup receipt probe")
+
+    monkeypatch.setattr(native, "spawn", tracked_spawn)
+    monkeypatch.setattr(native, "stop", failed_cleanup)
+    try:
+        run, result = native.evaluate_native(task, "quick", timeout=60)
+        assert result["execution"] == "error"
+        assert result["correctness"] == "partial"
+        assert result["failed_phase"] == "cleanup"
+        assert result["cleanup_errors"][0]["role"] == "oracle"
+        assert result["cleanup_errors"][0]["type"] == "OSError"
+        assert result["error"]["type"] == "WorkerCleanupError"
+        if wrong_output:
+            assert result["prior_error"]["type"] == "Mismatch"
+            assert result["prior_failed_phase"] == "correctness"
+        assert len(stopped) == len(processes) == 3
+        assert all(p.poll() is not None and p.stdin.closed for p in processes)
+        assert (run / "receipt.json").is_file()
+        assert result["phase_wall_seconds"]["cleanup"] > 0
+        assert not result["decision"]["eligible_for_best"]
+    finally:
+        for process in processes:
+            real_stop(process)
+
+
+def test_worker_launch_failure_closes_log(native_task, monkeypatch):
+    import time
+    from pathlib import Path
+
+    import kernel_envolve.native as native
+
+    task, _ = native_task
+    cfg = native.load_config(task)
+    logs = []
+    real_open = Path.open
+
+    def tracked_open(path, *args, **kwargs):
+        handle = real_open(path, *args, **kwargs)
+        if path.name == "worker.log":
+            logs.append(handle)
+        return handle
+
+    def failed_spawn(*args, **kwargs):
+        raise FileNotFoundError("worker executable not available")
+
+    monkeypatch.setattr(Path, "open", tracked_open)
+    monkeypatch.setattr(native, "spawn", failed_spawn)
+    with pytest.raises(FileNotFoundError, match="worker executable"):
+        native.Worker(
+            task / "launch-probe",
+            cfg,
+            cfg["sources"]["candidate"],
+            "candidate",
+            time.monotonic() + 10,
+        )
+    assert len(logs) == 1 and logs[0].closed
+
+
+def test_native_selected_check_only_and_timing_keep_full_contract(native_task):
+    task, candidate = native_task
+    cfg = json.loads((task / "native.json").read_text())
+    cfg["cases"] += [{"id": "cold-guard", "args": {}, "quick": False, "measure": False}]
+    cfg.update(warmup=2, iterations=3)
+    (task / "native.json").write_text(json.dumps(cfg))
+    before = (task / "native.json").read_bytes()
+    run, result = evaluate_native(task, cases=["cold-guard"], seeds=[29], check_only=True)
+    assert result["execution"] == "completed", result.get("error")
+    assert result["correctness"] == "pass"
+    assert result["samples"] == result["native_checks"] == []
+    assert set(result["environments"]) == {"candidate", "oracle"}
+    assert result["decision"]["coverage"] == {
+        "correctness_cases": ["cold-guard"],
+        "timed_cases": [],
+    }
+    assert len(result["checks"]) == 3  # fresh/reuse/repeat, including backward
+    assert not result["decision"]["eligible_for_best"]
+    with pytest.raises(ValueError, match="Not eligible"):
+        promote_native(run)
+    assert (task / "native.json").read_bytes() == before
+    assert len(json.loads((run / "config.json").read_text())["cases"]) == 2
+    timed_run, timed = evaluate_native(task, cases=["padded"], seeds=[29])
+    assert timed["correctness"] == "pass", timed.get("error")
+    assert timed["decision"]["coverage"]["timed_cases"] == ["padded"]
+    assert len(timed["samples"]) == 4  # one ABBA, same timing/guard protocol
+    for path in (timed_run / "workers").glob("*/*.json"):
+        meta = json.loads(path.read_text())
+        if "samples_us" in meta:
+            assert meta["validated_iterations"] == 5
+            assert meta["captured_observations"] == 1
+            assert meta["input_guard"]["check_calls"] == 10
+            assert len(meta["samples_us"]) == 3
+    assert not timed["decision"]["eligible_for_best"]
+    # The diagnostic detects faulty backward rather than just accepting its selector.
+    (candidate / "toyop.py").write_text("def run(x): return x.detach()*2 + x*0\n")
+    _, bad = evaluate_native(task, cases=["cold-guard"], seeds=[29], check_only=True)
+    assert bad["correctness"] != "pass"
+    assert not bad["samples"] and not bad["decision"]["eligible_for_best"]
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"mode": "full", "cases": ["padded"]},
+        {"mode": "full", "seeds": [0]},
+        {"mode": "full", "check_only": True, "cases": ["padded"]},
+        {"mode": "full", "check_only": True, "seeds": [0]},
+        {"cases": ["unknown"]},
+        {"cases": ["padded", "padded"]},
+        {"cases": []},
+        {"seeds": []},
+        {"seeds": [-1]},
+    ],
+)
+def test_native_bad_selection_fails_before_snapshot(native_task, kwargs):
+    task, _ = native_task
+    with pytest.raises(ValueError):
+        evaluate_native(task, **kwargs)
+    assert not (task / ".kernel_native").exists()
+
+
+@pytest.mark.parametrize("mode", ["quick", "full"])
+def test_native_cli_selection_reaches_evaluator(native_task, monkeypatch, capsys, mode):
+    from kernel_envolve import cli, native
+
+    task, _ = native_task
+    received = []
+
+    def capture(*args, **kwargs):
+        received.append((args, kwargs))
+        return task, {
+            "execution": "completed",
+            "correctness": "pass",
+            "seconds": 1,
+            "decision": {"eligible_for_best": False},
+        }
+
+    monkeypatch.setattr(native, "evaluate_native", capture)
+    assert (
+        cli.main(
+            [
+                "native-evaluate",
+                "--task",
+                str(task),
+                "--mode",
+                mode,
+                *(["--case", "padded", "--seed", "17"] if mode == "quick" else []),
+                "--check-only",
+                "--timeout",
+                "30",
+            ]
+        )
+        == 0
+    )
+    assert received == [
+        (
+            (task, mode, 30),
+            {
+                "cases": ["padded"] if mode == "quick" else None,
+                "seeds": [17] if mode == "quick" else None,
+                "check_only": True,
+            },
+        )
+    ]
+    assert not json.loads(capsys.readouterr().out)["eligible_for_best"]
+
+
+def test_native_diagnostic_cannot_use_reserved_confirmation_seed(native_task):
+    task, _ = native_task
+    cfg = json.loads((task / "native.json").read_text())
+    cfg["confirmation"] = {
+        "cases": [{"id": "reserved", "args": {"size": 31}, "weight": 1}],
+        "seeds": [29],
+        "trials": 3,
+    }
+    (task / "native.json").write_text(json.dumps(cfg))
+    with pytest.raises(ValueError, match="reserved confirmation"):
+        evaluate_native(task, cases=["padded"], seeds=[29], check_only=True)
+    assert not (task / ".kernel_native").exists()
+
+
+def test_native_default_budgets_and_snapshot_cancellation(native_task, monkeypatch):
+    from kernel_envolve import native
+
+    task, _ = native_task
+    budgets = []
+
+    def capture(task, state, cfg, mode, timeout, selection, check_only):
+        budgets.append(timeout)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(native, "_evaluate", capture)
+        native.evaluate_native(task)
+        native.evaluate_native(task, "full")
+        native.evaluate_native(task, timeout=41)
+    assert budgets == [120, 1800, 41]
+    ticks = iter([0, 0, 121])
+    monkeypatch.setattr(native.time, "monotonic", lambda: next(ticks))
+    run, result = native.evaluate_native(task)
+    assert result["execution"] == "error"
+    assert result["failed_phase"] == "snapshot"
+    assert result["error"]["type"] == "TimeoutError"
+    assert not (run / "workers").exists()
+    assert (run / "receipt.json").is_file()
+
+
+def test_native_harness_expiration_keeps_failure_and_closes_workers(native_task, monkeypatch):
+    from kernel_envolve import native
+
+    task, _ = native_task
+    monotonic, prepare, close = native.time.monotonic, native.prepare_harness, native.Worker.close
+    closed = []
+
+    def expired(run, cfg, identities, checkpoint):
+        monkeypatch.setattr(native.time, "monotonic", lambda: monotonic() + 100)
+        return prepare(run, cfg, identities, checkpoint)
+
+    def tracked_close(worker):
+        close(worker)
+        closed.append(worker.process.poll())
+
+    monkeypatch.setattr(native, "prepare_harness", expired)
+    monkeypatch.setattr(native.Worker, "close", tracked_close)
+    run, result = evaluate_native(task, "full", timeout=90)
+    assert result["execution"] == "error"
+    assert result["failed_phase"] == "native_checks"
+    assert result["error"]["type"] == "TimeoutError"
+    assert result["native_checks"] == result["samples"] == []
+    assert not result["decision"]["eligible_for_best"]
+    assert len(closed) == 3 and all(code is not None for code in closed)
+    assert (run / "receipt.json").is_file()
+    assert not (run / "sources/validation").exists()
+
+
+@pytest.mark.parametrize("with_best", [False, True])
+def test_native_full_check_only_complete_without_measurement(native_task, monkeypatch, with_best):
+    from copy import deepcopy
+
+    from kernel_envolve import native
+    from kernel_envolve.native_config import load_config
+    from kernel_envolve.scoring import score
+
+    task, _ = native_task
+    config = json.loads((task / "native.json").read_text())
+    config["cases"].append({"id": "full-only", "args": {}, "quick": False, "measure": False})
+    config["full_seeds"] = [0, 19]
+    (task / "native.json").write_text(json.dumps(config))
+    if with_best:
+        full, result = evaluate_native(task, "full", timeout=90)
+        assert result["decision"]["eligible_for_best"], result
+        promote_native(full)
+    best_path = task / ".kernel_native/best.json"
+    best_before = best_path.read_bytes() if with_best else None
+    original_call = native.Worker.call
+
+    def correctness_only(self, kind, *args, **kwargs):
+        assert kind != "measure", "check-only must never run timing"
+        return original_call(self, kind, *args, **kwargs)
+
+    monkeypatch.setattr(native.Worker, "call", correctness_only)
+    run, result = evaluate_native(task, "full", timeout=90, check_only=True)
+    assert result["execution"] == "completed", result.get("error")
+    assert result["correctness"] == "pass"
+    assert result["samples"] == result["memory"] == []
+    assert set(result["environments"]) == {"candidate", "oracle"}
+    assert {c["scope"] for c in result["native_checks"] if c["status"] == "pass"} == {
+        "operator",
+        "numerical",
+        "integration",
+    }
+    assert {(c["case"], c["seed"], c["kind"], c["role"]) for c in result["checks"]} == {
+        (case, seed, kind, "candidate")
+        for case in ("padded", "full-only")
+        for seed in (0, 19)
+        for kind in ("fresh", "reuse", "repeat")
+    }
+    assert not result["decision"]["eligible_for_best"]
+    assert result["decision"]["performance"] == "not_measured"
+    with pytest.raises(ValueError, match="Not eligible"):
+        promote_native(run)
+    assert (best_path.read_bytes() if with_best else None) == best_before
+    cfg = load_config(task)
+    for malformed in (result["checks"][:-1], result["checks"] + [result["checks"][0]]):
+        bad = deepcopy(result)
+        bad["checks"] = malformed
+        with pytest.raises(ValueError, match="correctness coverage"):
+            score(bad, cfg)
+    bad = deepcopy(result)
+    bad["samples"] = [{"us": 1}]
+    with pytest.raises(ValueError, match="cannot supply timing evidence"):
+        score(bad, cfg)
+
+
+def test_native_full_check_only_baseline_parity_cannot_replace_independent_gate(native_task):
+    task, candidate = native_task
+    cfg = json.loads((task / "native.json").read_text())
+    from pathlib import Path
+
+    baseline = Path(cfg["sources"]["baseline"]["core"])
+    # Both implementations agree with the adapter, but fail an independent native gate.
+    for root in (baseline, candidate):
+        (root / "toyop.py").write_text("def run(x): return x*2\n")
+        (root / "test_native_contract.py").write_text(
+            "from toyop import run\nimport torch\n"
+            "def test_contract():\n assert torch.equal(run(torch.ones(2)), torch.ones(2)*3)\n"
+        )
+    run, result = evaluate_native(task, "full", timeout=90, check_only=True)
+    assert result["checks"] and all(c["status"] == "pass" for c in result["checks"])
+    assert result["execution"] == "completed", result.get("error")
+    assert result["correctness"] == "fail"
+    assert result["native_checks"][0]["status"] == "fail"
+    assert not result["samples"] and not result["decision"]["eligible_for_best"]
+    with pytest.raises(ValueError, match="Not eligible"):
+        promote_native(run)

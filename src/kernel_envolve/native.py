@@ -1,11 +1,14 @@
 """Native project evaluation with frozen sources, isolated workers and native gates."""
 
+import hashlib
 import json
 import math
+import os
 import shutil
 import statistics
 import subprocess
 import sys
+import tempfile
 import time
 import uuid
 from pathlib import Path
@@ -15,17 +18,24 @@ from .native_checks import junit as junit  # Preserve the existing native helper
 from .native_checks import native_checks
 from .native_config import environment, load_config
 from .native_harness import prepare_harness, validate_overlay
-from .protocol import order, plan, post_seed, timing_seed
+from .protocol import objective_cases, order, plan, post_seed, timing_seed
 from .scoring import score
 from .storage import digest, evaluator_hash, file_hash, read_json, write_json
 
 
-def snapshot(root, dest, artifacts=()):
+def snapshot(root, dest, artifacts=(), checkpoint=None):
+    checkpoint = checkpoint or (lambda: None)
+    checkpoint()
     root = Path(root)
-    head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
+    resolved_root = root.resolve()
+    head = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=root, text=True, timeout=checkpoint()
+    ).strip()
     listed = (
         subprocess.check_output(
-            ["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard"], cwd=root
+            ["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
+            cwd=root,
+            timeout=checkpoint(),
         )
         .decode()
         .split("\0")
@@ -39,31 +49,41 @@ def snapshot(root, dest, artifacts=()):
         )
     )
     for pattern in artifacts:
+        checkpoint()
         matches = [p for p in root.glob(pattern) if p.is_file()]
         if not matches:
             raise ValueError(f"Required compiled artifact missing: {pattern}")
         names.update(str(p.relative_to(root)) for p in matches)
-    dest.mkdir(parents=True)
+    if dest is not None:
+        dest.mkdir(parents=True)
+    directories = {dest}
     files, total = {}, 0
     for name in sorted(names):
+        checkpoint()
         src = root / name
         if src.is_dir():  # Gitlinks are supplied as separate named roots when needed.
             continue
         if not src.is_file():
             continue  # A tracked local deletion is part of this source revision.
-        if src.is_symlink() or not src.resolve().is_relative_to(root.resolve()):
+        if src.is_symlink() or not src.resolve().is_relative_to(resolved_root):
             raise ValueError(f"Source symlink/outside-root file: {src}")
         if src.suffix in {".pyc", ".pyo"}:
             continue
         total += src.stat().st_size
         if total > 512 * 1024 * 1024:
             raise ValueError("Source snapshot exceeds 512 MiB")
-        dst = dest / name
-        dst.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(src, dst)
-        files[name] = file_hash(dst)
+        if dest is None:
+            files[name] = file_hash(src)
+        else:
+            dst = dest / name
+            if dst.parent not in directories:
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                directories.add(dst.parent)
+            shutil.copy2(src, dst)
+            files[name] = file_hash(dst)
     if not files:
         raise ValueError("Empty source snapshot")
+    checkpoint()
     return {"git_head": head, "files": files}
 
 
@@ -72,28 +92,45 @@ def verify_roots(run, identities, role, checkpoint=None):
     checkpoint()
     for root, identity in identities.items():
         base = run / "sources" / role / root
-        for name, expected in identity["files"].items():
+        if base.is_symlink():
+            raise ValueError("Symlink introduced in snapshot")
+        expected, seen = identity["files"], set()
+        pending = [(base, "")]
+        while pending:
             checkpoint()
-            path = base / name
-            if not path.is_file() or path.is_symlink() or file_hash(path) != expected:
-                raise ValueError(f"Frozen source changed: {role}/{root}/{name}")
-        # Report outputs and Python caches are permitted; newly injected executable sources are not.
-        for path in base.rglob("*"):
-            checkpoint()
-            if path.is_symlink():
-                raise ValueError("Symlink introduced in snapshot")
-            if path.is_file() and path.suffix in {
-                ".py",
-                ".so",
-                ".cu",
-                ".cuh",
-                ".cpp",
-                ".pyc",
-                ".pyo",
-            }:
-                name = str(path.relative_to(base))
-                if name not in identity["files"]:
-                    raise ValueError(f"Unrecorded executable source: {name}")
+            directory, prefix = pending.pop()
+            with os.scandir(directory) as entries:
+                for entry in entries:
+                    checkpoint()
+                    name = prefix + entry.name
+                    if entry.is_symlink():
+                        raise ValueError("Symlink introduced in snapshot")
+                    if entry.is_dir(follow_symlinks=False):
+                        if name in expected:
+                            raise ValueError(f"Frozen source changed: {role}/{root}/{name}")
+                        pending.append((Path(entry.path), name + "/"))
+                    elif name in expected:
+                        if (
+                            not entry.is_file(follow_symlinks=False)
+                            or file_hash(Path(entry.path)) != expected[name]
+                        ):
+                            raise ValueError(f"Frozen source changed: {role}/{root}/{name}")
+                        seen.add(name)
+                    # Report outputs are permitted; new source or bytecode is not.
+                    elif entry.is_file(follow_symlinks=False) and Path(name).suffix in {
+                        ".py",
+                        ".so",
+                        ".cu",
+                        ".cuh",
+                        ".cpp",
+                        ".pyc",
+                        ".pyo",
+                    }:
+                        raise ValueError(f"Unrecorded executable source: {name}")
+        checkpoint()
+        missing = expected.keys() - seen
+        if missing:
+            raise ValueError(f"Frozen source changed: {role}/{root}/{min(missing)}")
 
 
 def source_contents(identities):
@@ -111,20 +148,53 @@ class Worker:
         self.count = 0
         self.log = (self.folder / "worker.log").open("w")
         request = self.folder / "request.json"
-        write_json(
-            request,
-            {"config": cfg, "roots": roots, "role": role, "adapter": str(run / "adapter.py")},
-        )
-        self.process = spawn(
-            [sys.executable, "-m", "kernel_envolve.native_worker", str(request)],
-            stdin=subprocess.PIPE,
-            stdout=self.log,
-            stderr=subprocess.STDOUT,
-            text=True,
-            cwd=run,
-            env=environment(cfg, roots),
-            start_new_session=True,
-        )
+        self.temporary = None
+        launch_attempted = False
+        try:
+            selected = os.environ.get("KERNEL_ENVOLVE_NATIVE_TMPDIR")
+            parent = Path(selected).expanduser().resolve() if selected else None
+            # Explicit lifetime: an automatic finalizer must not remove files
+            # while a worker whose stop failed might still be writing them.
+            self.temporary = Path(tempfile.mkdtemp(prefix="kernel-envolve-", dir=parent)).resolve()
+            if self.temporary.is_relative_to(run.resolve()):
+                raise ValueError("Native tensor exchange directory must be outside the run")
+            self.transport = {
+                "directory": str(self.temporary),
+                "selected_parent": str(parent) if parent else None,
+                "selection": "host environment" if selected else "system temporary directory",
+                "state": "active",
+                "preserved_outputs": [],
+            }
+            write_json(self.folder / "transport.json", self.transport)
+            write_json(
+                request,
+                {"config": cfg, "roots": roots, "role": role, "adapter": str(run / "adapter.py")},
+            )
+            launch_attempted = True
+            self.process = spawn(
+                [sys.executable, "-m", "kernel_envolve.native_worker", str(request)],
+                stdin=subprocess.PIPE,
+                stdout=self.log,
+                stderr=subprocess.STDOUT,
+                text=True,
+                cwd=run,
+                env=environment(cfg, roots),
+                start_new_session=True,
+            )
+        except BaseException as exc:
+            self.log.close()
+            if self.temporary is not None:
+                try:
+                    if launch_attempted:
+                        # spawn may fail while registering/reaping a child that
+                        # was already started; we cannot prove it stopped here.
+                        self.transport.update(state="retained", launch_error=str(exc))
+                        write_json(self.folder / "transport.json", self.transport)
+                    else:
+                        shutil.rmtree(self.temporary)
+                except Exception as cleanup_error:
+                    exc.add_note(f"Temporary directory cleanup failed: {cleanup_error}")
+            raise
 
     def call(self, kind, case, seed):
         import torch
@@ -133,7 +203,8 @@ class Worker:
             raise TimeoutError("Native evaluation time budget exhausted")
         self.count += 1
         base = self.folder / str(self.count)
-        reply, output = base.with_suffix(".json"), base.with_suffix(".pt")
+        reply = base.with_suffix(".json")
+        output = self.temporary / f"{self.count}.pt"
         command = {
             "id": self.count,
             "kind": kind,
@@ -161,9 +232,65 @@ class Worker:
         return result, observations
 
     def close(self):
-        stop(self.process)
-        self.process.stdin.close()
-        self.log.close()
+        errors = []
+        try:
+            stop(self.process)
+        except Exception as exc:
+            errors.append(exc)
+        try:
+            if not errors:
+                self._close_transport()
+        except Exception as exc:
+            errors.append(exc)
+        for cleanup in (self.process.stdin.close, self.log.close):
+            try:
+                cleanup()
+            except Exception as exc:
+                errors.append(exc)
+        if errors:
+            self.transport.update(
+                state="retained" if self.temporary.exists() else "closed",
+                cleanup_errors=[f"{type(exc).__name__}: {exc}" for exc in errors],
+            )
+            try:
+                write_json(self.folder / "transport.json", self.transport)
+            except Exception as exc:
+                errors.append(exc)
+            for other in errors[1:]:
+                errors[0].add_note(f"Additional cleanup error: {type(other).__name__}: {other}")
+            raise errors[0]
+
+    def _close_transport(self):
+        # Only unconsumed outputs remain: successful loads already unlink them.
+        # Persist these after stop, without changing the worker's command/reply.
+        preserved = []
+        for output in sorted(self.temporary.iterdir()):
+            if output.is_symlink() or not output.is_file():
+                raise ValueError(f"Unexpected tensor exchange entry: {output}")
+            destination = self.folder / "transport-failures" / output.name
+            destination.parent.mkdir(exist_ok=True)
+            with output.open("rb") as stream:
+                expected = hashlib.file_digest(stream, "sha256").hexdigest()
+            shutil.copy2(output, destination)
+            with destination.open("rb") as stream:
+                copied_hash = hashlib.file_digest(stream, "sha256").hexdigest()
+            if copied_hash != expected:
+                raise ValueError(f"Failed tensor evidence copy differs: {destination}")
+            preserved.append(
+                {
+                    "temporary_path": str(output),
+                    "path": str(destination.relative_to(self.folder)),
+                    "bytes": destination.stat().st_size,
+                    "sha256": expected,
+                }
+            )
+        # This manifest is covered by the normal receipt even though .pt files
+        # are excluded there. Keep originals until it has been written.
+        self.transport.update(state="stopped", preserved_outputs=preserved)
+        write_json(self.folder / "transport.json", self.transport)
+        shutil.rmtree(self.temporary)
+        self.transport["state"] = "closed"
+        write_json(self.folder / "transport.json", self.transport)
 
 
 def compare(actual, expected, cfg):
@@ -235,11 +362,27 @@ def _best(state):
     if digest(result) != pointer["result_hash"]:
         raise ValueError("Best result changed")
     verify_roots(run, result["identities"]["candidate"], "candidate")
+    from .native_confirmation import verify_confirmation
+
+    cfg = read_json(run / "config.json")
+    if pointer.get("confirmation") is not None or "confirmation" in cfg:
+        receipt = read_json(run / "receipt.json")
+        if (
+            receipt["result_hash"] != digest(result)
+            or receipt["config_hash"] != file_hash(run / "config.json")
+            or "confirmation" not in cfg
+        ):
+            raise ValueError("Best confirmation config/receipt changed")
+        confirmation = verify_confirmation(run, result, cfg, deep=False)
+        if pointer.get("confirmation") != confirmation:
+            raise ValueError("Best confirmation receipt changed")
     return pointer, run, result
 
 
-def evaluate_native(task, mode="quick", timeout=1800):
+def evaluate_native(task, mode="quick", timeout=None, *, cases=None, seeds=None, check_only=False):
     task = Path(task).resolve()
+    if timeout is None:
+        timeout = 120 if mode == "quick" else 1800
     if (
         mode not in {"quick", "full"}
         or not math.isfinite(timeout)
@@ -248,13 +391,27 @@ def evaluate_native(task, mode="quick", timeout=1800):
     ):
         raise ValueError("Invalid mode/timeout or optimized Python")
     cfg = load_config(task)
+    selection = {}
+    if cases is not None:
+        if not cases:
+            raise ValueError("Selected cases must be nonempty")
+        selection["cases"] = cases
+    if seeds is not None:
+        selection["seeds"] = seeds
+    selected, _, _, _ = plan(cfg, mode, selection)
+    if seeds is not None and set(seeds) & set(cfg.get("confirmation", {}).get("seeds", [])):
+        raise ValueError("Diagnostic seeds must not use reserved confirmation seeds")
+    if not selected:
+        raise ValueError("No cases selected")
+    if not check_only and not objective_cases(selected):
+        raise ValueError("No measured objective cases selected; use --check-only")
     state = task / ".kernel_native"
     (state / "runs").mkdir(parents=True, exist_ok=True)
     with lock(state / "evaluate.lock"):
-        return _evaluate(task, state, cfg, mode, timeout)
+        return _evaluate(task, state, cfg, mode, timeout, selection, check_only)
 
 
-def _evaluate(task, state, cfg, mode, timeout):
+def _evaluate(task, state, cfg, mode, timeout, selection, check_only):
     run = state / "runs" / uuid.uuid4().hex
     run.mkdir()
     deadline = time.monotonic() + timeout
@@ -267,7 +424,9 @@ def _evaluate(task, state, cfg, mode, timeout):
         "mode": mode,
         "execution": "error",
         "correctness": "partial",
-        "signal_only": False,
+        "signal_only": check_only,
+        "check_only": check_only,
+        "selection": selection,
         "checks": [],
         "samples": [],
         "native_checks": [],
@@ -288,10 +447,19 @@ def _evaluate(task, state, cfg, mode, timeout):
         return now
 
     workers = {}
+
+    def checkpoint():
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError("Native evaluation time budget exhausted")
+        return remaining
+
     try:
         for role, roots in cfg["sources"].items():
             result["identities"][role] = {
-                name: snapshot(path, run / "sources" / role / name, cfg["artifacts"].get(name, []))
+                name: snapshot(
+                    path, run / "sources" / role / name, cfg["artifacts"].get(name, []), checkpoint
+                )
                 for name, path in roots.items()
             }
         begin_phase("setup")
@@ -319,16 +487,17 @@ def _evaluate(task, state, cfg, mode, timeout):
             "oracle": _roots(run, "baseline", result["identities"]["baseline"]),
             "candidate": roots,
         }
-        role_roots["comparator"] = (
-            _roots(best[1], "candidate", best[2]["identities"]["candidate"])
-            if best
-            else role_roots["oracle"]
-        )
-        if best and mode == "full":
+        if not check_only:
+            role_roots["comparator"] = (
+                _roots(best[1], "candidate", best[2]["identities"]["candidate"])
+                if best
+                else role_roots["oracle"]
+            )
+        if best and mode == "full" and not check_only:
             role_roots["baseline"] = role_roots["oracle"]
         for role, sources in role_roots.items():
             workers[role] = Worker(run, cfg, sources, role, deadline)
-        cases, seeds, trials, batches = plan(cfg, mode)
+        cases, seeds, trials, batches = plan(cfg, mode, selection)
         roles = [r for r in workers if r != "oracle"]
 
         def call(role, kind, case, seed):
@@ -339,8 +508,10 @@ def _evaluate(task, state, cfg, mode, timeout):
             result["environments"][role] = env
             return meta, observed
 
-        def check(case, seed, kinds):
+        def check(case, seed, kinds, *, post=False):
             _, expected = call("oracle", "check", case, seed)
+            if len(expected) != len(kinds):
+                raise AssertionError("Incomplete correctness observations")
             for role in roles:
                 _, observed = call(role, "check", case, seed)
                 if len(observed) != len(expected):
@@ -353,11 +524,14 @@ def _evaluate(task, state, cfg, mode, timeout):
                             observed[index - 1],
                             cfg | {"rtol": 0, "atol": 0, "bitwise": True},
                         )
+                    # Post is one aggregate receipt, only after every observation passed.
+                    if post and index != len(kinds) - 1:
+                        continue
                     result["checks"].append(
                         {
                             "case": case["id"],
                             "seed": seed,
-                            "kind": kind,
+                            "kind": "post" if post else kind,
                             "role": role,
                             "status": "pass",
                         }
@@ -370,7 +544,7 @@ def _evaluate(task, state, cfg, mode, timeout):
                 check(case, seed, kinds)
         if mode == "full":
             begin_phase("native_checks")
-            validation, seconds = prepare_harness(run, cfg, result["identities"])
+            validation, seconds = prepare_harness(run, cfg, result["identities"], checkpoint)
             result["identities"]["validation"] = validation
             result["harness_seconds"] = seconds
             validation_roots = _roots(run, "validation", validation)
@@ -379,7 +553,7 @@ def _evaluate(task, state, cfg, mode, timeout):
             if set(cfg["required_scopes"]) - scopes:
                 raise ValueError("Missing required native validation scopes")
         begin_phase("measurement")
-        timed = [c for c in cases if c.get("measure", True)]
+        timed = [] if check_only else [c for c in cases if c.get("measure", True)]
         for batch in range(batches):
             for case in timed if batch == 0 else reversed(timed):
                 for trial in range(trials):
@@ -388,7 +562,9 @@ def _evaluate(task, state, cfg, mode, timeout):
                         repeat = repeats[role]
                         seed = timing_seed(case["id"], batch, trial, repeat, seeds)
                         if seed not in expected_cache:
-                            _, oracle = call("oracle", "check", case, seed)
+                            _, oracle = call("oracle", "timing_oracle", case, seed)
+                            if len(oracle) != 1:
+                                raise AssertionError("Expected one timing oracle observation")
                             expected_cache[seed] = oracle[0]
                         meta, observed = call(role, "measure", case, seed)
                         compare(observed[0], expected_cache[seed], cfg)
@@ -420,12 +596,12 @@ def _evaluate(task, state, cfg, mode, timeout):
                         repeats[role] += 1
         begin_phase("postcheck")
         for case in timed:
-            check(case, post_seed(case["id"], seeds), ["post"])
+            check(case, post_seed(case["id"], seeds), kinds, post=True)
         begin_phase("integrity")
         for role, identity in result["identities"].items():
-            verify_roots(run, identity, role)
+            verify_roots(run, identity, role, checkpoint)
         if best:
-            verify_roots(best[1], best[2]["identities"]["candidate"], "candidate")
+            verify_roots(best[1], best[2]["identities"]["candidate"], "candidate", checkpoint)
         if (
             evaluator_hash() != result["evaluator_hash"]
             or file_hash(run / "adapter.py") != result["adapter_hash"]
@@ -439,8 +615,30 @@ def _evaluate(task, state, cfg, mode, timeout):
             result.update(execution="completed", correctness="fail")
     finally:
         begin_phase("cleanup")
-        for worker in workers.values():
-            worker.close()
+        cleanup_errors = []
+        for role, worker in workers.items():
+            try:
+                worker.close()
+            except Exception as exc:
+                cleanup_errors.append(
+                    {
+                        "role": role,
+                        "type": type(exc).__name__,
+                        "message": str(exc),
+                        "notes": getattr(exc, "__notes__", []),
+                    }
+                )
+        if cleanup_errors:
+            if "error" in result:
+                result["prior_error"] = result["error"]
+                result["prior_failed_phase"] = result["failed_phase"]
+            result.update(
+                execution="error",
+                correctness="partial",
+                failed_phase="cleanup",
+                cleanup_errors=cleanup_errors,
+                error={"type": "WorkerCleanupError", "message": "Native worker cleanup failed"},
+            )
     result["seconds"] = begin_phase(None) - start
     try:
         result["decision"] = native_decision(result, cfg)
@@ -490,7 +688,10 @@ def native_decision(result, cfg):
 
 def promote_native(run):
     run = Path(run).resolve()
-    result, cfg = read_json(run / "result.json"), read_json(run / "config.json")
+    result = read_json(run / "result.json")
+    if result.get("research_only"):
+        raise ValueError("Research results cannot be promoted")
+    cfg = read_json(run / "config.json")
     task = Path(result["task_root"])
     state = task / ".kernel_native"
     if not run.is_relative_to((state / "runs").resolve()):
@@ -520,11 +721,18 @@ def promote_native(run):
         decision = native_decision(result, cfg)
         if not decision["eligible_for_best"]:
             raise ValueError("Not eligible: " + "; ".join(decision["reasons"]))
+        from .native_confirmation import verify_confirmation, verify_live_sources
+
+        confirmation = verify_confirmation(run, result, cfg)
+        if confirmation is not None:
+            verify_live_sources(result, cfg)
         pointer = {
             "run": str(run.relative_to(state)),
             "result_hash": digest(result),
             "previous": best[0]["run"] if best else None,
         }
+        if confirmation is not None:
+            pointer["confirmation"] = confirmation
         write_json(
             run / "promotion.json",
             {

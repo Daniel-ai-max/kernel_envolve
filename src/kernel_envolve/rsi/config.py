@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+from ..manager.config import resource_devices
 from ..manager.store import Store as Manager
 from .model import argv, identifier, keys, number, profile, read, text
 
@@ -71,7 +72,7 @@ def validate(raw, base):
                 assigned.add(task)
         if device != "cpu":
             for row in manager.rows("SELECT id FROM resources"):
-                if manager.resource(row["id"])["spec"]["device"] == device:
+                if device in resource_devices(manager.resource(row["id"])["spec"]):
                     raise ValueError(
                         "RSI validation GPU must be separate from production resources"
                     )

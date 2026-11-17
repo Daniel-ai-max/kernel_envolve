@@ -25,7 +25,7 @@ body {
   font-variant-numeric: tabular-nums;
 }
 main {
-  max-width: 1560px;
+  max-width: 1760px;
   margin: auto;
   padding: 28px 28px 50px;
 }
@@ -314,5 +314,81 @@ summary {
   }
 }
 
-#overview td { vertical-align: middle; white-space: nowrap; }
+#overview table { min-width: 1220px; table-layout: fixed; font-family: var(--sans); }
+#overview th:nth-child(1) { width: 12%; }
+#overview th:nth-child(2) { width: 7%; }
+#overview th:nth-child(3) { width: 9%; }
+#overview th:nth-child(4) { width: 9%; }
+#overview th:nth-child(5) { width: 12%; }
+#overview th:nth-child(6) { width: 9%; }
+#overview th:nth-child(7) { width: 21%; }
+#overview th:nth-child(8) { width: 21%; }
+#overview td { vertical-align: top; white-space: normal; }
+#overview .snippet { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.65; }
+#overview .research { font-size: 12px; }
+#overview .benefit { font-size: 12px; }
+.source-link { padding: 0; border: 0; background: transparent; color: var(--accent); text-align: left; }
+.lineage > div { display: flex; gap: 20px; padding: 6px 0; }
+.lineage span { color: var(--muted); }
 .detail-summary { display: flex; flex-wrap: wrap; gap: 24px; color: var(--muted); margin: 16px 0; }
+
+
+@media (max-width: 1280px) {
+  #overview table,
+  #overview tbody {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+  #overview thead {
+    display: none;
+  }
+  #overview tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 24px;
+    padding: 16px;
+    margin-bottom: 12px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+  }
+  #overview td {
+    display: block;
+    min-width: 0;
+    max-width: none;
+    padding: 0;
+    border: 0;
+    overflow-wrap: anywhere;
+  }
+  #overview td::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 5px;
+    color: var(--muted);
+    font-size: 11px;
+  }
+  #overview .name,
+  #overview .source-link {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+}
+@media (max-width: 560px) {
+  #overview tr {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+}
+
+#overview .execution-link { font-size: 11px; line-height: 1.6; }
+
+.metric strong small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font: 11px/1.5 var(--sans);
+}
+.assessment .scroll + h3 {
+  margin-top: 20px;
+}

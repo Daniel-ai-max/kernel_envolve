@@ -30,6 +30,59 @@ def active(managed, monkeypatch):
     store.finish(parent, "succeeded")
 
 
+@pytest.mark.parametrize("device", ["GPU-first", "GPU-second", "GPU-dedicated"])
+def test_validation_device_is_separate_from_every_production_group_member(managed, device):
+    from kernel_envolve.rsi.config import validate
+
+    store, _, work = managed
+    resource = {"id": "local", "devices": ["GPU-first", "GPU-second"], "sessions": 2}
+    store.db.execute("UPDATE resources SET spec=?", (json.dumps(resource),))
+    raw = {
+        "manager": str(store.root),
+        "scopes": {"toy": ["toy"]},
+        "learner_command": [sys.executable, "-c", "pass"],
+        "validation_device": device,
+    }
+    if device == "GPU-dedicated":
+        assert validate(raw, work)["validation_device"] == device
+    else:
+        with pytest.raises(ValueError, match="separate from production"):
+            validate(raw, work)
+
+
+def test_managed_evaluation_uses_round_devices_after_resource_update(active):
+    store, work, _ = active
+    resource = {"id": "local", "devices": ["GPU-first", "GPU-second"], "sessions": 2}
+    store.db.execute("UPDATE resources SET spec=?", (json.dumps(resource),))
+    _, result = evaluate(work, "full", 5, work.parent / "frozen-device")
+    assert result["correctness"] == "pass"
+    job = store.one("SELECT * FROM jobs WHERE kind='gpu'")
+    assert store.job_devices(job) == ["cpu"]
+    assert job["status"] == "succeeded"
+
+
+@pytest.mark.parametrize("task_device", ["cpu", "cuda"])
+def test_binding_checks_frozen_gpu_group_without_probing_hardware(active, monkeypatch, task_device):
+    from kernel_envolve.rsi import managed as adapter
+
+    store, work, parent = active
+    store.db.execute(
+        "UPDATE jobs SET devices=?,gpu_count=2 WHERE id=?",
+        (json.dumps(["GPU-first", "GPU-second"]), parent),
+    )
+    cfg = adapter.config(work) | {"device": task_device}
+    monkeypatch.setattr(adapter, "config", lambda _: cfg)
+    monkeypatch.setattr(
+        adapter, "contract", lambda *_: store.task("toy")["spec"]["baseline"]["contract"]
+    )
+    if task_device == "cpu":
+        with pytest.raises(ValueError, match="matching device"):
+            adapter.binding(work)
+    else:
+        assert adapter.binding(work)[:3] == (store.root, "toy", parent)
+    assert not store.rows("SELECT id FROM jobs WHERE kind='gpu'")
+
+
 @pytest.mark.parametrize("adaptive,snapshot_enabled", [(False, False), (True, False), (True, True)])
 def test_search_releases_device_for_decisions_and_requires_separate_final(
     managed, adaptive, snapshot_enabled
@@ -156,15 +209,15 @@ def test_device_probe_cannot_swallow_queue_deadline(active, monkeypatch):
     store, work, _ = active
     probes = []
 
-    def busy(device):
-        probes.append(device)
+    def busy(devices):
+        probes.append(tuple(devices))
         time.sleep(5)
         pytest.fail("The device probe swallowed the deadline")
 
-    monkeypatch.setattr("kernel_envolve.manager.gpu.gpu_idle", busy)
+    monkeypatch.setattr("kernel_envolve.manager.gpu.gpu_group_idle", busy)
     with pytest.raises(TimeoutError, match="queue/execution"):
         evaluate(work, "full", 0.2, work.parent / "probe-deadline")
-    assert probes == ["cpu"]
+    assert probes == [("cpu",)]
     job = store.one("SELECT * FROM jobs WHERE kind='gpu'")
     assert job["status"] == "cancelled"
     assert job["child_pid"] is None

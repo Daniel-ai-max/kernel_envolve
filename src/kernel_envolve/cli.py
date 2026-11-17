@@ -198,6 +198,8 @@ def evaluate(
 def promote(run):
     run = Path(run).resolve()
     result = read_json(run / "result.json")
+    if result.get("research_only"):
+        raise ValueError("Research results cannot be promoted")
     task = Path(result["task_root"]).resolve()
     state = task / ".kernel_envolve"
     if not run.is_relative_to(state / "runs"):
@@ -239,7 +241,7 @@ def promote(run):
 
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
-    # RSI is an experimental branch feature. Never silently dispatch it to public main.
+    # RSI state binds its validator version; use the caller's pinned installation.
     if argv and argv[0] == "rsi":
         from .rsi.cli import main as rsi
 
@@ -249,6 +251,14 @@ def main(argv=None):
     result = enter(argv)
     if result is not None:
         return result
+    if argv and argv[0] == "dashboard":
+        from .manager.single import main as dashboard
+
+        try:
+            return dashboard(argv[1:])
+        except (ValueError, OSError, KeyError, TypeError, subprocess.SubprocessError) as exc:
+            print(f"kernel-envolve dashboard: {exc}", file=sys.stderr)
+            return 2
     if argv and argv[0] == "manage":
         from .manager.cli import main as manage
 
@@ -265,6 +275,7 @@ def main(argv=None):
         "manage", help="Supervise persistent tasks, GPU queues and the progress dashboard"
     )
     sub.add_parser("rsi", help="Learn and validate scoped research strategies in a sidecar")
+    sub.add_parser("dashboard", help="Open the existing dashboard for a single kernel")
     ev = sub.add_parser("evaluate", help="Check and measure a frozen task snapshot")
     ev.add_argument("--task", type=Path, required=True)
     ev.add_argument("--mode", choices=("quick", "full"), default="quick")
@@ -295,14 +306,40 @@ def main(argv=None):
     native = sub.add_parser("native-evaluate", help="Evaluate a frozen internal training task")
     native.add_argument("--task", type=Path, required=True)
     native.add_argument("--mode", choices=("quick", "full"), default="quick")
-    native.add_argument("--timeout", type=float, default=1800)
+    native.add_argument("--timeout", type=float, help="Seconds; defaults to 120 quick / 1800 full")
+    native.add_argument("--case", action="append", dest="cases", help="Diagnostic case; quick only")
+    native.add_argument(
+        "--seed", action="append", dest="seeds", type=int, help="Diagnostic seed; quick only"
+    )
+    native.add_argument(
+        "--check-only",
+        action="store_true",
+        help="Skip timing; quick checks selected inputs, full checks all inputs and native gates",
+    )
+    confirmation = sub.add_parser(
+        "native-confirm", help="Consume the frozen independent confirmation set once"
+    )
+    confirmation.add_argument("run", type=Path)
+    confirmation.add_argument("--timeout", type=float, default=1800)
     native_pr = sub.add_parser("native-promote", help="Verify native evidence and preserve best")
     native_pr.add_argument("run", type=Path)
     args = parser.parse_args(argv)
     try:
-        if args.command in ("evaluate", "native-evaluate"):
+        if args.command in ("evaluate", "native-evaluate", "native-confirm"):
             # Detect broken adapters before copying sources or starting workers.
             managed_lock_fd()
+        if args.command == "native-confirm":
+            from .native_confirmation import confirm_native
+
+            receipt = confirm_native(args.run, args.timeout)
+            print(json.dumps(receipt, indent=2))
+            return (
+                2
+                if receipt.get("execution") == "error"
+                else 0
+                if receipt["status"] == "passed"
+                else 1
+            )
         if args.command == "native-promote":
             from .native import promote_native
 
@@ -311,7 +348,14 @@ def main(argv=None):
         if args.command == "native-evaluate":
             from .native import evaluate_native
 
-            run, result = evaluate_native(args.task, args.mode, args.timeout)
+            run, result = evaluate_native(
+                args.task,
+                args.mode,
+                args.timeout,
+                cases=args.cases,
+                seeds=args.seeds,
+                check_only=args.check_only,
+            )
             print(
                 json.dumps(
                     {

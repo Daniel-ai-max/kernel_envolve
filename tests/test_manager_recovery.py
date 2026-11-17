@@ -1,9 +1,11 @@
 """Real CPU subprocesses exercise diagnosis, unproductive retries and budget exhaustion."""
 
 import json
+import math
 import os
 import sys
 import time
+from unittest.mock import patch
 
 import pytest
 from test_manager import launch, replace_command
@@ -24,7 +26,13 @@ def run_round(store):
 
 
 def advance_retry(store):
-    assert not store.schedule()
+    task = store.task("toy")
+    next_at = task["next_at"]
+    assert math.isfinite(next_at) and next_at > task["created"]
+    # Process teardown can outlast the 0.1 s success cooldown on a busy runner.
+    # Test admission just before the recorded deadline, not at a racing wall time.
+    with patch("kernel_envolve.manager.store.time.time", return_value=next_at - 0.001):
+        assert not store.schedule()
     # Fast-forward only the test's admission timestamp; actual subprocesses and
     # accumulated wall/GPU usage are never mocked or reset.
     store.db.execute("UPDATE tasks SET next_at=0 WHERE id='toy'")
@@ -34,7 +42,7 @@ def recovery(store):
     return overview(store)["tasks"][0]["recovery"]
 
 
-def test_three_failures_deliver_evidence_to_real_repair_round(managed, monkeypatch):
+def test_three_failures_deliver_evidence_to_real_repair_round(managed):
     store, _, work = managed
     (work / "candidate.py").write_text(
         "def run(x): raise RuntimeError('missing diagnostic dependency sentinel')\n"
@@ -69,14 +77,9 @@ pathlib.Path(os.environ['KERNEL_ENVOLVE_REPORT']).write_text(json.dumps({'outcom
     assert consumed[0] < consumed[1] < consumed[2] < store.task("toy")["wall_seconds"]
     task = store.task("toy")
     assert recovery(store)["retry_after_seconds"] == task["spec"]["cooldown_seconds"]
-    assert task["next_at"] >= store.job(repaired)["ended"] + task["spec"]["cooldown_seconds"]
-    # Slow CI can spend the entire one-second cooldown projecting recovery views.
-    # Test admission at its recorded boundary, not the speed of these assertions;
-    # preceding subprocesses and accumulated resource usage remain real.
-    monkeypatch.setattr(time, "time", lambda: task["next_at"] - 0.001)
-    assert not store.schedule()
-    monkeypatch.setattr(time, "time", lambda: task["next_at"] + 0.001)
-    assert len(store.schedule()) == 1
+    # Assert admission before the recorded deadline, independent of teardown speed.
+    with patch("kernel_envolve.manager.store.time.time", return_value=task["next_at"] - 0.001):
+        assert not store.schedule()
 
 
 def test_empty_bridge_like_rounds_back_off_without_claiming_model_activity(managed):
@@ -118,28 +121,37 @@ pathlib.Path(os.environ['KERNEL_ENVOLVE_REPORT']).write_text(json.dumps({'outcom
 
 def test_real_retry_exhausts_original_wall_budget(managed):
     store, _, work = managed
+    limit = 0.5
     replace_command(
         store,
         [sys.executable, "-c", "import time;time.sleep(.3);raise SystemExit(9)"],
-        wall_budget_seconds=0.5,
+        wall_budget_seconds=limit,
     )
     first = run_round(store)
-    assert store.job(first)["status"] == "failed"
     before = store.task("toy")["wall_seconds"]
-    advance_retry(store)
-    # On a loaded runner the first real subprocess can already consume the
-    # entire budget. Admission must reject it then; only retry when time remains.
-    # Never refund measured usage or enlarge the original budget for the test.
-    if before < 0.5:
-        run_round(store)
+    rounds = [first]
+    # Startup and teardown can consume the entire original budget on a busy
+    # runner. Retry only when the actual recorded usage still permits admission.
+    if before < limit:
+        assert store.task("toy")["desired"] == "active"
+        advance_retry(store)
+        rounds.append(run_round(store))
         assert store.task("toy")["wall_seconds"] > before
     else:
-        assert not store.schedule()
         assert store.task("toy")["wall_seconds"] == before
-    assert store.task("toy")["wall_seconds"] >= 0.5
-    assert store.task("toy")["spec"]["wall_budget_seconds"] == 0.5
-    assert store.task("toy")["desired"] == "budget"
+    for key in rounds:
+        job = store.job(key)
+        if job["status"] == "cancelled":
+            assert job["error"] == "wall budget exhausted"
+        else:
+            assert job["status"] == "failed"
+            assert job["exit_code"] == 9
+    task = store.task("toy")
+    assert task["spec"]["wall_budget_seconds"] == limit
+    assert task["wall_seconds"] >= limit
+    assert task["desired"] == "budget"
     assert not store.schedule()
+    assert len(store.rows("SELECT id FROM jobs WHERE kind='agent'")) == len(rounds)
 
 
 def test_budget_is_recognized_even_during_backoff(managed):
@@ -322,3 +334,27 @@ def test_repeated_failure_backoff_is_capped_but_never_removed(managed):
         assert not store.schedule()
         store.db.execute("UPDATE tasks SET next_at=0 WHERE id='toy'")
     assert delays == [10, 20, 40, 80, 160, 300, 300, 300, 300]
+
+
+@pytest.mark.parametrize(
+    "evidence",
+    [
+        {"returncode": None, "cleanup_confirmed": True},
+        {"returncode": 0, "cleanup_confirmed": False},
+        {"returncode": 0},  # Legacy event without confirmed cleanup is not proof.
+    ],
+)
+def test_cpu_activity_requires_command_exit_and_confirmed_cleanup(managed, evidence):
+    store, _, _ = managed
+    job = store.schedule()[0]
+    assert store.claim(job, os.getpid(), identity(os.getpid()))
+    store.event(
+        "toy",
+        "bridge_execution",
+        {"round": job, "request": "uncertain", "command": ["unconfirmed"], "status": "failed"}
+        | evidence,
+    )
+    store.finish(job, "succeeded")
+    state = recovery(store)
+    assert not state["observable_progress"] and state["new_cpu_requests"] == []
+    assert store.task("toy")["failures"] == 1

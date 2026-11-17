@@ -200,3 +200,62 @@ def test_cuda_guard_respects_live_free_memory(monkeypatch):
     assert session.input_guard_stats()["device_inputs"] == []
     assert session.private_allocated_bytes == 0
     session.check_state()
+
+
+@pytest.mark.parametrize("capture", [False, True])
+def test_intermediate_observation_keeps_dispatch_and_state_guards(capture):
+    x = torch.ones(4)
+
+    def mutate(_):
+        x.numpy()[0] = 2
+
+    session = Session(workload(x, mutate), "cpu", device_guard_limit=16)
+    with pytest.raises(AssertionError, match="Forbidden input"):
+        session.observe(x * 2, capture=capture)
+    session = Session(workload(torch.ones(4)), "cpu")
+    with pytest.raises(ValueError, match="nonempty tensor tree"):
+        session.observe({"output": None}, capture=capture)
+
+
+def test_intermediate_observation_avoids_output_and_mutable_host_copy(monkeypatch):
+    x, state = torch.ones(4), torch.zeros(4)
+    validated = []
+    session = Session(
+        Workload(
+            {"x": x, "state": state},
+            lambda: x * 2,
+            mutable=("state",),
+            validate=lambda output: validated.append(output),
+        ),
+        "cpu",
+    )
+    copies = []
+    real_host = training.host
+
+    def copied(tensor):
+        copies.append(tensor)
+        return real_host(tensor)
+
+    monkeypatch.setattr(training, "host", copied)
+    output = {"output": x * 2, "gradients": (x.clone(),)}
+    state.add_(1)
+    for _ in range(7):
+        assert session.observe(output, capture=False) is None
+    assert not copies
+    captured = session.observe(output)
+    assert len(copies) == 3  # final output, gradient and declared mutable state
+    assert len(validated) == 8 and session.input_check_calls == 16
+    assert torch.equal(captured["output"]["gradients"][0], x)
+    assert torch.equal(captured["state"]["state"], torch.ones(4))
+    session.reset()
+    assert torch.equal(state, torch.zeros(4))
+
+
+@pytest.mark.parametrize("capture", [False, True])
+def test_intermediate_observation_propagates_validator_failure(capture):
+    def reject(output):
+        raise AssertionError("expected candidate dispatch missing")
+
+    session = Session(workload(torch.ones(4), reject), "cpu")
+    with pytest.raises(AssertionError, match="candidate dispatch missing"):
+        session.observe(torch.ones(4), capture=capture)

@@ -7,14 +7,13 @@ import shutil
 from pathlib import Path
 
 import pytest
+from test_rsi_research import research as research
 
 from kernel_envolve.cli import evaluate
 from kernel_envolve.rsi import artifact_lineage as lineage
 from kernel_envolve.rsi.episodes import load
 from kernel_envolve.rsi.research import run, source_id
 from kernel_envolve.storage import digest, write_json
-
-pytest_plugins = ["test_rsi_research"]
 
 SOURCES = [
     "import time\ndef run(x):\n time.sleep(.002)\n return x+1\n",

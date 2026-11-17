@@ -9,7 +9,17 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 
-from .process import alive, exclusive, gpu_idle, identity, lock_path, reap_registered, stop_recorded
+from .config import resource_devices
+from .process import (
+    alive,
+    exclusive,
+    gpu_group_idle,
+    gpu_locks,
+    identity,
+    lock_path,
+    reap_registered,
+    stop_recorded,
+)
 from .store import Store, encode
 
 
@@ -23,44 +33,60 @@ def reconcile(store):
         if job["status"] == "queued" and job["pid"] is None and time.time() - job["created"] < 30:
             continue
         task = store.task(job["task"])
-        name = (
-            task["spec"]["workspace"]
+        devices = store.job_devices(job)
+        guard = (
+            exclusive(lock_path("task", task["spec"]["workspace"]))
             if job["kind"] == "agent"
-            else store.resource(job["resource"])["spec"]["device"]
+            else gpu_locks(devices)
         )
-        kind = "task" if job["kind"] == "agent" else "gpu"
-        stop_recorded(job["child_pid"], job["child_identity"])
-        reap_registered(store, job["id"])
-        with exclusive(lock_path(kind, name)) as handle:
+        errors = []
+        try:
+            stop_recorded(job["child_pid"], job["child_identity"])
+        except (OSError, ValueError, subprocess.SubprocessError) as exc:
+            errors.append(f"Command cleanup: {exc}")
+        try:
+            reap_registered(store, job["id"])
+        except (OSError, ValueError, subprocess.SubprocessError) as exc:
+            errors.append(f"Child cleanup: {exc}")
+        with guard as handle:
             if handle is None:
                 # A surviving child inherited the lock. Do not declare the job terminal.
-                store.db.execute(
-                    "UPDATE jobs SET error=? WHERE id=?",
-                    ("Supervisor absent; owned lock still held; inspect descendants", job["id"]),
+                error = "; ".join(
+                    ["Supervisor absent; owned lock still held; inspect descendants", *errors]
                 )
+                store.db.execute("UPDATE jobs SET error=? WHERE id=?", (error, job["id"]))
+                if errors and job["kind"] == "gpu":
+                    store.db.execute(
+                        "UPDATE resources SET problem=? WHERE id=?", (error, job["resource"])
+                    )
                 continue
             if job["kind"] == "gpu" and job["status"] == "running":
                 try:
-                    gpu_idle(name)
+                    gpu_group_idle(devices)
                 except (OSError, ValueError, subprocess.SubprocessError) as exc:
-                    store.db.execute(
-                        "UPDATE resources SET problem=? WHERE id=?",
-                        (f"Orphan GPU work; inspect before clearing: {exc}", job["resource"]),
-                    )
+                    errors.append(str(exc))
+            if errors and job["kind"] == "gpu":
+                store.db.execute(
+                    "UPDATE resources SET problem=? WHERE id=?",
+                    ("Orphan GPU cleanup unconfirmed: " + "; ".join(errors), job["resource"]),
+                )
             if job["started"]:
                 # Conservative charge for the unobserved interval, never free budget on a crash.
                 store.heartbeat(job["id"], max(job["seconds"], time.time() - job["started"]))
             store.finish(
-                job["id"], "interrupted", "Supervisor exited; recovered without replaying the job"
+                job["id"],
+                "interrupted",
+                "; ".join(["Supervisor exited; recovered without replaying the job", *errors]),
             )
 
 
 def clear_resource(store, key):
     resource = store.resource(key)
-    with exclusive(lock_path("gpu", resource["spec"]["device"])) as handle:
+    devices = resource_devices(resource["spec"])
+    with gpu_locks(devices) as handle:
         if handle is None:
             raise ValueError("Device lock is still held")
-        gpu_idle(resource["spec"]["device"])
+        gpu_group_idle(devices)
         with store.transaction():
             if store.one(
                 "SELECT id FROM jobs WHERE resource=? AND kind='gpu' AND status='running'", (key,)
@@ -82,10 +108,11 @@ def resource_sessions(store, key, sessions):
         store.event(None, "resource_sessions", {"resource": key, "sessions": sessions})
 
 
-def run(store, once=False):
-    with exclusive(store.root / "coordinator.lock") as handle:
+def run(store, once=False, *, observe=False):
+    role = "observer" if observe else "coordinator"
+    with exclusive(store.root / (role + ".lock")) as handle:
         if handle is None:
-            raise ValueError("A coordinator already owns this state directory")
+            raise ValueError(f"A {role} already owns this state directory")
         stopped = threading.Event()
         stop_requested = False
 
@@ -96,17 +123,39 @@ def run(store, once=False):
 
         handlers = {s: signal.signal(s, on_signal) for s in (signal.SIGINT, signal.SIGTERM)}
         children = []
-        pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="evidence")
+        pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix="manager-scan")
         future, last_scan = None, 0
+        policy_future, last_policy_scan = None, 0
         evidence_error = None
+        policy_error = None
         completed_once = False
+        from .narrator import start as start_narrator
+
+        narration = start_narrator(store.root, stopped)
 
         def scan():
             from .evidence import refresh
 
             local = Store(store.root)
             try:
-                refresh(local, stop=stopped)
+                refresh(local, stop=stopped, yield_to_gpu=True)
+                if not stopped.is_set():
+                    from .publication import refresh_publications
+
+                    refresh_publications(local)
+                    from .archive import checkpoint
+
+                    checkpoint(local)
+            finally:
+                local.close()
+
+        def scan_policy():
+            from .research_policy import refresh as refresh_policies
+
+            local = Store(store.root)
+            try:
+                if not stopped.is_set():
+                    refresh_policies(local)
             finally:
                 local.close()
 
@@ -118,11 +167,12 @@ def run(store, once=False):
                     "heartbeat": time.time(),
                 }
                 try:
-                    reconcile(store)
+                    if not observe:
+                        reconcile(store)
                 except (OSError, ValueError, subprocess.SubprocessError) as exc:
                     health["error"] = f"Process recovery unavailable; dispatch held: {exc}"
                     store.db.execute(
-                        "INSERT OR REPLACE INTO metadata VALUES('coordinator',?)", (encode(health),)
+                        "INSERT OR REPLACE INTO metadata VALUES(?,?)", (role, encode(health))
                     )
                     if once:
                         raise
@@ -137,16 +187,35 @@ def run(store, once=False):
                     except Exception as exc:
                         evidence_error = str(exc)
                     future = None
+                    # A long scan must not immediately trigger another history walk.
+                    last_scan = time.monotonic()
                 if future is None and time.monotonic() - last_scan >= 5:
                     future = pool.submit(scan)
                     last_scan = time.monotonic()
+                # Deadline handoff cannot queue behind a large evaluator/archive scan.
+                if policy_future is not None and policy_future.done():
+                    try:
+                        policy_future.result()
+                        policy_error = None
+                    except Exception as exc:
+                        policy_error = str(exc)
+                    policy_future = None
+                    last_policy_scan = time.monotonic()
+                if (
+                    not observe
+                    and policy_future is None
+                    and time.monotonic() - last_policy_scan >= 5
+                ):
+                    policy_future = pool.submit(scan_policy)
+                    last_policy_scan = time.monotonic()
+                health["policy_error"] = policy_error
                 health["evidence_error"] = evidence_error
                 store.db.execute(
-                    "INSERT OR REPLACE INTO metadata VALUES('coordinator',?)", (encode(health),)
+                    "INSERT OR REPLACE INTO metadata VALUES(?,?)", (role, encode(health))
                 )
                 if stop_requested:
                     break
-                for key in store.schedule():
+                for key in [] if observe else store.schedule():
                     directory = store.root / "jobs" / key
                     directory.mkdir(parents=True, exist_ok=True)
                     try:
@@ -180,6 +249,11 @@ def run(store, once=False):
             if cancel_scan:
                 stopped.set()
             pool.shutdown(wait=True, cancel_futures=cancel_scan)
+            stopped.set()
+            narration.join(timeout=2)
+            from .archive import checkpoint
+
+            checkpoint(store, force=True)
             for sig, handler in handlers.items():
                 signal.signal(sig, handler)
         # Round supervisors intentionally survive a coordinator restart. Pause tasks to stop them.

@@ -47,6 +47,27 @@ def transaction(store):
     return store._transaction() if isinstance(store, ReuseMemory) else store.transaction()
 
 
+@pytest.mark.parametrize("after", [False, True])
+@pytest.mark.parametrize("statement", ["BEGIN", "COMMIT"])
+def test_manager_readonly_transaction_preserves_original_interrupt(tmp_path, after, statement):
+    path = tmp_path / "readonly.sqlite"
+    with sqlite3.connect(path) as writer:
+        writer.execute("CREATE TABLE evidence(value INTEGER)")
+        writer.execute("INSERT INTO evidence VALUES(1)")
+    db = sqlite3.connect(f"{path.as_uri()}?mode=ro", uri=True, isolation_level=None)
+    error = _DeadlineExpired("readonly deadline")
+    store = object.__new__(Manager)
+    store.db = InterruptedTransaction(db, error, after=after, statement=statement)
+    try:
+        with pytest.raises(_DeadlineExpired) as raised, store.transaction(readonly=True):
+            assert db.execute("SELECT value FROM evidence").fetchone()[0] == 1
+        assert raised.value is error
+        assert not db.in_transaction
+        assert db.execute("SELECT value FROM evidence").fetchone()[0] == 1
+    finally:
+        db.close()
+
+
 @pytest.mark.parametrize("store_type", [Manager, RSI, Registry, ReuseMemory])
 @pytest.mark.parametrize("after", [False, True])
 @pytest.mark.parametrize("statement", ["BEGIN IMMEDIATE", "COMMIT"])

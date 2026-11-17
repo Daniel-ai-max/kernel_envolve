@@ -8,7 +8,7 @@ import time
 import uuid
 from pathlib import Path
 
-from .config import positive
+from .config import positive, resource_devices, validate_host
 
 
 def encode(value):
@@ -30,11 +30,23 @@ class Store:
         self.db = sqlite3.connect(path, timeout=15, isolation_level=None)
         self.db.row_factory = sqlite3.Row
         path.chmod(0o600)
-        self.db.executescript("PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;")
         version = self.db.execute("PRAGMA user_version").fetchone()[0]
-        if version not in (0, 1):
+        if version not in (0, 1, 2):
             self.db.close()
             raise ValueError(f"Unsupported manager schema: {version}")
+        try:
+            if self.one("SELECT name FROM sqlite_master WHERE type='table' AND name='metadata'"):
+                previous = self.one("SELECT data FROM metadata WHERE key='host'")
+                if previous and json.loads(previous["data"]) != socket.gethostname():
+                    raise ValueError(
+                        "Manager state belongs to another host; reconcile jobs before migration"
+                    )
+            if version == 1:
+                self._upgrade_legacy()
+        except BaseException:
+            self.db.close()
+            raise
+        self.db.executescript("PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;")
         self.db.executescript("""
             CREATE TABLE IF NOT EXISTS resources (
                 id TEXT PRIMARY KEY, spec TEXT NOT NULL, problem TEXT);
@@ -68,16 +80,10 @@ class Store:
             CREATE TABLE IF NOT EXISTS promotions (
                 task TEXT NOT NULL, run TEXT NOT NULL, at REAL NOT NULL, gpu_seconds REAL NOT NULL,
                 data TEXT NOT NULL, PRIMARY KEY(task, run));
-            PRAGMA user_version=1;
         """)
-        columns = {r[1] for r in self.db.execute("PRAGMA table_info(jobs)")}
-        if "cancel_requested" not in columns:
+        if version == 0:
             with self.transaction():
-                columns = {r[1] for r in self.db.execute("PRAGMA table_info(jobs)")}
-                if "cancel_requested" not in columns:
-                    self.db.execute(
-                        "ALTER TABLE jobs ADD COLUMN cancel_requested INTEGER NOT NULL DEFAULT 0"
-                    )
+                self._upgrade_columns()
         try:
             with self.transaction():
                 host = socket.gethostname()
@@ -90,6 +96,45 @@ class Store:
         except BaseException:
             self.db.close()
             raise
+
+    def _upgrade_legacy(self):
+        from .process import alive, exclusive
+
+        message = "Stop the schema 1 coordinator and finish existing jobs before upgrading"
+        with exclusive(self.root / "coordinator.lock") as handle:
+            if handle is None:
+                raise ValueError(message + ": coordinator lock is held")
+            with self.transaction():
+                # Check and migrate in one write transaction; no old writer can
+                # enqueue work between the quiet-state check and the schema change.
+                if self.one("SELECT id FROM jobs WHERE status IN ('queued','running') LIMIT 1"):
+                    raise ValueError(message + ": queued or running jobs remain")
+                for child in self.rows("SELECT pid,identity FROM processes"):
+                    if alive(child["pid"], child["identity"]):
+                        raise ValueError(message + ": a registered descendant is still alive")
+                self._upgrade_columns()
+
+    def _upgrade_columns(self):
+        """Caller holds the schema transaction and, for legacy state, coordinator lock."""
+        columns = {r[1] for r in self.db.execute("PRAGMA table_info(jobs)")}
+        if "cancel_requested" not in columns:
+            self.db.execute(
+                "ALTER TABLE jobs ADD COLUMN cancel_requested INTEGER NOT NULL DEFAULT 0"
+            )
+        if "devices" not in columns:
+            self.db.execute("ALTER TABLE jobs ADD COLUMN devices TEXT")
+        if "gpu_count" not in columns:
+            # Historical single-card charges are never recomputed from new resources.
+            self.db.execute("ALTER TABLE jobs ADD COLUMN gpu_count INTEGER NOT NULL DEFAULT 1")
+        for row in self.rows(
+            "SELECT jobs.id,resources.spec FROM jobs JOIN resources ON jobs.resource=resources.id "
+            "WHERE jobs.devices IS NULL"
+        ):
+            self.db.execute(
+                "UPDATE jobs SET devices=? WHERE id=?",
+                (encode(resource_devices(json.loads(row["spec"]))), row["id"]),
+            )
+        self.db.execute("PRAGMA user_version=2")
 
     def close(self):
         self.db.close()
@@ -146,7 +191,9 @@ class Store:
                 for existing in self.rows(
                     "SELECT id,spec FROM resources WHERE id<>?", (resource["id"],)
                 ):
-                    if json.loads(existing["spec"])["device"] == resource["device"]:
+                    if set(resource_devices(json.loads(existing["spec"]))) & set(
+                        resource_devices(resource)
+                    ):
                         raise ValueError("Physical device already registered under another ID")
                 old = self.one("SELECT spec FROM resources WHERE id=?", (resource["id"],))
                 if old and json.loads(old["spec"]) != resource:
@@ -159,7 +206,7 @@ class Store:
                 if self.root.is_relative_to(task["workspace"]):
                     raise ValueError("Manager state must be outside all task workspaces")
                 old = self.one("SELECT spec FROM tasks WHERE id=?", (task["id"],))
-                if old and json.loads(old["spec"]) != task:
+                if old and {"host_driven": False, **json.loads(old["spec"])} != task:
                     raise ValueError("Existing task differs; create a new identity or use controls")
                 for other in self.rows("SELECT id,spec FROM tasks WHERE id<>?", (task["id"],)):
                     a, b = Path(task["workspace"]), Path(json.loads(other["spec"])["workspace"])
@@ -172,8 +219,12 @@ class Store:
                     )
                     self.event(task["id"], "registered", task["baseline"])
 
-    def control(self, key, action, changes=None):
+    def control(self, key, action, changes=None, *, _policy=None):
         with self.transaction():
+            policy_key = "research_policy:" + key
+            policy_row = self.one("SELECT data FROM metadata WHERE key=?", (policy_key,))
+            if _policy is not None and (not policy_row or policy_row["data"] != encode(_policy[0])):
+                raise ValueError("Research policy changed during control; retry from current state")
             task = self.task(key)
             if task["superseded_by"] or task["desired"] == "superseded":
                 if action == "pause":
@@ -196,8 +247,16 @@ class Store:
                     )
             elif action == "configure":
                 changes = changes or {}
-                if set(changes) - {"resource", "wall_budget_seconds", "gpu_budget_seconds"}:
-                    raise ValueError("Only resource assignment and cumulative budgets are mutable")
+                if set(changes) - {
+                    "resource",
+                    "wall_budget_seconds",
+                    "gpu_budget_seconds",
+                    "host_command",
+                    "deadline_at",
+                }:
+                    raise ValueError(
+                        "Only resource, budgets, deadline and host launcher are mutable"
+                    )
                 if task["desired"] != "paused" or self.one(
                     "SELECT id FROM jobs WHERE task=? AND status IN ('queued','running')", (key,)
                 ):
@@ -205,14 +264,41 @@ class Store:
                 for field, value in changes.items():
                     if field == "resource":
                         self.resource(value)
-                    else:
+                    elif field != "host_command":
                         positive(value, field, nullable=True)
-                self.db.execute(
-                    "UPDATE tasks SET spec=? WHERE id=?", (encode(task["spec"] | changes), key)
-                )
+                updated = task["spec"] | changes
+                validate_host(updated)
+                if "host_command" in changes:
+                    self.db.execute("DELETE FROM metadata WHERE key=?", ("host-ready:" + key,))
+                self.db.execute("UPDATE tasks SET spec=? WHERE id=?", (encode(updated), key))
             else:
                 raise ValueError("Unknown action")
             self.event(key, action, changes or {})
+            if policy_row:
+                prior = json.loads(policy_row["data"])
+                value = (
+                    _policy[1]
+                    if _policy is not None
+                    else prior
+                    if action == "pause"
+                    and prior["phase"] in {"succeeded", "exhausted", "suspended"}
+                    else prior | {"phase": "suspended", "suspended_by": action}
+                )
+                self.db.execute(
+                    "UPDATE metadata SET data=? WHERE key=?", (encode(value), policy_key)
+                )
+                self.event(
+                    key,
+                    "research_policy_control",
+                    {
+                        "phase": value["phase"],
+                        "action": action,
+                        "automatic": _policy is not None,
+                        "extension_used": value["extension_used"],
+                        "started_at": value["started_at"],
+                        "maximum_end": value["maximum_end"],
+                    },
+                )
 
     def supersede(self, key, replacement):
         """Retire an existing identity without transferring usage or allocating new budget."""
@@ -290,6 +376,9 @@ class Store:
             return receipt
 
     def budget_reason(self, task):
+        deadline = task["spec"].get("deadline_at")
+        if deadline is not None and time.time() >= deadline:
+            return "task deadline reached"
         for kind in ("wall", "gpu"):
             limit = task["spec"][f"{kind}_budget_seconds"]
             if limit is not None and task[f"{kind}_seconds"] >= limit:
@@ -298,9 +387,25 @@ class Store:
 
     def enqueue(self, task, kind, command, parent=None):
         key = uuid.uuid4().hex
+        resource = task["spec"]["resource"]
+        devices = resource_devices(self.resource(resource)["spec"])
+        if parent:
+            frozen = self.job(parent)
+            resource, devices = frozen["resource"], self.job_devices(frozen)
         self.db.execute(
-            "INSERT INTO jobs(id,task,kind,resource,parent,command,created) VALUES(?,?,?,?,?,?,?)",
-            (key, task["id"], kind, task["spec"]["resource"], parent, encode(command), time.time()),
+            "INSERT INTO jobs(id,task,kind,resource,parent,command,created,devices,gpu_count) "
+            "VALUES(?,?,?,?,?,?,?,?,?)",
+            (
+                key,
+                task["id"],
+                kind,
+                resource,
+                parent,
+                encode(command),
+                time.time(),
+                encode(devices),
+                len(devices),
+            ),
         )
         self.event(task["id"], "queued", {"job": key, "kind": kind})
         return key
@@ -313,7 +418,7 @@ class Store:
         with self.transaction():
             for row in self.rows("SELECT id FROM tasks ORDER BY next_at,created"):
                 task = migrate_legacy(self, self.task(row["id"]))
-                if task["desired"] != "active":
+                if task["desired"] != "active" or task["spec"].get("observe_only"):
                     continue
                 if self.budget_reason(task):
                     self.db.execute(
@@ -334,9 +439,36 @@ class Store:
                     "AND status IN ('queued','running')",
                     (resource["id"],),
                 ).fetchone()[0]
-                if resource["problem"] or count >= resource["spec"]["sessions"]:
+                if (
+                    resource["problem"] and not task["spec"].get("host_command")
+                ) or count >= resource["spec"]["sessions"]:
                     continue
-                scheduled.append(self.enqueue(task, "agent", task["spec"]["command"]))
+                permit = None
+                if task["spec"].get("host_driven"):
+                    ready = self.one(
+                        "SELECT data FROM metadata WHERE key=?", ("host-ready:" + task["id"],)
+                    )
+                    if task["spec"].get("host_command"):
+                        # A real configured model host is launched by the bridge, not an idle lease.
+                        permit = {"owner": "manager", "claim": uuid.uuid4().hex}
+                    elif ready and json.loads(ready["data"])["expires_at"] > time.time():
+                        permit = json.loads(ready["data"])
+                    else:
+                        continue
+                job = self.enqueue(task, "agent", task["spec"]["command"])
+                if permit:
+                    permit["round"] = job
+                    self.db.execute(
+                        "DELETE FROM metadata WHERE key=?", ("host-ready:" + task["id"],)
+                    )
+                    self.db.execute(
+                        "INSERT INTO metadata VALUES(?,?)", ("host-round:" + job, encode(permit))
+                    )
+                    self.db.execute(
+                        "INSERT OR REPLACE INTO metadata VALUES(?,?)",
+                        (f"host-claim:{task['id']}:{permit['claim']}", encode(permit)),
+                    )
+                scheduled.append(job)
         return scheduled
 
     def job(self, key):
@@ -344,6 +476,9 @@ class Store:
         if not row:
             raise ValueError(f"Unknown job: {key}")
         return row
+
+    def job_devices(self, job):
+        return json.loads(job["devices"])
 
     def claim(self, key, pid, identity):
         with self.transaction():
@@ -382,7 +517,8 @@ class Store:
             delta = max(0, seconds - job["seconds"])
             column = "wall_seconds" if job["kind"] == "agent" else "gpu_seconds"
             self.db.execute(
-                f"UPDATE tasks SET {column}={column}+? WHERE id=?", (delta, job["task"])
+                f"UPDATE tasks SET {column}={column}+? WHERE id=?",
+                (delta * (job["gpu_count"] if job["kind"] == "gpu" else 1), job["task"]),
             )
             self.db.execute(
                 "UPDATE jobs SET seconds=MAX(seconds,?),heartbeat=? WHERE id=?",
@@ -390,15 +526,24 @@ class Store:
             )
 
     def finish(self, key, status, error=None, exit_code=None):
-        if status not in ("succeeded", "failed", "interrupted", "cancelled"):
+        if status not in ("succeeded", "failed", "interrupted", "cancelled", "yielded"):
             raise ValueError("Invalid terminal status")
         from .recovery import assess, implementation
 
         job = self.job(key)
         if job["status"] not in ("queued", "running"):
             return
+        if status == "yielded":
+            from .bridge import idle_exit
+
+            if not idle_exit(self, job):
+                raise ValueError("Yielded rounds require the bridge's idle receipt")
         # FSx/source reads must never hold the shared manager write transaction.
-        current = implementation(self.task(job["task"])) if job["kind"] == "agent" else None
+        current = (
+            implementation(self.task(job["task"]))
+            if job["kind"] == "agent" and status != "yielded"
+            else None
+        )
         with self.transaction():
             job = self.job(key)
             if job["status"] not in ("queued", "running"):
@@ -407,10 +552,39 @@ class Store:
                 "UPDATE jobs SET status=?,ended=?,error=?,exit_code=? WHERE id=?",
                 (status, time.time(), error, exit_code, key),
             )
-            if job["kind"] == "agent":
+            if job["kind"] == "agent" and status == "yielded":
+                task = self.task(job["task"])
+                recovery = assess(self, task, job, status, None)
+                recovery.update(
+                    state="awaiting_host",
+                    round=key,
+                    observable_progress=False,
+                    reason="Host lease expired; completed results remain consumable",
+                    retry_after_seconds=0,
+                    attempts=task["failures"],
+                )
+                self.db.execute(
+                    "INSERT OR REPLACE INTO metadata VALUES(?,?)",
+                    ("recovery:" + task["id"], encode(recovery)),
+                )
+                if task["desired"] == "active":
+                    reason = self.budget_reason(task)
+                    self.db.execute(
+                        "UPDATE tasks SET desired=?,reason=? WHERE id=?",
+                        ("budget" if reason else "active", reason, task["id"]),
+                    )
+            elif job["kind"] == "agent":
                 task = self.task(job["task"])
                 recovery = assess(self, task, job, status, current)
-                failures = 0 if recovery["observable_progress"] else task["failures"] + 1
+                active_host = (
+                    task["spec"].get("host_command")
+                    and status == "succeeded"
+                    and recovery["execution_observed"]
+                )
+                # Novelty heuristics must not stop real probes whose input files changed.
+                failures = (
+                    0 if recovery["observable_progress"] or active_host else task["failures"] + 1
+                )
                 delay = (
                     min(300, 5 * 2 ** min(failures, 6))
                     if failures
@@ -425,6 +599,13 @@ class Store:
                         error
                         or "Recovery needs new action evidence with a changed outcome checkpoint"
                     )
+                if desired == "active" and task["spec"].get("host_command"):
+                    if exit_code == 78:
+                        desired = "blocked"
+                        reason = "Model host reported unrecoverable execution failure (exit 78); see saved session logs"
+                    elif failures >= 3:
+                        desired = "blocked"
+                        reason = "Host continuation produced no execution/source evidence in three rounds; inspect saved logs before resuming"
                 recovery.update(reason=reason, retry_after_seconds=delay, attempts=failures)
                 self.db.execute(
                     "INSERT OR REPLACE INTO metadata VALUES(?,?)",
@@ -494,3 +675,94 @@ class Store:
             )
             self.db.execute("UPDATE tasks SET report=? WHERE id=?", (encode(old | report), task_id))
             self.event(task_id, "report", report)
+            self.db.execute(
+                "INSERT OR REPLACE INTO metadata VALUES(?,?)",
+                (
+                    "round_report:" + job_id,
+                    encode({"round": job_id, "recorded_at": time.time(), "report": old | report}),
+                ),
+            )
+
+    def consume_result(self, task_id, job_id, record, *, legacy=False):
+        """Archive a receipt-bound analysis even after its execution round closes."""
+        key = f"consumed_result:{job_id}:{record['request']}"
+        with self.transaction():
+            job = self.job(job_id)
+            if job["task"] != task_id or job["kind"] != "agent":
+                raise ValueError("Consumption must belong to its agent round")
+            saved = self.one("SELECT data FROM metadata WHERE key=?", (key,))
+            if saved:
+                if json.loads(saved["data"])["record"] != record:
+                    raise ValueError("Result already consumed with a different analysis")
+                return
+            # Preserve the original observation time when repairing a legacy file/event.
+            previous = next(
+                (
+                    event
+                    for event in (
+                        self.rows(
+                            "SELECT at,data FROM events WHERE task=? AND kind='host_consumed_result' ORDER BY seq DESC",
+                            (task_id,),
+                        )
+                        if legacy
+                        else []
+                    )
+                    if json.loads(event["data"]).get("round") == job_id
+                    and json.loads(event["data"]).get("request") == record["request"]
+                ),
+                None,
+            )
+            at = previous["at"] if previous else time.time()
+            self.db.execute(
+                "INSERT INTO metadata VALUES(?,?)",
+                (key, encode({"recorded_at": at, "record": record})),
+            )
+            prior = self.one("SELECT data FROM metadata WHERE key=?", ("round_report:" + job_id,))
+            prior = json.loads(prior["data"]) if prior else {}
+            report = {key: record[key] for key in ("outcome", "next_action") if key in record}
+            if at >= prior.get("recorded_at", 0):
+                self.db.execute(
+                    "INSERT OR REPLACE INTO metadata VALUES(?,?)",
+                    (
+                        "round_report:" + job_id,
+                        encode(
+                            {
+                                "round": job_id,
+                                "recorded_at": at,
+                                "report": prior.get("report", {}) | report,
+                            }
+                        ),
+                    ),
+                )
+                latest = self.one(
+                    "SELECT id FROM jobs WHERE task=? AND kind='agent' ORDER BY created DESC,rowid DESC LIMIT 1",
+                    (task_id,),
+                )
+                last_report = self.one(
+                    "SELECT MAX(at) AS at FROM events WHERE task=? AND kind='report'", (task_id,)
+                )
+                if latest["id"] == job_id and at >= (last_report["at"] or 0):
+                    task = self.task(task_id)
+                    self.db.execute(
+                        "UPDATE tasks SET report=? WHERE id=?",
+                        (encode(task["report"] | report), task_id),
+                    )
+                    progress = self.one(
+                        "SELECT data FROM metadata WHERE key=?", ("report_progress:" + task_id,)
+                    )
+                    changed = task["report"] | report != task["report"]
+                    if changed or progress is None:
+                        self.db.execute(
+                            "INSERT OR REPLACE INTO metadata VALUES(?,?)",
+                            (
+                                "report_progress:" + task_id,
+                                encode(at if changed else last_report["at"]),
+                            ),
+                        )
+                    # A projection repair retains the original consumption timestamp.
+                    self.db.execute(
+                        "INSERT INTO events(at,task,kind,data) VALUES(?,?,?,?)",
+                        (at, task_id, "report", encode(report)),
+                    )
+            if not previous:
+                self.event(task_id, "host_consumed_result", record | {"round": job_id})

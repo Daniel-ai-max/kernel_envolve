@@ -4,7 +4,7 @@ kernel_envolve 是面向 coding agent 的算子持续优化工具，主要用于
 
 目标是在保持调用语义、精度和输入覆盖的前提下提升性能，并让多个算子的优化进展可追溯、可恢复、可查看。项目包含三部分：
 
-- **优化流程（Skill）**：指导 Agent 分析瓶颈、验证假设、记录实验，并在确认收益后维护优化 PR。
+- **研究指导（Skill）**：提供目标、正确性与交付约束，Agent 自主选择实验与验证方式。
 - **评测器（Evaluator）**：冻结源码，检查正确性和性能，保存证据并更新已验证的最佳版本。
 - **管理层（Manager）**：调度长期任务和 GPU 队列，管理暂停、预算及故障恢复，通过本地面板展示进展。
 
@@ -49,7 +49,7 @@ kernel-envolve evaluate --task examples/cuda_vector_add --mode full
 
 > 使用 $kernel-envolve 持续优化 examples/cuda_vector_add，使用指定 GPU，累计预算 20 分钟。保持任务定义与精度要求不变，通过完整评测后更新 best，并记录下一步。
 
-Skill 规定优化方法，跨会话自动续接由下方管理层或现有宿主执行器负责。
+Skill 提供研究建议与交付约束，不规定逐次实验步骤；跨会话续接由管理层或现有宿主执行器负责。
 
 ### 自动跟随 main
 
@@ -63,13 +63,13 @@ kernel-envolve session -- <agent命令及参数>
 kernel-envolve session -- bash
 ```
 
-会话运行期间保持版本不变，下次会话再检查更新。已有 Agent 可执行 `kernel-envolve update`，读取返回的 `skill`，并在本轮使用返回的 `executable`；复制安装的 Skill 也会按此入口读取最新流程。
+会话运行期间保持版本不变，下次会话由 CLI/管理器检查更新，不要求 Agent 每轮重复执行 update。手动检查时可用 `kernel-envolve update`，返回当前 `skill` 与 `executable`。
 
 断网或新版本检查失败时保留可用版本，原因输出到 stderr。`kernel-envolve update --status` 查看最近检查结果。开发本仓库时设置 `KERNEL_ENVOLVE_AUTO_UPDATE=0` 使用本地代码。缓存、兼容性与升级边界见[自动更新指南](docs/auto-update.md)。
 
 ## 内部项目使用
 
-训练算子使用 `native-evaluate`，由 `native.json` 和 `adapter.py` 接入项目原生测试、数值 gate 和 benchmark。
+训练算子先用项目原生局部测试、微基准或 profiler 验证假设；有收益信号后使用 `native-evaluate`，由 `native.json` 和 `adapter.py` 接入完整正确性、数值 gate 和性能验收。局部探索无需每次复制整仓或执行 full。
 
 - **apodex-core**：维护 kernel 实现、算子接口和算子测试。
 - **Megatron-LM**：验证调用接线、模块梯度及受影响的训练路径。
@@ -81,6 +81,7 @@ kernel-envolve session -- bash
 # 在本仓库目录安装工具；Python 3.11+，复用项目镜像已有依赖
 python -m pip install --no-deps -e .
 kernel-envolve native-evaluate --task examples/apodex_probs_scale --mode quick
+kernel-envolve native-evaluate --task <task> --case <case> --seed 17 --check-only --timeout 60
 kernel-envolve native-evaluate --task examples/apodex_probs_scale --mode full --timeout 1800
 kernel-envolve native-promote /path/to/run
 ```
@@ -91,15 +92,53 @@ kernel-envolve native-promote /path/to/run
 
 CUDA 原生评测在计时外缓存只读输入的精确字节副本，减少反复传回 CPU 的成本；每个 worker 最多使用 2 GiB，且不超过当时空闲显存的八分之一。超出预算或缓存分配不足时沿用原 CPU 逐位检查，验证函数执行前后的检查均保留。worker 日志记录缓存、回退与检查耗时；显存结果只扣除这些私有副本的实际 allocator 分配量，同时保存未扣除的峰值。
 
-`native-promote` 的路径取自合格的 full 结果。数值 gate 或 CI 通过仅说明相应检查通过，性能收益仍需测量确认。配置与适配接口见 [内部项目评测](skills/kernel-envolve/SKILL.md#apodex-内部项目评测)及[内部 evaluator](skills/kernel-envolve/SKILL.md#使用内部-evaluator)。
+声明 `confirmation` 的内部任务须先运行 `native-confirm <full-run>`，通过预先冻结的独立输入确认后才能晋升；每个任务只能消费一次确认集。配置与收据规则见[独立确认](docs/native-harness.md#独立确认)。
+
+`native-promote` 的路径取自合格的 full 结果。数值 gate 或 CI 通过仅说明相应检查通过，性能收益仍需测量确认。配置与适配接口见 [内部项目评测](docs/native-harness.md#apodex-内部项目评测)及[内部 evaluator](docs/native-harness.md#使用内部-evaluator)。
 
 原生评测的 CLI 与 `result.json` 提供 `phase_wall_seconds`：源码快照、设置、正确性、原生门禁、测量、后置检查、完整性校验和清理。执行阶段失败保留已耗时间及 `failed_phase`，未执行阶段不填零。各阶段是主控进程的连续墙钟耗时，总和等于 `seconds`（至 worker 清理完成，不含评分和收据写入）；首次导入/编译可能计入首个正确性请求，测量阶段还含参考计算、传输和结果核验，不能作为纯 GPU kernel 时间。
 
 ## 持续优化
 
-一个算子对应一个长期任务，执行轮次结束时保存 checkpoint，后续轮次继续已有工作。一次晋升或某个方向没有收益，都不自动结束任务；每轮在 `notes.md` 记录假设、结论、版本、资源消耗与下一步。
+一个算子对应一个长期任务，后续轮次沿已有执行记录和研究结论接续。一次晋升或某个方向没有收益，都不自动结束已授权的持续任务；原始运行记录无需再抄写到 notes 或面板。结束轮次时只保存需要交接的结论。
 
-确认收益后，Agent 按 [PR 交付流程](skills/kernel-envolve/SKILL.md#收益确认后自动维护-pr)创建或更新目标仓库的优化 PR，然后继续探索。PR 发布由 Agent 完成；评测器负责验证与晋升。
+确认收益后，Agent 按 [正确性与交付约束](skills/kernel-envolve/SKILL.md#正确性与交付约束)创建或更新目标仓库的优化 PR，然后继续探索。PR 发布由 Agent 完成；评测器负责验证与晋升。
+
+### 单算子启动
+
+从源码开始研究时，无需先写 evaluator、adapter 或输入矩阵：
+
+```bash
+kernel-envolve dashboard --research /work/operator-checkout --device GPU-... --seconds 3600 -- /opt/model-host-adapter
+```
+
+首次启动固定当前 Git HEAD 为 baseline；可用 `--baseline <提交或分支>` 指定。工作区须是独立 Git checkout，已有修改作为探索候选保留。此入口复用执行记录、预算、GPU 队列和看板，不复制源码树，不运行评测。原生测试、微基准或 profiler 可直接经 `manage gpu-run` 批量执行。研究任务不能将日志或局部信号晋升为 verified best；需要时可直接接入现有可信 verifier 的范围验收，full best 仍需独立的正式评测契约。
+
+不传宿主命令时只查看研究记录；重开同一工作区沿用已固定的 baseline、预算与停止状态。
+
+直接打开已有任务的看板，无需编写调度配置：
+
+```bash
+kernel-envolve dashboard --task /work/kernel-task
+```
+
+仅同步已有实验和评测，不启动 Agent 或申请 GPU。单算子显示一条任务，多算子沿用同一看板、详情与收益展示。
+
+同时启动预算内持续研究时，传入实际模型宿主命令：
+
+```bash
+kernel-envolve dashboard --task /work/kernel-task --seconds 3600 -- /opt/model-host-adapter
+```
+
+宿主接入见[单任务启动](docs/optimization-manager.md#单任务启动)。已有管理状态用 `--state /work/manager-state` 直接复用；重开不重置预算或恢复已停止任务。当前工作和最近结果自动读取执行记录，无需额外报告或确认。 可配置一个[共享旁白](docs/optimization-manager.md#共享进展旁白)，异步将新增 trace 和实验结果整理为整行一致、带来源的研究结论，不增加研究步骤。
+
+任务结束后，记录可独立复盘，无需原 GPU 或工作区：
+
+```bash
+kernel-envolve dashboard --archive /persistent/manager-state/dashboard-archive
+```
+
+自动归档、完整日志导出与独立验收接入见[持久化与复盘](docs/optimization-manager.md#持久化与复盘)。
 
 ### 多算子管理与面板
 
@@ -112,7 +151,7 @@ CUDA 原生评测在计时外缓存只读输入的精确字节副本，减少反
 | 基线溯源 | 展示仓库、版本、实现提出日期及来源；单独记录本任务的冻结日期，未知日期保持未知 |
 | 进展展示 | 提供算子总览、任务详情、best 历史、逐用例延迟、验证范围及资源队列 |
 | 证据来源 | 区分候选、已验证 best 与报告的已集成版本；性能数据来自 evaluator 校验结果 |
-| 自动更新 | 页面可见时约每 3 秒读取一致快照，后台约每 5 秒检查证据；保留编辑状态，断线退避重连 |
+| 自动更新 | 页面可见时约每 3 秒读取一致快照；历史证据扫描避让 GPU 作业，保留原观测时间；断线退避重连 |
 
 **先体验面板。** 完成基础安装后，在尚不存在的目录创建 CPU 演示：
 
@@ -126,7 +165,7 @@ kernel-envolve manage --state /tmp/kernel-envolve-demo/state run
 kernel-envolve manage --state /tmp/kernel-envolve-demo/state serve --port 8787
 ```
 
-打开 [http://127.0.0.1:8787](http://127.0.0.1:8787)。演示使用模拟 Agent、CPU 和合成等待，展示调度及评测流程；其中的加速比不代表真实训练算子收益。重新查看时直接运行 `run` / `serve`，无需重新生成目录。停止任务时先在面板暂停；关闭页面或退出协调器不会立即终止已启动轮次。
+打开 [http://127.0.0.1:8787](http://127.0.0.1:8787)。演示使用模拟 Agent、CPU 和合成等待，展示调度及评测流程；其中的加速比不代表真实训练算子收益。重新查看时直接运行 `run` / `serve`，无需重新生成目录。停止任务时先运行 `manage pause <task>`；关闭页面或退出协调器不会立即终止已启动轮次。
 
 **接入真实任务。** 按[管理层配置指南](docs/optimization-manager.md#启动)准备独立工作区、物理 GPU UUID、固定 baseline、评测契约及 Agent 命令，然后启动：
 
@@ -137,7 +176,11 @@ kernel-envolve manage --state /work/manager-state run
 kernel-envolve manage --state /work/manager-state serve --port 8787
 ```
 
-Agent 适配器从 stdin 接收恢复提示，结束前写入结构化 checkpoint；受管理会话中的所有 GPU 命令必须经 `kernel-envolve manage gpu-run -- <命令>` 执行。管理层依赖同一用户下的协作工作流，跨用户资源分配和多 GPU 分布式作业由外部系统安排。远程面板通过 SSH 转发访问。
+Agent 适配器从 stdin 接收恢复提示；执行记录自动保留，研究摘要按需补充。受管理会话中的所有 GPU 命令必须经 `kernel-envolve manage gpu-run -- <命令>` 执行。管理层依赖同一用户下的协作工作流，跨用户资源分配和多 GPU 分布式作业由外部系统安排。远程面板通过 SSH 转发访问。
+
+前台 bridge 配置实际 `host_command` 后可在剩余预算内自动接续模型会话，沿用工作区、结果与累计用量，见[预算内自动接续](docs/optimization-manager.md#预算内自动接续)。前台 bridge 可直接提交下一实验，前一请求终态后无需独立 consume。对结果的分析可随下一请求保存；状态查询只读，pending 也能返回日志尾部和完整路径，详见[前台宿主接续](docs/optimization-manager.md#前台宿主接续)。
+
+可选[有界研究策略](docs/bounded-research-policy.md)支持固定4小时、无达标交付时最多延长一次到原起点8小时，并在完整验收、独立确认和同源码PR交付后停止；研究启动无需评测器。
 
 部署、控制命令和恢复规则见[管理层文档](docs/optimization-manager.md)，数据一致性与刷新策略见[自动更新契约](docs/optimization-manager.md#自动更新契约)。
 
@@ -145,7 +188,7 @@ Agent 适配器从 stdin 接收恢复提示，结束前写入结构化 checkpoin
 
 RSI sidecar 从实验结果和研究 checkpoint 中提炼有条件的经验与策略，在独立任务上比较新旧策略，通过完整验证后才提供给后续 Agent。支持累计学习/验证预算、停用、证据审计与回退；现有 kernel 验收和晋升规则保持不变。
 
-正常会话每轮只读取一份有大小限制的策略快照，不运行学习模型或扫描历史。GPU 策略验证使用显式配置的独立资源。初始化、模型适配器协议、CPU 演示和信任边界见 [RSI 使用与设计](docs/rsi.md)。试用此功能分支时设置 `KERNEL_ENVOLVE_AUTO_UPDATE=0`，防止自动切回公共 main。
+正常会话每轮只读取一份有大小限制的策略快照，不运行学习模型或扫描历史。GPU 策略验证使用显式配置的独立资源。初始化、模型适配器协议、CPU 演示和信任边界见 [RSI 使用与设计](docs/rsi.md)。RSI 状态绑定验证器版本，使用时固定代码版本并设置 `KERNEL_ENVOLVE_AUTO_UPDATE=0`；升级前按文档核对证据兼容性。
 
 使用前请核对[支持范围与验收记录](docs/rsi-readiness.md)：文本策略通过现有 sidecar 接入 Manager；源码经验复用当前支持单文件 generic 任务，由可信控制器显式调用。可选建议损坏会回到原工作流程，状态库损坏则明确拒绝操作，不重建预算。源码复用没有隐式生产挂钩，也不替代外层资源隔离和独立最终评测。
 
@@ -164,9 +207,9 @@ RSI sidecar 从实验结果和研究 checkpoint 中提炼有条件的经验与�
 
 ## 评测规则
 
-1. **quick 筛选**：用代表用例验证正确性并比较性能，适合日常迭代。
-2. **full 确认**：验证全部声明用例，进行两批配对测量，检查总体收益、波动和逐用例退化；原生任务还要求声明的原生检查通过。
-3. **promote 晋升**：复核证据、源码、契约与当前 best 后更新最佳版本。quick 结果不能晋升。
+- **quick 筛选（可选）**：用代表用例验证正确性并比较性能，也可直接使用原生局部测试与批量实验。
+- **full 确认**：验证全部声明用例，进行两批配对测量，检查总体收益、波动和逐用例退化；原生任务还要求声明的原生检查通过。
+- **promote 晋升**：复核证据、源码、契约与当前 best 后更新最佳版本。quick 结果不能晋升。
 
 评测退出码 `0` 表示正确完成，`1` 表示正确性失败，`2` 表示配置或执行错误；能否晋升以 `eligible_for_best` 为准。有 best 时与当前 best 比较，full 同时检查固定原始基线，从而区分增量与累计收益。
 
@@ -205,7 +248,7 @@ PyTorch 路径需要安装兼容的 PyTorch；CUDA 测试需在空闲 GPU 上设
 更多资料：
 
 - [Agent 优化流程与 PR 规范](skills/kernel-envolve/SKILL.md)
-- [Super-agent 设计对比与管理层验证范围](docs/super-agent-comparison.md)
+- [裸 Agent 研究流程、框架价值与参考设计对比](docs/super-agent-comparison.md)
 - [硬件文档与参考实现](skills/kernel-envolve/references/hardware.md)
 - [参考架构来源](audit/reference_sources.json)与[评测设计来源](audit/evaluator_sources.json)
 - [原生 evaluator B300 验证](audit/native_gpu_061/summary.json)、[通用 evaluator B300 验证](audit/general_contract_gpu/verified/summary.json)与[输入泛化验证](audit/generality_gpu_050/summary.json)

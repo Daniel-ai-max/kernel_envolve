@@ -18,6 +18,8 @@ class ScanCancelled(Exception):
 
 
 def state_path(spec):
+    if spec["kind"] == "research":
+        raise ValueError("Research tasks have no evaluator state or verified best")
     return Path(spec["task_dir"]) / (
         ".kernel_native" if spec["kind"] == "native" else ".kernel_envolve"
     )
@@ -72,6 +74,8 @@ def failed_checks(result, cfg):
 
 
 def inspect_run(path, spec, checkpoint=None):
+    if spec["kind"] == "research":
+        raise ValueError("Research records cannot be accepted as evaluator evidence")
     checkpoint = checkpoint or (lambda: None)
     checkpoint()
     if path.is_symlink():
@@ -82,6 +86,10 @@ def inspect_run(path, spec, checkpoint=None):
         raise ValueError("Result receipt mismatch")
     if Path(result["task_root"]).resolve() != Path(spec["task_dir"]):
         raise ValueError("Result belongs to a different task")
+    confirmation = None
+    confirmation_status = "not_required"
+    full_eligible = None
+    contract_verified = True
     if spec["kind"] == "native":
         from ..native import native_decision, verify_roots
 
@@ -97,8 +105,33 @@ def inspect_run(path, spec, checkpoint=None):
         if file_hash(path / "adapter.py") != result["adapter_hash"]:
             raise ValueError("Native adapter changed")
         decision = native_decision(result, cfg)
+        full_eligible = decision["eligible_for_best"]
+        if full_eligible and "confirmation" in cfg:
+            from ..native_confirmation import verify_confirmation
+
+            held_receipt = path / "confirmation" / "receipt.json"
+            if not held_receipt.exists():
+                confirmation_status = "pending"
+            elif read_json(held_receipt).get("status") == "failed":
+                confirmation_status = "failed"
+            else:
+                confirmation = verify_confirmation(path, result, cfg, checkpoint)
+                confirmation_status = "passed"
+            if confirmation is None:
+                decision["eligible_for_best"] = False
+                decision["reasons"].append("Independent confirmation " + confirmation_status)
         contract = result.get("contract")
-        source = result["identities"].get("candidate")
+        # A failed snapshot has no complete source contract. Its authenticated
+        # receipt is useful diagnosis, but cannot establish source or best proof.
+        snapshot_failure = (
+            result["execution"] == "error"
+            and result["correctness"] == "partial"
+            and result.get("failed_phase") == "snapshot"
+            and contract is None
+            and all(result.get(name) == [] for name in ("checks", "samples", "native_checks"))
+        )
+        contract_verified = not snapshot_failure
+        source = result["identities"].get("candidate") if contract_verified else None
     else:
         from ..cli import audit_result
 
@@ -108,25 +141,33 @@ def inspect_run(path, spec, checkpoint=None):
         contract = result["identity"]["contract"]
         source = result["identity"]["files"]
     checkpoint()
-    if contract != spec["baseline"]["contract"]:
+    if contract_verified and contract != spec["baseline"]["contract"]:
         raise ValueError("Evidence contract differs from the task's frozen baseline contract")
     fixed = decision.get("fixed_baseline_gain_by_batch", [])
     incremental = decision.get("gain_by_batch", [])
     return {
         "run": str(path),
         "result_hash": receipt["result_hash"],
-        "initial_best_hash": result["initial_best_hash"],
+        "initial_best_hash": (
+            result["initial_best_hash"] if contract_verified else result.get("initial_best_hash")
+        ),
         "mode": result["mode"],
         "execution": result["execution"],
         "correctness": result["correctness"],
         "decision": decision,
         "contract": contract,
+        "contract_verified": contract_verified,
         "source": source,
         "environment": result.get("environments", result.get("environment")),
         "native_checks": result.get("native_checks", []),
+        "confirmation": confirmation,
+        "confirmation_status": confirmation_status,
+        "full_eligible_for_best": full_eligible,
         "memory": result.get("memory", []),
         "error": result.get("error"),
         "failed_checks": failed_checks(result, cfg) if spec["kind"] == "generic" else None,
+        "failed_phase": result.get("failed_phase"),
+        "phase_wall_seconds": result.get("phase_wall_seconds", {}),
         "recorded_at": (path / "receipt.json").stat().st_mtime,
         "passed_checks": sum(c.get("status") == "pass" for c in result.get("checks", [])),
         "verified_at": time.time(),
@@ -189,6 +230,10 @@ def refresh_task(store, task, force=False, checkpoint=None):
     checkpoint = checkpoint or (lambda: None)
     checkpoint()
     spec = task["spec"]
+    if spec["kind"] == "research":
+        # Local experiments remain job/log evidence. Never inspect a coincidental
+        # task.json, receipt or best pointer in the source checkout.
+        return
     state = state_path(spec)
     problems = []
     best_projection = None
@@ -205,6 +250,9 @@ def refresh_task(store, task, force=False, checkpoint=None):
             continue  # New in-flight results are not final evidence; indexed ones must revalidate.
         try:
             signature = fingerprint(path, checkpoint)
+            if spec["kind"] == "native":
+                claim = state / "confirmation-attempt.json"
+                signature = digest([signature, file_hash(claim) if claim.exists() else None])
             if (
                 old
                 and not force
@@ -256,6 +304,8 @@ def refresh_task(store, task, force=False, checkpoint=None):
                     or not data["decision"]["eligible_for_best"]
                 ):
                     raise ValueError("Best does not reference an eligible, verified full result")
+                if pointer.get("confirmation") != data.get("confirmation"):
+                    raise ValueError("Best confirmation receipt mismatch")
                 history = (
                     read_json(run / "promotion.json") if (run / "promotion.json").exists() else None
                 )
@@ -301,8 +351,15 @@ def refresh_task(store, task, force=False, checkpoint=None):
                         "correctness",
                         "passed_checks",
                         "error",
+                        "failed_phase",
+                        "phase_wall_seconds",
+                        "contract_verified",
+                        "baseline_speedup",
+                        "incremental_speedup",
                     )
                 },
+                "performance": value.get("decision", {}).get("performance"),
+                "eligible_for_best": value.get("decision", {}).get("eligible_for_best", False),
                 "native_checks": [
                     {key: check.get(key) for key in ("id", "scope", "status")}
                     for check in value.get("native_checks", [])
@@ -354,10 +411,32 @@ def refresh_task(store, task, force=False, checkpoint=None):
         )
 
 
-def refresh(store, force=False, stop=None):
+def gpu_work_pending(store):
+    return (
+        store.one("SELECT id FROM jobs WHERE kind='gpu' AND status IN ('queued','running') LIMIT 1")
+        is not None
+    )
+
+
+def refresh(store, force=False, stop=None, yield_to_gpu=False, task_id=None):
+    if task_id is not None:
+        store.task(task_id)  # Reject an unknown target before changing scan metadata.
+    # Background history audits must not compete with experiments. Explicit refresh
+    # and promotion verification retain their full checks, independent of this policy.
+    if yield_to_gpu and gpu_work_pending(store):
+        return False
+    next_gpu_check = 0.0
+
     def checkpoint():
+        nonlocal next_gpu_check
         if stop is not None and stop.is_set():
             raise ScanCancelled
+        if yield_to_gpu:
+            now = time.monotonic()
+            if now >= next_gpu_check:
+                next_gpu_check = now + 0.25
+                if gpu_work_pending(store):
+                    raise ScanCancelled
 
     # A manual reindex and the coordinator must not publish out of order.
     with exclusive(store.root / "evidence.lock") as handle:
@@ -379,7 +458,8 @@ def refresh(store, force=False, stop=None):
 
         try:
             checkpoint()
-            for row in store.rows("SELECT id FROM tasks"):
+            tasks = [{"id": task_id}] if task_id is not None else store.rows("SELECT id FROM tasks")
+            for row in tasks:
                 checkpoint()
                 scan["task"] = row["id"]
                 publish()
@@ -393,4 +473,8 @@ def refresh(store, force=False, stop=None):
         finally:
             scan.update(running=False, task=None, finished_at=time.time())
             publish()
+    from .assessment import refresh_sources
+
+    if not yield_to_gpu or not gpu_work_pending(store):
+        refresh_sources(store, force=force)
     return True

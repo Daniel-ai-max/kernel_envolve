@@ -1,0 +1,770 @@
+{
+  "scope": "CPU mathematical reference construction on the existing B300 node; not GPU kernel or agent search speedup",
+  "result": {
+    "status": "passed",
+    "scope": "CPU mathematical reference construction only; no GPU speedup",
+    "small_smoke": false,
+    "blocks": 1,
+    "sampling_limit": "one ABBA block, two timed samples per role per input; descriptive only",
+    "deadline_seconds": 1200.0,
+    "command": [
+      "/tmp/rsi-system-compare-20261114-repair-20261115/math-reference-check/next/remote_benchmark.py",
+      "--original-probe",
+      "/tmp/rsi-system-compare-20261114-repair-20261115/math-reference-check/original/student_research_probe.py",
+      "--scenario-file",
+      "/tmp/rsi-system-compare-20261114-repair-20261115/math-reference-check/scenarios.json",
+      "--output",
+      "/fsx/infra-p1-slow/shared/runs/daniel/ke-rsi-system-compare-20261114-repair-20261115/math-reference-check/results",
+      "--blocks",
+      "1",
+      "--deadline-seconds",
+      "1200"
+    ],
+    "runtime_before_configuration": {
+      "torch_num_threads": 1,
+      "torch_num_interop_threads": 96,
+      "memory": {
+        "process_lifetime_peak_rss_bytes": 520769536,
+        "minor_faults": 77017,
+        "major_faults": 0,
+        "VmHWM_bytes": 525344768,
+        "VmRSS_bytes": 525344768
+      }
+    },
+    "inputs": [
+      {
+        "source_specs": [
+          {
+            "name": "lw6144-k2048-score",
+            "s": 6144,
+            "n": 8192,
+            "k": 2048,
+            "kind": "signed",
+            "seed": 6214216273992063530,
+            "index_dtype": "int32",
+            "save_mask": false,
+            "mask_out": false
+          },
+          {
+            "name": "lw6144-k2048-mask",
+            "s": 6144,
+            "n": 8192,
+            "k": 2048,
+            "kind": "signed",
+            "seed": 6214216273992063530,
+            "index_dtype": "int32",
+            "save_mask": true,
+            "mask_out": false
+          },
+          {
+            "name": "lw6144-k2048-mask-out",
+            "s": 6144,
+            "n": 8192,
+            "k": 2048,
+            "kind": "signed",
+            "seed": 6214216273992063530,
+            "index_dtype": "int32",
+            "save_mask": true,
+            "mask_out": true
+          }
+        ],
+        "effective_spec": {
+          "name": "lw6144-k2048-score",
+          "s": 6144,
+          "n": 8192,
+          "k": 2048,
+          "kind": "signed",
+          "seed": 6214216273992063530,
+          "index_dtype": "int32",
+          "save_mask": false,
+          "mask_out": false
+        },
+        "status": "passed",
+        "samples": [
+          {
+            "block": 0,
+            "position": 0,
+            "role": "original",
+            "status": "passed",
+            "runtime_before": {
+              "torch_num_threads": 1,
+              "torch_num_interop_threads": 96,
+              "memory": {
+                "process_lifetime_peak_rss_bytes": 18105659392,
+                "minor_faults": 12730001,
+                "major_faults": 0,
+                "VmHWM_bytes": 18105659392,
+                "VmRSS_bytes": 5221134336
+              }
+            },
+            "seconds": 96.62622866500169,
+            "runtime_after": {
+              "torch_num_threads": 1,
+              "torch_num_interop_threads": 96,
+              "memory": {
+                "process_lifetime_peak_rss_bytes": 18105659392,
+                "minor_faults": 18472199,
+                "major_faults": 0,
+                "VmHWM_bytes": 18105659392,
+                "VmRSS_bytes": 4311965696
+              }
+            },
+            "full_result_bits_equal": true
+          },
+          {
+            "block": 0,
+            "position": 1,
+            "role": "new",
+            "status": "passed",
+            "runtime_before": {
+              "torch_num_threads": 1,
+              "torch_num_interop_threads": 96,
+              "memory": {
+                "process_lifetime_peak_rss_bytes": 18105659392,
+                "minor_faults": 18472199,
+                "major_faults": 0,
+                "VmHWM_bytes": 18105659392,
+                "VmRSS_bytes": 4311965696
+              }
+            },
+            "seconds": 66.43422290706076,
+            "runtime_after": {
+              "torch_num_threads": 1,
+              "torch_num_interop_threads": 96,
+              "memory": {
+                "process_lifetime_peak_rss_bytes": 18146193408,
+                "minor_faults": 26225068,
+                "major_faults": 0,
+                "VmHWM_bytes": 18146193408,
+                "VmRSS_bytes": 5261549568
+              }
+            },
+            "full_result_bits_equal": true
+          },
+          {
+            "block": 0,
+            "position": 2,
+            "role": "new",
+            "status": "passed",
+            "runtime_before": {
+              "torch_num_threads": 1,
+              "torch_num_interop_threads": 96,
+              "memory": {
+                "process_lifetime_peak_rss_bytes": 18146193408,
+                "minor_faults": 26565579,
+                "major_faults": 0,
+                "VmHWM_bytes": 18146193408,
+                "VmRSS_bytes": 5261549568
+              }
+            },
+            "seconds": 65.08207333716564,
+            "runtime_after": {
+              "torch_num_threads": 1,
+              "torch_num_interop_threads": 96,
+              "memory": {
+                "process_lifetime_peak_rss_bytes": 18146193408,
+                "minor_faults": 33245871,
+                "major_faults": 0,
+                "VmHWM_bytes": 18146193408,
+                "VmRSS_bytes": 4823732224
+              }
+            },
+            "full_result_bits_equal": true
+          },
+          {
+            "block": 0,
+            "position": 3,
+            "role": "original",
+            "status": "passed",
+            "runtime_before": {
+              "torch_num_threads": 1,
+              "torch_num_interop_threads": 96,
+              "memory": {
+                "process_lifetime_peak_rss_bytes": 18146193408,
+                "minor_faults": 33256880,
+                "major_faults": 0,
+                "VmHWM_bytes": 18146193408,
+                "VmRSS_bytes": 4823732224
+              }
+            },
+            "seconds": 95.16851015412249,
+            "runtime_after": {
+              "torch_num_threads": 1,
+              "torch_num_interop_threads": 96,
+              "memory": {
+                "process_lifetime_peak_rss_bytes": 18146193408,
+                "minor_faults": 39143453,
+                "major_faults": 0,
+                "VmHWM_bytes": 18146193408,
+                "VmRSS_bytes": 5058617344
+              }
+            },
+            "full_result_bits_equal": true
+          }
+        ],
+        "warmups": [
+          {
+            "role": "original",
+            "seconds_including_python_gc": 98.44228245411068
+          },
+          {
+            "role": "new",
+            "seconds_including_python_gc": 61.55321345082484
+          }
+        ],
+        "input_manifest": {
+          "indices": {
+            "dtype": "torch.int32",
+            "shape": [
+              6144,
+              2048
+            ],
+            "stride": [
+              2048,
+              1
+            ],
+            "bytes": 50331648,
+            "sha256": "cae1dedbc910b408219efaa1307a59271bc7b9a032401f72929de5f21bfc6b9c"
+          },
+          "key": {
+            "dtype": "torch.float16",
+            "shape": [
+              8192,
+              128
+            ],
+            "stride": [
+              128,
+              1
+            ],
+            "bytes": 2097152,
+            "sha256": "4015a2cdabcf6b28a380cd7b4bb4dff5b68bda3af2e719dfca37d92b3642fd9a"
+          },
+          "q": {
+            "dtype": "torch.float16",
+            "shape": [
+              6144,
+              32,
+              128
+            ],
+            "stride": [
+              4096,
+              128,
+              1
+            ],
+            "bytes": 50331648,
+            "sha256": "24bc794d1983aee2c8d12ad1b054c5bef0fc226365493f98b4dd0aa2df955b65"
+          },
+          "weight": {
+            "dtype": "torch.float32",
+            "shape": [
+              6144,
+              32
+            ],
+            "stride": [
+              32,
+              1
+            ],
+            "bytes": 786432,
+            "sha256": "73d339cd04fba4c2238b13365d527a3a7e47fc36d7b39d3c4caa5264bb617ed0"
+          }
+        },
+        "input_sha256": "c1ec97faccf68b28178da3cab667572c8a96d2f16c416966559fccc8181ab399",
+        "warmup_full_bits_equal": true,
+        "result_manifest": {
+          "bound": {
+            "dtype": "torch.float64",
+            "shape": [
+              6144,
+              2048
+            ],
+            "stride": [
+              2048,
+              1
+            ],
+            "bytes": 100663296,
+            "sha256": "ddc5d38a824326ff836fc51968fb0f8cd38523623ed9cefb32c7b50fc8ff6c98"
+          },
+          "fp64_head_magnitude_bound": {
+            "dtype": "torch.float64",
+            "shape": [
+              6144,
+              2048
+            ],
+            "stride": [
+              2048,
+              1
+            ],
+            "bytes": 100663296,
+            "sha256": "1303dd1f6e40d8640ebf396a9cdc321dbca67566ba04473cf207395ea93e1236"
+          },
+          "golden": {
+            "dtype": "torch.float64",
+            "shape": [
+              6144,
+              2048
+            ],
+            "stride": [
+              2048,
+              1
+            ],
+            "bytes": 100663296,
+            "sha256": "faf41a495d67129f3e91b6bc3674eac782f62769d2251f1f3d05a5fa26b88709"
+          },
+          "mask_known": {
+            "dtype": "torch.bool",
+            "shape": [
+              6144,
+              2048,
+              32
+            ],
+            "stride": [
+              65536,
+              32,
+              1
+            ],
+            "bytes": 402653184,
+            "sha256": "58417fc1ba3327352de2bad15116e2a941356c50808ff9f849e1f57361c31475"
+          },
+          "mask_positive": {
+            "dtype": "torch.bool",
+            "shape": [
+              6144,
+              2048,
+              32
+            ],
+            "stride": [
+              65536,
+              32,
+              1
+            ],
+            "bytes": 402653184,
+            "sha256": "8cbf50a070088a01f4f60fb1209976e1fcae34b88ee5ac06f603b30ddb786f83"
+          },
+          "valid": {
+            "dtype": "torch.bool",
+            "shape": [
+              6144,
+              2048
+            ],
+            "stride": [
+              2048,
+              1
+            ],
+            "bytes": 12582912,
+            "sha256": "a61bec1068de80ac49ba763a4d7a1d4f8bf8f47efc1fea8770e6b3e33313a84c"
+          }
+        },
+        "medians_seconds": {
+          "original": 95.89736940956209,
+          "new": 65.7581481221132
+        },
+        "median_speedup": 1.458334398825834,
+        "median_time_reduction": 0.3142862152842709
+      },
+      {
+        "source_specs": [
+          {
+            "name": "lw6145-k2047-strided-score",
+            "s": 6145,
+            "n": 8193,
+            "k": 2047,
+            "kind": "strided",
+            "seed": 7099016029821331913,
+            "index_dtype": "int64",
+            "save_mask": false,
+            "mask_out": false
+          },
+          {
+            "name": "lw6145-k2047-strided-mask",
+            "s": 6145,
+            "n": 8193,
+            "k": 2047,
+            "kind": "strided",
+            "seed": 7099016029821331913,
+            "index_dtype": "int64",
+            "save_mask": true,
+            "mask_out": false
+          },
+          {
+            "name": "lw6145-k2047-strided-mask-out",
+            "s": 6145,
+            "n": 8193,
+            "k": 2047,
+            "kind": "strided",
+            "seed": 7099016029821331913,
+            "index_dtype": "int64",
+            "save_mask": true,
+            "mask_out": true
+          }
+        ],
+        "effective_spec": {
+          "name": "lw6145-k2047-strided-score",
+          "s": 6145,
+          "n": 8193,
+          "k": 2047,
+          "kind": "strided",
+          "seed": 7099016029821331913,
+          "index_dtype": "int64",
+          "save_mask": false,
+          "mask_out": false
+        },
+        "status": "passed",
+        "samples": [
+          {
+            "block": 0,
+            "position": 0,
+            "role": "original",
+            "status": "passed",
+            "runtime_before": {
+              "torch_num_threads": 1,
+              "torch_num_interop_threads": 96,
+              "memory": {
+                "process_lifetime_peak_rss_bytes": 18146193408,
+                "minor_faults": 50837016,
+                "major_faults": 0,
+                "VmHWM_bytes": 18146193408,
+                "VmRSS_bytes": 4880887808
+              }
+            },
+            "seconds": 98.71159282000735,
+            "runtime_after": {
+              "torch_num_threads": 1,
+              "torch_num_interop_threads": 96,
+              "memory": {
+                "process_lifetime_peak_rss_bytes": 18697240576,
+                "minor_faults": 56808582,
+                "major_faults": 0,
+                "VmHWM_bytes": 18697240576,
+                "VmRSS_bytes": 5811085312
+              }
+            },
+            "full_result_bits_equal": true
+          },
+          {
+            "block": 0,
+            "position": 1,
+            "role": "new",
+            "status": "passed",
+            "runtime_before": {
+              "torch_num_threads": 1,
+              "torch_num_interop_threads": 96,
+              "memory": {
+                "process_lifetime_peak_rss_bytes": 18697240576,
+                "minor_faults": 56841026,
+                "major_faults": 0,
+                "VmHWM_bytes": 18697240576,
+                "VmRSS_bytes": 5811089408
+              }
+            },
+            "seconds": 62.86382826906629,
+            "runtime_after": {
+              "torch_num_threads": 1,
+              "torch_num_interop_threads": 96,
+              "memory": {
+                "process_lifetime_peak_rss_bytes": 18697240576,
+                "minor_faults": 62853822,
+                "major_faults": 0,
+                "VmHWM_bytes": 18697240576,
+                "VmRSS_bytes": 5033402368
+              }
+            },
+            "full_result_bits_equal": true
+          },
+          {
+            "block": 0,
+            "position": 2,
+            "role": "new",
+            "status": "passed",
+            "runtime_before": {
+              "torch_num_threads": 1,
+              "torch_num_interop_threads": 96,
+              "memory": {
+                "process_lifetime_peak_rss_bytes": 18697240576,
+                "minor_faults": 62993179,
+                "major_faults": 0,
+                "VmHWM_bytes": 18697240576,
+                "VmRSS_bytes": 5033402368
+              }
+            },
+            "seconds": 61.17336060106754,
+            "runtime_after": {
+              "torch_num_threads": 1,
+              "torch_num_interop_threads": 96,
+              "memory": {
+                "process_lifetime_peak_rss_bytes": 18697240576,
+                "minor_faults": 68741171,
+                "major_faults": 0,
+                "VmHWM_bytes": 18697240576,
+                "VmRSS_bytes": 5329100800
+              }
+            },
+            "full_result_bits_equal": true
+          },
+          {
+            "block": 0,
+            "position": 3,
+            "role": "original",
+            "status": "passed",
+            "runtime_before": {
+              "torch_num_threads": 1,
+              "torch_num_interop_threads": 96,
+              "memory": {
+                "process_lifetime_peak_rss_bytes": 18697240576,
+                "minor_faults": 68836660,
+                "major_faults": 0,
+                "VmHWM_bytes": 18697240576,
+                "VmRSS_bytes": 5329100800
+              }
+            },
+            "seconds": 96.09589520399459,
+            "runtime_after": {
+              "torch_num_threads": 1,
+              "torch_num_interop_threads": 96,
+              "memory": {
+                "process_lifetime_peak_rss_bytes": 18697240576,
+                "minor_faults": 74592773,
+                "major_faults": 0,
+                "VmHWM_bytes": 18697240576,
+                "VmRSS_bytes": 5342199808
+              }
+            },
+            "full_result_bits_equal": true
+          }
+        ],
+        "warmups": [
+          {
+            "role": "original",
+            "seconds_including_python_gc": 94.04726690100506
+          },
+          {
+            "role": "new",
+            "seconds_including_python_gc": 63.002117060823366
+          }
+        ],
+        "input_manifest": {
+          "indices": {
+            "dtype": "torch.int64",
+            "shape": [
+              6145,
+              2047
+            ],
+            "stride": [
+              4094,
+              2
+            ],
+            "bytes": 100630520,
+            "sha256": "3555b6228979405150c3c8d7a456a5966000004d287d73be5783d21da973c3f4"
+          },
+          "key": {
+            "dtype": "torch.float16",
+            "shape": [
+              8193,
+              128
+            ],
+            "stride": [
+              256,
+              2
+            ],
+            "bytes": 2097408,
+            "sha256": "7c9e71dff8f27ee5d60e3c1983782749f047acd27394fe3bb45c17cbae7ba21d"
+          },
+          "q": {
+            "dtype": "torch.float16",
+            "shape": [
+              6145,
+              32,
+              128
+            ],
+            "stride": [
+              8192,
+              256,
+              2
+            ],
+            "bytes": 50339840,
+            "sha256": "e5a400d5898bc0d6e4bfc194861aa2460ff554968b33dc9832f7c190ba748fc9"
+          },
+          "weight": {
+            "dtype": "torch.float32",
+            "shape": [
+              6145,
+              32
+            ],
+            "stride": [
+              64,
+              2
+            ],
+            "bytes": 786560,
+            "sha256": "dea6b1d66abd1e872c62936a6e3d19185a59b1ef781afdf3502f84a3a4500372"
+          }
+        },
+        "input_sha256": "6ac359dba589bd18a17dbe11dfc7ef148e4d4281ee098ea76373e1647a52a8c5",
+        "warmup_full_bits_equal": true,
+        "result_manifest": {
+          "bound": {
+            "dtype": "torch.float64",
+            "shape": [
+              6145,
+              2047
+            ],
+            "stride": [
+              2047,
+              1
+            ],
+            "bytes": 100630520,
+            "sha256": "725e9149012363932a06d04b92460920c81347c9cfb83aa5ef1b3174b6926305"
+          },
+          "fp64_head_magnitude_bound": {
+            "dtype": "torch.float64",
+            "shape": [
+              6145,
+              2047
+            ],
+            "stride": [
+              2047,
+              1
+            ],
+            "bytes": 100630520,
+            "sha256": "455ab0e178c839ff9083e7d51ebc4ea9250a5979add1b0a4720e63b15ffd134c"
+          },
+          "golden": {
+            "dtype": "torch.float64",
+            "shape": [
+              6145,
+              2047
+            ],
+            "stride": [
+              2047,
+              1
+            ],
+            "bytes": 100630520,
+            "sha256": "e1a4671312141b81de5dffb059a5d4872aa17b19549256585293789824448654"
+          },
+          "mask_known": {
+            "dtype": "torch.bool",
+            "shape": [
+              6145,
+              2047,
+              32
+            ],
+            "stride": [
+              65504,
+              32,
+              1
+            ],
+            "bytes": 402522080,
+            "sha256": "454f50b763a9e456ee78f28f3a3f944df1e593cda034b6a279b6ceaa16fc2e32"
+          },
+          "mask_positive": {
+            "dtype": "torch.bool",
+            "shape": [
+              6145,
+              2047,
+              32
+            ],
+            "stride": [
+              65504,
+              32,
+              1
+            ],
+            "bytes": 402522080,
+            "sha256": "99363ad2ec2437627d102bbdd60a2ea18cc301e9d522c291df2c05dbf8f1bbb9"
+          },
+          "valid": {
+            "dtype": "torch.bool",
+            "shape": [
+              6145,
+              2047
+            ],
+            "stride": [
+              2047,
+              1
+            ],
+            "bytes": 12578815,
+            "sha256": "e89a47d17fc5ee87a9be9a0b2f49430fc4fef5058b1a2a545a97fe9e40bf3665"
+          }
+        },
+        "medians_seconds": {
+          "original": 97.40374401200097,
+          "new": 62.018594435066916
+        },
+        "median_speedup": 1.5705571030633738,
+        "median_time_reduction": 0.36328325913811177
+      }
+    ],
+    "environment": {
+      "python": "3.12.3 (main, Jan 22 2026, 20:57:42) [GCC 13.3.0]",
+      "executable": "/opt/venv/bin/python",
+      "torch": "2.12.1+cu130",
+      "platform": "Linux-6.12.94-123.192.amzn2023.x86_64-x86_64-with-glibc2.39",
+      "machine": "x86_64",
+      "cpu_count": 192,
+      "thread_env": {
+        "OMP_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": null,
+        "OPENBLAS_NUM_THREADS": null
+      }
+    },
+    "timing_scope": "complete math_cache only; input creation, hashes, equality comparisons, explicit GC and memory sampling excluded; output allocations included; Python cyclic GC disabled during timed calls",
+    "memory_scope": "parent process lifetime high-water RSS and snapshots; not per-call peak allocation",
+    "deadline_scope": "whole validation/benchmark body; SIGALRM best effort at Python signal boundaries, native Torch calls may delay handling; no new process/controller",
+    "source_checks": {
+      "original_probe": {
+        "path": "/tmp/rsi-system-compare-20261114-repair-20261115/math-reference-check/original/student_research_probe.py",
+        "expected": "3b13d7508a931d5c458001f6eb4cbd8effa350f40705d3534a83ca8af1e45d26",
+        "actual": "3b13d7508a931d5c458001f6eb4cbd8effa350f40705d3534a83ca8af1e45d26"
+      },
+      "new_probe": {
+        "path": "/tmp/rsi-system-compare-20261114-repair-20261115/math-reference-check/next/student_research_probe.py",
+        "expected": "66bd917ab67b6bc26a415467a53f1614820ba84d24650ae0ab37b1636d523f1f",
+        "actual": "66bd917ab67b6bc26a415467a53f1614820ba84d24650ae0ab37b1636d523f1f"
+      },
+      "original_reference": {
+        "path": "/tmp/rsi-system-compare-20261114-repair-20261115/math-reference-check/original/student_score_reference.py",
+        "expected": "524fa89ccdb35cb57bbd7ea9fbf7d3b778a55f1cb8b19144438dfc6d247da537",
+        "actual": "524fa89ccdb35cb57bbd7ea9fbf7d3b778a55f1cb8b19144438dfc6d247da537"
+      },
+      "new_reference": {
+        "path": "/tmp/rsi-system-compare-20261114-repair-20261115/math-reference-check/next/student_score_reference.py",
+        "expected": "524fa89ccdb35cb57bbd7ea9fbf7d3b778a55f1cb8b19144438dfc6d247da537",
+        "actual": "524fa89ccdb35cb57bbd7ea9fbf7d3b778a55f1cb8b19144438dfc6d247da537"
+      }
+    },
+    "script_sha256": "29f807aaf107de348999755b538e010cceb3e9665d59bfa40c0159edb664ea03",
+    "scenario_file": {
+      "path": "/tmp/rsi-system-compare-20261114-repair-20261115/math-reference-check/scenarios.json",
+      "sha256": "c8141f773fc7b25b359850a0b6ca4f2f9480d410cb1f6835aa876cc032af5fbf"
+    },
+    "distinct_input_count": 2,
+    "runtime_effective": {
+      "torch_num_threads": 1,
+      "torch_num_interop_threads": 96,
+      "memory": {
+        "process_lifetime_peak_rss_bytes": 522342400,
+        "minor_faults": 77688,
+        "major_faults": 0,
+        "VmHWM_bytes": 528089088,
+        "VmRSS_bytes": 528089088
+      }
+    },
+    "elapsed_seconds": 971.8158572360408,
+    "runtime_final": {
+      "torch_num_threads": 1,
+      "torch_num_interop_threads": 96,
+      "memory": {
+        "process_lifetime_peak_rss_bytes": 18697240576,
+        "minor_faults": 74689896,
+        "major_faults": 0,
+        "VmHWM_bytes": 18697240576,
+        "VmRSS_bytes": 5342199808
+      }
+    }
+  },
+  "source_receipt_sha256": "0540349309618967f27de00ec4b99bc97dcd4d666a6f56084e0b2cbf3348debc",
+  "archive_sha256": "b3b3f71d0c4b902ad9a7fe7db2360e413c750678c350149681f1eef11b9a5ce9",
+  "cleanup": {
+    "controller_alive": false,
+    "child_alive": false,
+    "remaining_group_members": []
+  },
+  "resource_completed": "Completed"
+}

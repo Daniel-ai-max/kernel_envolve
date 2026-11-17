@@ -48,9 +48,9 @@ def binding(task, *, worker=False):
         ):
             raise ValueError("Managed evaluation task, contract, or active round mismatch")
         cfg = config(task)
-        device = store.resource(parent["resource"])["spec"]["device"]
+        devices = store.job_devices(parent)
         if cfg["candidate_files"] != ["candidate.py"] or (cfg["device"] == "cpu") != (
-            device == "cpu"
+            devices == ["cpu"]
         ):
             raise ValueError("Managed research requires one candidate.py and a matching device")
         if worker:

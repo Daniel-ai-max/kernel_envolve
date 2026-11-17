@@ -1,14 +1,16 @@
 """Duration declarations reject work before child side effects, including after queuing."""
 
 import json
+import math
 import os
+import re
 import sys
 import time
 
 import pytest
 from test_manager import launch, replace_command, wait_for
 
-from kernel_envolve.manager.gpu import run
+from kernel_envolve.manager.gpu import DurationAdmissionError, require_duration, run
 from kernel_envolve.manager.process import exclusive, identity, lock_path
 
 pytest_plugins = ["test_manager"]
@@ -120,6 +122,47 @@ def test_unreported_parent_elapsed_time_counts_against_wall_budget(managed):
         run(store.root, "toy", parent, [sys.executable, "-c", "pass"], expected_seconds=2)
     assert not store.rows("SELECT id FROM jobs WHERE kind='gpu'")
     store.finish(parent, "succeeded")
+
+
+@pytest.mark.parametrize("claim_elapsed", [0.0001, math.ulp(2770.0)])
+def test_claim_elapsed_reports_distinct_amounts_without_admission_tolerance(
+    managed, monkeypatch, claim_elapsed
+):
+    store, _, _ = managed
+    clock = [100.0]
+    monkeypatch.setattr("kernel_envolve.manager.gpu.time.time", lambda: clock[0])
+    replace_command(
+        store,
+        [sys.executable, "-c", "pass"],
+        round_timeout_seconds=2800,
+        wall_budget_seconds=2800,
+        gpu_budget_seconds=2770,
+    )
+    store.db.execute("UPDATE tasks SET next_at=0 WHERE id='toy'")
+    parent = store.schedule()[0]
+    assert store.claim(parent, os.getpid(), identity(os.getpid()))
+    job = store.enqueue(store.task("toy"), "gpu", [sys.executable, "-c", "pass"], parent)
+    assert store.claim(job, os.getpid(), identity(os.getpid()))
+    require_duration(store, store.task("toy"), store.job(parent), 2770)
+
+    clock[0] += claim_elapsed
+    with pytest.raises(DurationAdmissionError) as rejected:
+        require_duration(store, store.task("toy"), store.job(parent), 2770)
+    message = str(rejected.value)
+    amounts = re.search(
+        r"declared ([\d.e+-]+)s exceeds ([\d.e+-]+)s remaining in cumulative gpu budget "
+        r"\(shortfall ([\d.e+-]+)s\)",
+        message,
+    )
+    assert amounts, message
+    declared, remaining, shortfall = map(float, amounts.groups())
+    assert declared == 2770
+    assert remaining < declared
+    assert shortfall == declared - remaining > 0
+    assert "startup and cleanup overhead" in message
+    # Admission remains observational: it neither charges the declaration nor starts a child.
+    assert store.task("toy")["gpu_seconds"] == 0
+    assert store.job(job)["child_pid"] is None
 
 
 @pytest.mark.parametrize("duration", [0, -1, float("inf"), float("nan"), True])

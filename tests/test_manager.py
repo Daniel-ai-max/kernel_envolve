@@ -163,7 +163,8 @@ def test_only_changed_reports_refresh_research_progress(managed, monkeypatch):
     assert view["progress_stale"] and view["progress_as_of"] == reported_at
     store.report("toy", job, {"outcome": "identified an FP32 reduction discrepancy"})
     view = overview(store)["tasks"][0]
-    assert not view["progress_stale"] and view["phase"] == "agent_running"
+    assert not view["progress_stale"]  # Research prose has its own clock.
+    assert view["experiment_stale"] and view["phase"] == "awaiting_progress"
     assert view["progress_as_of"] == clock[0]
 
 
@@ -412,6 +413,63 @@ def test_real_gpu_wrapper_serializes_two_commands_on_cpu_resource(managed):
     assert store.task("toy")["gpu_seconds"] > 0.3
 
 
+@pytest.mark.parametrize("kind", ["generic", "native"])
+def test_managed_local_batch_needs_no_evaluator_and_cannot_promote(managed, kind):
+    store, _, work = managed
+    spec = store.task("toy")["spec"]
+    spec["kind"] = kind
+    store.db.execute("UPDATE tasks SET spec=? WHERE id='toy'", (json.dumps(spec),))
+    # A local hypothesis experiment must not need an adapter/config or source snapshot.
+    for name in ("task.json", "task.py", "candidate.py"):
+        (work / name).unlink()
+    batch = work / "local_probe.py"
+    batch.write_text(
+        "import json,os,pathlib,time\n"
+        "assert os.environ['KERNEL_ENVOLVE_GPU_JOB']\n"
+        "assert os.environ['CUDA_VISIBLE_DEVICES']==''\n"
+        "for parameter in [1,2,3]:\n"
+        " time.sleep(.01)\n"
+        " with pathlib.Path('probes.jsonl').open('a') as f:\n"
+        "  f.write(json.dumps({'parameter':parameter,'correct':parameter!=2})+'\\n')\n"
+    )
+    command = [
+        sys.executable,
+        "-m",
+        "kernel_envolve.cli",
+        "manage",
+        "gpu-run",
+        "--expected-seconds",
+        "3",
+        "--",
+        sys.executable,
+        str(batch),
+    ]
+    script = work / "agent.py"
+    script.write_text(
+        "import subprocess,os,json,pathlib\n"
+        f"subprocess.run({command!r},check=True)\n"
+        "pathlib.Path(os.environ['KERNEL_ENVOLVE_REPORT']).write_text(json.dumps("
+        "{'outcome':'local probes only; parameter 2 failed; see probes.jsonl',"
+        "'next_action':'compare the remaining mechanisms on representative inputs'}))\n"
+    )
+    replace_command(store, [sys.executable, str(script)])
+    key = store.schedule()[0]
+    process = launch(store, key)
+    out, err = process.communicate(timeout=15)
+    assert process.returncode == 0, (out, err)
+    probes = [json.loads(line) for line in (work / "probes.jsonl").read_text().splitlines()]
+    assert [item["correct"] for item in probes] == [True, False, True]
+    jobs = store.rows("SELECT * FROM jobs WHERE kind='gpu'")
+    assert len(jobs) == 1 and jobs[0]["status"] == "succeeded"
+    assert store.task("toy")["gpu_seconds"] > 0
+    assert not (work / ".kernel_native").exists()
+    assert not (work / ".kernel_envolve").exists()
+    refresh(store)
+    assert not store.rows("SELECT * FROM runs")
+    assert detail(store, "toy")["best"] is None
+    assert "parameter 2 failed" in store.task("toy")["report"]["outcome"]
+
+
 def test_real_evidence_history_and_corruption_hide_best(managed):
     store, _, work = managed
     quick, _ = evaluate(work, "quick")
@@ -443,7 +501,7 @@ def test_http_origin_controls_and_packaged_assets(managed):
     try:
         data = json.load(urllib.request.urlopen(base + "/api/state"))
         assert data["tasks"][0]["spec"]["baseline"]["revision"] == "fixture-v1"
-        for asset in ("/", "/app.js", "/sync.js", "/style.css"):
+        for asset in ("/", "/app.js", "/sync.js", "/summary.js", "/style.css"):
             assert urllib.request.urlopen(base + asset).status == 200
         for headers in ({}, {"X-Manager-Token": data["token"], "Origin": "https://evil.test"}):
             req = urllib.request.Request(
@@ -712,13 +770,16 @@ def test_pause_cancels_unlaunched_intent_without_waiting_for_timeout(managed):
     store.control("toy", "configure", {"gpu_budget_seconds": 10})
 
 
-def test_success_without_checkpoint_is_failed_not_infinite_progress(managed):
+def test_success_without_checkpoint_keeps_execution_distinct_from_progress(managed):
     store, _, _ = managed
     key = store.schedule()[0]
     process = launch(store, key)
     process.communicate(timeout=5)
-    assert store.job(key)["status"] == "failed"
-    assert "checkpoint" in store.job(key)["error"]
+    assert store.job(key)["status"] == "succeeded"
+    assert store.job(key)["error"] is None
+    recovery = json.loads(store.one("SELECT data FROM metadata WHERE key='recovery:toy'")["data"])
+    assert not recovery["observable_progress"]
+    assert store.task("toy")["failures"] == 1
 
 
 def test_native_task_cannot_accidentally_override_managed_device(monkeypatch):
@@ -807,6 +868,120 @@ def test_evidence_freshness_is_independent_of_http_snapshot_time(managed):
         (json.dumps({"observed_at": observed - 60}),),
     )
     assert snapshot(store, "toy")["detail"]["evidence_stale"]
+
+
+@pytest.mark.parametrize("running", [False, True])
+def test_background_audit_skips_gpu_work_but_explicit_audit_remains_strict(
+    managed, monkeypatch, running
+):
+    from kernel_envolve.manager import evidence
+
+    store, _, work = managed
+    run, _ = evaluate(work, "full")
+    promote(run)
+    refresh(store)
+    before = detail(store, "toy")
+    parent = store.schedule()[0]
+    store.claim(parent, os.getpid(), identity(os.getpid()))
+    with store.transaction():
+        job = store.enqueue(store.task("toy"), "gpu", ["true"], parent)
+    if running:
+        store.claim(job, os.getpid(), identity(os.getpid()))
+    (run / "source" / "candidate.py").write_text("def run(x): return x\n")
+    original = evidence.fingerprint
+    calls = []
+
+    def counted(*args):
+        calls.append(args[0])
+        return original(*args)
+
+    monkeypatch.setattr(evidence, "fingerprint", counted)
+    assert refresh(store, yield_to_gpu=True) is False
+    from kernel_envolve.manager import service
+
+    service.run(store, once=True)
+    assert calls == []  # No source traversal, even when a job is only queued.
+    assert detail(store, "toy")["evidence_as_of"] == before["evidence_as_of"]
+    assert refresh(store, force=True)
+    assert calls == [run]
+    assert detail(store, "toy")["best"] is None
+    assert store.task("toy")["evidence_error"]
+    with pytest.raises(ValueError):
+        promote(run)  # The background policy cannot authorize corrupted evidence.
+    store.finish(job, "succeeded")
+    store.finish(parent, "succeeded")
+
+
+def test_background_audit_yields_to_new_job_without_publishing_partial_evidence(
+    managed, monkeypatch
+):
+    from kernel_envolve.manager import evidence
+
+    store, _, work = managed
+    run, _ = evaluate(work, "full")
+    promote(run)
+    refresh(store)
+    before = detail(store, "toy")
+    parent = store.schedule()[0]
+    store.claim(parent, os.getpid(), identity(os.getpid()))
+    clock = [0.0]
+    monkeypatch.setattr(evidence.time, "monotonic", lambda: clock[0])
+    original = evidence.fingerprint
+    jobs = []
+
+    def interrupted(path, checkpoint):
+        with store.transaction():
+            jobs.append(store.enqueue(store.task("toy"), "gpu", ["true"], parent))
+        clock[0] += 0.3
+        checkpoint()
+        pytest.fail("History traversal continued after queued GPU work")
+
+    monkeypatch.setattr(evidence, "fingerprint", interrupted)
+    assert refresh(store, yield_to_gpu=True) is False
+    after = detail(store, "toy")
+    assert after["best"] == before["best"]
+    assert after["evidence_as_of"] == before["evidence_as_of"]
+    scan = json.loads(store.one("SELECT data FROM metadata WHERE key='evidence_scan'")["data"])
+    assert scan["cancelled"] and not scan["running"] and scan["error"] is None
+    store.finish(jobs[0], "succeeded")
+    store.finish(parent, "succeeded")
+    monkeypatch.setattr(evidence, "fingerprint", original)
+    (run / "receipt.json").unlink()
+    assert refresh(store, yield_to_gpu=True)
+    assert detail(store, "toy")["best"] is None
+    assert store.task("toy")["evidence_error"]
+
+
+def test_targeted_delivery_refresh_indexes_only_selected_task(managed):
+    store, deployment, work = managed
+    second = copy.deepcopy(deployment)
+    other = work.parent / "other"
+    shutil.copytree(work, other)
+    second["tasks"][0].update(id="other", workspace=str(other), task_dir=str(other))
+    store.register(second)
+    run, _ = evaluate(work, "full")
+    promote(run)
+    evaluate(other, "quick")
+    command = [
+        sys.executable,
+        "-m",
+        "kernel_envolve.cli",
+        "manage",
+        "--state",
+        str(store.root),
+        "refresh",
+        "--task",
+        "toy",
+    ]
+    result = subprocess.run(command, capture_output=True, text=True, timeout=10)
+    assert result.returncode == 0, result.stderr
+    assert detail(store, "toy")["best"]
+    assert detail(store, "other")["evidence_as_of"] is None
+    assert {row["task"] for row in store.rows("SELECT task FROM runs")} == {"toy"}
+    previous = store.one("SELECT data FROM metadata WHERE key='evidence_scan'")
+    with pytest.raises(ValueError, match="Unknown task"):
+        refresh(store, task_id="missing")
+    assert store.one("SELECT data FROM metadata WHERE key='evidence_scan'") == previous
 
 
 def test_scan_progress_distinguishes_queue_age_from_scan_failure(managed, monkeypatch):
@@ -922,13 +1097,12 @@ def test_http_selected_detail_and_compact_summary(managed):
         thread.join()
 
 
-def test_dashboard_polling_races_backoff_and_visibility():
+@pytest.mark.parametrize("script", ["manager_sync.mjs", "manager_summary.mjs"])
+def test_dashboard_polling_races_backoff_and_visibility(script):
     node = shutil.which("node")
     if not node:
         pytest.skip("Node is required for browser-independent polling tests")
-    subprocess.run(
-        [node, "--test", str(Path(__file__).with_name("manager_sync.mjs"))], check=True, timeout=15
-    )
+    subprocess.run([node, "--test", str(Path(__file__).with_name(script))], check=True, timeout=15)
 
 
 @pytest.mark.parametrize("command", ["evaluate", "native-evaluate"])

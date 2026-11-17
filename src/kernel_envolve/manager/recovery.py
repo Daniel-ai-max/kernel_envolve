@@ -47,6 +47,11 @@ def migrate_legacy(store, task):
 
 def implementation(task):
     """Fingerprint only declared implementation, never notes or report timestamps."""
+    if task["spec"]["kind"] == "research":
+        from .research_source import capture
+
+        source = capture(task, code_only=True)
+        return {"source": source["fingerprint"]} if source["complete"] else None
     directory = Path(task["spec"]["task_dir"])
     if task["spec"]["kind"] == "generic":
         selected = [directory / "candidate.py"]
@@ -115,19 +120,49 @@ def assess(store, task, job, status, current):
     old = json.loads(old["data"]) if old else {}
     seen = set(old.get("execution_signatures", []))
     novel = []
+    execution_observed = False
     for child in store.rows(
         "SELECT * FROM jobs WHERE parent=? AND kind='gpu' AND child_pid IS NOT NULL "
         "AND status IN ('succeeded','failed')",
         (job["id"],),
     ):
+        execution_observed = True
         signature = hashlib.sha256(
             json.dumps(
-                [child["command"], child["status"], child["exit_code"]],
+                [child["command"], child["status"], child["exit_code"], current],
                 sort_keys=True,
             ).encode()
         ).hexdigest()
         if signature not in seen:
             novel.append(child["id"])
+        seen.add(signature)
+    cpu_requests = []
+    for event in store.rows(
+        "SELECT data FROM events WHERE task=? AND kind='bridge_execution' AND at>=?",
+        (task["id"], job["created"]),
+    ):
+        execution = json.loads(event["data"])
+        if (
+            execution["round"] != job["id"]
+            or type(execution.get("returncode")) is not int
+            or execution.get("cleanup_confirmed") is not True
+        ):
+            continue
+        execution_observed = True
+        signature = hashlib.sha256(
+            json.dumps(
+                [
+                    "bridge-cpu",
+                    execution["command"],
+                    execution["status"],
+                    execution["returncode"],
+                    current,
+                ],
+                sort_keys=True,
+            ).encode()
+        ).hexdigest()
+        if signature not in seen:
+            cpu_requests.append(execution["request"])
         seen.add(signature)
     changed = (
         before.get("implementation") is not None
@@ -139,25 +174,49 @@ def assess(store, task, job, status, current):
     checkpoint = bool(
         outcome and outcome != before.get("outcome") and report.get("next_action", "").strip()
     )
-    progress = status == "succeeded" and checkpoint and bool(novel or changed)
+    progress = status == "succeeded" and bool(novel or cpu_requests or changed)
     return {
-        "state": "checkpoint_received" if progress else "diagnosis_requested",
+        "state": ("checkpoint_received" if checkpoint else "execution_completed")
+        if progress
+        else "diagnosis_requested",
         "round": job["id"],
         "observable_progress": progress,
+        "execution_observed": execution_observed,
         "implementation_changed": changed,
         "new_execution_jobs": novel,
+        "new_cpu_requests": cpu_requests,
         "execution_signatures": sorted(seen)[-256:],
         "checkpoint_changed": checkpoint,
-        "verification": "Agent checkpoint and execution activity; evaluator acceptance is separate.",
+        "verification": "Execution/source activity, with optional agent analysis; not evaluator acceptance or verified research gains.",
         "executor": "Configured command; it may be an external bridge, not a running model.",
     }
 
 
 def context(store, task):
     row = store.one("SELECT data FROM metadata WHERE key=?", ("recovery:" + task["id"],))
-    if not row:
-        return {}
-    data = json.loads(row["data"])
+    data = json.loads(row["data"]) if row else {}
+    recent = store.rows(
+        "SELECT id,status,error,exit_code FROM jobs WHERE task=? AND kind='agent' "
+        "AND status NOT IN ('queued','running') ORDER BY ended DESC LIMIT 3",
+        (task["id"],),
+    )
+    for job in recent:
+        job["logs"] = str(store.root / "jobs" / job["id"])
+        command = task["spec"]["command"]
+        if (
+            task["spec"].get("host_driven")
+            and "--root" in command
+            and command.index("--root") + 1 < len(command)
+        ):
+            root = Path(command[command.index("--root") + 1])
+            if not root.is_absolute():
+                root = Path(task["spec"]["workspace"]) / root
+            job["bridge_results"] = str(root / task["id"] / job["id"])
+    data["recent_sessions"] = recent
+    data["resource_problem"] = store.resource(task["spec"]["resource"])["problem"]
+    state = ".kernel_native" if task["spec"]["kind"] == "native" else ".kernel_envolve"
+    data["evaluation_records"] = str(Path(task["spec"]["task_dir"]) / state)
+    data["best_pointer"] = str(Path(data["evaluation_records"]) / "best.json")
     data.pop("execution_signatures", None)
     jobs = store.rows(
         "SELECT id,kind,status,error,exit_code FROM jobs WHERE task=? "

@@ -1,0 +1,528 @@
+{
+  "schema": 1,
+  "date": "2026-11-12",
+  "purpose": "DSA query workflow acceptance; not an agent search ranking or kernel promotion",
+  "manager_revision": "c054b397fd736c80ca9cff28852a70cb01e5d7a9",
+  "probe_commit": "e9a4457",
+  "probe_sha256": "40d6d98f5a8595b14988ea14e0b074697d3c0499a9ea4a816f07635eef16445b",
+  "hardware": "NVIDIA B300 SXM6 AC",
+  "torch": "2.12.1+cu130",
+  "policy": {
+    "length": 4096,
+    "topk": 2048,
+    "seed": 7981,
+    "trials": 3,
+    "repeats": 10,
+    "margin": 0.05
+  },
+  "historical_candidate": "4233569d6fabc437752ae5fb465a3e47713abf65d828eb873befa2bf355d8a8d",
+  "pairs": [
+    {
+      "pair": 0,
+      "order": [
+        "batch",
+        "separate"
+      ],
+      "batch_seconds": 9.175195858813822,
+      "separate_seconds": 17.54899808205664,
+      "batch_processes": 1,
+      "separate_processes": 2,
+      "batch_case_builds": 2,
+      "separate_case_builds": 3,
+      "candidate_ab_samples_each_mode": 36,
+      "batch_unique_aa_samples": 24,
+      "separate_unique_aa_samples": 36
+    },
+    {
+      "pair": 1,
+      "order": [
+        "separate",
+        "batch"
+      ],
+      "batch_seconds": 9.275352293625474,
+      "separate_seconds": 18.750724815763533,
+      "batch_processes": 1,
+      "separate_processes": 2,
+      "batch_case_builds": 2,
+      "separate_case_builds": 3,
+      "candidate_ab_samples_each_mode": 36,
+      "batch_unique_aa_samples": 24,
+      "separate_unique_aa_samples": 36
+    },
+    {
+      "pair": 2,
+      "order": [
+        "batch",
+        "separate"
+      ],
+      "batch_seconds": 9.325199699960649,
+      "separate_seconds": 18.200056640431285,
+      "batch_processes": 1,
+      "separate_processes": 2,
+      "batch_case_builds": 2,
+      "separate_case_builds": 3,
+      "candidate_ab_samples_each_mode": 36,
+      "batch_unique_aa_samples": 24,
+      "separate_unique_aa_samples": 36
+    }
+  ],
+  "median_batch_seconds": 9.275352293625474,
+  "median_separate_seconds": 18.200056640431285,
+  "latency_reduction": 0.4903668446272661,
+  "records": [
+    {
+      "run": "cold-qualification",
+      "elapsed_seconds": 14.181181896477938,
+      "startup_seconds": 6.695752961561084,
+      "case_builds": 2,
+      "stages": [
+        {
+          "candidate": "historical_h1",
+          "stage": "full_support_guard",
+          "seconds": 3.0029951855540276,
+          "decision": "reject",
+          "aa_ratios": [
+            0.9995285376322516,
+            1.0079232480845128,
+            1.0004136567952835
+          ],
+          "ab_ratios": [
+            1.192300049744213,
+            1.187602640166876,
+            1.1836880191278643
+          ]
+        },
+        {
+          "candidate": "unchanged_control",
+          "stage": "full_support_guard",
+          "seconds": 0.0656372094526887,
+          "decision": "continue",
+          "aa_ratios": [
+            0.9995285376322516,
+            1.0079232480845128,
+            1.0004136567952835
+          ],
+          "ab_ratios": [
+            1.0015830198131754,
+            0.9995645740049003,
+            0.9998076547358709
+          ]
+        },
+        {
+          "candidate": "unchanged_control",
+          "stage": "holey_support_benefit",
+          "seconds": 3.3514512525871396,
+          "decision": "inconclusive",
+          "aa_ratios": [
+            0.9998490858736426,
+            1.0032179535869479,
+            1.0003091929153825
+          ],
+          "ab_ratios": [
+            0.9989781813008486,
+            0.9997121374876973,
+            0.9993573630335814
+          ]
+        }
+      ]
+    },
+    {
+      "run": "pair0-batch-0",
+      "elapsed_seconds": 9.175195858813822,
+      "startup_seconds": 6.309346950612962,
+      "case_builds": 2,
+      "stages": [
+        {
+          "candidate": "historical_h1",
+          "stage": "full_support_guard",
+          "seconds": 0.9883668133988976,
+          "decision": "reject",
+          "aa_ratios": [
+            0.9992383447506858,
+            1.0000870941554358,
+            0.9998838573894303
+          ],
+          "ab_ratios": [
+            1.1851118730109047,
+            1.1856850703577733,
+            1.1846906649942612
+          ]
+        },
+        {
+          "candidate": "unchanged_control",
+          "stage": "full_support_guard",
+          "seconds": 0.06562857236713171,
+          "decision": "continue",
+          "aa_ratios": [
+            0.9992383447506858,
+            1.0000870941554358,
+            0.9998838573894303
+          ],
+          "ab_ratios": [
+            0.997821681763001,
+            1.0012887698017914,
+            0.9997531652473758
+          ]
+        },
+        {
+          "candidate": "unchanged_control",
+          "stage": "holey_support_benefit",
+          "seconds": 0.8144858786836267,
+          "decision": "inconclusive",
+          "aa_ratios": [
+            1.000295017053629,
+            1.0012581017300273,
+            1.0022723338176653
+          ],
+          "ab_ratios": [
+            0.9998001289335635,
+            1.0010823593800735,
+            1.000614413993237
+          ]
+        }
+      ]
+    },
+    {
+      "run": "pair0-separate-0",
+      "elapsed_seconds": 8.474067613482475,
+      "startup_seconds": 6.404944288544357,
+      "case_builds": 1,
+      "stages": [
+        {
+          "candidate": "historical_h1",
+          "stage": "full_support_guard",
+          "seconds": 1.1515175700187683,
+          "decision": "reject",
+          "aa_ratios": [
+            1.0008493329899149,
+            0.9995135557720776,
+            1.0001777603429434
+          ],
+          "ab_ratios": [
+            1.185022878597057,
+            1.185651138148728,
+            1.1859167941877533
+          ]
+        }
+      ]
+    },
+    {
+      "run": "pair0-separate-1",
+      "elapsed_seconds": 9.074930468574166,
+      "startup_seconds": 6.339169112965465,
+      "case_builds": 2,
+      "stages": [
+        {
+          "candidate": "unchanged_control",
+          "stage": "full_support_guard",
+          "seconds": 0.9735124194994569,
+          "decision": "continue",
+          "aa_ratios": [
+            0.9994925386436279,
+            0.999118766290098,
+            1.0013105682749976
+          ],
+          "ab_ratios": [
+            1.00067522803011,
+            0.9989086762453557,
+            1.0000543765001848
+          ]
+        },
+        {
+          "candidate": "unchanged_control",
+          "stage": "holey_support_benefit",
+          "seconds": 0.8060174072161317,
+          "decision": "inconclusive",
+          "aa_ratios": [
+            1.0012983722083297,
+            0.9981378839579029,
+            0.9988881446905525
+          ],
+          "ab_ratios": [
+            1.0018525162022491,
+            1.0020459864543931,
+            1.000646108912677
+          ]
+        }
+      ]
+    },
+    {
+      "run": "pair1-separate-0",
+      "elapsed_seconds": 9.024793065153062,
+      "startup_seconds": 6.447764192707837,
+      "case_builds": 1,
+      "stages": [
+        {
+          "candidate": "historical_h1",
+          "stage": "full_support_guard",
+          "seconds": 1.610491999424994,
+          "decision": "reject",
+          "aa_ratios": [
+            0.9990468212279162,
+            1.0006277850187244,
+            0.9886157559955792
+          ],
+          "ab_ratios": [
+            1.1849584048062674,
+            1.1845979280086414,
+            1.1849908106849807
+          ]
+        }
+      ]
+    },
+    {
+      "run": "pair1-separate-1",
+      "elapsed_seconds": 9.72593175061047,
+      "startup_seconds": 6.326422928832471,
+      "case_builds": 2,
+      "stages": [
+        {
+          "candidate": "unchanged_control",
+          "stage": "full_support_guard",
+          "seconds": 1.6166066015139222,
+          "decision": "continue",
+          "aa_ratios": [
+            0.9997680395691866,
+            1.000809978063748,
+            0.9998984005576669
+          ],
+          "ab_ratios": [
+            1.001509614913555,
+            0.9996262150242415,
+            0.9980037051526068
+          ]
+        },
+        {
+          "candidate": "unchanged_control",
+          "stage": "holey_support_benefit",
+          "seconds": 0.8015166036784649,
+          "decision": "inconclusive",
+          "aa_ratios": [
+            0.9962146522688553,
+            1.0010916339083218,
+            0.997014218204762
+          ],
+          "ab_ratios": [
+            1.0011248600406972,
+            1.000516650670609,
+            1.0013135584837856
+          ]
+        }
+      ]
+    },
+    {
+      "run": "pair1-batch-0",
+      "elapsed_seconds": 9.275352293625474,
+      "startup_seconds": 6.463956030085683,
+      "case_builds": 2,
+      "stages": [
+        {
+          "candidate": "historical_h1",
+          "stage": "full_support_guard",
+          "seconds": 0.980472294613719,
+          "decision": "reject",
+          "aa_ratios": [
+            0.9994162731485108,
+            0.9976918674595523,
+            1.0013530834946893
+          ],
+          "ab_ratios": [
+            1.1826019613898981,
+            1.1846506635504341,
+            1.1857310653706672
+          ]
+        },
+        {
+          "candidate": "unchanged_control",
+          "stage": "full_support_guard",
+          "seconds": 0.06563016213476658,
+          "decision": "continue",
+          "aa_ratios": [
+            0.9994162731485108,
+            0.9976918674595523,
+            1.0013530834946893
+          ],
+          "ab_ratios": [
+            1.0023230836574608,
+            1.0009436605245081,
+            1.0025443817321136
+          ]
+        },
+        {
+          "candidate": "unchanged_control",
+          "stage": "holey_support_benefit",
+          "seconds": 0.8001011116430163,
+          "decision": "inconclusive",
+          "aa_ratios": [
+            0.9993473745576987,
+            1.0002735231903404,
+            0.9993930482855966
+          ],
+          "ab_ratios": [
+            0.9987537111925613,
+            1.0004174275860358,
+            1.0004947498062464
+          ]
+        }
+      ]
+    },
+    {
+      "run": "pair2-batch-0",
+      "elapsed_seconds": 9.325199699960649,
+      "startup_seconds": 6.518214179202914,
+      "case_builds": 2,
+      "stages": [
+        {
+          "candidate": "historical_h1",
+          "stage": "full_support_guard",
+          "seconds": 0.9806134700775146,
+          "decision": "reject",
+          "aa_ratios": [
+            0.998771231421215,
+            1.001118251180456,
+            1.0003920674799691
+          ],
+          "ab_ratios": [
+            1.1851381091940365,
+            1.1850339760995714,
+            1.1845489697790876
+          ]
+        },
+        {
+          "candidate": "unchanged_control",
+          "stage": "full_support_guard",
+          "seconds": 0.06570154335349798,
+          "decision": "continue",
+          "aa_ratios": [
+            0.998771231421215,
+            1.001118251180456,
+            1.0003920674799691
+          ],
+          "ab_ratios": [
+            0.9996482291697517,
+            0.9933024431837288,
+            1.000461009535698
+          ]
+        },
+        {
+          "candidate": "unchanged_control",
+          "stage": "holey_support_benefit",
+          "seconds": 0.8033390333876014,
+          "decision": "inconclusive",
+          "aa_ratios": [
+            1.0001685074135414,
+            0.9992695647696527,
+            1.0026758273168601
+          ],
+          "ab_ratios": [
+            1.0005936052266153,
+            1.0001755392193334,
+            1.0013421898842392
+          ]
+        }
+      ]
+    },
+    {
+      "run": "pair2-separate-0",
+      "elapsed_seconds": 9.075192350894213,
+      "startup_seconds": 6.486981469206512,
+      "case_builds": 1,
+      "stages": [
+        {
+          "candidate": "historical_h1",
+          "stage": "full_support_guard",
+          "seconds": 1.4037686446681619,
+          "decision": "reject",
+          "aa_ratios": [
+            0.9994237108087841,
+            1.001183749244499,
+            1.00038822426061
+          ],
+          "ab_ratios": [
+            1.1822358026639186,
+            1.1838598552404644,
+            1.18551882925217
+          ]
+        }
+      ]
+    },
+    {
+      "run": "pair2-separate-1",
+      "elapsed_seconds": 9.124864289537072,
+      "startup_seconds": 6.44865738786757,
+      "case_builds": 2,
+      "stages": [
+        {
+          "candidate": "unchanged_control",
+          "stage": "full_support_guard",
+          "seconds": 0.9507412957027555,
+          "decision": "continue",
+          "aa_ratios": [
+            1.0002937949479918,
+            0.9988107921784908,
+            1.0009551381115962
+          ],
+          "ab_ratios": [
+            0.9978784148551638,
+            0.9997642029733452,
+            0.9994661808873062
+          ]
+        },
+        {
+          "candidate": "unchanged_control",
+          "stage": "holey_support_benefit",
+          "seconds": 0.7959640743210912,
+          "decision": "inconclusive",
+          "aa_ratios": [
+            1.00171611251699,
+            0.9982898500729747,
+            0.9966067241328657
+          ],
+          "ab_ratios": [
+            1.0002842196095634,
+            1.000463382697879,
+            1.0008640182180195
+          ]
+        }
+      ]
+    }
+  ],
+  "negative_control": {
+    "wrong_gradient_exit": 1,
+    "caught": "AssertionError: Query dQ/dW differs bytewise from the selected control"
+  },
+  "manager_jobs": [
+    {
+      "kind": "agent",
+      "status": "succeeded",
+      "seconds": 105.12722043599933,
+      "exit_code": 0
+    },
+    {
+      "kind": "gpu",
+      "status": "succeeded",
+      "seconds": 104.86617405153811,
+      "exit_code": 0
+    }
+  ],
+  "source_evidence": {
+    "archive_sha256": "35c5fe9ac7957e0a4bae60e86f2492060bcd2e08232a0fbfd1fdf8bdbcfcc859",
+    "remote_directory": "/fsx/infra-p1-slow/shared/runs/daniel/ke-workflow-acceptance-20261112/evidence",
+    "local_directory": "/Users/daniel/Documents/ChatGPT/算子优化/dsa-flow-acceptance-20261112/evidence"
+  },
+  "resource": {
+    "job_id": "a237cc18533645b98e7e30a8bec78706",
+    "phase": "Stopped",
+    "pods": [],
+    "gpu_hours_upper_bound": 0.08323240021864574,
+    "prior_gpu_hours": 3.909873582257165,
+    "cumulative_gpu_hours_upper_bound": 3.9931059824758104
+  },
+  "limitations": [
+    "One B300; three paired fixed-workload repetitions; same helper with different process granularity",
+    "Shared warm compiler caches after separate recorded cold qualification",
+    "dQ/dW baseline parity and input immutability; existing independent numerical FAIL remains blocking",
+    "Stage stdout is persisted, not live streamed through the manager; no model-in-the-loop trial was run"
+  ],
+  "timing_scope": "Includes interpreter startup/teardown, imports, input construction, checks, warmup, A/A calibration and A/B timing. Same candidate A/B samples; batching avoids duplicate A/A calibration and input construction, so the result is not attributable to process startup alone."
+}

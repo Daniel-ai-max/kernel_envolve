@@ -139,32 +139,44 @@ def validate_overlay(cfg, identities):
                     )
 
 
-def prepare_harness(run, cfg, identities):
-    """Copy fixed baseline trees, then replace only reviewed implementation paths."""
+def prepare_harness(run, cfg, identities, checkpoint=None):
+    """Copy the frozen baseline/implementation union once, within the run budget."""
     started = time.perf_counter()
+    checkpoint = checkpoint or (lambda: None)
+    checkpoint()
     result = {}
     for root, baseline in identities["baseline"].items():
         dest = run / "sources" / "validation" / root
-        shutil.copytree(run / "sources" / "baseline" / root, dest)
-        candidate = run / "sources" / "candidate" / root
         selected = cfg["implementation_paths"].get(root, [])
-        for name in selected:
-            target, source = dest / name, candidate / name
-            if target.is_dir():
-                shutil.rmtree(target)
-            else:
-                target.unlink(missing_ok=True)
-            if source.is_dir():
-                shutil.copytree(source, target)
-            elif source.is_file():
-                target.parent.mkdir(parents=True, exist_ok=True)
+        files = {}
+        dest.mkdir(parents=True)
+        directories = {dest}
+        for role in ("baseline", "candidate"):
+            source_root = run / "sources" / role / root
+            for name, expected in identities[role][root]["files"].items():
+                checkpoint()
+                if covered(name, selected) != (role == "candidate"):
+                    continue
+                source, target = source_root / name, dest / name
+                if source_root.is_symlink() or any(
+                    (source_root / parent).is_symlink()
+                    for parent in (Path(name), *Path(name).parents)
+                ):
+                    raise ValueError(f"Symlink introduced in frozen source: {role}/{root}/{name}")
+                if target.parent not in directories:
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    directories.add(target.parent)
                 shutil.copy2(source, target)
+                checkpoint()
+                actual = file_hash(target)
+                if actual != expected:
+                    raise ValueError(f"Frozen source changed: {role}/{root}/{name}")
+                files[name] = actual
         result[root] = {
             "git_head": baseline["git_head"],
             "candidate_git_head": identities["candidate"][root]["git_head"],
             "implementation_paths": selected,
-            "files": {
-                str(p.relative_to(dest)): file_hash(p) for p in dest.rglob("*") if p.is_file()
-            },
+            "files": files,
         }
+    checkpoint()
     return result, time.perf_counter() - started

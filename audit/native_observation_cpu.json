@@ -1,0 +1,36 @@
+{
+  "scope": "Observation policy comparison only; excludes kernels, reset, snapshot, IPC and compilation",
+  "platform": "macOS-26.5.2-arm64-arm-64bit",
+  "torch": "2.15.0",
+  "device": "cpu",
+  "rounds": 5,
+  "observations_per_measure_command": 8,
+  "raw_seconds": {
+    "capture_every_iteration": [
+      0.0202351249899948,
+      0.020396583000547253,
+      0.020714959013275802,
+      0.021631999989040196,
+      0.02018229199165944
+    ],
+    "capture_final_iteration": [
+      0.00275912499637343,
+      0.002656124997884035,
+      0.0027968750073341653,
+      0.002707542007556185,
+      0.002712625006097369
+    ]
+  },
+  "median_seconds": {
+    "capture_every_iteration": 0.020396583000547253,
+    "capture_final_iteration": 0.002712625006097369
+  },
+  "output_and_state_bytes_copied_per_command": {
+    "capture_every_iteration": 1207959552,
+    "capture_final_iteration": 150994944
+  },
+  "validator_calls": 96,
+  "state_checks": 192,
+  "checks_retained": true,
+  "final_output_and_state_equal": true
+}

@@ -10,12 +10,16 @@ import time
 from pathlib import Path
 
 
-def identity(pid):
-    """Return a birth identity, None for absence, and raise on an unavailable probe."""
+def identity(pid, *, include_zombie=False):
+    """Return birth identity; include an unreaped child only for receipt binding.
+
+    The default excludes zombies so existing liveness checks remain unchanged.
+    Callers opting in must capture identity before polling/waiting reaps the child.
+    """
     if Path("/proc").is_dir():
         try:
             stat = Path(f"/proc/{pid}/stat").read_text().rsplit(")", 1)[1].split()
-            if stat[0] == "Z":
+            if stat[0] == "Z" and not include_zombie:
                 return None
             return Path("/proc/sys/kernel/random/boot_id").read_text().strip() + ":" + stat[19]
         except FileNotFoundError:
@@ -31,7 +35,11 @@ def identity(pid):
     if reply.returncode:
         raise OSError(f"Process probe failed: {reply.stderr.strip()}")
     fields = reply.stdout.split()
-    return None if not fields or fields[-1].startswith("Z") else " ".join(fields[:-1])
+    return (
+        None
+        if not fields or (fields[-1].startswith("Z") and not include_zombie)
+        else " ".join(fields[:-1])
+    )
 
 
 def alive(pid, birth):
@@ -55,26 +63,42 @@ def exclusive(path):
         except BlockingIOError:
             yield None
             return
-        try:
-            yield handle
-        finally:
-            fcntl.flock(handle, fcntl.LOCK_UN)
+        # Close only this owner's descriptor. Explicit LOCK_UN would also release
+        # the shared open-file-description lock still held by inherited children.
+        yield handle
 
 
-def gpu_idle(device):
-    if device == "cpu":
-        return
+@contextlib.contextmanager
+def gpu_locks(devices):
+    """Acquire every existing per-device lock, or release the partial set immediately."""
+    with contextlib.ExitStack() as stack:
+        handles = []
+        for device in sorted(devices):
+            handle = stack.enter_context(exclusive(lock_path("gpu", device)))
+            if handle is None:
+                stack.close()
+                yield None
+                return
+            handles.append(handle)
+        yield tuple(handles)
+
+
+def _probe_devices(devices):
+    """Probe the exact UUID set in two driver calls, without caching live occupancy."""
+    selected = ",".join(devices)
     found = subprocess.run(
-        ["nvidia-smi", "--query-gpu=uuid", "--format=csv,noheader", "-i", device],
+        ["nvidia-smi", "--query-gpu=uuid", "--format=csv,noheader", "-i", selected],
         capture_output=True,
         text=True,
         timeout=10,
         check=True,
     )
-    if found.stdout.strip() != device:
-        raise ValueError("Physical GPU identity does not match the configured UUID")
+    actual = [line.strip() for line in found.stdout.splitlines() if line.strip()]
+    # Enumeration order need not match rank order. Never change the caller's list.
+    if len(actual) != len(devices) or set(actual) != set(devices):
+        raise ValueError("Physical GPU identity does not match the configured UUIDs")
     processes = subprocess.run(
-        ["nvidia-smi", "--query-compute-apps=pid", "--format=csv,noheader,nounits", "-i", device],
+        ["nvidia-smi", "--query-compute-apps=pid", "--format=csv,noheader,nounits", "-i", selected],
         capture_output=True,
         text=True,
         timeout=10,
@@ -82,6 +106,30 @@ def gpu_idle(device):
     )
     if processes.stdout.strip():
         raise ValueError(f"GPU has existing compute processes: {processes.stdout.strip()}")
+
+
+def gpu_idle(device):
+    if device != "cpu":
+        _probe_devices([device])
+
+
+def gpu_group_idle(devices):
+    """Batch healthy-group checks; retain per-card diagnostics on any probe failure."""
+    selected = [device for device in devices if device != "cpu"]
+    if not selected:
+        return
+    try:
+        _probe_devices(selected)
+    except (OSError, ValueError, subprocess.SubprocessError) as exc:
+        # A failed observation stays failed even if the driver recovers in diagnosis.
+        errors = [f"GPU group {','.join(selected)}: {exc}"]
+        if len(selected) > 1:
+            for device in selected:
+                try:
+                    gpu_idle(device)
+                except (OSError, ValueError, subprocess.SubprocessError) as error:
+                    errors.append(f"{device}: {error}")
+        raise ValueError("; ".join(errors)) from exc
 
 
 def terminate(process, grace=3):
@@ -122,5 +170,11 @@ def stop_recorded(pid, birth):
 
 
 def reap_registered(store, job):
+    errors = []
     for child in store.rows("SELECT * FROM processes WHERE job=?", (job,)):
-        stop_recorded(child["pid"], child["identity"])
+        try:
+            stop_recorded(child["pid"], child["identity"])
+        except (OSError, ValueError, subprocess.SubprocessError) as exc:
+            errors.append(f"pid {child['pid']}: {exc}")
+    if errors:
+        raise OSError("; ".join(errors))
