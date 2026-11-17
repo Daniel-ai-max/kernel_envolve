@@ -1,0 +1,11 @@
+{
+  "at": 1794346566.395553,
+  "source_commit": "6e97cddbfcc1e19bfda8a8f84d1ba8a9306f4fa6",
+  "design_sha256": "3f7720d263d2d8bfb73727f37f5030ecaf4a53137b4c2c161529eecf103c7118",
+  "phases": {
+    "development": "f9e81389ff853f869056cfa0ae46aec36fee75ae04e1f7b9773f08f391809899",
+    "conditional-confirmation": "b4c277942d8282e53ec9978b7b82477f8ff409f5ee9453efb93f8d316d5b85b6"
+  },
+  "primary": "adaptive-reuse-vs-control-4 only; unchanged practical and protection gates; independent confirmation required",
+  "no_submissions": true
+}

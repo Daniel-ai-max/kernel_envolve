@@ -1,0 +1,1445 @@
+{
+  "date": "2026-11-10",
+  "source_commit": "942fd11f873e0f20d9a6429ea6fe356ba28e22ae",
+  "job": "4dd3fc8843c14980926beccf40899935",
+  "model": "gpt-6-astra",
+  "environment": {
+    "count": 1,
+    "gpu": "NVIDIA B300 SXM6 AC",
+    "torch": "2.12.1+cu130",
+    "triton": "3.7.1"
+  },
+  "completed": true,
+  "scope": "Four-arm development pilot, not independent final audit or original-paper reproduction",
+  "active_after": "base",
+  "disabled_after": true,
+  "strategies": {
+    "control": [],
+    "fixed": [
+      {
+        "action": "Use measured per-case latency to select one concrete bottleneck hypothesis. Preserve layouts and tails, retain a known good fallback, and stop if further experiments cannot improve validated yield within the budget.",
+        "evidence": [
+          "e061752064369ad5c8f947746376a9593f3e76cd8df94072b699a7b5d532c42d"
+        ],
+        "id": "fixed-measure-and-preserve",
+        "unless": "Measurements are insufficient to support the proposed change; avoid claiming a bottleneck as fact.",
+        "when": "Choosing an optimization experiment for a GPU operator"
+      }
+    ],
+    "learned": [
+      {
+        "action": "Use the repeats to characterize uncertainty, then choose a distinct bottleneck hypothesis rather than another unchanged run seeking a favorable aggregate. State the expected per-case signature before the next experiment.",
+        "evidence": [
+          "e061752064369ad5c8f947746376a9593f3e76cd8df94072b699a7b5d532c42d",
+          "5a83cbffcaaa5d422c92542bf74b9182a1dca5ccf617e12a0b250f51e8d632a2",
+          "42b9fe2e4c25cd8eed026c9c66601c5c60440664b8ea4a66e4dbe11425bb7f2d",
+          "6668c567f9af139b60ed976f224631c67f0c7f4da79fd7630748f6bc8fa0206d"
+        ],
+        "id": "avoid-undirected-repeat-tests",
+        "unless": "A specific reproducibility question or observed environmental anomaly makes an unchanged repeat informative.",
+        "when": "Repeated tests of the same source remain near parity, with gain signs changing across runs or batches."
+      },
+      {
+        "action": "Choose a diagnostic separating host launch/allocation time from device execution before further block or warp tuning. Treat reduced intermediates as a hypothesis, not evidence of a speedup; test one suspected cost at a time.",
+        "evidence": [
+          "55ee833ed310b33023673cdfa3e6dc5f487010f8a3beff1feff51de3b670c369",
+          "49d6bd7cdcfe29e1943a858ac1fea6639a6e603d0a309d1ef118c22c545ceb94",
+          "a6a6e6471ab1b3c4e79d257881428a53dabb2331e503d5a48b00143bf95f3da7",
+          "21426d42d9c2874edb37d4bd57d5832d097a5da3b1bd2fabec016b596fc46f41"
+        ],
+        "id": "diagnose-fusion-before-tuning",
+        "unless": "Existing measurements already isolate a device bottleneck and predict a discriminating tuning experiment.",
+        "when": "Stride-aware fusion passes correctness but gives near-baseline pointwise timings or uniformly slower row reductions across sizes and strides."
+      },
+      {
+        "action": "Prioritize a controlled shape/layout-specific follow-up: isolate the wide contiguous regime and use the prior near-baseline approach as control elsewhere. Investigate strided-path costs separately rather than generalizing the local gain.",
+        "evidence": [
+          "faf8acce137c81df4fad8f160bbba36421b11b5daf8ffade3a7a98b8836cbaff",
+          "a629bbac187bd20602e329d4d29542bf445dcd532a7e05b35b84bdef432ef49b",
+          "42b9fe2e4c25cd8eed026c9c66601c5c60440664b8ea4a66e4dbe11425bb7f2d"
+        ],
+        "id": "follow-local-reduction-gains",
+        "unless": "Further paired observations fail to reproduce the contiguous gain, or diagnostics identify a shared bottleneck better tested first.",
+        "when": "Rowwise square-sum via batched self-dot passes correctness and improves wide contiguous rows in both batches, but regresses on narrow rows and inner-stride-2 inputs."
+      }
+    ],
+    "raw": [
+      {
+        "action": "{\"task\": \"study-learn-affine\", \"mode\": \"full\", \"correctness\": \"pass\", \"performance\": \"inconclusive\", \"gains\": [-0.000617681917577384, -0.00041069900185974895]}",
+        "evidence": [
+          "5a83cbffcaaa5d422c92542bf74b9182a1dca5ccf617e12a0b250f51e8d632a2"
+        ],
+        "id": "raw-0",
+        "unless": "Task IDs are provenance only; these measurements do not establish causality or results on new tasks.",
+        "when": "A new task shares observable workload conditions with this historical record"
+      },
+      {
+        "action": "{\"task\": \"study-learn-affine\", \"mode\": \"full\", \"correctness\": \"pass\", \"performance\": \"inconclusive\", \"gains\": [-0.003682318155338038, 0.000703098955711523]}",
+        "evidence": [
+          "55ee833ed310b33023673cdfa3e6dc5f487010f8a3beff1feff51de3b670c369"
+        ],
+        "id": "raw-1",
+        "unless": "Task IDs are provenance only; these measurements do not establish causality or results on new tasks.",
+        "when": "A new task shares observable workload conditions with this historical record"
+      },
+      {
+        "action": "{\"task\": \"study-learn-square-sum\", \"mode\": \"full\", \"correctness\": \"pass\", \"performance\": \"inconclusive\", \"gains\": [-0.0049589264360621055, 0.009478673997978415]}",
+        "evidence": [
+          "6668c567f9af139b60ed976f224631c67f0c7f4da79fd7630748f6bc8fa0206d"
+        ],
+        "id": "raw-2",
+        "unless": "Task IDs are provenance only; these measurements do not establish causality or results on new tasks.",
+        "when": "A new task shares observable workload conditions with this historical record"
+      },
+      {
+        "action": "{\"task\": \"study-learn-square-sum\", \"mode\": \"full\", \"correctness\": \"pass\", \"performance\": \"slower\", \"gains\": [-0.14845362518043204, -0.12897996488715524]}",
+        "evidence": [
+          "faf8acce137c81df4fad8f160bbba36421b11b5daf8ffade3a7a98b8836cbaff"
+        ],
+        "id": "raw-3",
+        "unless": "Task IDs are provenance only; these measurements do not establish causality or results on new tasks.",
+        "when": "A new task shares observable workload conditions with this historical record"
+      }
+    ]
+  },
+  "strategy_hashes": {
+    "control": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "fixed": "0c360d9777d249c809871723058d5bf7f6cc14f157f48a224d6e65cbc87db0e1",
+    "learned": "8096901d7c779f3b08d54d4ef36376875814dc573ca2684099f57c63973c0cc2",
+    "raw": "0d87a50979f1bde662275caa7f028e6bcf887c3135dea5aa98378513f44e6a50"
+  },
+  "training_reuse": {
+    "archive_sha256": "f1500443dd7e13f265ce336a4ae924b596f6ff4489f51c8aeaa522355ab22926",
+    "historical_environment": {
+      "count": 1,
+      "gpu": "NVIDIA B300 SXM6 AC",
+      "torch": "2.12.1+cu130",
+      "triton": "3.7.1"
+    },
+    "historical_gpu_uuid": "GPU-2eea3eb7-705c-b9b0-53c4-cae4daa2c9de",
+    "reason": "Reuse exact completed learning trajectories and receipts; regenerate report attribution without resampling kernels",
+    "source_evidence_sha256": "142719917edbcf1a84282cf1ac5c5a57a9ffbc3cf7a67872c65f00985859e889",
+    "source_job": "233e527a133a4a11858b668d568252b0"
+  },
+  "trials": [
+    {
+      "repeat": 0,
+      "task": 0,
+      "arm": "control",
+      "error": null,
+      "actions": {
+        "propose": 2
+      },
+      "search_evaluations": {
+        "full": 3
+      },
+      "wrong_candidate_evaluations": 0,
+      "identical_evaluations_skipped": 0,
+      "stop_reason": "action_budget_exhausted",
+      "model_seconds": 24.819940531626344,
+      "passed": true,
+      "quality": 0.229332511554675,
+      "eligible_for_best": true,
+      "baseline_speedup": 1.2975764710372168,
+      "fixed_baseline_gain_by_batch": [
+        0.23457219996569145,
+        0.22409282314365853
+      ],
+      "solver_seconds": 38.526360945776105,
+      "trial_seconds": 43.60411548195407,
+      "result_hash": "60594568a178c610f524cc92e2a80ad0742cfd6c3bd1d0aa42339e8b9dc702ba"
+    },
+    {
+      "repeat": 0,
+      "task": 0,
+      "arm": "fixed",
+      "error": null,
+      "actions": {
+        "propose": 2
+      },
+      "search_evaluations": {
+        "full": 3
+      },
+      "wrong_candidate_evaluations": 0,
+      "identical_evaluations_skipped": 0,
+      "stop_reason": "action_budget_exhausted",
+      "model_seconds": 21.215678745880723,
+      "passed": true,
+      "quality": 0.10274308849207492,
+      "eligible_for_best": true,
+      "baseline_speedup": 1.1145079933899928,
+      "fixed_baseline_gain_by_batch": [
+        0.09748005671204008,
+        0.10800612027210976
+      ],
+      "solver_seconds": 32.75990095175803,
+      "trial_seconds": 36.734307129867375,
+      "result_hash": "b60eed3e4f1f5e3fa4d628ad3d53bf80af46bea6b7c2d04979f970067b085072"
+    },
+    {
+      "repeat": 0,
+      "task": 0,
+      "arm": "learned",
+      "error": null,
+      "actions": {
+        "propose": 2
+      },
+      "search_evaluations": {
+        "full": 3
+      },
+      "wrong_candidate_evaluations": 0,
+      "identical_evaluations_skipped": 0,
+      "stop_reason": "action_budget_exhausted",
+      "model_seconds": 22.81635384168476,
+      "passed": true,
+      "quality": 0.10293478570202497,
+      "eligible_for_best": true,
+      "baseline_speedup": 1.1147461567580452,
+      "fixed_baseline_gain_by_batch": [
+        0.09625436747591198,
+        0.10961520392813795
+      ],
+      "solver_seconds": 34.023497968912125,
+      "trial_seconds": 38.0986552988179,
+      "result_hash": "df42bb85b7a066b0fb8b9d0cea32ce46d53829777836fe1021df6d0779522573"
+    },
+    {
+      "repeat": 0,
+      "task": 0,
+      "arm": "raw",
+      "error": null,
+      "actions": {
+        "propose": 2
+      },
+      "search_evaluations": {
+        "full": 3
+      },
+      "wrong_candidate_evaluations": 0,
+      "identical_evaluations_skipped": 0,
+      "stop_reason": "action_budget_exhausted",
+      "model_seconds": 21.215021768584847,
+      "passed": true,
+      "quality": 0.10291557692322789,
+      "eligible_for_best": true,
+      "baseline_speedup": 1.1147222873074238,
+      "fixed_baseline_gain_by_batch": [
+        0.10487093130677572,
+        0.10096022253968007
+      ],
+      "solver_seconds": 33.16126062115654,
+      "trial_seconds": 37.63721297727898,
+      "result_hash": "dd03bfa588fdcfcdd766749f84a435ed81a1d16ead972e123e404336e24dbbdb"
+    },
+    {
+      "repeat": 0,
+      "task": 1,
+      "arm": "raw",
+      "error": null,
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_evaluations": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "identical_evaluations_skipped": 0,
+      "stop_reason": "model_stopped",
+      "model_seconds": 15.211312195751816,
+      "passed": true,
+      "quality": 0.43897961427054566,
+      "eligible_for_best": true,
+      "baseline_speedup": 1.782466422676909,
+      "fixed_baseline_gain_by_batch": [
+        0.44362059411769983,
+        0.4343386344233915
+      ],
+      "solver_seconds": 21.469374729786068,
+      "trial_seconds": 24.590124205686152,
+      "result_hash": "6ce19f118dba87ab148b51b9037ac2fbed1071d1143797a1920bf62b4f7faa81"
+    },
+    {
+      "repeat": 0,
+      "task": 1,
+      "arm": "learned",
+      "error": {
+        "message": "RSI adapter exited 1",
+        "seconds": 54.50160862179473,
+        "type": "ValueError"
+      },
+      "actions": {},
+      "search_evaluations": {
+        "full": 1
+      },
+      "wrong_candidate_evaluations": 0,
+      "identical_evaluations_skipped": 0,
+      "stop_reason": null,
+      "model_seconds": 0
+    },
+    {
+      "repeat": 0,
+      "task": 1,
+      "arm": "fixed",
+      "error": null,
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_evaluations": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "identical_evaluations_skipped": 0,
+      "stop_reason": "model_stopped",
+      "model_seconds": 53.43358013080433,
+      "passed": true,
+      "quality": 0.41599122719474835,
+      "eligible_for_best": true,
+      "baseline_speedup": 1.7123030450322845,
+      "fixed_baseline_gain_by_batch": [
+        0.4207019114765087,
+        0.411280542912988
+      ],
+      "solver_seconds": 59.34011096926406,
+      "trial_seconds": 62.4609285807237,
+      "result_hash": "fe38e347cf75c2c6447dab395706d15da96c5c276f89486eb2888b8f0a4a1ff3"
+    },
+    {
+      "repeat": 0,
+      "task": 1,
+      "arm": "control",
+      "error": null,
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_evaluations": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "identical_evaluations_skipped": 0,
+      "stop_reason": "model_stopped",
+      "model_seconds": 18.613102502655238,
+      "passed": true,
+      "quality": 0.41239232611687515,
+      "eligible_for_best": true,
+      "baseline_speedup": 1.7018157598106862,
+      "fixed_baseline_gain_by_batch": [
+        0.4101786908706405,
+        0.4146059613631098
+      ],
+      "solver_seconds": 24.378768652677536,
+      "trial_seconds": 27.449281641747802,
+      "result_hash": "88b5c73950a66e37ded3541b12eb5075fd453fb0804033ec681a80265792a25b"
+    },
+    {
+      "repeat": 1,
+      "task": 0,
+      "arm": "learned",
+      "error": null,
+      "actions": {
+        "propose": 2
+      },
+      "search_evaluations": {
+        "full": 3
+      },
+      "wrong_candidate_evaluations": 0,
+      "identical_evaluations_skipped": 0,
+      "stop_reason": "action_budget_exhausted",
+      "model_seconds": 25.617070078849792,
+      "passed": true,
+      "quality": 0,
+      "eligible_for_best": false,
+      "baseline_speedup": 1.123973182240383,
+      "fixed_baseline_gain_by_batch": [
+        0.10619393386437537,
+        0.1144041803953808
+      ],
+      "solver_seconds": 37.21864605695009,
+      "trial_seconds": 41.14645332098007,
+      "result_hash": "b41388872e0744420cccc996135f07cb281ac7dd4174889780b83c35c3de2755"
+    },
+    {
+      "repeat": 1,
+      "task": 0,
+      "arm": "control",
+      "error": null,
+      "actions": {
+        "propose": 2
+      },
+      "search_evaluations": {
+        "full": 3
+      },
+      "wrong_candidate_evaluations": 0,
+      "identical_evaluations_skipped": 0,
+      "stop_reason": "action_budget_exhausted",
+      "model_seconds": 24.618146802298725,
+      "passed": true,
+      "quality": 0.10790673507290055,
+      "eligible_for_best": true,
+      "baseline_speedup": 1.1209590289662354,
+      "fixed_baseline_gain_by_batch": [
+        0.10269736409743424,
+        0.11311610604836686
+      ],
+      "solver_seconds": 36.121579925064,
+      "trial_seconds": 40.04555557761341,
+      "result_hash": "80f3399192aa27b3dff02928c50b2374ce528bd0ec8768c228b91d9d62260c86"
+    },
+    {
+      "repeat": 1,
+      "task": 0,
+      "arm": "raw",
+      "error": null,
+      "actions": {
+        "propose": 2
+      },
+      "search_evaluations": {
+        "full": 3
+      },
+      "wrong_candidate_evaluations": 0,
+      "identical_evaluations_skipped": 0,
+      "stop_reason": "action_budget_exhausted",
+      "model_seconds": 22.41530663240701,
+      "passed": true,
+      "quality": 0.10911624734782888,
+      "eligible_for_best": true,
+      "baseline_speedup": 1.1224809039596788,
+      "fixed_baseline_gain_by_batch": [
+        0.1072807014215994,
+        0.11095179327405835
+      ],
+      "solver_seconds": 33.507705063093454,
+      "trial_seconds": 37.38522749487311,
+      "result_hash": "16102111224f700a662c688c1bed961c4575d603e13ac5e656167499d8c622fd"
+    },
+    {
+      "repeat": 1,
+      "task": 0,
+      "arm": "fixed",
+      "error": null,
+      "actions": {
+        "propose": 2
+      },
+      "search_evaluations": {
+        "full": 3
+      },
+      "wrong_candidate_evaluations": 0,
+      "identical_evaluations_skipped": 0,
+      "stop_reason": "action_budget_exhausted",
+      "model_seconds": 20.813855628017336,
+      "passed": true,
+      "quality": 0.10108660753668747,
+      "eligible_for_best": true,
+      "baseline_speedup": 1.112454223492741,
+      "fixed_baseline_gain_by_batch": [
+        0.0958498209722265,
+        0.10632339410114844
+      ],
+      "solver_seconds": 32.253801971673965,
+      "trial_seconds": 36.1810047570616,
+      "result_hash": "a20602f574379ade31a3765feaee38c2ada0b85750e0f29cec43f7220f850b19"
+    },
+    {
+      "repeat": 1,
+      "task": 1,
+      "arm": "fixed",
+      "error": null,
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_evaluations": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "identical_evaluations_skipped": 0,
+      "stop_reason": "model_stopped",
+      "model_seconds": 22.614660398103297,
+      "passed": true,
+      "quality": 0.41150766261394695,
+      "eligible_for_best": true,
+      "baseline_speedup": 1.6992574694205345,
+      "fixed_baseline_gain_by_batch": [
+        0.40907322902419996,
+        0.41394209620369393
+      ],
+      "solver_seconds": 28.265596643090248,
+      "trial_seconds": 31.336347353179008,
+      "result_hash": "6f482fcb6844fe55c1402657ddf57bb262d00ae4143a455efa1565e8c53a6a4b"
+    },
+    {
+      "repeat": 1,
+      "task": 1,
+      "arm": "raw",
+      "error": null,
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_evaluations": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "identical_evaluations_skipped": 0,
+      "stop_reason": "model_stopped",
+      "model_seconds": 17.012689518276602,
+      "passed": true,
+      "quality": 0.41341063957821594,
+      "eligible_for_best": true,
+      "baseline_speedup": 1.7047700955246703,
+      "fixed_baseline_gain_by_batch": [
+        0.4133471978694264,
+        0.41347408128700547
+      ],
+      "solver_seconds": 22.873975431080908,
+      "trial_seconds": 25.994816792663187,
+      "result_hash": "f77c78e76528499180842d8216d33e1467ba4d4e1c654bfa0eb0fce7d0c15de3"
+    },
+    {
+      "repeat": 1,
+      "task": 1,
+      "arm": "control",
+      "error": null,
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_evaluations": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "identical_evaluations_skipped": 0,
+      "stop_reason": "model_stopped",
+      "model_seconds": 16.41230713482946,
+      "passed": true,
+      "quality": 0.44353025887483477,
+      "eligible_for_best": true,
+      "baseline_speedup": 1.7970429047553058,
+      "fixed_baseline_gain_by_batch": [
+        0.44576665565753304,
+        0.4412938620921365
+      ],
+      "solver_seconds": 22.6726775621064,
+      "trial_seconds": 25.7432655650191,
+      "result_hash": "4e81bc80d3141ff79b66e323b46c05f51c8ada5fc53fa88ad5170541c23c182f"
+    },
+    {
+      "repeat": 1,
+      "task": 1,
+      "arm": "learned",
+      "error": null,
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_evaluations": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "identical_evaluations_skipped": 0,
+      "stop_reason": "model_stopped",
+      "model_seconds": 15.410966133698821,
+      "passed": true,
+      "quality": 0.410522629363267,
+      "eligible_for_best": true,
+      "baseline_speedup": 1.6964179624399063,
+      "fixed_baseline_gain_by_batch": [
+        0.4148353542098757,
+        0.4062099045166583
+      ],
+      "solver_seconds": 20.86651662690565,
+      "trial_seconds": 23.986804513726383,
+      "result_hash": "e0158d3f1fd2c5f910e73d0dbebe9346bffef939b818e44a1c97b08af8fdbf02"
+    }
+  ],
+  "aggregates": {
+    "control": {
+      "trials": 4,
+      "errors": 0,
+      "passed": 4,
+      "promotable": 4,
+      "model_seconds": 84.46349697140977,
+      "wrong_candidate_evaluations": 0,
+      "identical_evaluations_skipped": 0,
+      "search_evaluations": {
+        "full": 10
+      },
+      "actions": {
+        "propose": 6,
+        "stop": 2
+      },
+      "completed_trial_seconds": 136.84221826633438,
+      "completed_solver_seconds": 121.69938708562404,
+      "failed_trial_seconds": 0,
+      "all_attempts_trial_seconds": 136.84221826633438,
+      "cost_comparison_complete": true,
+      "model_attempts": 8,
+      "missing_usage_calls": 0,
+      "model_attempt_seconds": 68.67152738571167,
+      "known_tokens": 45525
+    },
+    "fixed": {
+      "trials": 4,
+      "errors": 0,
+      "passed": 4,
+      "promotable": 4,
+      "model_seconds": 118.07777490280569,
+      "wrong_candidate_evaluations": 0,
+      "identical_evaluations_skipped": 0,
+      "search_evaluations": {
+        "full": 10
+      },
+      "actions": {
+        "propose": 6,
+        "stop": 2
+      },
+      "completed_trial_seconds": 166.7125878208317,
+      "completed_solver_seconds": 152.6194105357863,
+      "failed_trial_seconds": 0,
+      "all_attempts_trial_seconds": 166.7125878208317,
+      "cost_comparison_complete": true,
+      "model_attempts": 8,
+      "missing_usage_calls": 0,
+      "model_attempt_seconds": 102.7076427936554,
+      "known_tokens": 46349
+    },
+    "raw": {
+      "trials": 4,
+      "errors": 0,
+      "passed": 4,
+      "promotable": 4,
+      "model_seconds": 75.85433011502028,
+      "wrong_candidate_evaluations": 0,
+      "identical_evaluations_skipped": 0,
+      "search_evaluations": {
+        "full": 10
+      },
+      "actions": {
+        "propose": 6,
+        "stop": 2
+      },
+      "completed_trial_seconds": 125.60738147050142,
+      "completed_solver_seconds": 111.01231584511697,
+      "failed_trial_seconds": 0,
+      "all_attempts_trial_seconds": 125.60738147050142,
+      "cost_comparison_complete": true,
+      "model_attempts": 8,
+      "missing_usage_calls": 0,
+      "model_attempt_seconds": 60.176291942596436,
+      "known_tokens": 48777
+    },
+    "learned": {
+      "trials": 4,
+      "errors": 1,
+      "passed": 3,
+      "promotable": 2,
+      "model_seconds": 63.84439005423337,
+      "wrong_candidate_evaluations": 0,
+      "identical_evaluations_skipped": 0,
+      "search_evaluations": {
+        "full": 9
+      },
+      "actions": {
+        "propose": 5,
+        "stop": 1
+      },
+      "completed_trial_seconds": 103.23191313352436,
+      "completed_solver_seconds": 92.10866065276787,
+      "failed_trial_seconds": 54.50160862179473,
+      "all_attempts_trial_seconds": 157.7335217553191,
+      "cost_comparison_complete": false,
+      "model_attempts": 7,
+      "missing_usage_calls": 1,
+      "model_attempt_seconds": 101.27674150466919,
+      "known_tokens": 36348
+    }
+  },
+  "gate_comparisons": {
+    "fixed": {
+      "accepted": false,
+      "reasons": [
+        "Aggregate quality regression",
+        "Aggregate seconds regression",
+        "Aggregate solver_seconds regression",
+        "No reproducible whole-suite quality, correctness or cost benefit",
+        "Per-task quality regression"
+      ],
+      "repeats": [
+        {
+          "candidate_passed": 2,
+          "candidate_quality": 0.25936715784341163,
+          "candidate_seconds": 99.19523571059108,
+          "candidate_solver_seconds": 92.10001192102209,
+          "control_passed": 2,
+          "control_quality": 0.32086241883577504,
+          "control_seconds": 71.05339712370187,
+          "control_solver_seconds": 62.90512959845364,
+          "quality_gain": -0.06149526099236341,
+          "repeat": 0
+        },
+        {
+          "candidate_passed": 2,
+          "candidate_quality": 0.2562971350753172,
+          "candidate_seconds": 67.51735211024061,
+          "candidate_solver_seconds": 60.519398614764214,
+          "control_passed": 2,
+          "control_quality": 0.27571849697386763,
+          "control_seconds": 65.78882114263251,
+          "control_solver_seconds": 58.7942574871704,
+          "quality_gain": -0.019421361898550427,
+          "repeat": 1
+        }
+      ],
+      "scope": "Equal-weight declared tasks only; wall time is not token cost or a significance test"
+    },
+    "learned": {
+      "accepted": false,
+      "reasons": [
+        "Incomplete matched validation or invalid trial metrics"
+      ],
+      "repeats": [],
+      "scope": "Equal-weight declared tasks only; wall time is not token cost or a significance test"
+    },
+    "raw": {
+      "accepted": false,
+      "reasons": [
+        "Aggregate quality regression",
+        "No reproducible whole-suite quality, correctness or cost benefit",
+        "Per-task quality regression"
+      ],
+      "repeats": [
+        {
+          "candidate_passed": 2,
+          "candidate_quality": 0.27094759559688675,
+          "candidate_seconds": 62.22733718296513,
+          "candidate_solver_seconds": 54.63063535094261,
+          "control_passed": 2,
+          "control_quality": 0.32086241883577504,
+          "control_seconds": 71.05339712370187,
+          "control_solver_seconds": 62.90512959845364,
+          "quality_gain": -0.049914823238888295,
+          "repeat": 0
+        },
+        {
+          "candidate_passed": 2,
+          "candidate_quality": 0.26126344346302244,
+          "candidate_seconds": 63.38004428753629,
+          "candidate_solver_seconds": 56.38168049417436,
+          "control_passed": 2,
+          "control_quality": 0.27571849697386763,
+          "control_seconds": 65.78882114263251,
+          "control_solver_seconds": 58.7942574871704,
+          "quality_gain": -0.014455053510845195,
+          "repeat": 1
+        }
+      ],
+      "scope": "Equal-weight declared tasks only; wall time is not token cost or a significance test"
+    }
+  },
+  "ledger": [
+    {
+      "charged": 22.089465982746333,
+      "ended": 1794317614.5998716,
+      "error": null,
+      "id": "c3d8f6496eba4b80ae3e69e5a4a3e048",
+      "kind": "learn",
+      "reserved": 90.0,
+      "started": 1794317592.5086505
+    },
+    {
+      "charged": 588.280778168235,
+      "ended": 1794318202.8850005,
+      "error": null,
+      "id": "8faa885525774994af857db2bf8bc9fc",
+      "kind": "validation",
+      "reserved": 1500.0,
+      "started": 1794317614.6042578
+    }
+  ],
+  "driver_seconds": 612.0247790813446,
+  "model_calls": [
+    {
+      "arm": "learning",
+      "call": "01-learn-c184f362",
+      "status": "completed",
+      "seconds": 20.175978183746338,
+      "usage": {
+        "cost": 0.0802615,
+        "input_tokens": 9598,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 999,
+        "output_tokens_details": {
+          "reasoning_tokens": 114
+        },
+        "total_tokens": 10597
+      }
+    },
+    {
+      "arm": "control",
+      "call": "02-solve-43df290c",
+      "status": "completed",
+      "seconds": 8.49967908859253,
+      "usage": {
+        "cost": 0.0271095,
+        "input_tokens": 3024,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 381,
+        "output_tokens_details": {
+          "reasoning_tokens": 72
+        },
+        "total_tokens": 3405
+      }
+    },
+    {
+      "arm": "control",
+      "call": "03-solve-68e43b8d",
+      "status": "completed",
+      "seconds": 12.204802989959717,
+      "usage": {
+        "cost": 0.072226,
+        "input_tokens": 7818,
+        "input_tokens_details": {
+          "cache_write_tokens": 7815,
+          "cached_tokens": 0
+        },
+        "output_tokens": 500,
+        "output_tokens_details": {
+          "reasoning_tokens": 123
+        },
+        "total_tokens": 8318
+      }
+    },
+    {
+      "arm": "fixed",
+      "call": "04-solve-e665dd04",
+      "status": "completed",
+      "seconds": 8.672595024108887,
+      "usage": {
+        "cost": 0.0357,
+        "input_tokens": 3105,
+        "input_tokens_details": {
+          "cache_write_tokens": 3102,
+          "cached_tokens": 0
+        },
+        "output_tokens": 399,
+        "output_tokens_details": {
+          "reasoning_tokens": 63
+        },
+        "total_tokens": 3504
+      }
+    },
+    {
+      "arm": "fixed",
+      "call": "05-solve-3e83aa89",
+      "status": "completed",
+      "seconds": 9.683795928955078,
+      "usage": {
+        "cost": 0.071358,
+        "input_tokens": 7934,
+        "input_tokens_details": {
+          "cache_write_tokens": 7931,
+          "cached_tokens": 0
+        },
+        "output_tokens": 452,
+        "output_tokens_details": {
+          "reasoning_tokens": 72
+        },
+        "total_tokens": 8386
+      }
+    },
+    {
+      "arm": "learned",
+      "call": "06-solve-b5f99a79",
+      "status": "completed",
+      "seconds": 5.824702024459839,
+      "usage": {
+        "cost": 0.034713,
+        "input_tokens": 3334,
+        "input_tokens_details": {
+          "cache_write_tokens": 3331,
+          "cached_tokens": 0
+        },
+        "output_tokens": 325,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 3659
+      }
+    },
+    {
+      "arm": "learned",
+      "call": "07-solve-afc50af3",
+      "status": "completed",
+      "seconds": 12.909117937088013,
+      "usage": {
+        "cost": 0.072933,
+        "input_tokens": 8144,
+        "input_tokens_details": {
+          "cache_write_tokens": 8141,
+          "cached_tokens": 0
+        },
+        "output_tokens": 455,
+        "output_tokens_details": {
+          "reasoning_tokens": 67
+        },
+        "total_tokens": 8599
+      }
+    },
+    {
+      "arm": "raw",
+      "call": "08-solve-c3dfda56",
+      "status": "completed",
+      "seconds": 6.619091033935547,
+      "usage": {
+        "cost": 0.034699,
+        "input_tokens": 3437,
+        "input_tokens_details": {
+          "cache_write_tokens": 3434,
+          "cached_tokens": 0
+        },
+        "output_tokens": 304,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 3741
+      }
+    },
+    {
+      "arm": "raw",
+      "call": "09-solve-465133cf",
+      "status": "completed",
+      "seconds": 10.705278873443604,
+      "usage": {
+        "cost": 0.072611,
+        "input_tokens": 8238,
+        "input_tokens_details": {
+          "cache_write_tokens": 8235,
+          "cached_tokens": 0
+        },
+        "output_tokens": 427,
+        "output_tokens_details": {
+          "reasoning_tokens": 61
+        },
+        "total_tokens": 8665
+      }
+    },
+    {
+      "arm": "raw",
+      "call": "10-solve-7cc24365",
+      "status": "completed",
+      "seconds": 6.769374847412109,
+      "usage": {
+        "cost": 0.0280005,
+        "input_tokens": 3516,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 315,
+        "output_tokens_details": {
+          "reasoning_tokens": 32
+        },
+        "total_tokens": 3831
+      }
+    },
+    {
+      "arm": "raw",
+      "call": "11-solve-1fde4a12",
+      "status": "completed",
+      "seconds": 4.494354009628296,
+      "usage": {
+        "cost": 0.045969,
+        "input_tokens": 8008,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 70,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 8078
+      }
+    },
+    {
+      "arm": "learned",
+      "call": "12-solve-6d390785",
+      "status": "failed",
+      "seconds": 50.419758796691895,
+      "usage": null
+    },
+    {
+      "arm": "fixed",
+      "call": "13-solve-a08e5c9f",
+      "status": "completed",
+      "seconds": 7.893091917037964,
+      "usage": {
+        "cost": 0.032662,
+        "input_tokens": 3181,
+        "input_tokens_details": {
+          "cache_write_tokens": 3178,
+          "cached_tokens": 0
+        },
+        "output_tokens": 297,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 3478
+      }
+    },
+    {
+      "arm": "fixed",
+      "call": "14-solve-aa5fb73a",
+      "status": "completed",
+      "seconds": 42.706417083740234,
+      "usage": {
+        "cost": 0.056658,
+        "input_tokens": 7674,
+        "input_tokens_details": {
+          "cache_write_tokens": 7671,
+          "cached_tokens": 0
+        },
+        "output_tokens": 84,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 7758
+      }
+    },
+    {
+      "arm": "control",
+      "call": "15-solve-ecfcec9f",
+      "status": "completed",
+      "seconds": 10.565186738967896,
+      "usage": {
+        "cost": 0.034111,
+        "input_tokens": 3073,
+        "input_tokens_details": {
+          "cache_write_tokens": 3070,
+          "cached_tokens": 0
+        },
+        "output_tokens": 360,
+        "output_tokens_details": {
+          "reasoning_tokens": 68
+        },
+        "total_tokens": 3433
+      }
+    },
+    {
+      "arm": "control",
+      "call": "16-solve-8d35917a",
+      "status": "completed",
+      "seconds": 4.946434020996094,
+      "usage": {
+        "cost": 0.055286,
+        "input_tokens": 7548,
+        "input_tokens_details": {
+          "cache_write_tokens": 7545,
+          "cached_tokens": 0
+        },
+        "output_tokens": 70,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 7618
+      }
+    },
+    {
+      "arm": "learned",
+      "call": "17-solve-24ef58ad",
+      "status": "completed",
+      "seconds": 10.930328845977783,
+      "usage": {
+        "cost": 0.037842,
+        "input_tokens": 3331,
+        "input_tokens_details": {
+          "cache_write_tokens": 3328,
+          "cached_tokens": 0
+        },
+        "output_tokens": 415,
+        "output_tokens_details": {
+          "reasoning_tokens": 64
+        },
+        "total_tokens": 3746
+      }
+    },
+    {
+      "arm": "learned",
+      "call": "18-solve-8c777acb",
+      "status": "completed",
+      "seconds": 9.889056921005249,
+      "usage": {
+        "cost": 0.073395,
+        "input_tokens": 8185,
+        "input_tokens_details": {
+          "cache_write_tokens": 8182,
+          "cached_tokens": 0
+        },
+        "output_tokens": 460,
+        "output_tokens_details": {
+          "reasoning_tokens": 50
+        },
+        "total_tokens": 8645
+      }
+    },
+    {
+      "arm": "control",
+      "call": "19-solve-e08cb40d",
+      "status": "completed",
+      "seconds": 11.099102020263672,
+      "usage": {
+        "cost": 0.036827,
+        "input_tokens": 2991,
+        "input_tokens_details": {
+          "cache_write_tokens": 2988,
+          "cached_tokens": 0
+        },
+        "output_tokens": 454,
+        "output_tokens_details": {
+          "reasoning_tokens": 141
+        },
+        "total_tokens": 3445
+      }
+    },
+    {
+      "arm": "control",
+      "call": "20-solve-08cec39d",
+      "status": "completed",
+      "seconds": 9.010944604873657,
+      "usage": {
+        "cost": 0.071057,
+        "input_tokens": 7801,
+        "input_tokens_details": {
+          "cache_write_tokens": 7798,
+          "cached_tokens": 0
+        },
+        "output_tokens": 470,
+        "output_tokens_details": {
+          "reasoning_tokens": 103
+        },
+        "total_tokens": 8271
+      }
+    },
+    {
+      "arm": "raw",
+      "call": "21-solve-3827e7fd",
+      "status": "completed",
+      "seconds": 7.297735929489136,
+      "usage": {
+        "cost": 0.037198,
+        "input_tokens": 3434,
+        "input_tokens_details": {
+          "cache_write_tokens": 3431,
+          "cached_tokens": 0
+        },
+        "output_tokens": 376,
+        "output_tokens_details": {
+          "reasoning_tokens": 54
+        },
+        "total_tokens": 3810
+      }
+    },
+    {
+      "arm": "raw",
+      "call": "22-solve-f2f029c1",
+      "status": "completed",
+      "seconds": 11.029454946517944,
+      "usage": {
+        "cost": 0.073115,
+        "input_tokens": 8260,
+        "input_tokens_details": {
+          "cache_write_tokens": 8257,
+          "cached_tokens": 0
+        },
+        "output_tokens": 437,
+        "output_tokens_details": {
+          "reasoning_tokens": 89
+        },
+        "total_tokens": 8697
+      }
+    },
+    {
+      "arm": "fixed",
+      "call": "23-solve-aaffb46d",
+      "status": "completed",
+      "seconds": 8.430261135101318,
+      "usage": {
+        "cost": 0.035392,
+        "input_tokens": 3111,
+        "input_tokens_details": {
+          "cache_write_tokens": 3108,
+          "cached_tokens": 0
+        },
+        "output_tokens": 389,
+        "output_tokens_details": {
+          "reasoning_tokens": 46
+        },
+        "total_tokens": 3500
+      }
+    },
+    {
+      "arm": "fixed",
+      "call": "24-solve-92381aa6",
+      "status": "completed",
+      "seconds": 9.050017833709717,
+      "usage": {
+        "cost": 0.0556875,
+        "input_tokens": 7935,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 438,
+        "output_tokens_details": {
+          "reasoning_tokens": 44
+        },
+        "total_tokens": 8373
+      }
+    },
+    {
+      "arm": "fixed",
+      "call": "25-solve-64e72002",
+      "status": "completed",
+      "seconds": 10.99781584739685,
+      "usage": {
+        "cost": 0.03563,
+        "input_tokens": 3185,
+        "input_tokens_details": {
+          "cache_write_tokens": 3182,
+          "cached_tokens": 0
+        },
+        "output_tokens": 381,
+        "output_tokens_details": {
+          "reasoning_tokens": 73
+        },
+        "total_tokens": 3566
+      }
+    },
+    {
+      "arm": "fixed",
+      "call": "26-solve-c7fa98ca",
+      "status": "completed",
+      "seconds": 5.273648023605347,
+      "usage": {
+        "cost": 0.056532,
+        "input_tokens": 7711,
+        "input_tokens_details": {
+          "cache_write_tokens": 7708,
+          "cached_tokens": 0
+        },
+        "output_tokens": 73,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 7784
+      }
+    },
+    {
+      "arm": "raw",
+      "call": "27-solve-39baa766",
+      "status": "completed",
+      "seconds": 6.8839452266693115,
+      "usage": {
+        "cost": 0.036757,
+        "input_tokens": 3516,
+        "input_tokens_details": {
+          "cache_write_tokens": 3513,
+          "cached_tokens": 0
+        },
+        "output_tokens": 347,
+        "output_tokens_details": {
+          "reasoning_tokens": 47
+        },
+        "total_tokens": 3863
+      }
+    },
+    {
+      "arm": "raw",
+      "call": "28-solve-62201a15",
+      "status": "completed",
+      "seconds": 6.377057075500488,
+      "usage": {
+        "cost": 0.058716,
+        "input_tokens": 8018,
+        "input_tokens_details": {
+          "cache_write_tokens": 8015,
+          "cached_tokens": 0
+        },
+        "output_tokens": 74,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 8092
+      }
+    },
+    {
+      "arm": "control",
+      "call": "29-solve-04c9114c",
+      "status": "completed",
+      "seconds": 7.889601945877075,
+      "usage": {
+        "cost": 0.0262845,
+        "input_tokens": 3069,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 342,
+        "output_tokens_details": {
+          "reasoning_tokens": 54
+        },
+        "total_tokens": 3411
+      }
+    },
+    {
+      "arm": "control",
+      "call": "30-solve-75c5cef2",
+      "status": "completed",
+      "seconds": 4.45577597618103,
+      "usage": {
+        "cost": 0.055244,
+        "input_tokens": 7557,
+        "input_tokens_details": {
+          "cache_write_tokens": 7554,
+          "cached_tokens": 0
+        },
+        "output_tokens": 67,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 7624
+      }
+    },
+    {
+      "arm": "learned",
+      "call": "31-solve-1809410e",
+      "status": "completed",
+      "seconds": 6.173742055892944,
+      "usage": {
+        "cost": 0.034391,
+        "input_tokens": 3403,
+        "input_tokens_details": {
+          "cache_write_tokens": 3400,
+          "cached_tokens": 0
+        },
+        "output_tokens": 302,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 3705
+      }
+    },
+    {
+      "arm": "learned",
+      "call": "32-solve-4a0d9c25",
+      "status": "completed",
+      "seconds": 5.130034923553467,
+      "usage": {
+        "cost": 0.057946,
+        "input_tokens": 7923,
+        "input_tokens_details": {
+          "cache_write_tokens": 7920,
+          "cached_tokens": 0
+        },
+        "output_tokens": 71,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 7994
+      }
+    }
+  ],
+  "known_usage_totals": {
+    "input_tokens": 177062,
+    "output_tokens": 10534,
+    "total_tokens": 187596,
+    "cost": 1.5363115
+  },
+  "missing_usage_calls": 1,
+  "cost_unit": "Provider field; currency not independently verified",
+  "allocations_under_90_minute_approval": [
+    {
+      "directory": "rsi-batch-pilot-20261110",
+      "job": "d50cd58ba18c48a5ae7048290152b845",
+      "phase": "Stopped",
+      "create_at": 1794314317.841784,
+      "release_at": 1794314355.181377,
+      "conservative_gpu_seconds": 37.339592933654785,
+      "live_pods_empty": true
+    },
+    {
+      "directory": "rsi-batch-pilot-20261110-b",
+      "job": "6fbcd4dbc8f44e05b7aa39d8c898b4a5",
+      "phase": "Completed",
+      "create_at": 1794314607.6448781,
+      "release_at": 1794314666.291639,
+      "conservative_gpu_seconds": 58.64676094055176,
+      "live_pods_empty": true
+    },
+    {
+      "directory": "rsi-batch-pilot-20261110-c",
+      "job": "7ffbe945eeda46bd9b20c19dba4953a7",
+      "phase": "Completed",
+      "create_at": 1794314724.776387,
+      "release_at": 1794315020.3303418,
+      "conservative_gpu_seconds": 295.5539548397064,
+      "live_pods_empty": true
+    },
+    {
+      "directory": "rsi-multistep-pilot-20261110",
+      "job": "233e527a133a4a11858b668d568252b0",
+      "phase": "Stopped",
+      "create_at": 1794316457.72898,
+      "release_at": 1794316873.518978,
+      "conservative_gpu_seconds": 415.7899980545044,
+      "live_pods_empty": true
+    },
+    {
+      "directory": "rsi-multistep-pilot-20261110-b",
+      "job": "4dd3fc8843c14980926beccf40899935",
+      "phase": "Completed",
+      "create_at": 1794317562.742485,
+      "release_at": 1794318214.570231,
+      "conservative_gpu_seconds": 651.8277459144592,
+      "live_pods_empty": true
+    }
+  ],
+  "conservative_gpu_seconds_total": 1459.1580526828766,
+  "separate_earlier_overrun_seconds": 6511.071,
+  "verification": {
+    "raw_receipts_recomputed": 61,
+    "trace_source_bindings_checked": 39,
+    "gates_recomputed": true,
+    "policy_hashes_checked": true,
+    "disabled_and_no_adoption_checked": true
+  },
+  "sha256": {
+    "evidence.tar.gz": "9538376caef05776e193d0937bde1bfbcc95f72acc0e07b3e524c69f7253fd60",
+    "manifest.json": "fb963b9573c8ba98238af444c353b436471629358de92ce7306e8b159722de82",
+    "protocol.json": "92e03dd84c7f794c426c0bbb0ea4186555afaaa496e73dbbf33242f2bd430c2a",
+    "approved-budget.json": "26edf059d769a50e4ca661ae71fcaccf1daff5c9d493ae4b7e6b47d0edec2836",
+    "live-policy-verification.json": "5f5284cf0f6a4487423988726ecc1c19f81fe7fefd9e12f2745e31e9f255c74a"
+  },
+  "limitations": [
+    "Two development templates and two repeats; not independent final audit or statistical superiority",
+    "All arms share the same bounded research tools; improvements from tools are not RSI gains",
+    "Fixed/raw baselines are not reproductions of ACE or GEPA",
+    "Learning trajectories reused after correcting report attribution; historical hardware UUID is retained",
+    "No supported paired model random seed",
+    "More context and provider latency can confound wall time",
+    "Token totals include policy learning; prior development/learning calls remain separately recorded",
+    "No production policy activation",
+    "Deadline configured and verified live, not expiry-tested"
+  ],
+  "local_followup": {
+    "commit": "3daf52a",
+    "change": "Bind solver adapter files and declared dependencies to strategy validation receipts",
+    "full_tests": {
+      "passed": 265,
+      "skipped": 8,
+      "seconds": 101.71
+    },
+    "used_by_gpu_comparison": false
+  }
+}

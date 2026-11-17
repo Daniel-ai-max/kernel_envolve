@@ -1,0 +1,215 @@
+{
+  "date": "2026-11-11",
+  "recorded_at_utc": "2026-11-11T01:28:39.923861+00:00",
+  "source_commit": "7be4d3916565d5347d6cfeed07e47a14c5eb9574",
+  "status": "closed_user_stopped",
+  "gpu_use_authorized": false,
+  "further_model_experiments": false,
+  "active_job": null,
+  "production_adopted": false,
+  "efficacy_proven": false,
+  "production_roi_proven": false,
+  "registry_read_only_snapshot": {
+    "enabled": false,
+    "active": "feeec6a17e3fd4c5b70b2781a7a9c4ba16bcb1db8d17a92b204f5eee994ee7da",
+    "seed": "feeec6a17e3fd4c5b70b2781a7a9c4ba16bcb1db8d17a92b204f5eee994ee7da",
+    "candidate": "15b5c2edd02d719f41ab0949d30e5cffb616b7517e7b967ab22248652269969a",
+    "candidate_status": "validating",
+    "history_entries": 0,
+    "attempts": [
+      {
+        "id": "310e089211bb8bef05318c76b737ce44563a9b3189ec8066351c6f93bcbdce03",
+        "status": "reserved",
+        "seconds": 6600.0,
+        "tokens": 4000000,
+        "report": null
+      }
+    ]
+  },
+  "reservation_disposition": "Preserved and charged; no refund/reset, no admission report and no quality verdict. Reserved is not a running job.",
+  "migration": {
+    "unchanged_original_sources": 4,
+    "independent_final_passed": 4,
+    "model_calls": 0,
+    "efficacy_evidence": false
+  },
+  "learning": {
+    "trials": 8,
+    "qualified_acquisition": true,
+    "changed": [
+      "swish-gate",
+      "smooth-l1",
+      "rms-normalize"
+    ],
+    "unchanged": [
+      "central-variance"
+    ],
+    "adopted": false
+  },
+  "admission": {
+    "planned_trials": 64,
+    "trials_with_model_calls": 35,
+    "complete_model_calls": 92,
+    "complete_evaluator_archive_recovered": false,
+    "verdict": "incomplete_user_stopped",
+    "model_call_count_is_not_completed_final_count": true
+  },
+  "later_stages": "learning2/admission2/assessment closed_not_launched",
+  "last_three_jobs": [
+    {
+      "folder": "rsi-seed-revalidation-20261111/run",
+      "cost": {
+        "phase": "run",
+        "job": "82a269933b1343669403ee07782f1810",
+        "gpu_seconds": 84.05502891540527,
+        "calls": 0,
+        "known_tokens": 0,
+        "unknown_or_failed_attempts": 0,
+        "resource_released_at": 1794357551.9425159,
+        "lease_accounting": "Conservative reservation-before-POST through first confirmed terminal/live empty Pods"
+      },
+      "release": {
+        "id": "82a269933b1343669403ee07782f1810",
+        "phase": "Completed",
+        "live_read_status": {
+          "cr": "available",
+          "pods": "available"
+        },
+        "pods": [],
+        "at": 1794357551.9425159
+      }
+    },
+    {
+      "folder": "rsi-revalidated-evolution-study-20261111/learning1",
+      "cost": {
+        "phase": "learning1",
+        "job": "5586e24a36ac4ed2946377d908088d44",
+        "gpu_seconds": 487.0598337650299,
+        "calls": 19,
+        "known_tokens": 251115,
+        "unknown_or_failed_attempts": 0,
+        "resource_released_at": 1794358166.2174048,
+        "lease_accounting": "Conservative reservation-before-POST through first confirmed terminal/live empty Pods"
+      },
+      "release": {
+        "id": "5586e24a36ac4ed2946377d908088d44",
+        "phase": "Completed",
+        "live_read_status": {
+          "cr": "available",
+          "pods": "available"
+        },
+        "pods": [],
+        "at": 1794358166.2174048
+      }
+    },
+    {
+      "folder": "rsi-revalidated-evolution-study-20261111/admission1",
+      "cost": {
+        "phase": "admission1",
+        "job": "f2a43f96ec004b39b619cd6762d2cb26",
+        "gpu_seconds": 1881.6139912605286,
+        "calls": 92,
+        "known_tokens": 1102664,
+        "unknown_or_failed_attempts": 0,
+        "resource_released_at": 1794360180.2583091,
+        "lease_accounting": "Conservative reservation-before-POST through first confirmed terminal/live empty Pods"
+      },
+      "release": {
+        "id": "f2a43f96ec004b39b619cd6762d2cb26",
+        "phase": "Stopped",
+        "live_read_status": {
+          "cr": "not_found",
+          "pods": "available"
+        },
+        "pods": [],
+        "at": 1794360180.2583091
+      }
+    }
+  ],
+  "cost_summary": {
+    "scope": "All 19 closed campaign jobs, including failed and user-stopped studies; GPU use ended.",
+    "released_gpu_seconds_under_extended_ledger": 24677.48153734207,
+    "incident_separately_recorded_gpu_seconds": 6511.071068048477,
+    "combined_historical_gpu_seconds": 31188.55260539055,
+    "known_model_tokens_closed_jobs": 12987198,
+    "model_attempts_closed_jobs": 1116,
+    "unknown_usage_attempts_closed_jobs": 9,
+    "incident_model_attempts_separately_recorded": 1,
+    "incident_model_usage": null,
+    "incident_receipt_sha256": "6779e00bd655b260935004abd00ec3932fe50aabe067c1400029e50646a345ba",
+    "production_roi_proven": false
+  },
+  "tracked_ledger_sha256": "9df57d95163cf093086f28cc7a880e0bf77d81997aa277eed3b5518134422ebb",
+  "local_evidence": [
+    {
+      "path_relative_to_workspace": "rsi-seed-revalidation-20261111/run/migration-result.json",
+      "sha256": "6ea843a2832eb5095db6fec6c27146324b7c6ad20749fe2dbef9347597cbeb22"
+    },
+    {
+      "path_relative_to_workspace": "rsi-seed-revalidation-20261111/run/cost-receipt.json",
+      "sha256": "2c68dd489648c58ecf9ec400455f3aa20d525b4c7273a4bae4066d4a01aa1438"
+    },
+    {
+      "path_relative_to_workspace": "rsi-seed-revalidation-20261111/run/released.json",
+      "sha256": "69efcd648906e16bf416be5a81672e83ef4dba10e88bbeccf01d1f3de1c39496"
+    },
+    {
+      "path_relative_to_workspace": "rsi-seed-revalidation-20261111/ci-verification.json",
+      "sha256": "a140d121960a3b70b2ca2283577458dcc0bf254dbc60805bd7ce38e748e32129"
+    },
+    {
+      "path_relative_to_workspace": "rsi-seed-revalidation-20261111/stale-seed-real-receipts-check.json",
+      "sha256": "2573cd951e7c89872a5f0ead1c75d8589ac5381b4e375131fb5c6724a9edbbb5"
+    },
+    {
+      "path_relative_to_workspace": "rsi-revalidated-evolution-study-20261111/learning1/learning-summary.json",
+      "sha256": "2d627461bcbf9f4f4faf7c0e1a6658ee058d8c1937c028abd897af547faa2436"
+    },
+    {
+      "path_relative_to_workspace": "rsi-revalidated-evolution-study-20261111/learning1/source-change-description.json",
+      "sha256": "637bd41053970b41624d7d1c1e53575753c98f11e370e5282250201aee36329e"
+    },
+    {
+      "path_relative_to_workspace": "rsi-revalidated-evolution-study-20261111/learning1/cost-receipt.json",
+      "sha256": "e3aef9d79f33057b82f2a609819d959febe96f25e8eacc1b9edc3804d8661f39"
+    },
+    {
+      "path_relative_to_workspace": "rsi-revalidated-evolution-study-20261111/learning1/released.json",
+      "sha256": "71183a8bf699f51bdb273631b31af1cc4ee4251ac727c7a6d2ac8aa083c28c97"
+    },
+    {
+      "path_relative_to_workspace": "rsi-revalidated-evolution-study-20261111/admission1/cost-receipt.json",
+      "sha256": "6bc427c147d4193374efe0906534eeb405dc7d52a70895d726733cb0f10d3d8f"
+    },
+    {
+      "path_relative_to_workspace": "rsi-revalidated-evolution-study-20261111/admission1/released.json",
+      "sha256": "f234fb6bc42553e9affe53e4750f8560b38720ce0f648ddf5f22729115dcbf25"
+    },
+    {
+      "path_relative_to_workspace": "rsi-revalidated-evolution-study-20261111/admission1/user-stop-live-recheck.json",
+      "sha256": "6c90e4aa69eeb2641c588b584bb9d76745d731e4d010b76861440b948d13b032"
+    },
+    {
+      "path_relative_to_workspace": "rsi-revalidated-evolution-study-20261111/disposition.json",
+      "sha256": "1ae2f07c09b27960e94cce1df986e60a3138c8e7e6bdc8faf0594943fd442129"
+    },
+    {
+      "path_relative_to_workspace": "rsi-revalidated-evolution-study-20261111/gpu-use-ended.json",
+      "sha256": "d671048dc4d2f366c99527bf133dad08b4eaf93fad3de12ad87acef54c2e7907"
+    }
+  ],
+  "ci": {
+    "at": 1794357402.168064,
+    "head": "7be4d3916565d5347d6cfeed07e47a14c5eb9574",
+    "six_jobs_passed": true,
+    "push": 42931667647,
+    "pr": 42931677679
+  },
+  "limitations": [
+    "Engineering tests do not establish learning benefit.",
+    "The complete admission evaluator archive was not recovered after immediate stop.",
+    "Local raw archives are not all included in this Git repository.",
+    "No head-to-head reference algorithm replication, two-generation empirical gain or production ROI is established.",
+    "Resource state is supported by terminal and empty-Pods release receipts; this closeout makes no new GPU/model request."
+  ]
+}

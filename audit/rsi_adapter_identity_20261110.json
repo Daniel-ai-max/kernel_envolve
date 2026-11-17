@@ -1,0 +1,38 @@
+{
+  "date": "2026-11-10",
+  "base_commit": "942fd11f873e0f20d9a6429ea6fe356ba28e22ae",
+  "problem": "Changed local solver adapter could previously reuse a passing validation receipt",
+  "regression_first": {
+    "failed": 1,
+    "test": "test_adapter_source_change_invalidates_successful_receipt",
+    "failure": "DID NOT RAISE ValueError"
+  },
+  "coverage": [
+    "source mutation before adoption",
+    "source mutation after adoption triggers audit rollback",
+    "source mutation during validation rejects candidate",
+    "explicit dependency mutation/deletion invalidates identity"
+  ],
+  "full_tests": {
+    "passed": 265,
+    "skipped": 8,
+    "seconds": 101.71
+  },
+  "static_checks": [
+    "ruff check .",
+    "ruff format --check .",
+    "git diff --check"
+  ],
+  "gpu_pilot_source": "942fd11; this adapter-identity followup is locally tested and not part of the concurrent frozen GPU comparison",
+  "limitations": [
+    "Does not attest remote model revision, environment variables or transitive installed packages",
+    "Explicit adapter_files required for indirect local dependencies",
+    "Trusted operator files; not an OS sandbox",
+    "Background audit must run to revoke published advice after an external change"
+  ],
+  "source_sha256": {
+    "src/kernel_envolve/rsi/config.py": "b8c73201d25f499662e1a1458fa03a07f79521d762eb122a99e6daef015de7fd",
+    "src/kernel_envolve/rsi/trials.py": "dff904d35f12c92ba4b9601eac46d8aa48935188290c9f7083ea6fc354f2d22c",
+    "tests/test_rsi.py": "672b45fc21911dc74a09eeb6171c03cd60749734980187d252086d04b0d512e8"
+  }
+}

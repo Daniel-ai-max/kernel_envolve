@@ -1,0 +1,33 @@
+{
+  "at": 1794356832.08385,
+  "status": "closed_infrastructure_invalid",
+  "qualification": false,
+  "adopted": false,
+  "reason": "Historical seed snapshots use evaluator fb306f8; current immutable source evaluates with a36a492. Foreground correctly falls back; intended artifact treatment never activated. Offline Registry seed preflight lacked this compatibility check.",
+  "completed_trials": 2,
+  "observed_unactivated_traces": 3,
+  "model_calls": 9,
+  "known_tokens": 85287,
+  "unknown_usage": 0,
+  "gpu_seconds": 324.9576909542084,
+  "released_job": "95909bcd3fb347a4aec8244646ea8b9d",
+  "cumulative_gpu_seconds": 22224.752683401108,
+  "remaining_stages": "admission1,learning2,admission2,assessment closed_not_launched",
+  "no_retry": "This phase/registry remains closed. No outcomes from this acquisition may be promoted or seed a replacement. A new study must first revalidate the same original historical sources under the current evaluator and freeze a distinct protocol.",
+  "evidence_archive_sha256": "fa32023611f094e01fa04ed73527dfd9fe951432ac86da554663713d00751b5c",
+  "protocol_sha256": "f6cd6a5cf488d96b7e18d4872f1e499b0590e907cd9f2927ea72ee78c3a04a36",
+  "failure_evidence": {
+    "protocol": "be1d04be3b541d927ce9d9ff33aee197088084487a3af4c050c206f4b18f8ba4",
+    "analysis_log": "07411f68688b44af3ddfab58e5af99e09feb81ac0b423d67a0dbc6d059ec315d",
+    "released": "9c9dd6faba216e669033d219f1210a099281005ca926d1978141c4ab5744c706",
+    "cost": "6056ecf650ab7bddcab5ba24204b079168b063c62e7b3936629c18e00970e7de"
+  },
+  "prevention": "Registry.create rejects an otherwise auditable seed whose snapshot evaluator differs from current code, before creating a database. Historical sources require fresh full/independent-final revalidation; no hash rewriting.",
+  "repair_validation": {
+    "focused": "33 passed in59.29s",
+    "ruff_check": "passed",
+    "ruff_format": "2files passed",
+    "diff_check": "passed",
+    "scope": "CPU regression tests, not RSI efficacy"
+  }
+}

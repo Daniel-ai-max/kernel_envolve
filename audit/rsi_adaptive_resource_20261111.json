@@ -1,0 +1,9 @@
+{
+  "job": "8774e952b4ff4276a213a8fb2f9ff0f8",
+  "conservative_gpu_seconds": 3945.4100148677826,
+  "cumulative_gpu_seconds": 21899.7949924469,
+  "phase": "Completed",
+  "released_empty_pods": true,
+  "analysis_completed": true,
+  "summary_sha256": "25135af1830c6d88ede36d8a1e25397e71d74c99b2016b726f45e1df5e6b8a6e"
+}

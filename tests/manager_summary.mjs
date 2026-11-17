@@ -225,3 +225,25 @@ test("pending narration falls back to the new research result, with its real tim
   assert.equal(row.outcomeAt, 30);
   assert.equal(row.benefit.label, "—");
 });
+
+
+test("linked native delivery has one research row without transferring best", () => {
+  const research={id:"research",spec:{kind:"research"},desired:"paused",phase:"paused",best:null,implementation_pr:null,
+    delivery:{task:"native",status:"verified",policy_phase:"succeeded",best:{baseline_speedup:1.08,recorded_at:4,mode:"full",correctness:"pass"},implementation_pr:{url:"https://github.com/example/core/pull/1",current_head_verified:true}}};
+  const child={id:"native",desired:"active",delivery_parent:"research"};
+  assert.equal(visibleTask(research),true);
+  assert.equal(visibleTask(child),false);
+  assert.equal(visibleTask(child,true),false);
+  assert.equal(extra.taskBenefit(research).label,"1.080×");
+  assert.equal(extra.narratedRow(research).pr.url,research.delivery.implementation_pr.url);
+  assert.equal(extra.phaseLabel(research),"已交付");
+  assert.equal(extra.recentResult(research).task,"native");
+  assert.equal(research.best,null);
+  research.delivery.implementation_pr.current_head_verified=false;
+  assert.equal(extra.taskBenefit(research).label,"1.080×");
+  assert.equal(extra.narratedRow(research).pr,null);
+  research.delivery.status="pending";
+  assert.equal(extra.taskBenefit(research).label,"—");
+  assert.equal(extra.narratedRow(research).pr,null);
+  assert.notEqual(extra.phaseLabel(research),"已交付");
+});

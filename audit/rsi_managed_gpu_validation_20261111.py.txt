@@ -1,0 +1,92 @@
+"""One isolated Manager round; engineering integration only, no model or RSI efficacy."""
+import argparse,json,os,statistics,subprocess,sys,time
+from pathlib import Path
+from kernel_envolve.manager.config import validate
+from kernel_envolve.manager.evidence import inspect_run
+from kernel_envolve.manager.gpu import run as gpu_run
+from kernel_envolve.manager.process import exclusive,gpu_idle,lock_path,terminate
+from kernel_envolve.manager.store import Store
+from kernel_envolve.rsi.managed import evaluate
+from kernel_envolve.rsi.research import run
+from kernel_envolve.storage import config,contract,file_hash,write_json
+
+def agent(root):
+    assert os.environ['CUDA_VISIBLE_DEVICES']=='' and not os.environ.get('KERNEL_ENVOLVE_GPU_JOB')
+    store=Store(root/'manager');spec=store.task('validation')['spec'];task=Path(spec['task_dir'])
+    device=store.resource('fixture')['spec']['device'];parent=os.environ['KERNEL_ENVOLVE_ROUND'];rows=[];decisions=[]
+    try:
+        def decide(packet,timeout):
+            assert not store.rows("SELECT id FROM jobs WHERE kind='gpu' AND status='running'")
+            with exclusive(lock_path('gpu',device))as lock:
+                assert lock is not None
+                gpu_idle(device)
+            decisions.append({'selected':packet['selected'],'device_unlocked':True,'no_running_gpu_job':True})
+            return {'action':'propose','source':'def run(x): return 1+x\n','mode':'full','hypothesis':'Semantically equivalent engineering fixture; no claimed optimization gain'}
+        packet={'task':str(task),'kind':'generic','editable_files':[str(task/'candidate.py')],'model':'no-model','seed':0,'strategy':'','seconds':120}
+        trace=run(packet,root/'research',decide,max_actions=1,evaluation_seconds=30,managed_evaluations=True)
+        final,result=evaluate(task,'full',30,root/'independent-final')
+        assert result['correctness']=='pass' and str(final)not in [trace['initial_observation']['run']]+[x['observation']['run']for x in trace['steps']if 'observation'in x]
+        assert not(task/'.kernel_envolve/best.json').exists()
+        with exclusive(lock_path('gpu',device))as lock:
+            assert lock is not None
+            try:evaluate(task,'full',.25,root/'queue-deadline')
+            except TimeoutError:pass
+            else:raise AssertionError('Queue deadline did not stop blocked admission')
+        cancelled=store.rows("SELECT * FROM jobs WHERE kind='gpu' AND status='cancelled'")
+        assert len(cancelled)==1 and cancelled[0]['child_pid']is None
+        for pair in range(-1,6):
+            order=['ordinary-manager','managed-research']
+            if pair%2:order.reverse()
+            for arm in order:
+                directory=root/f'pair-{pair}-{arm}';began=time.perf_counter()
+                if arm=='managed-research':path,_=evaluate(task,'full',30,directory)
+                else:
+                    directory.mkdir()
+                    script="import sys;from pathlib import Path;from kernel_envolve.cli import evaluate;p,r=evaluate(sys.argv[1],'full',timeout=30);Path(sys.argv[2]).write_text(str(p))"
+                    assert gpu_run(store.root,'validation',parent,[sys.executable,'-c',script,str(task),str(directory/'run.txt')],expected_seconds=30)==0
+                    path=Path((directory/'run.txt').read_text())
+                elapsed=time.perf_counter()-began;verified=inspect_run(path,spec)
+                assert verified['correctness']=='pass'
+                rows.append({'pair':pair,'arm':arm,'seconds':elapsed,'run':str(path),'result_hash':verified['result_hash']})
+                write_json(root/'overhead-progress.json',rows)
+        assert not store.rows("SELECT id FROM jobs WHERE kind='gpu' AND status IN ('queued','running')")
+        gpu_idle(device)
+        differences=[]
+        for pair in range(6):
+            values={r['arm']:r['seconds']for r in rows if r['pair']==pair};differences.append(values['managed-research']-values['ordinary-manager'])
+        write_json(root/'agent-result.json',{'passed':True,'scope':'Engineering integration and evaluator admission overhead only. No model calls, learned policy, kernel efficacy or production throughput claim.','device':device,'decisions':decisions,'independent_final':str(final),'queued_job_cancelled_without_child':True,'pairs':6,'recorded_warmup_pairs':1,'median_extra_seconds':statistics.median(differences),'min_extra_seconds':min(differences),'max_extra_seconds':max(differences),'arm_medians':{a:statistics.median(r['seconds']for r in rows if r['pair']>=0 and r['arm']==a)for a in ['ordinary-manager','managed-research']},'rows':rows,'model_calls':0,'helper_sha256':file_hash(Path(__file__))})
+        write_json(Path(os.environ['KERNEL_ENVOLVE_REPORT']),{'next_action':'Inspect independent full receipts and integration cost; do not promote fixture kernels'})
+    finally:store.close()
+
+def main(root,cpu):
+    root=root.resolve();root.mkdir(parents=True,exist_ok=False);task=root/'task';task.mkdir()
+    if cpu:device='cpu';task_device='cpu';inputs='import numpy as np\ndef make_inputs(case,seed): return (np.ones(case["n"]),)\n'
+    else:
+        device=subprocess.check_output(['nvidia-smi','--query-gpu=uuid','--format=csv,noheader'],text=True,timeout=10).strip();assert device.startswith('GPU-')and'\n'not in device
+        task_device='cuda:0';inputs='import torch\ndef make_inputs(case,seed): return (torch.ones(case["n"],device="cuda",dtype=torch.float32),)\n'
+    write_json(task/'task.json',{'name':'managed-integration-fixture','objective':'Real per-measurement admission validation only','device':task_device,'cases':[{'id':'small','args':{'n':65537},'weight':1}],'warmup':1,'full_trials':3,'quick_trials':1,'full_seeds':[1],'quick_seeds':[1]})
+    (task/'task.py').write_text(inputs+'def reference(x): return x+1\ndef baseline(x): return x+1\n');(task/'candidate.py').write_text('def run(x): return x+1\n')
+    spec={'id':'validation','name':'Managed integration fixture','workspace':str(task),'task_dir':str(task),'kind':'generic','resource':'fixture','command':[sys.executable,str(Path(__file__).resolve()),str(root),'--agent'],'round_timeout_seconds':450,'wall_budget_seconds':450,'gpu_budget_seconds':360,'baseline':{'repository':'isolated-engineering-fixture','revision':'1','entrypoint':'task.py:baseline','introduced_on':None,'introduction_url':None,'frozen_on':'2026-11-11','hardware':'CPU'if cpu else'B300','contract':contract(task,config(task))}}
+    store=Store(root/'manager');process=None
+    try:
+        store.register(validate({'version':1,'resources':[{'id':'fixture','device':device}],'tasks':[spec]},root));parent=store.schedule()[0]
+        env=os.environ|{'KERNEL_ENVOLVE_AUTO_UPDATE':'0','PYTHONPATH':str(Path(sys.modules['kernel_envolve'].__file__).resolve().parent.parent)}
+        with(root/'supervisor.log').open('wb')as log:
+            process=subprocess.Popen([sys.executable,'-m','kernel_envolve.manager.worker',str(store.root),parent],env=env,stdout=log,stderr=subprocess.STDOUT,start_new_session=True)
+            try:code=process.wait(timeout=480)
+            finally:
+                if process.poll()is None:terminate(process)
+        jobs=store.rows('SELECT id,kind,status,seconds,child_pid,error FROM jobs');write_json(root/'jobs.json',jobs)
+        assert code==0 and store.job(parent)['status']=='succeeded', 'Inspect retained supervisor/Manager logs'
+        assert len([j for j in jobs if j['kind']=='gpu'and j['status']=='succeeded'])==17
+        assert len([j for j in jobs if j['kind']=='gpu'and j['status']=='cancelled'])==1
+        summary=json.loads((root/'agent-result.json').read_text());summary.update(manager_round_status='succeeded',accounted_gpu_job_seconds=store.task('validation')['gpu_seconds'],accounted_agent_seconds=store.task('validation')['wall_seconds'],gpu_successful_jobs=17,gpu_cancelled_jobs=1,cpu_fixture=cpu)
+        write_json(root/'summary.json',summary);print(json.dumps({k:v for k,v in summary.items()if k!='rows'},indent=2))
+    finally:
+        if process is not None and process.poll()is None:terminate(process)
+        store.close()
+
+if __name__=='__main__':
+    p=argparse.ArgumentParser();p.add_argument('root',type=Path);p.add_argument('--cpu',action='store_true');p.add_argument('--agent',action='store_true');args=p.parse_args()
+    if args.agent:agent(args.root)
+    else:main(args.root,args.cpu)

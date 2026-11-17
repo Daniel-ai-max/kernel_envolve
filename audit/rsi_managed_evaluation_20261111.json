@@ -1,0 +1,50 @@
+{
+  "at": 1794338062.217958,
+  "scope": "Optional Manager admission bridge only; no RSI benefit or production adoption claim",
+  "base_commit": "14a3e29fd5ba8cf04e3c0fd92b0488c1c9dd3c21",
+  "source_sha256": {
+    "src/kernel_envolve/rsi/managed.py": "f33e5a2e04b3d702a4cccf7efd6b95c68e20ea984545e08701e4878573ce251e",
+    "src/kernel_envolve/rsi/research.py": "b55f4e7cc8c8d6df5b6d07339fe28f76f31fcfd5816cf2231794a499c48f7447",
+    "src/kernel_envolve/rsi/trials.py": "57acae08275b61f6aab876a88366710fc627f236e9e64eb8529151cebae0ed4d",
+    "tests/test_rsi_managed.py": "59f5ade2c7fa77d67254088105ab16ad353766a168a0969eb89ca5a6f2aaaaf3"
+  },
+  "tests": {
+    "all_passed": 532,
+    "all_skipped_gpu_opt_in": 10,
+    "full_log": "/tmp/rsi-managed-full-tests-20261111.log",
+    "full_log_sha256": "97d7c4f8271d63e7bde3e2b7b9e5b5b212c74459b97e8254a692ba4f9a8f1e12",
+    "managed_specific": 9,
+    "prior_affected_suite_passed": 69
+  },
+  "observed_repairs": [
+    "Initial execution-timeout test exposed TimeoutError being caught as OSError by existing supervisor; preserve expired flag after supervised cleanup. Original Manager behavior unchanged.",
+    "CPU overhead fixture first rejected because quick_seeds was not a subset of full_seeds; fixed only fixture to [1], retained rejected root and ran 12 paired measurements in new measured/ directory. No cloud GPU or model calls."
+  ],
+  "engineering_overhead": {
+    "arm_medians": {
+      "managed-research": 0.23518166649955674,
+      "ordinary-manager": 0.23069300000133808
+    },
+    "helper_sha256": "897902c75f2a3959ea435fe5636ea1b89cad9a5649544bde42fdd1bb8a686773",
+    "managed_source_sha256": "f33e5a2e04b3d702a4cccf7efd6b95c68e20ea984545e08701e4878573ce251e",
+    "max_extra_seconds": 0.012230250002176035,
+    "median_extra_seconds": 0.004255854491930222,
+    "min_extra_seconds": -0.009553249001328368,
+    "pairs": 12,
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "python": "3.12.14",
+    "scope": "CPU/no-model engineering measurement. Existing Manager admission versus admitted research including extra receipt verification. Not cloud GPU usage or an RSI efficacy/production latency result.",
+    "warmup_pairs_recorded": 1
+  },
+  "limitations": [
+    "POSIX main thread only; cannot replace caller ITIMER_REAL.",
+    "Cleanup can extend past local deadline.",
+    "Generic single candidate.py only.",
+    "No artifact publisher/auto-collection or two-generation production loop yet.",
+    "Independent final full still required.",
+    "No production cost/quality advantage implied by local CPU overhead."
+  ],
+  "main_not_mutated": true,
+  "ongoing_gpu_experiment_frozen_commit": "14a3e29fd5ba8cf04e3c0fd92b0488c1c9dd3c21",
+  "ongoing_gpu_experiment_changed": false
+}

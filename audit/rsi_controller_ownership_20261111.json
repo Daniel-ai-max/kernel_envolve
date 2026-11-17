@@ -1,0 +1,184 @@
+{
+  "checked_at": 1794342619.7099211,
+  "passed": true,
+  "cases": [
+    {
+      "controller": "conditional-confirmation",
+      "scenario": "duplicate-submission",
+      "passed": true,
+      "fake_platform_calls": 0,
+      "fake_creation_posts": 0,
+      "fake_stop_posts": 0,
+      "owned_release_receipt": false,
+      "error": "AssertionError",
+      "controller_sha256": "8d139a9f5525d7eafafd5cb997604217d6e0cb5d232d6b99c0c3c299f9844aaf"
+    },
+    {
+      "controller": "conditional-confirmation",
+      "scenario": "duplicate-reservation",
+      "passed": true,
+      "fake_platform_calls": 0,
+      "fake_creation_posts": 0,
+      "fake_stop_posts": 0,
+      "owned_release_receipt": false,
+      "error": "AssertionError",
+      "controller_sha256": "8d139a9f5525d7eafafd5cb997604217d6e0cb5d232d6b99c0c3c299f9844aaf"
+    },
+    {
+      "controller": "conditional-confirmation",
+      "scenario": "ambiguous-post",
+      "passed": true,
+      "fake_platform_calls": 1,
+      "fake_creation_posts": 1,
+      "fake_stop_posts": 0,
+      "owned_release_receipt": false,
+      "error": "TimeoutError",
+      "controller_sha256": "8d139a9f5525d7eafafd5cb997604217d6e0cb5d232d6b99c0c3c299f9844aaf"
+    },
+    {
+      "controller": "conditional-confirmation",
+      "scenario": "owned-completed",
+      "passed": true,
+      "fake_platform_calls": 6,
+      "fake_creation_posts": 1,
+      "fake_stop_posts": 0,
+      "owned_release_receipt": true,
+      "error": null,
+      "controller_sha256": "8d139a9f5525d7eafafd5cb997604217d6e0cb5d232d6b99c0c3c299f9844aaf"
+    },
+    {
+      "controller": "conditional-confirmation",
+      "scenario": "owned-save-failure",
+      "passed": true,
+      "fake_platform_calls": 4,
+      "fake_creation_posts": 1,
+      "fake_stop_posts": 0,
+      "owned_release_receipt": true,
+      "error": "IsADirectoryError",
+      "controller_sha256": "8d139a9f5525d7eafafd5cb997604217d6e0cb5d232d6b99c0c3c299f9844aaf"
+    },
+    {
+      "controller": "conditional-confirmation",
+      "scenario": "owned-running-save-failure",
+      "passed": true,
+      "fake_platform_calls": 5,
+      "fake_creation_posts": 1,
+      "fake_stop_posts": 1,
+      "owned_release_receipt": true,
+      "error": "IsADirectoryError",
+      "controller_sha256": "8d139a9f5525d7eafafd5cb997604217d6e0cb5d232d6b99c0c3c299f9844aaf"
+    },
+    {
+      "controller": "conditional-confirmation",
+      "scenario": "owned-run-failure",
+      "passed": true,
+      "fake_platform_calls": 6,
+      "fake_creation_posts": 1,
+      "fake_stop_posts": 1,
+      "owned_release_receipt": true,
+      "error": "RuntimeError",
+      "controller_sha256": "8d139a9f5525d7eafafd5cb997604217d6e0cb5d232d6b99c0c3c299f9844aaf"
+    },
+    {
+      "controller": "rsi-managed-gpu-validation-20261111",
+      "scenario": "duplicate-submission",
+      "passed": true,
+      "fake_platform_calls": 0,
+      "fake_creation_posts": 0,
+      "fake_stop_posts": 0,
+      "owned_release_receipt": false,
+      "error": "AssertionError",
+      "controller_sha256": "098ea216fe72cd8c8054e50450f746a6874698ec478622494b984c2356465057"
+    },
+    {
+      "controller": "rsi-managed-gpu-validation-20261111",
+      "scenario": "duplicate-reservation",
+      "passed": true,
+      "fake_platform_calls": 0,
+      "fake_creation_posts": 0,
+      "fake_stop_posts": 0,
+      "owned_release_receipt": false,
+      "error": "AssertionError",
+      "controller_sha256": "098ea216fe72cd8c8054e50450f746a6874698ec478622494b984c2356465057"
+    },
+    {
+      "controller": "rsi-managed-gpu-validation-20261111",
+      "scenario": "ambiguous-post",
+      "passed": true,
+      "fake_platform_calls": 1,
+      "fake_creation_posts": 1,
+      "fake_stop_posts": 0,
+      "owned_release_receipt": false,
+      "error": "TimeoutError",
+      "controller_sha256": "098ea216fe72cd8c8054e50450f746a6874698ec478622494b984c2356465057"
+    },
+    {
+      "controller": "rsi-managed-gpu-validation-20261111",
+      "scenario": "owned-completed",
+      "passed": true,
+      "fake_platform_calls": 6,
+      "fake_creation_posts": 1,
+      "fake_stop_posts": 0,
+      "owned_release_receipt": true,
+      "error": null,
+      "controller_sha256": "098ea216fe72cd8c8054e50450f746a6874698ec478622494b984c2356465057"
+    },
+    {
+      "controller": "rsi-managed-gpu-validation-20261111",
+      "scenario": "owned-save-failure",
+      "passed": true,
+      "fake_platform_calls": 4,
+      "fake_creation_posts": 1,
+      "fake_stop_posts": 0,
+      "owned_release_receipt": true,
+      "error": "IsADirectoryError",
+      "controller_sha256": "098ea216fe72cd8c8054e50450f746a6874698ec478622494b984c2356465057"
+    },
+    {
+      "controller": "rsi-managed-gpu-validation-20261111",
+      "scenario": "owned-running-save-failure",
+      "passed": true,
+      "fake_platform_calls": 5,
+      "fake_creation_posts": 1,
+      "fake_stop_posts": 1,
+      "owned_release_receipt": true,
+      "error": "IsADirectoryError",
+      "controller_sha256": "098ea216fe72cd8c8054e50450f746a6874698ec478622494b984c2356465057"
+    },
+    {
+      "controller": "rsi-managed-gpu-validation-20261111",
+      "scenario": "owned-run-failure",
+      "passed": true,
+      "fake_platform_calls": 6,
+      "fake_creation_posts": 1,
+      "fake_stop_posts": 1,
+      "owned_release_receipt": true,
+      "error": "RuntimeError",
+      "controller_sha256": "098ea216fe72cd8c8054e50450f746a6874698ec478622494b984c2356465057"
+    },
+    {
+      "controller": "conditional-confirmation",
+      "scenario": "concurrent-exclusive-reservation",
+      "passed": true,
+      "results": [
+        "rejected",
+        "reserved"
+      ],
+      "controller_sha256": "8d139a9f5525d7eafafd5cb997604217d6e0cb5d232d6b99c0c3c299f9844aaf"
+    },
+    {
+      "controller": "rsi-managed-gpu-validation-20261111",
+      "scenario": "concurrent-exclusive-reservation",
+      "passed": true,
+      "results": [
+        "rejected",
+        "reserved"
+      ],
+      "controller_sha256": "098ea216fe72cd8c8054e50450f746a6874698ec478622494b984c2356465057"
+    }
+  ],
+  "real_network_calls": 0,
+  "real_model_calls": 0,
+  "gpu_allocations": 0,
+  "scope": "Actual CLI try/finally exercised with deterministic fake platform, including duplicate rejection, ambiguous response and disk-save failure. Activation itself tested separately; this does not validate real GPU behavior."
+}

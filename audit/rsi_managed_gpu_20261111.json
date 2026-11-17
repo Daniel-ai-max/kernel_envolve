@@ -1,0 +1,144 @@
+{
+  "accounted_agent_seconds": 39.98086809925735,
+  "accounted_gpu_job_seconds": 38.48934548627585,
+  "arm_medians": {
+    "managed-research": 2.225962818134576,
+    "ordinary-manager": 2.1320605743676424
+  },
+  "cpu_fixture": false,
+  "decisions": [
+    {
+      "device_unlocked": true,
+      "no_running_gpu_job": true,
+      "selected": "8d1db627b44c0c30d1a07fee985810b79ba1af34fd07d20810449602db5653c6"
+    }
+  ],
+  "device": "GPU-80ac66e5-0c04-1032-a9b1-6fc02133bd18",
+  "gpu_cancelled_jobs": 1,
+  "gpu_successful_jobs": 17,
+  "helper_sha256": "491da729ced3ae2809341f5849fa3f41cc12cd06c96713c0c925331a53af28e1",
+  "independent_final": "/tmp/kernel-rsi-managed/validation/task/.kernel_envolve/runs/20261110T210450-1d36235c",
+  "manager_round_status": "succeeded",
+  "max_extra_seconds": 0.21383768320083618,
+  "median_extra_seconds": 0.0012569348327815533,
+  "min_extra_seconds": -1.2278200723230839,
+  "model_calls": 0,
+  "pairs": 6,
+  "passed": true,
+  "queued_job_cancelled_without_child": true,
+  "recorded_warmup_pairs": 1,
+  "rows": [
+    {
+      "arm": "managed-research",
+      "pair": -1,
+      "result_hash": "4ff25fdb3c9486cf135ce30eeb055f103a05264863edfc774aeceb2ec5644938",
+      "run": "/tmp/kernel-rsi-managed/validation/task/.kernel_envolve/runs/20261110T210453-8836406b",
+      "seconds": 2.579059694893658
+    },
+    {
+      "arm": "ordinary-manager",
+      "pair": -1,
+      "result_hash": "73ad537e4a22a8de0d98c088bb7bb16f088cc03dd6ab2e5b74c46a01aa7b0221",
+      "run": "/tmp/kernel-rsi-managed/validation/task/.kernel_envolve/runs/20261110T210455-82032dec",
+      "seconds": 2.1037656627595425
+    },
+    {
+      "arm": "ordinary-manager",
+      "pair": 0,
+      "result_hash": "f5e46a60b924e73ba979a8011cbdc1d1e12731540572fe029b1be32385f9fd29",
+      "run": "/tmp/kernel-rsi-managed/validation/task/.kernel_envolve/runs/20261110T210457-dddac7b9",
+      "seconds": 2.126439305022359
+    },
+    {
+      "arm": "managed-research",
+      "pair": 0,
+      "result_hash": "69dfa53b43704825e4e7fd7587aa6c965948bea8d98e2726339bc56601d53874",
+      "run": "/tmp/kernel-rsi-managed/validation/task/.kernel_envolve/runs/20261110T210500-1a073c0c",
+      "seconds": 2.114390249364078
+    },
+    {
+      "arm": "managed-research",
+      "pair": 1,
+      "result_hash": "45a49c6f81caeb1e2af29fb197d6d857560a45c8bc65a530d3184483f182dcfc",
+      "run": "/tmp/kernel-rsi-managed/validation/task/.kernel_envolve/runs/20261110T210502-167265c1",
+      "seconds": 2.334099787287414
+    },
+    {
+      "arm": "ordinary-manager",
+      "pair": 1,
+      "result_hash": "adc9692ebaac720188a0b92bb12844037953a035888e988bd6f648910cb972c8",
+      "run": "/tmp/kernel-rsi-managed/validation/task/.kernel_envolve/runs/20261110T210504-9f38a9ba",
+      "seconds": 2.1302299918606877
+    },
+    {
+      "arm": "ordinary-manager",
+      "pair": 2,
+      "result_hash": "6d64f91d4986f91c9c22ba98c09b466d473ab698afd02b94a3499d7a1975b2b0",
+      "run": "/tmp/kernel-rsi-managed/validation/task/.kernel_envolve/runs/20261110T210506-f8135530",
+      "seconds": 2.118968704715371
+    },
+    {
+      "arm": "managed-research",
+      "pair": 2,
+      "result_hash": "fb6ba79e15c84a315d4d844668bfa469a2b9df8b407c0b9318021ab77cb35f11",
+      "run": "/tmp/kernel-rsi-managed/validation/task/.kernel_envolve/runs/20261110T210508-890c8624",
+      "seconds": 2.3328063879162073
+    },
+    {
+      "arm": "managed-research",
+      "pair": 3,
+      "result_hash": "df7d0f9b56c0b12d0f0bd242e1f09c31e9bcf08626e5d46234159822024f0547",
+      "run": "/tmp/kernel-rsi-managed/validation/task/.kernel_envolve/runs/20261110T210511-918497da",
+      "seconds": 2.1387520600110292
+    },
+    {
+      "arm": "ordinary-manager",
+      "pair": 3,
+      "result_hash": "fe45b24817f9e015bddd0e3415d2ae42b07278bdc2fe7de55f8fe53ae16769bb",
+      "run": "/tmp/kernel-rsi-managed/validation/task/.kernel_envolve/runs/20261110T210513-61fcfd06",
+      "seconds": 2.133891156874597
+    },
+    {
+      "arm": "ordinary-manager",
+      "pair": 4,
+      "result_hash": "03d9c26653845101e55279eef3dc89d7b18664f2df5f62eb0be7cdde6ee16d08",
+      "run": "/tmp/kernel-rsi-managed/validation/task/.kernel_envolve/runs/20261110T210515-c212f9e2",
+      "seconds": 2.315520609728992
+    },
+    {
+      "arm": "managed-research",
+      "pair": 4,
+      "result_hash": "8ad9a37bd04f016123819f53c0c69c02e510ac78d5b14b9ac899e60aeff7bcfb",
+      "run": "/tmp/kernel-rsi-managed/validation/task/.kernel_envolve/runs/20261110T210517-8c88a6ca",
+      "seconds": 2.313173576258123
+    },
+    {
+      "arm": "managed-research",
+      "pair": 5,
+      "result_hash": "4e34b2bf63d05617bea47a6c4af79f2524c3fe2a6604b7b2bbff0ce7f76b9eae",
+      "run": "/tmp/kernel-rsi-managed/validation/task/.kernel_envolve/runs/20261110T210520-06968c6c",
+      "seconds": 2.104282610118389
+    },
+    {
+      "arm": "ordinary-manager",
+      "pair": 5,
+      "result_hash": "fd4ac8e1fee03ee8b6290be9b04dd79a4c1673bcafd67fa9740f6354b5a4a527",
+      "run": "/tmp/kernel-rsi-managed/validation/task/.kernel_envolve/runs/20261110T210522-5304a8e4",
+      "seconds": 3.332102682441473
+    }
+  ],
+  "scope": "Engineering integration only: one trivial pointwise task, 6 paired measurements; no model, no learned policy, no kernel optimization, no production throughput evidence.",
+  "source_commit": "4894926cb0538d2f641d63e8d881c08f6d517617",
+  "job": "7a4c5b6674634d2abf380b0f7cda940a",
+  "verification": {
+    "raw_full_receipts": 17,
+    "six_pairs_and_warmup_bound": true,
+    "distinct_independent_full": true,
+    "queue_cancel_without_child": true,
+    "decision_lock_free": true
+  },
+  "median_paired_relative_overhead": 0.0006321716500803376,
+  "current_conservative_gpu_seconds": 91.28222799301147,
+  "cumulative_gpu_seconds": 17954.384977579117,
+  "evidence_sha256": "0dffb99fe63eae2e52879c0b210c15b7acf20701e1db70abb43b4015df5b4bed"
+}

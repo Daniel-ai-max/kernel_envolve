@@ -16,6 +16,7 @@ from kernel_envolve.evaluation.shared import storage
 
 # Existing adapter/worker imports remain valid while implementation uses canonical paths.
 ALIASES = {
+    "kernel_envolve.manager.linked_delivery": "kernel_envolve.manager.results.linked_delivery",
     "kernel_envolve.arrays": "kernel_envolve.evaluation.shared.arrays",
     "kernel_envolve.execution": "kernel_envolve.evaluation.shared.execution",
     "kernel_envolve.protocol": "kernel_envolve.evaluation.shared.protocol",

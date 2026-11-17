@@ -1,0 +1,36 @@
+{
+  "recorded_at": 1794331528.872715,
+  "base_commit": "e9f436be4fdbbb6ada74f2c0b44374ec0ee7c611",
+  "scope": "Explicit optional artifact-proposal prototype; no GPU/model efficacy experiment for this mechanism yet.",
+  "mechanism": [
+    "Exact complete task.py/input-generator and protected configuration/runtime/profile match from approved frozen IDs",
+    "Initial incumbent full evaluation retained; historical source consumes first of same action slots and must pass current full evaluator",
+    "Explicit source-validator callback checks both artifact and model proposals; history does not grant permissions",
+    "Current measured strict improvement only; original verified incumbent survives invalid/slower proposal; independent final trial evaluation remains",
+    "Bounded immutable proposal identity; decision origin recorded; selector added to validator identity; no production auto-activation"
+  ],
+  "tests": {
+    "targeted": "84 passed",
+    "full": "506 passed,10skipped",
+    "full_seconds": 158.37,
+    "full_log": "/tmp/rsi-artifact-full-tests-20261111.log",
+    "ruff_check": true,
+    "ruff_format_check": true,
+    "diff_check": true
+  },
+  "sha256": {
+    "src/kernel_envolve/rsi/research.py": "90a6f71ed0b4f878d8919d0c6f9474e1b7c97a4b6aa1d774b19d02f674147b1a",
+    "src/kernel_envolve/rsi/reuse.py": "88817259a184368035d6de30f52856553048807a821fecbcc09bf463d8d6d67b",
+    "src/kernel_envolve/rsi/episodes.py": "a8c70448b54ae676557a3df6e8f33612d10e631126bc23d87518bda93e9472bd",
+    "src/kernel_envolve/rsi/trials.py": "12e379da011740eb34e0ae29185d926abe924dbae98767326a3762bcf2544297",
+    "tests/test_rsi_research.py": "47e61ce4dd7f272c4673f9713a671ff0f2c46cb3d4e6b14bcc2fdb677770470b",
+    "tests/test_rsi.py": "619c13d17b730f690caa811a47b24f02662992d8e66883a8d7fdcbe305b7bd0e"
+  },
+  "limitations": [
+    "Same complete reference/input-generator source only; no semantic fuzzy matching",
+    "Approved content hash does not establish publisher trust; caller must audit original receipts and bind external manifest",
+    "Trusted adapters are not OS sandboxes",
+    "New input cases require new evaluation; historical efficacy is not transferred",
+    "No demonstrated net RSI value or superiority over reference algorithms"
+  ]
+}

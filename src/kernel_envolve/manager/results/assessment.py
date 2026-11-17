@@ -17,9 +17,10 @@ import tempfile
 import time
 from pathlib import Path
 
-from kernel_envolve._io import durable_bytes, durable_json, hash_file
+from kernel_envolve._io import hash_file
 from kernel_envolve.evaluation.shared.storage import digest
 from kernel_envolve.manager.execution.process import exclusive
+from kernel_envolve.manager.results.archive import durable_bytes, durable_json
 from kernel_envolve.manager.store import encode
 
 

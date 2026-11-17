@@ -1,0 +1,11 @@
+{
+  "at": 1794344837.57467,
+  "job": "7a4c5b6674634d2abf380b0f7cda940a",
+  "status": "closed_engineering_passed",
+  "summary_sha256": "cec6b114de15d4a7f4ad092f72ad49e393cdc732aaf4c77dbae847efc05def95",
+  "released": true,
+  "current_gpu_seconds": 91.28222799301147,
+  "cumulative_gpu_seconds": 17954.384977579117,
+  "scope": "Engineering integration only: one trivial pointwise task, 6 paired measurements; no model, no learned policy, no kernel optimization, no production throughput evidence.",
+  "efficacy_proven": false
+}

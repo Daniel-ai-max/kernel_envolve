@@ -1,0 +1,604 @@
+{
+  "status": "passed",
+  "scope": "Retrospective verified collection only; zero new GPU/model calls, no parent activation or new generation inferred",
+  "source_job": "8774e952b4ff4276a213a8fb2f9ff0f8",
+  "source_evidence_sha256": "1e92a3733f464a265aaeb74b22a2645b321bf2ec6c397f6716bd0d8021940aa2",
+  "summary_sha256": "25135af1830c6d88ede36d8a1e25397e71d74c99b2016b726f45e1df5e6b8a6e",
+  "source_sha256": {
+    "artifact_lineage.py": "2129a370633a8ef22ed58ee6e221c57a49335aea9e0ed56a2cfe5ba135cff637",
+    "artifact_snapshot.py": "942c64e71781b7afece1c6c68138cba270f62c18545cbbbb8326f120e0d33be7",
+    "episodes.py": "e2ed0dccd63d9381cdaebe8c0580f3b1b0d3c312bb27a1aa6177759793042f47"
+  },
+  "seconds": 4.166305250008008,
+  "records": [
+    {
+      "trial": "0-0-control-4",
+      "record": "cb12c265bbd289060334e5d5b9bba2dd8b375d0fbd4d860185f482fa13b365d6",
+      "episode": "e19fb35b6be05446ec8f84bfe11d4d658fbb8a7649e785e4d7a9b2d4cbfc31a5",
+      "kind": "seed",
+      "snapshot": "68ef6b270322bd387b5a51107aa82eee1c8525060fc98c71f3a9befa1eebd9ca",
+      "reasons": [],
+      "wrong_observations": 1
+    },
+    {
+      "trial": "0-0-reuse-2",
+      "record": "a1b022acf3baba69f106b655b75bb93936a77ed048df95cecedc193813110d2b",
+      "episode": "1880a68d967be7b5f04e6bb33751b5e41c63c80fb5a6cd05f00a233d5db5c156",
+      "kind": "seed",
+      "snapshot": "8fb7a33e97e43b8c65de71af8cb6dda6576c7784c96b53491bc04a24ea54b271",
+      "reasons": [],
+      "wrong_observations": 0
+    },
+    {
+      "trial": "0-0-adaptive-reuse",
+      "record": "4f94f92892bfcf8edf8dfede174a693e3882a6e771a806d6a28a22ca97669b7e",
+      "episode": "f00c85213b7ef714b458f48e528eabba1b71c444761b054fe52ed9ef42bff7bb",
+      "kind": "seed",
+      "snapshot": "1017b437c5cc42b88f4de4dc587e397b7bf5d132abf7fc8ba9ca6e9a32588e1f",
+      "reasons": [],
+      "wrong_observations": 0
+    },
+    {
+      "trial": "0-0-reuse-4",
+      "record": "dd448a7032239e0feac0ebc1d94591c928efcce4d45c6b2604d4b24b7fe4cda2",
+      "episode": "1b7e8fe894275a30e3122701ddb1b6ba649e46cd022c1ae94f63512ae2fac180",
+      "kind": "seed",
+      "snapshot": "a8c092f0a1808ea90b08b591a97a1daab37e6a675ffd7a7add09ea4038fa479b",
+      "reasons": [],
+      "wrong_observations": 0
+    },
+    {
+      "trial": "0-1-reuse-2",
+      "record": "20da136fbc42dbd6e2274eabdd81b7ddace143f381c8249dcf390b8b9df77dcf",
+      "episode": "a8d8cd2d8327c18db5cf8858cd39a9b8ca3e8a21b3b959f676fe4f79faf4a2ff",
+      "kind": "seed",
+      "snapshot": "89f747e0525a7b5e866cd93bb4cbc9235f773817b6f8d121b2d351e412674bef",
+      "reasons": [],
+      "wrong_observations": 0
+    },
+    {
+      "trial": "0-1-reuse-4",
+      "record": "7c8199e529c511ca34bac355eba52fca89150a0d649b8a8b8a5fd2227178f7c0",
+      "episode": "aa7d1ea83e8bf204c380e901bba6da5072a9537695bad6a8c5b9c51585d3448c",
+      "kind": "seed",
+      "snapshot": "1ab46605e567e96dc4095dda94c296b4d08dd90695deb7e4ee04da36e856e981",
+      "reasons": [],
+      "wrong_observations": 0
+    },
+    {
+      "trial": "0-1-control-4",
+      "record": "385b2a199af1a13e72569ffdcbbe71aa5e5205fce7aa7b536f7476a96e963933",
+      "episode": "4bfde4f3137778b30c34450aaa1c01281681218ae33ffba9bf6ab2fcc5f145ec",
+      "kind": "seed",
+      "snapshot": "8768feee7308539f6c3476317f51eeb8736dd61bf000118b67163ae2fae5b652",
+      "reasons": [],
+      "wrong_observations": 1
+    },
+    {
+      "trial": "0-1-adaptive-reuse",
+      "record": "5f31deb0882925fb8e9479a31846b97fa19bd6fe0a20bf4ea3260027851ddc11",
+      "episode": "c6b7a4be26435cdc7faa6538cbd0850da3a9a2cf7410aa802fff226648c24cab",
+      "kind": "seed",
+      "snapshot": "45645af4b5eb27e0ff8b0332a85e2561328cf1f2b58b5555964938338f093003",
+      "reasons": [],
+      "wrong_observations": 0
+    },
+    {
+      "trial": "0-2-reuse-4",
+      "record": "d391bd0ff28e2399a89b0a8277468f57a7a577434d25d3100b883c182216f17b",
+      "episode": "23fa76c46bee7280aa32404a18913f902b08f0b0b576018b24140e1f25cb25bc",
+      "kind": "seed",
+      "snapshot": "b560eca8f6ebcc868093f600d087bd8265f793b360084f117ed93f570f48b25d",
+      "reasons": [],
+      "wrong_observations": 0
+    },
+    {
+      "trial": "0-2-adaptive-reuse",
+      "record": "75c29e42683763a5bedb16f9d579987d2b7b393615065d21a85049f0cf9826b8",
+      "episode": "4676c2b773b8b85c441807a255d57a12bdeb4e40981e2365e083b4be2ea01967",
+      "kind": "seed",
+      "snapshot": "9fc3cd9dbaa0bfbb4fa618d6ebf15076372be12995e32d56909892562d3d6d0a",
+      "reasons": [],
+      "wrong_observations": 0
+    },
+    {
+      "trial": "0-2-reuse-2",
+      "record": "22256aa1d682e00d2a8787fea160a5aea82b32525acbd39ed49d88563e3f8a58",
+      "episode": "e3bae649bf215457634a1625b1288cfafc0c18190ccfa06772f8a65035c33f78",
+      "kind": "seed",
+      "snapshot": "9fee935a993e6e552b7e76013bb19502fa3d04e6e279a89826e24ff1c4b394d1",
+      "reasons": [],
+      "wrong_observations": 0
+    },
+    {
+      "trial": "0-2-control-4",
+      "record": "f5e999c0af7f13127439c59b387f6e048a3950ce589c1b3efa579ead723de859",
+      "episode": "51306d7f45e8014cf079c59bd8460742f1e81eaee8a8a28ed73406695d5f0d93",
+      "kind": "seed",
+      "snapshot": "1eaa63d3f633dccfce51274ff235df73022afc66c17b4728f7199cd95242198a",
+      "reasons": [],
+      "wrong_observations": 0
+    },
+    {
+      "trial": "0-3-adaptive-reuse",
+      "record": "90f44dcf96c196fcf73bfd98c5b3269544cd1be031f3a7a3ae1f92438ea4b2f9",
+      "episode": "86172d9e21a5309f973822933e1523f1846b65306789edfdcbbeb29b5178a8fc",
+      "kind": "seed",
+      "snapshot": "a60a26b6afa9639c0b0ff7cac33e39a8251db61a3fe2ff502d323d19dfb0dda1",
+      "reasons": [],
+      "wrong_observations": 0
+    },
+    {
+      "trial": "0-3-control-4",
+      "record": "9140f1d90a12d343c58f96693a2748a3406b7848ba4f1438221ff6e36a2ef159",
+      "episode": "0c1dcc2b09173ee4e1d748f7c5acba3019f95f0fd70ffd6e0238ffd1029f51dc",
+      "kind": "seed",
+      "snapshot": "8159ab99245516733ed2ad93c91bb9db64430d1f1f3c5bd93a781e6a53cb63ff",
+      "reasons": [],
+      "wrong_observations": 0
+    },
+    {
+      "trial": "0-3-reuse-4",
+      "record": "b2b0755bab189246d3d26044b070a92aa13427885b735163ff840080950bfabc",
+      "episode": "0485195f442e9a8d6cfca87dd221bd1887bfa6799d1df1025acbdaa66436aedc",
+      "kind": "seed",
+      "snapshot": "f14992fdffca0eda8173ef2e1e5309a23abf7016a65fca825aa4178cdd89b118",
+      "reasons": [],
+      "wrong_observations": 0
+    },
+    {
+      "trial": "0-3-reuse-2",
+      "record": "cf79970dc95f4d1669772d6d6859c6e85b1261657f460071b3995eed058d7e6f",
+      "episode": "4bc93892a87ceb83afca9ebf6090df2d09fa1f9488dd218d83f5fc55574d78a1",
+      "kind": "seed",
+      "snapshot": "0c8bc19fb5fecebe745b36944756ef71b0f72c99d3830ac402b73457f758fe10",
+      "reasons": [],
+      "wrong_observations": 0
+    },
+    {
+      "trial": "0-4-control-4",
+      "record": "d17f634dcea3b32f16ceb9baced237996ccb8fd74176aa79cf81b7833346ce80",
+      "episode": "f94b9daa356b75c39d314219969589e2ad5eb0cff9cb8ebec591b1afab5c47b8",
+      "kind": "seed",
+      "snapshot": "bffedc2e99591302712ed7f18a3ad4d396f9fee316f7b4ea8bdef4fae1ec37bc",
+      "reasons": [],
+      "wrong_observations": 1
+    },
+    {
+      "trial": "0-4-reuse-2",
+      "record": "9cecf02ee065f4b4d170a645d872bd90d4dd3d68abc2c8b08fac317f2669b405",
+      "episode": "31e81c5249fa29273dcc7ddf73329315f894465ce236f5ed9277f8c273ff8958",
+      "kind": "seed",
+      "snapshot": "6d6c99f5afda0ba610ad36f16efb79bdee4dc7a00054a9a520b036d30f0d54f3",
+      "reasons": [],
+      "wrong_observations": 0
+    },
+    {
+      "trial": "0-4-adaptive-reuse",
+      "record": "b67fc9bab8db1625d688f83cfbf433cde286b2229add5015266806abef4b5ee7",
+      "episode": "ec532df8acc28538705fae5a727e8ed888c2b236e2c3f2f4b8b9233662c3fdbb",
+      "kind": "seed",
+      "snapshot": "b1d4df7cd0f0f53194753076537ab05097853a574497a0a07a0683d4fc607d1b",
+      "reasons": [],
+      "wrong_observations": 0
+    },
+    {
+      "trial": "0-4-reuse-4",
+      "record": "65d8f4ee05935464d5dc36a3af459874fde60fee4b26f88c3828c37d76637aa5",
+      "episode": "9b9327114672af05aa236415b5fd049b3051b76c31ae432622334c66e83f98aa",
+      "kind": "seed",
+      "snapshot": "c988eec56d8d63697983d332fe096a2c218a8bf24f4839eb0a60e8b102e52dba",
+      "reasons": [],
+      "wrong_observations": 1
+    },
+    {
+      "trial": "0-5-reuse-2",
+      "record": "d5557e7519c3d662570a7141eb75953d671d54cec4fae385150da4054ba30638",
+      "episode": "4eaab6629ac042b7dd59c586b403051e64c985db2728fba98d1675d38e2767c7",
+      "kind": "seed",
+      "snapshot": "43b7d7560de1ed83db1a554384a18cd7e0a2a144ed940bd6bfdf457e6b3c0fb8",
+      "reasons": [],
+      "wrong_observations": 0
+    },
+    {
+      "trial": "0-5-reuse-4",
+      "record": "cb5653d42b4ee39fbd2c1ecb090b586a53b5595b07fd55420fe57a315d2e40de",
+      "episode": "dfdab1cad4e9eee4ea067dcc5500f46c8ecc84380152e6fe66f61158730994b1",
+      "kind": "seed",
+      "snapshot": "bc7dd6763b75bfab3432cacb5b4d46a1c2f36a432fba82b485ced6fba2a0eea1",
+      "reasons": [],
+      "wrong_observations": 0
+    },
+    {
+      "trial": "0-5-control-4",
+      "record": "f4361492bf4834b73d0110a4d5804188ad5bb97704e7f522a39e6c20f9e8a759",
+      "episode": "4eab64da067f629c69fcf0e536e68c80b47a7cd31afc36e8f7d2da0d1904eb72",
+      "kind": "seed",
+      "snapshot": "bb5081676352a87a41c5cd5d053f82d9d9937b9163bee5beecae65ae28aa58f5",
+      "reasons": [],
+      "wrong_observations": 1
+    },
+    {
+      "trial": "0-5-adaptive-reuse",
+      "record": "0426f4825d6c983bf509daef0d09acb7fae7fc6d63fff2d6855ecbcd1f2487bb",
+      "episode": "792528472d36ac150ec5f313c66e5ec1a3ea722199bbb18e961bffb90e0a3e1f",
+      "kind": "seed",
+      "snapshot": "978bbe09f890ffc904d1c1d715d4195553978099488cee8dd7f07c662079e93c",
+      "reasons": [],
+      "wrong_observations": 1
+    },
+    {
+      "trial": "0-6-reuse-4",
+      "record": "97a25ce9a4c07ed6ff7d88990ca660a9beb5ab19411df28c2f58356a6b1b5422",
+      "episode": "cd61102b14dcb8afbf16b6955d68596cce46b1f43329de331290e775aa015d58",
+      "kind": "seed",
+      "snapshot": "f3415831e6a83b1b1b69c43bc1ae25915b6e6ee78757a776887273a4743b5f20",
+      "reasons": [],
+      "wrong_observations": 1
+    },
+    {
+      "trial": "0-6-adaptive-reuse",
+      "record": "d5c6ec473b7761ba3cf4df0a5f348e83e3ead04969393bf698c63ac571041ef8",
+      "episode": "3c0b85c7934c843462ee423089e80104076510e57a85d590353f12e5d0e52e3b",
+      "kind": "seed",
+      "snapshot": "ed2923892fa3fd3066a82c5a49f44a56883e4816c84b652467fb7fa774da9237",
+      "reasons": [],
+      "wrong_observations": 1
+    },
+    {
+      "trial": "0-6-reuse-2",
+      "record": "d6ace369a4203fa3e327fd5414c561d96dfd125696cf4f5f8477b7e504933fad",
+      "episode": "37229120d68fd0dcf9ecf76c0558a6c8d9fc5f7761514dbd2951c629ad7b4c97",
+      "kind": "seed",
+      "snapshot": "e3834deb3b1262538369a363dfbaa9f1bc6e24d2322c9f05dcffd63a1ac7ef3b",
+      "reasons": [],
+      "wrong_observations": 1
+    },
+    {
+      "trial": "0-6-control-4",
+      "record": "52a10b20e2a69fa267113afd06f47efbd03465027f6c27b0a39d779f9d23a596",
+      "episode": "d9240c485b88f472571b0bc6c3fd18968a67c0383c636ccffe28b01ccc80e668",
+      "kind": "seed",
+      "snapshot": "3b19f7e3ef02548cc7d4fb6965656e13e54daa46448777331c53aa63a03f258f",
+      "reasons": [],
+      "wrong_observations": 1
+    },
+    {
+      "trial": "0-7-adaptive-reuse",
+      "record": "45822bfdb357273edda710afe6f55847629fb2d55f8c564219eda5b875e65974",
+      "episode": "49aa62035bd71e44d93ea2e371ed7fec7fd2f4848a92fbb1c03368d1bed549c5",
+      "kind": "seed",
+      "snapshot": "dd3f200127a28ed43c165c640238bf27a33212a5b61db3a2a21130e602db92ec",
+      "reasons": [],
+      "wrong_observations": 1
+    },
+    {
+      "trial": "0-7-control-4",
+      "record": "d0ddec01049c4fa1433b2292d149556cbe38c9eda572bf95c61ecfc8862af396",
+      "episode": "04637f41bbf1ff6752c6cebb4b5517d4d9632b9f26fcbd911db240469867d2c0",
+      "kind": "seed",
+      "snapshot": "2618b92e4205655911b05e8346de5833efa82a43e091a09aa55c53d563f29e4c",
+      "reasons": [],
+      "wrong_observations": 1
+    },
+    {
+      "trial": "0-7-reuse-4",
+      "record": "42adedfd3ff17db30ce8cb5b7509e36d7f3f8547c8964724cef00c969e05787a",
+      "episode": "d0d218cfde64a4b5b37160c409b7f17f599b8c21931d514a6a7a9849ac4864ce",
+      "kind": "seed",
+      "snapshot": "e6534bb82fe839f3291d667081080a391a7fc1cddd8ea2590756371f727e2ce4",
+      "reasons": [],
+      "wrong_observations": 1
+    },
+    {
+      "trial": "0-7-reuse-2",
+      "record": "2497f81f9f64a32bd756c5e5e7cba167c7d7c8398134e5b94b606bc10ae01a41",
+      "episode": "9d14a16af67de9e3a2cfbc6690a1c1fcf25bcfa1a58d5dd53799cb421b27317d",
+      "kind": "seed",
+      "snapshot": "192ca2859cf90ea96a01249be4e898186ff1600b89435f40010ee64eec740399",
+      "reasons": [],
+      "wrong_observations": 1
+    },
+    {
+      "trial": "1-0-reuse-4",
+      "record": "c72216ed8b9eb12aaf33568062a85d72d4a262242b8c9fe6228130ab9068571a",
+      "episode": "5a8799b31db77ac4f5c1ce454752e67c7a1562fc90913857bacef340aa0d4d68",
+      "kind": "seed",
+      "snapshot": "74fddb5c24448deccfe41395781096b5b6370ff0cb3e0672c88093c9db4393fb",
+      "reasons": [],
+      "wrong_observations": 0
+    },
+    {
+      "trial": "1-0-adaptive-reuse",
+      "record": "ddfc2a256da23acb8f44d8e5025826dcc4e75636c69730d043788c3f92f53403",
+      "episode": "35330fe4ab985f15b68b10103137489cbd33e04ed4450319dc92bf8e7a90f019",
+      "kind": "seed",
+      "snapshot": "32d2dd71c05e9ee922aaee1b65a8dc8ca2abd17d10e6b10671d5504e7e700848",
+      "reasons": [],
+      "wrong_observations": 0
+    },
+    {
+      "trial": "1-0-reuse-2",
+      "record": "a05f21e75b47953ffbf1edd96fc1d1386124f82b68758d7c9e30339a94ca8370",
+      "episode": "3412b103303df2aabe484f734a23d8c683832cec377719228bc966cbf40b53af",
+      "kind": "seed",
+      "snapshot": "f2ed0b9dc5a12f5cdee289d961b88551092fbfed06b65ce7d6303bb6b2303ac5",
+      "reasons": [],
+      "wrong_observations": 0
+    },
+    {
+      "trial": "1-0-control-4",
+      "record": "9929c18434fd1df959142aefbdd104c94c8181a887ba00024a406be5642aa0d8",
+      "episode": "4b87aa3580f61a110700535326de486846f5140486cb9796f4133479a5394d3b",
+      "kind": "seed",
+      "snapshot": "72c33346624be3d7435ab932f1df7f744fad3fa6000c71a72859a3593b4a36b8",
+      "reasons": [],
+      "wrong_observations": 1
+    },
+    {
+      "trial": "1-1-adaptive-reuse",
+      "record": "792a6e87ae28397ff3682ba4ee617b36a5d51dff81b738e633a956d2c341215f",
+      "episode": "d5d6c8db173665b1e3b7f60b4e827bfb2bee8f75a0ddefb4e1eb92436dc83221",
+      "kind": "seed",
+      "snapshot": "cab25da04fc4e6dde308a4b1b840afca2dbd45fbe36be0157b116883e5f919ff",
+      "reasons": [],
+      "wrong_observations": 0
+    },
+    {
+      "trial": "1-1-control-4",
+      "record": "781d035cfeb897fee458299db80be3fe5e7730f78a231e6a4f240fbf4d6936c3",
+      "episode": "309813a0289a63079f4e3b91bbf67065983471aac23fb4196ad449ca5eedc8f6",
+      "kind": "seed",
+      "snapshot": "ad067a90c86808ba36a31720c9e95762d7740ebf71a6461eb2f3201bc5ba6809",
+      "reasons": [],
+      "wrong_observations": 1
+    },
+    {
+      "trial": "1-1-reuse-4",
+      "record": "7a73b7eb86b70fbc32064a9a46773826f2b7c516afb3e6af677ce2533c8f9bbf",
+      "episode": "ab1846e75d8157d00c8e3cd18d2cf6a5eee119694849b43abcb41fa5742a064c",
+      "kind": "seed",
+      "snapshot": "b9eb31d01392a576660fa46f060e31382bfed51b88afa900da468652807ff79d",
+      "reasons": [],
+      "wrong_observations": 0
+    },
+    {
+      "trial": "1-1-reuse-2",
+      "record": "6d8c5d910d0893f1dc2ace53020ce59ec4a6deb284b65089219357507179e848",
+      "episode": "f2d0a6b0cd4fb464d28425498166874090a762159eb90dc2297f07ae6e86d37e",
+      "kind": "seed",
+      "snapshot": "e57da54a5ca80eb4c7310d173342e87cd4eaf003f59b96589ce3e0f9ea00efb2",
+      "reasons": [],
+      "wrong_observations": 0
+    },
+    {
+      "trial": "1-2-control-4",
+      "record": "4d60f73610dfa31c69b315ba7c0df3b0e89d80c7961912995ba5410ba0e182fa",
+      "episode": "e0313981dbc0b073446203caeb4a91cbc4106b4679e05356ee300782b7989f53",
+      "kind": "seed",
+      "snapshot": "7c830ae0fa96c4b5567814d237bd81a92a0ac9b61c706a8fcc7824a49410fc0a",
+      "reasons": [],
+      "wrong_observations": 0
+    },
+    {
+      "trial": "1-2-reuse-2",
+      "record": "e2827a9d2319a44c01b3cad1bfc0dfe2ecf6dd2a34e8dd46ab60752964b14125",
+      "episode": "acb28353118523b1fa027cf0dc7dfdd6c751f98177da0423274f40c9c1b69608",
+      "kind": "seed",
+      "snapshot": "1547c0cfe04ecd1ac08bd4453e7071d6a730098871fa2b07f2156820c03d7513",
+      "reasons": [],
+      "wrong_observations": 0
+    },
+    {
+      "trial": "1-2-adaptive-reuse",
+      "record": "539fecc18065fecd020ae78075618544bb6b87b78882e933f57819eba2d940eb",
+      "episode": "45c24bbe25b1ee752b4a8b241e0a7bbdda41b027b2a3fe14915671f6b471797a",
+      "kind": "seed",
+      "snapshot": "2fb63d47e495dd0521c0ea309a0f8e6afb9ccfd10623bc09b100fb20c0222eac",
+      "reasons": [],
+      "wrong_observations": 0
+    },
+    {
+      "trial": "1-2-reuse-4",
+      "record": "194543f83ba57d21817d966001e188ec2ff5aec197310c65c2da29dc04509768",
+      "episode": "0883f59216fac58cedc7bbdea3e9401366d8e99ebfd7f6ebd69e3ca1a6aeca72",
+      "kind": "seed",
+      "snapshot": "a607fdeb516b2f29e64830ed0f0e06c236a1bd0e9ee8276a7a7254b12cf1522c",
+      "reasons": [],
+      "wrong_observations": 0
+    },
+    {
+      "trial": "1-3-reuse-2",
+      "record": "d0b2b674a6a0ed48ceaf0b5d39c4c434f2a9e21a2ba31b98bc288362335fc499",
+      "episode": "35e168e6bc42f06def4b41420dcd97b5254ad7a18eb2a8e375b86c39ed13df32",
+      "kind": "seed",
+      "snapshot": "bcff962ff41f3ad31741c3e138b251d8a3b4d13eedebcdd6f3b0d03f66eeebb0",
+      "reasons": [],
+      "wrong_observations": 0
+    },
+    {
+      "trial": "1-3-reuse-4",
+      "record": "4596b05c5df813d48a7f6f11ca6a2860b4853cd6ebf03f1981cdbf6ac9e889cd",
+      "episode": "c731535606ffe8d7cd06e949ca001ab7e0a674f6e9bb6ab5759214dfb20ade05",
+      "kind": "seed",
+      "snapshot": "1ba0d4bc952b6b125929b0d0c78fad17fe4b1f97f321b2a251bf5373f3d9f4e6",
+      "reasons": [],
+      "wrong_observations": 0
+    },
+    {
+      "trial": "1-3-control-4",
+      "record": "71b335c1d7989f82849dc6c7096b2347592964ddd81b25bf27bfa8ec87337972",
+      "episode": "f2c43608e50791b052f62bc0972d08dcb623fc24995aabb575055531bdbf514d",
+      "kind": "seed",
+      "snapshot": "252729438253d329a52d7d3a0204dd3bd085e1c4cf6f5f7384dd4683c6a2c340",
+      "reasons": [],
+      "wrong_observations": 0
+    },
+    {
+      "trial": "1-3-adaptive-reuse",
+      "record": "c9b51257952a5367ae48bed1fbae6cc93c2bc9679281c87de8751163073fc9ad",
+      "episode": "0b18dc7373f47f64bb107b26da1313e1f4f3dd13553ae691bd60fa15accefb68",
+      "kind": "seed",
+      "snapshot": "2a3c3f588e21812a5fdea9f968b46b6e574c7d85d72db1b7ad19c2d1174574ea",
+      "reasons": [],
+      "wrong_observations": 0
+    },
+    {
+      "trial": "1-4-reuse-4",
+      "record": "aac073d77c46226c44191b9874c41692e724f3ee73de6303d61b6775c6a1a493",
+      "episode": "a2b69c7617a23b14c338656a2bacc1593c7dce572bc2fb0317874ca0a94020c2",
+      "kind": "seed",
+      "snapshot": "c29ab511dc2e70cfadcc4038223ac600d68860d8431f7fb2a0193511e0980101",
+      "reasons": [],
+      "wrong_observations": 1
+    },
+    {
+      "trial": "1-4-adaptive-reuse",
+      "record": "b66169af055b3454155134bdbce4b48033f4c756e263250c19f5acfe8529b0d2",
+      "episode": "7df7a4e39e395c3a1ea6f9c117a22ec8a9ec03e0244065a90f6e3da7fd79e7c5",
+      "kind": "seed",
+      "snapshot": "f3ebb3f09fc685eecbecbd144ffe220f30498db31c2c61c56bb6eaaf335a1669",
+      "reasons": [],
+      "wrong_observations": 0
+    },
+    {
+      "trial": "1-4-reuse-2",
+      "record": "8bb0e428ad395e36067e0ae427a703228e6008f667077f2fd691f55ad6ef8df3",
+      "episode": "f76d5ca6066c42e336fc1f935f7ec987efff3913eece9c8623da6f635bd8d9df",
+      "kind": "seed",
+      "snapshot": "18ab179eb274a4d47d04483c324ba91dc5a55cf6e3f31119ce5db171fa2baf31",
+      "reasons": [],
+      "wrong_observations": 0
+    },
+    {
+      "trial": "1-4-control-4",
+      "record": "f08e2ab63634dc48c9dc539dcb75c13da2095905d9e6318b0e40c088e8bbad37",
+      "episode": "ff9b8dda7cf3f8ad4e9973ec02181b5f345141bcad10b196edfb193ef3c586c6",
+      "kind": "seed",
+      "snapshot": "852115db105ad3acc43b3cdfbbaf9077184cf82f425b7798351e53f6a1007605",
+      "reasons": [],
+      "wrong_observations": 1
+    },
+    {
+      "trial": "1-5-adaptive-reuse",
+      "record": "652a8fcbd5c0a342bf8b5e395988bef058909cccbd174a2e3e6ea0dfc49b780f",
+      "episode": "4a9caba01500b570b8d256858ba5f2a31b4f133ce7e83e1f7918c09335736748",
+      "kind": "observation",
+      "snapshot": null,
+      "reasons": [
+        "independent_final_not_eligible"
+      ],
+      "wrong_observations": 1
+    },
+    {
+      "trial": "1-5-control-4",
+      "record": "78e799243fd29a70ddab19e8c05f6399948481f5f110bc0e9d2838814a094726",
+      "episode": "b864776c27d06b85fcc82cc3d709b36b1a83ed52b28c30ab188343c092b1b3f6",
+      "kind": "seed",
+      "snapshot": "7de5000a1b4fcd743848766d3a79416cb21d6d4da37fdcd723143e9f0ae43dc4",
+      "reasons": [],
+      "wrong_observations": 1
+    },
+    {
+      "trial": "1-5-reuse-4",
+      "record": "aa2d68ec80572c7a88abc2c2f162c43b8a525c0f50832d9d7d8a31c70fb67eca",
+      "episode": "577c4d13947f7b10e4c68c6fa54362465ceb3c6309a1972a7bae4bb4428837f8",
+      "kind": "seed",
+      "snapshot": "8323b7cde0b150fc77b7c524ab5ae1779d7c5e50044f12c6d0d33111df676ddc",
+      "reasons": [],
+      "wrong_observations": 0
+    },
+    {
+      "trial": "1-5-reuse-2",
+      "record": "ebba955898978f5abce8cb4a3573a8192f64c308a60930e7697bacf2b7440f7a",
+      "episode": "87759b69afd182df318846baa37a31187c7c9624635a01f1aa5638c55d438b37",
+      "kind": "seed",
+      "snapshot": "22c57dffeb05912834e49400ec2ed3cf932aee1eeefe36139b3dfe1efc69b8b6",
+      "reasons": [],
+      "wrong_observations": 0
+    },
+    {
+      "trial": "1-6-control-4",
+      "record": "c1a79cc4846606d32c559c77d3651e33988b79eef9d5686a7daf63a6c7066265",
+      "episode": "b9db926d4472bdf4f350bba780974a28838156cbe31ad2ff01eb32cf0c9952e8",
+      "kind": "seed",
+      "snapshot": "61cfa09361c0b28094d06e105630c3d909c9bccdfd2ef6ea3188b9aed2caacff",
+      "reasons": [],
+      "wrong_observations": 1
+    },
+    {
+      "trial": "1-6-reuse-2",
+      "record": "cd0bf81a4585bbdf64113cf503e35a04d019fb62e9f9337ed378f51ddfa8674e",
+      "episode": "1405ac78977bf5c81d13df4f330db56170af6f83cc81d421b17b7dc7279f7f5b",
+      "kind": "observation",
+      "snapshot": null,
+      "reasons": [
+        "independent_final_not_eligible"
+      ],
+      "wrong_observations": 1
+    },
+    {
+      "trial": "1-6-adaptive-reuse",
+      "record": "6380274ee14c938ae4213051ade43850c8f1eb75f8b366f7542db34de0097196",
+      "episode": "d0935e1e20158cb0c09fd2c7586509bd911caf264bec1dea7db44ed3ccd3ac42",
+      "kind": "seed",
+      "snapshot": "fff3c87a56cac5c914be1bcfc253e145f31fa100ddeadae3b3aee9a024fc3de8",
+      "reasons": [],
+      "wrong_observations": 1
+    },
+    {
+      "trial": "1-6-reuse-4",
+      "record": "15d1c03ab43334aa21cb76234297bbc6022aa54f7805f1c8eb20b1cab8cd560e",
+      "episode": "7d4f685ca883179ad38d59ec5ed63085ed714b0202a9695a296f84ff8612efcd",
+      "kind": "seed",
+      "snapshot": "13ec6217b2a539d9fdfb701f11ef1849e859f7753522d73aa86aeeabe956f9df",
+      "reasons": [],
+      "wrong_observations": 1
+    },
+    {
+      "trial": "1-7-reuse-2",
+      "record": "d7c5b83d43fa630d51d54a4c6756d99efcad8520ba4c32d715c85bed505dae41",
+      "episode": "c0814d374aabf9d2a425eed09fb9b5d6f83c1e96b7fe162648b26a4346337bff",
+      "kind": "observation",
+      "snapshot": null,
+      "reasons": [
+        "independent_final_not_eligible"
+      ],
+      "wrong_observations": 1
+    },
+    {
+      "trial": "1-7-reuse-4",
+      "record": "60633ad9c0b82a265e3a71913299211ed56be475d940e2af4a3ae6e031e38b03",
+      "episode": "2c4a2c82e1f921f00d70de3d75396f815e24c2af958034ee6cd8dcaa5db38569",
+      "kind": "seed",
+      "snapshot": "2b96834a4005ebf87ee208acb065a8923ab1502c207ffb9400cc360aca1bf228",
+      "reasons": [],
+      "wrong_observations": 1
+    },
+    {
+      "trial": "1-7-control-4",
+      "record": "2802c199e040035052611417f4620d312ac412bc5083e331308a2cb22b29221f",
+      "episode": "d43603cc52645df627c0b8e239d934ddd80f401c77c9f00dad1c0941475051dd",
+      "kind": "seed",
+      "snapshot": "e3f01a0386602db98786a7e615a0b08dcc326566e550046321607dc36d27d590",
+      "reasons": [],
+      "wrong_observations": 1
+    },
+    {
+      "trial": "1-7-adaptive-reuse",
+      "record": "cbe3ca81ecb0c630e2cef93802f91e65c01ea2606e4e495e348ad6bcfd429b17",
+      "episode": "e4cd62eb52cd1288549e9039af29c120bfb1110df483302e6c137190741332b0",
+      "kind": "seed",
+      "snapshot": "299e9ca428039e670786063669f3064397088adcb0d7c0671a982c324e1eeecf",
+      "reasons": [],
+      "wrong_observations": 1
+    }
+  ],
+  "counts": {
+    "seed": 61,
+    "observation": 3
+  },
+  "known_wrong_observations_preserved": 28,
+  "production_activated": false,
+  "efficacy_proven": false
+}

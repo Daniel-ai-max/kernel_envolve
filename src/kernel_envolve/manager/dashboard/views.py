@@ -307,6 +307,9 @@ def task_view(store, key, now=None, predecessors=None, usage=None):
         "SELECT COUNT(*) FROM runs WHERE task=?", (key,)
     ).fetchone()[0]
     from kernel_envolve.manager.dashboard.row_facts import row_facts
+    from kernel_envolve.manager.results.linked_delivery import view as delivery_view
+
+    task.update(delivery_view(store, task, now))
 
     task["row_facts"] = row_facts(task)
     return task

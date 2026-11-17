@@ -90,6 +90,11 @@ def parser():
         "narrate", help="Shared asynchronous progress narrator; no research execution"
     )
     narrator.add_argument("--once", action="store_true")
+    narrator.add_argument(
+        "--exclusive-service",
+        action="store_true",
+        help="Own narration until exit; existing background narrators skip without stopping research",
+    )
     narrator.add_argument("command", nargs=argparse.REMAINDER, help="Tool-free model adapter argv")
     archive = commands.add_parser("archive", help="Save a portable read-only dashboard archive")
     archive.add_argument("--output", type=Path, required=True)
@@ -217,7 +222,13 @@ def main(argv=None):
 
         previous = signal.signal(signal.SIGTERM, interrupt)
         try:
-            serve(args.state, command, stopped, once=args.once)
+            serve(
+                args.state,
+                command,
+                stopped,
+                once=args.once,
+                exclusive_service=args.exclusive_service,
+            )
         except KeyboardInterrupt:
             stopped.set()
         finally:

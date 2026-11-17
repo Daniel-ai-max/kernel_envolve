@@ -143,6 +143,13 @@ def run(store, once=False, *, observe=False):
                     from kernel_envolve.manager.results.publication import refresh_publications
 
                     refresh_publications(local)
+                    from kernel_envolve.manager.results.index import gpu_work_pending
+                    from kernel_envolve.manager.results.linked_delivery import (
+                        refresh as refresh_deliveries,
+                    )
+
+                    if not stopped.is_set() and not gpu_work_pending(local):
+                        refresh_deliveries(local)
                     from kernel_envolve.manager.results.archive import checkpoint
 
                     checkpoint(local)

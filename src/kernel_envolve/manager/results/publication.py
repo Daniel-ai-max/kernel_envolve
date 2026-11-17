@@ -131,6 +131,9 @@ def sync_pr(store, task, run, url, *, source_root, base_branch):
             "INSERT OR REPLACE INTO metadata VALUES(?,?)", ("publication:" + task, encode(receipt))
         )
         store.event(task, "publication", receipt)
+    from kernel_envolve.manager.results.linked_delivery import refresh as refresh_deliveries
+
+    refresh_deliveries(store, task_id=task)
 
 
 def refresh_publications(store):

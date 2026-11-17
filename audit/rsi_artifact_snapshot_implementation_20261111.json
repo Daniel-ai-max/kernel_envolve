@@ -1,0 +1,44 @@
+{
+  "at": 1794347562.051399,
+  "source_sha256": {
+    "src/kernel_envolve/rsi/artifact_snapshot.py": "5565998c5447d91e4a077e22d19bd43ad7583cd649c56880b4a18107ee56cf75",
+    "src/kernel_envolve/rsi/research.py": "6f0795e5bdadd824c1b4b36c5b2db9b191525a4aeab348ced26751e6e103dc30",
+    "src/kernel_envolve/rsi/trials.py": "302deb590e62164b7a4f853862d9ccf3584f9670c179bd99a6acdc968497b475",
+    "tests/test_rsi_artifact_snapshot.py": "c3b10d5e8a1faa06580cce60b77a24ca42e42638c28ff192aab4ecefee3af6e9",
+    "tests/test_rsi_research.py": "851485745cc98d61e0916d8dbc827b19e501b1c079267891688b7877426b5590",
+    "tests/test_rsi_managed.py": "cf0979f33bdc5a7a3aa8e84bdb033930c3abee8ba66d84e280c28440400f7ea8",
+    "tests/test_rsi.py": "333d9d007c7c8b7c6a4b9210d93292f852d6021c968addf6ea138b3afbe951fb"
+  },
+  "full_local_suite": {
+    "passed": 589,
+    "skipped": 10,
+    "seconds": 175.69,
+    "pythonpath": "/Users/daniel/Documents/ChatGPT/\u7b97\u5b50\u4f18\u5316/kernel_envolve-rsi/src",
+    "session": 82211
+  },
+  "static_checks": {
+    "ruff_check": "passed",
+    "ruff_format_check": "128files formatted",
+    "git_diff_check": "passed"
+  },
+  "evidence": [
+    "Real CPU original-receipt verification and distinct final materialization",
+    "Complete episode archived behind bounded view;identity bound to view proposal",
+    "One snapshot read,no foreground episode verification or extra environment measurement",
+    "Actual managed subprocess path:3GPU-admitted CPUjobs(initial/artifact/final),no decision GPU lock",
+    "Actual remaining action cap and fresh full retained",
+    "Corrupt/missing/oversized/FIFO/symlink/incompatible optional view fallback",
+    "Unicode transport expansion respects existing proposal limit",
+    "Changed snapshot ignored during current round,fallback next round",
+    "Tampered final source and search-as-final rejected",
+    "Snapshot implementation invalidates old validator identity"
+  ],
+  "gpu_allocations_for_this_interface": 0,
+  "production_enabled": false,
+  "automatic_publisher": false,
+  "revocation": false,
+  "cross_generation_gain_proven": false,
+  "active_efficacy_job": "8774e952b4ff4276a213a8fb2f9ff0f8",
+  "active_efficacy_source_unchanged": "6e97cddbfcc1e19bfda8a8f84d1ba8a9306f4fa6",
+  "scope": "Engineering evidence only;not current-study efficacy,automatic policyadmission,revocation,or production throughput."
+}

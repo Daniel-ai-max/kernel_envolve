@@ -1,0 +1,61 @@
+{
+  "date": "2026-11-10",
+  "branch": "feature/rsi-evolution",
+  "reviewed_commit": "7dd42f692d92c2af931db0180b39f1ead61fa19c",
+  "changes": [
+    "Per-repeat equal-weight aggregate quality preservation",
+    "Separate correctness coverage from numeric quality",
+    "Aggregate solver and full trial wall-time ceilings",
+    "Reject incomplete pairs and invalid numeric metrics",
+    "Per-repeat metric summaries in receipts"
+  ],
+  "regression_first": {
+    "passed": 1,
+    "failed": 10,
+    "description": "New counterexample tests against the old gate; all 10 failed as expected"
+  },
+  "rsi_tests": {
+    "passed": 43,
+    "seconds": 13.21
+  },
+  "full_tests": {
+    "passed": 246,
+    "skipped": 8,
+    "seconds": 96.1,
+    "skip_reason": "GPU opt-in tests; no NVIDIA GPU on local macOS"
+  },
+  "initial_full_attempt": {
+    "passed": 245,
+    "failed": 1,
+    "skipped": 8,
+    "cause": "Interpreter invoked through a path containing ..; Python normalizes sys.executable in child process, changing preexisting updater cache key. Absolute interpreter invocation passes the focused test and full suite. No updater source changes."
+  },
+  "static_checks": [
+    "ruff check .",
+    "ruff format --check .",
+    "git diff --check"
+  ],
+  "prior_package_and_foreground_benchmark": "audit/rsi_20261110.json (previous source revision; not rerun or claimed as new evidence)",
+  "limits": [
+    "No real model calls or GPU experiments in this review",
+    "No measured superiority over reference methods",
+    "No OS sandbox",
+    "5% cost tolerance is an uncalibrated configurable default",
+    "Suite aggregate cost does not guarantee each individual task is faster"
+  ],
+  "main_modified_by_this_task": false,
+  "concurrent_main_observed": "392a758146bf858428dd5fcf2044cdd8c4170c6f",
+  "source_sha256": {
+    "src/kernel_envolve/rsi/store.py": "5fe6207a1db24551d6d434e03d93ef8ee86236320a02a864a4beab25c17a46ec",
+    "src/kernel_envolve/rsi/trials.py": "be0beeed7b4a610d66ad8a660c8f9fdead04bd14ef1f61150d4a3ee97d599f7b",
+    "src/kernel_envolve/rsi/config.py": "c7dc2c269f0fbdb31e7adb7acdae769a73acc5896944075b5bf5ea0971304b37",
+    "src/kernel_envolve/rsi/__init__.py": "2516dc681dafa235fcd3e250244d0158f4249e4a23006915d9d6de4b0cb85475",
+    "src/kernel_envolve/rsi/model.py": "39e119cbe7ac6d7d4fb3e8703e58cccd06f8e2af2cf04b091af407ce419bed24",
+    "src/kernel_envolve/rsi/context.py": "75c30aa5c8ebf7ccfe58275653c1571732c0754e93f894f453bc2c3d68c7c5b9",
+    "src/kernel_envolve/rsi/cli.py": "b90c6e2f1cb1600f0f039b2bc824068611e94c45f0ae4c4d015c36e361fba588",
+    "src/kernel_envolve/rsi/process.py": "546199aafb7849ca076197090aba56d2fb43fa536711f8cef3e5c5095757a46a",
+    "src/kernel_envolve/rsi/learning.py": "f8982ed3525fc4800ecf4ef28013d8ae16d96ce56feecf67cab7d77309ad165a",
+    "tests/test_rsi.py": "710c1e7499a8df174adc2d61572410c98314cbd21c3199697f6c89d5baf510f0",
+    "tests/test_rsi_native.py": "7bbc0d21bc169e904297d09715215f3d951a78f0a8e65fc0156e219404758b01"
+  }
+}

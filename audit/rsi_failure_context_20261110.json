@@ -1,0 +1,112 @@
+{
+  "date": "2026-11-10",
+  "change": "Expose bounded verified failed-check conditions to background RSI and optional research observations",
+  "training_job": "4bb80298cb394f5fa3237d6e46219699",
+  "training_archive_sha256": "e2a5884e276b2a2ae31d2f76ab3a9963409b27efab27d3fcdf135e9432bcf013",
+  "verified_real_failure_receipts": [
+    {
+      "task": "value-train-rms-normalize",
+      "run": "20261110T144821-56d3917f",
+      "result_hash": "a63f75a7b1277661d303c7f5d3cc51eb4f0e6b25733603ad55eb3f48ecc5b51f",
+      "failed_checks": {
+        "checks": [
+          {
+            "case": "size-1-bfloat16-stride-3",
+            "case_id_truncated": false,
+            "role": "candidate",
+            "kind": "reuse",
+            "seed": 211,
+            "args": {
+              "shape": [
+                513,
+                2049
+              ],
+              "dtype": "bfloat16",
+              "stride": 3,
+              "pattern": "wide"
+            },
+            "args_truncated": false
+          }
+        ],
+        "count": 1,
+        "truncated": false,
+        "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+      }
+    },
+    {
+      "task": "value-train-rms-normalize",
+      "run": "20261110T144906-b87fd252",
+      "result_hash": "263c0456ff5c6c2740090246c836da605330c3a79f544c2aa3ab20987b12b570",
+      "failed_checks": {
+        "checks": [
+          {
+            "case": "size-0-bfloat16-stride-3",
+            "case_id_truncated": false,
+            "role": "candidate",
+            "kind": "post",
+            "seed": 827393322377212210,
+            "args": {
+              "shape": [
+                129,
+                127
+              ],
+              "dtype": "bfloat16",
+              "stride": 3,
+              "pattern": "normal"
+            },
+            "args_truncated": false
+          }
+        ],
+        "count": 1,
+        "truncated": false,
+        "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+      }
+    },
+    {
+      "task": "value-train-swish-gate",
+      "run": "20261110T144653-717c52fc",
+      "result_hash": "42e2aeadd649dba3b9880dd9afb958670c9294ab6a924f5ee5ef66131eed4187",
+      "failed_checks": {
+        "checks": [
+          {
+            "case": "size-0-bfloat16-stride-1",
+            "case_id_truncated": false,
+            "role": "candidate",
+            "kind": "fresh",
+            "seed": 223,
+            "args": {
+              "shape": [
+                65539
+              ],
+              "dtype": "bfloat16",
+              "stride": 1,
+              "pattern": "normal"
+            },
+            "args_truncated": false
+          }
+        ],
+        "count": 1,
+        "truncated": false,
+        "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+      }
+    }
+  ],
+  "verification": {
+    "full_cpu_suite_passed": 284,
+    "gpu_opt_in_skipped": 8,
+    "seconds": 110.97,
+    "tests": [
+      "Real CPU failure provenance and tampering rejection",
+      "Background learner receives observed failure conditions",
+      "UTF-8 parameter and check-count bounds",
+      "Absent cases remain explicitly unknown"
+    ],
+    "includes_optional_case_args_compatibility": true
+  },
+  "limits": [
+    "No new GPU comparison of this field",
+    "Running development source a77bad3 remains frozen without this change",
+    "No new foreground history reads or model calls",
+    "Existing indexed/consumed evidence is not silently rewritten"
+  ]
+}

@@ -1,0 +1,481 @@
+{
+  "date": "2026-11-10",
+  "source_commit": "983f3bd4cf2b93cedea86befdc1408a45d2f8eee",
+  "model": "gpt-6-astra",
+  "environment": {
+    "count": 1,
+    "gpu": "NVIDIA B300 SXM6 AC",
+    "torch": "2.12.1+cu130",
+    "triton": "3.7.1"
+  },
+  "scope": "One-shot integration/development pilot, 2 learning tasks + 2 held-out templates x 2 repeats x 2 conditions; not a multi-step agent or independent final audit",
+  "completed": true,
+  "accepted": false,
+  "active_after": "base",
+  "state_disabled_after": true,
+  "rejection_reasons": [
+    "Aggregate seconds regression",
+    "Aggregate solver_seconds regression",
+    "No reproducible whole-suite quality, correctness or cost benefit"
+  ],
+  "training": [
+    {
+      "task": "learn-add-scale",
+      "correctness": "pass",
+      "performance": "slower",
+      "baseline_speedup": 0.6330872225394574,
+      "fixed_baseline_gain_by_batch": [
+        -0.5836265107582443,
+        -0.5754958483655797
+      ],
+      "result_hash": "006f69ec406c629bbcc37ed98541418ba5e8a7aa936732e68a96870b10b314fc"
+    },
+    {
+      "task": "learn-row-sum",
+      "correctness": "pass",
+      "performance": "slower",
+      "baseline_speedup": 0.504426997155045,
+      "fixed_baseline_gain_by_batch": [
+        -0.9876324661351739,
+        -0.9772623774793578
+      ],
+      "result_hash": "4bb1bd02b7968c958a302c6559a5c2a53893bf3e81fe666d0a1102e16e03451a"
+    }
+  ],
+  "paired_trials": [
+    {
+      "repeat": 0,
+      "task": 0,
+      "role": "control",
+      "passed": true,
+      "quality": 0.0,
+      "solver_seconds": 17.456626446917653,
+      "trial_seconds": 21.227362091187388,
+      "baseline_speedup": 0.831326852731068,
+      "eligible_for_best": false,
+      "result_hash": "3d96af4b1ef30ec8b3a342c185538cfd1387632230464d0b68f378d73ef12aa7"
+    },
+    {
+      "repeat": 0,
+      "task": 0,
+      "role": "candidate",
+      "passed": true,
+      "quality": 0.0,
+      "solver_seconds": 23.24998358497396,
+      "trial_seconds": 26.367827181704342,
+      "baseline_speedup": 0.817987410711973,
+      "eligible_for_best": false,
+      "result_hash": "7c31c2331813e41ee7057d69a9d4966908a273b520f3404aa1aa4af3194acc91"
+    },
+    {
+      "repeat": 0,
+      "task": 1,
+      "role": "control",
+      "passed": true,
+      "quality": 0.0,
+      "solver_seconds": 25.457350037060678,
+      "trial_seconds": 28.625106343068182,
+      "baseline_speedup": 0.5131681235052944,
+      "eligible_for_best": false,
+      "result_hash": "a758b5497163c590176c68a87e8fcbefa73c22b6864b2efda5b2321eef4e8c1b"
+    },
+    {
+      "repeat": 0,
+      "task": 1,
+      "role": "candidate",
+      "passed": true,
+      "quality": 0.0,
+      "solver_seconds": 25.256703310180455,
+      "trial_seconds": 28.474417271092534,
+      "baseline_speedup": 0.4905903073188994,
+      "eligible_for_best": false,
+      "result_hash": "68675ba37c21584dbf4b18cdef5df825a0308e159efd6ae32212f8956abe035d"
+    },
+    {
+      "repeat": 1,
+      "task": 0,
+      "role": "control",
+      "passed": true,
+      "quality": 0.0,
+      "solver_seconds": 15.652054216247052,
+      "trial_seconds": 18.870094439946115,
+      "baseline_speedup": 0.8250650020493854,
+      "eligible_for_best": false,
+      "result_hash": "b3b78a7f1f7d985196f61c48b96c29126bc4a568fe344e7b8a2965df36002f65"
+    },
+    {
+      "repeat": 1,
+      "task": 0,
+      "role": "candidate",
+      "passed": true,
+      "quality": 0.0,
+      "solver_seconds": 20.26676054811105,
+      "trial_seconds": 23.384589831344783,
+      "baseline_speedup": 0.8249654102162842,
+      "eligible_for_best": false,
+      "result_hash": "6c296c637c876e2bf18a8897cd07ee630c08c7e32589f4b4a3fbf8c59e65979d"
+    },
+    {
+      "repeat": 1,
+      "task": 1,
+      "role": "control",
+      "passed": true,
+      "quality": 0.0,
+      "solver_seconds": 24.054088334087282,
+      "trial_seconds": 27.171595899853855,
+      "baseline_speedup": 0.49855925538401147,
+      "eligible_for_best": false,
+      "result_hash": "b5bfae8f23bb17064836644e32e388f8f02958a687157a7171c51c13d2b889c1"
+    },
+    {
+      "repeat": 1,
+      "task": 1,
+      "role": "candidate",
+      "passed": true,
+      "quality": 0.0,
+      "solver_seconds": 24.25357502605766,
+      "trial_seconds": 27.823524434119463,
+      "baseline_speedup": 0.4671554610155207,
+      "eligible_for_best": false,
+      "result_hash": "891b5b753725e1b1787b0f31a26e14f7a649d895829f36aaa2fea65fa3a7d456"
+    }
+  ],
+  "repeat_aggregates": [
+    {
+      "candidate_passed": 2,
+      "candidate_quality": 0.0,
+      "candidate_seconds": 54.842244452796876,
+      "candidate_solver_seconds": 48.50668689515442,
+      "control_passed": 2,
+      "control_quality": 0.0,
+      "control_seconds": 49.85246843425557,
+      "control_solver_seconds": 42.91397648397833,
+      "quality_gain": 0.0,
+      "repeat": 0,
+      "solver_cost_change_pct": 13.032375159323895,
+      "trial_cost_change_pct": 10.009085157180774
+    },
+    {
+      "candidate_passed": 2,
+      "candidate_quality": 0.0,
+      "candidate_seconds": 51.208114265464246,
+      "candidate_solver_seconds": 44.52033557416871,
+      "control_passed": 2,
+      "control_quality": 0.0,
+      "control_seconds": 46.04169033979997,
+      "control_solver_seconds": 39.706142550334334,
+      "quality_gain": 0.0,
+      "repeat": 1,
+      "solver_cost_change_pct": 12.124554828592494,
+      "trial_cost_change_pct": 11.221186467166365
+    }
+  ],
+  "learning_seconds": 13.653789191041142,
+  "validation_seconds": 201.9470464619808,
+  "driver_seconds": 250.7320818901062,
+  "model_calls": [
+    {
+      "attempt": "rsi-batch-pilot-20261110-b",
+      "call": "01-solve-8a837b8c",
+      "mode": "solve",
+      "seconds": 11.035332202911377,
+      "usage": {
+        "cost": 0.020167,
+        "input_tokens": 471,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 482,
+        "output_tokens_details": {
+          "reasoning_tokens": 169
+        },
+        "total_tokens": 953
+      }
+    },
+    {
+      "attempt": "rsi-batch-pilot-20261110-c",
+      "call": "02-solve-cc974a1d",
+      "mode": "solve",
+      "seconds": 22.52933406829834,
+      "usage": {
+        "cost": 0.029624,
+        "input_tokens": 462,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 754,
+        "output_tokens_details": {
+          "reasoning_tokens": 474
+        },
+        "total_tokens": 1216
+      }
+    },
+    {
+      "attempt": "rsi-batch-pilot-20261110-c",
+      "call": "03-learn-e0bdd4e9",
+      "mode": "learn",
+      "seconds": 12.194613933563232,
+      "usage": {
+        "cost": 0.029708,
+        "input_tokens": 1949,
+        "input_tokens_details": {
+          "cache_write_tokens": 1946,
+          "cached_tokens": 0
+        },
+        "output_tokens": 459,
+        "output_tokens_details": {
+          "reasoning_tokens": 187
+        },
+        "total_tokens": 2408
+      }
+    },
+    {
+      "attempt": "rsi-batch-pilot-20261110-c",
+      "call": "04-solve-0df6f94f",
+      "mode": "solve",
+      "seconds": 15.063802242279053,
+      "usage": {
+        "cost": 0.023779,
+        "input_tokens": 477,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 584,
+        "output_tokens_details": {
+          "reasoning_tokens": 267
+        },
+        "total_tokens": 1061
+      }
+    },
+    {
+      "attempt": "rsi-batch-pilot-20261110-c",
+      "call": "05-solve-daefd4ba",
+      "mode": "solve",
+      "seconds": 21.40086030960083,
+      "usage": {
+        "cost": 0.030611,
+        "input_tokens": 608,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 753,
+        "output_tokens_details": {
+          "reasoning_tokens": 419
+        },
+        "total_tokens": 1361
+      }
+    },
+    {
+      "attempt": "rsi-batch-pilot-20261110-c",
+      "call": "06-solve-945ba617",
+      "mode": "solve",
+      "seconds": 22.070992946624756,
+      "usage": {
+        "cost": 0.026761,
+        "input_tokens": 593,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 646,
+        "output_tokens_details": {
+          "reasoning_tokens": 327
+        },
+        "total_tokens": 1239
+      }
+    },
+    {
+      "attempt": "rsi-batch-pilot-20261110-c",
+      "call": "07-solve-615e0081",
+      "mode": "solve",
+      "seconds": 23.761667013168335,
+      "usage": {
+        "cost": 0.0263285,
+        "input_tokens": 462,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 865,
+        "output_tokens_details": {
+          "reasoning_tokens": 516
+        },
+        "total_tokens": 1327
+      }
+    },
+    {
+      "attempt": "rsi-batch-pilot-20261110-c",
+      "call": "08-solve-936118b5",
+      "mode": "solve",
+      "seconds": 17.967822074890137,
+      "usage": {
+        "cost": 0.032431,
+        "input_tokens": 608,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 805,
+        "output_tokens_details": {
+          "reasoning_tokens": 435
+        },
+        "total_tokens": 1413
+      }
+    },
+    {
+      "attempt": "rsi-batch-pilot-20261110-c",
+      "call": "09-solve-e78ead5d",
+      "mode": "solve",
+      "seconds": 13.818883895874023,
+      "usage": {
+        "cost": 0.023289,
+        "input_tokens": 477,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 570,
+        "output_tokens_details": {
+          "reasoning_tokens": 245
+        },
+        "total_tokens": 1047
+      }
+    },
+    {
+      "attempt": "rsi-batch-pilot-20261110-c",
+      "call": "10-solve-ea740525",
+      "mode": "solve",
+      "seconds": 22.33911395072937,
+      "usage": {
+        "cost": 0.033019,
+        "input_tokens": 462,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 851,
+        "output_tokens_details": {
+          "reasoning_tokens": 429
+        },
+        "total_tokens": 1313
+      }
+    },
+    {
+      "attempt": "rsi-batch-pilot-20261110-c",
+      "call": "11-solve-d8896fa3",
+      "mode": "solve",
+      "seconds": 22.019094944000244,
+      "usage": {
+        "cost": 0.028369,
+        "input_tokens": 593,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 913,
+        "output_tokens_details": {
+          "reasoning_tokens": 516
+        },
+        "total_tokens": 1506
+      }
+    }
+  ],
+  "model_usage_totals": {
+    "input_tokens": 7162,
+    "output_tokens": 7682,
+    "total_tokens": 14844,
+    "cost": 0.30408650000000004
+  },
+  "cost_unit": "Provider-reported cost field; currency not independently verified",
+  "allocations_within_90_minute_approval": [
+    {
+      "directory": "rsi-batch-pilot-20261110",
+      "job": "d50cd58ba18c48a5ae7048290152b845",
+      "phase": "Stopped",
+      "create_request_at": 1794314317.841784,
+      "confirmed_release_at": 1794314355.181377,
+      "conservative_gpu_seconds": 37.339592933654785,
+      "live_pods_empty": true,
+      "outcome": "quick_seeds fixture error; no model call"
+    },
+    {
+      "directory": "rsi-batch-pilot-20261110-b",
+      "job": "6fbcd4dbc8f44e05b7aa39d8c898b4a5",
+      "phase": "Completed",
+      "create_request_at": 1794314607.6448781,
+      "confirmed_release_at": 1794314666.291639,
+      "conservative_gpu_seconds": 58.64676094055176,
+      "live_pods_empty": true,
+      "outcome": "Adapter incorrectly rejected Triton load; exact answer reused in final attempt"
+    },
+    {
+      "directory": "rsi-batch-pilot-20261110-c",
+      "job": "7ffbe945eeda46bd9b20c19dba4953a7",
+      "phase": "Completed",
+      "create_request_at": 1794314724.776387,
+      "confirmed_release_at": 1794315020.3303418,
+      "conservative_gpu_seconds": 295.5539548397064,
+      "live_pods_empty": true,
+      "outcome": "Completed real model pilot; strategy rejected"
+    }
+  ],
+  "conservative_gpu_seconds_total": 391.54030871391296,
+  "original_30_minute_incident": "Separate earlier 6511.071 s overrun; audit/rsi_pilot_incident_20261110.json; not hidden in this budget",
+  "receipt_verification": {
+    "all_10_results_recomputed": true,
+    "validation_digest": "7ea750cae60a9bb752a3d4e74ff534e3666c7be5be9e89adcfc23c834150eb6b",
+    "original_validator_hash_checked": true,
+    "gate_recomputed": true
+  },
+  "artifact_sha256": {
+    "evidence.tar.gz": "542021a732b3249cf71cd204eb2fec0143151a1bb65e42495b8ba12ba5a0ab8e",
+    "manifest.json": "acefa5ef88f491424659f311baf2bd992992bfb9b407d322319d5c116cd73a90",
+    "approved-budget.json": "9db1cd8ecbbcdb9d20333aca5985b408acca2b1a6a8dc3932093420c3288285f",
+    "live-policy-verification.json": "b002195fdcd3450093fdb4fd9f52cb924d4c2baccc74385fd877909ba4ec3307",
+    "replayed.json": "cfbe939b3c33f9c14a1aff7252d9f78730c64bc2bec3199fb4f51c1dedcdd6bb"
+  },
+  "limitations": [
+    "No ACE/GEPA/Dream-RSI comparative baseline",
+    "No demonstrated reduction in repeated mistakes or improved experiment planning",
+    "Model seed not supported by broker: paired repeat labels are not identical random streams",
+    "All strategies produced zero promotable yield on this suite; quality=0 hides differences among rejected kernels, raw speedups are retained",
+    "Advice names learning tasks; applicability to held-out templates is questionable",
+    "No positive strategy adoption/rollback on GPU; covered by CPU lifecycle test only",
+    "Provider latency changes are not causally attributable to advice from two repeats",
+    "Local post-pilot numeric-summary and wording changes were not used by this frozen GPU run",
+    "Platform deadline configured and live verified, not expiration-tested; jobs ended early"
+  ],
+  "post_pilot_local_changes": {
+    "tested_on_gpu": false,
+    "changes": [
+      "Bounded numeric evaluator metrics in learner input",
+      "Neutral advice heading; candidate advice is not pre-labelled validated"
+    ],
+    "rsi_tests": {
+      "passed": 44,
+      "seconds": 10.88
+    },
+    "full_tests": {
+      "passed": 247,
+      "skipped": 8,
+      "seconds": 90.84
+    },
+    "checks": [
+      "ruff check .",
+      "ruff format --check .",
+      "git diff --check"
+    ],
+    "regression_first": {
+      "failed": 2,
+      "reason": "Missing quantitative evidence and helper on original source"
+    },
+    "test_harness_correction": "Lifecycle test runs real adapters/evaluators but fixes reported solver time to avoid 25 ms process polling noise; separate verdict tests still exercise real numeric cost thresholds. Actual GPU cost values were not modified.",
+    "source_sha256": {
+      "src/kernel_envolve/rsi/learning.py": "6cd2bbcbf3337e4378f48db3ff2ee68a29088bf7065db282b7e5a2521e2fcf24",
+      "src/kernel_envolve/rsi/model.py": "edd107da8d2a12b6545c060ba92d9b2280f1058003283b994006c49400eede18",
+      "tests/test_rsi.py": "a25056b9af7cc147de80c2168ee8dbbf940fb7bcc2ed3663b68059908b6af976"
+    }
+  }
+}

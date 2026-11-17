@@ -1,0 +1,18 @@
+{
+  "at": 1794350655.687587,
+  "job": "8774e952b4ff4276a213a8fb2f9ff0f8",
+  "status": "closed_not_qualified",
+  "summary_sha256": "25135af1830c6d88ede36d8a1e25397e71d74c99b2016b726f45e1df5e6b8a6e",
+  "candidate": "adaptive-reuse",
+  "required_comparisons": [
+    "adaptive-reuse-vs-control-4"
+  ],
+  "reason": "37.32% wall saving and 49.64% fewer tokens accompanied by 5.85% lower quality score and original per-task/repeat failures. No alternate winner or relaxed threshold.",
+  "confirmation_status": "closed_not_launched",
+  "confirmation_cases": "o/p remain untouched",
+  "gpu_seconds": 3945.4100148677826,
+  "cumulative_gpu_seconds": 21899.7949924469,
+  "released": true,
+  "policy_adopted": false,
+  "evidence_sha256": "1e92a3733f464a265aaeb74b22a2645b321bf2ec6c397f6716bd0d8021940aa2"
+}

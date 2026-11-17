@@ -1,0 +1,80 @@
+{
+  "date": "2026-11-11",
+  "scope": "Optional background reuse feedback engineering only",
+  "parent_commit": "a135556bfc5a2fd864f19922c73df9b3d10b3ddb",
+  "files_sha256": {
+    "src/kernel_envolve/rsi/reuse_memory.py": "c0f4049c7f5f7f4a8f521d287b5ec17308011f06b20668f4200ee236d4d29d2f",
+    "tests/test_rsi_reuse_memory.py": "93106235579c983005c12ae5cde279c69fcd495f20e13a09426754e476009eb5",
+    "docs/rsi-reuse-memory.md": "05fb3ffa98bb4c021161658bb926a0adb02e3235bf0d5d1e9d479a5f8f3d42ee",
+    "docs/rsi.md": "0ec5a7491f4721b3990a7e46decfbc9cf2d1f0d983186619e3366ab792f79b44"
+  },
+  "full_tests": {
+    "passed": 672,
+    "skipped": 10,
+    "pytest_seconds": 282.05,
+    "process_elapsed_seconds": 282.72424125671387,
+    "exit_code": 0,
+    "unchanged_source_and_tests": true,
+    "pythonpath": "/Users/daniel/Documents/ChatGPT/算子优化/kernel_envolve-rsi/src"
+  },
+  "focused_tests": {
+    "passed": 74,
+    "seconds": 43.96,
+    "includes_new_feedback_tests": 20
+  },
+  "static_checks": [
+    "ruff check .",
+    "ruff format --check .",
+    "git diff --check",
+    "local documentation link resolution"
+  ],
+  "evidence_files": [
+    {
+      "workspace_relative_path": "rsi-reuse-memory-validation-20261111/rsi-reuse-memory-full-tests-20261111.log",
+      "sha256": "599256333d3f1463610a97c9724b00b409f17ecd8d6b60589251b021847464e0"
+    },
+    {
+      "workspace_relative_path": "rsi-reuse-memory-validation-20261111/rsi-reuse-memory-focused-20261111.log",
+      "sha256": "af7ed3a57880f3b21c864b7c5e1c6a7fd18adcb4d3be5f7bd1d2665a6536c618"
+    },
+    {
+      "workspace_relative_path": "rsi-reuse-memory-validation-20261111/rsi-reuse-memory-final-tests-20261111.log",
+      "sha256": "49548adf3175797c052cfd306c20ecdbf6b6ae58f0b7d69bc647f17fcf26c3cb"
+    },
+    {
+      "workspace_relative_path": "rsi-reuse-memory-validation-20261111/rsi-reuse-memory-final-tests-20261111.json",
+      "sha256": "91c1c416a6a35f9f1be41f8ea1c85982fbddd795f6603bfd832fa0c2af6a2317"
+    }
+  ],
+  "initial_environment_error": {
+    "status": "resolved",
+    "failed": 8,
+    "passed_before_interrupt": 318,
+    "skipped": 10,
+    "reason": "Relative PYTHONPATH=src resolved differently after subprocess cwd changes; editable install loaded the other checkout. Absolute PYTHONPATH confirmed the feature checkout, then related and full tests passed.",
+    "log": "rsi-reuse-memory-full-tests-20261111.log"
+  },
+  "development_probe": "A trace-change injection initially exposed a missing consistency check; final code verifies trace contents before/after collection and on replay. Not a deployed incident.",
+  "behaviors_verified": [
+    "One ordinary full action for reuse, same total action ceiling, no adaptive reduction",
+    "Task-scoped correctness/performance failures survive a changed incumbent; non-improvement remains incumbent-specific",
+    "Raw evidence audits, missing-final rejection, frozen target/budget checks and trace consistency",
+    "Duplicate source registration cannot erase feedback; display names and paths do not reset failures",
+    "Pending-target/source checks, unique evidence directories, withdrawal during audit, incomplete outcomes retained",
+    "Known-blocked and unrelated entries skip raw archive traversal",
+    "Repaired descendants retain parent failures and do not automatically register or adopt",
+    "No extra evaluations or model calls during feedback; trace cost is not provider billing"
+  ],
+  "runtime_changes": "Only a new optional module. Existing Manager/research/evaluator/Registry source and validator_identity unchanged.",
+  "production_enabled": false,
+  "new_gpu_jobs": 0,
+  "new_model_requests": 0,
+  "limitations": [
+    "No new efficacy or production latency measurement",
+    "Synchronous background audits must be prepared before worker allocation, outside GPU locks",
+    "One noisy outcome may stop task-local recommendation; no statistical optimality claim",
+    "This does not add a production Manager hook, task scheduler, sandbox or global budget controller",
+    "Token cost remains unknown in local feedback; external all-attempt accounting remains necessary"
+  ],
+  "ci": "Local verification only at receipt creation; exact pushed commit CI checked separately"
+}

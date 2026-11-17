@@ -15,6 +15,11 @@ from kernel_envolve.evaluation.shared.execution import managed_lock_fd
 
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
+    # RSI state binds its validator version; use the caller's pinned installation.
+    if argv and argv[0] == "rsi":
+        from kernel_envolve.rsi.cli import main as rsi
+
+        return rsi(argv[1:])
     from kernel_envolve.updates import enter
 
     result = enter(argv)
@@ -43,6 +48,7 @@ def main(argv=None):
     sub.add_parser(
         "manage", help="Supervise persistent tasks, GPU queues and the progress dashboard"
     )
+    sub.add_parser("rsi", help="Learn and validate scoped research strategies in a sidecar")
     sub.add_parser("dashboard", help="Open the existing dashboard for a single kernel")
     ev = sub.add_parser("evaluate", help="Check and measure a frozen task snapshot")
     ev.add_argument("--task", type=Path, required=True)

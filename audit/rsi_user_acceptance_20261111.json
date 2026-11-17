@@ -1,0 +1,185 @@
+{
+  "date": "2026-11-11",
+  "scope": "Final code handoff acceptance through user-facing CLI and installed wheel; no production rollout",
+  "parent_commit": "fad33bce4be5023e399d663f96c580d88abcfcac",
+  "branch": "feature/rsi-evolution",
+  "files_sha256": {
+    "README.md": "f2584b262e09f039368a2bcdf2ea511499a53b41a341472751ed69c07c000f46",
+    "docs/rsi-readiness.md": "a91e68ca4a02b659fe3dc0310291deac8cd5789e34e5024a0732580c89b25d86",
+    "src/kernel_envolve/rsi/context.py": "605282abd6eae85eeb2d465cd4e7688b5edeb7be4b011652ae93a010e266bd24",
+    "tests/test_rsi.py": "e7f4c7201081bf214a2bdacb5cf79d1a4ab22a8d1500d69c1b310863f658e28b",
+    "tests/test_rsi_cli_acceptance.py": "54dc2ebfce88103be305fd52be9a4bd041c9b6ed114f37dd23b3661f5ec5c593"
+  },
+  "full_tests": {
+    "exit_code": 0,
+    "elapsed_seconds": 310.36979729098675,
+    "unchanged_source_and_tests": true,
+    "python": "3.12.14 (main, Sep  1 2026, 14:09:38) [Clang 22.1.3 ]",
+    "pythonpath": "/Users/daniel/Documents/ChatGPT/算子优化/kernel_envolve-rsi/src",
+    "passed": 736,
+    "skipped": 10,
+    "pytest_seconds": 309.8
+  },
+  "new_tests": {
+    "foreground": 6,
+    "cli_lifecycle": 1
+  },
+  "before_fix": {
+    "confirmed_log": "context-old-implementation.log",
+    "failed": 5,
+    "passed": 1,
+    "method": "Execute the exact prior context module in its own Python process, then run current foreground regression cases. No source files overwritten.",
+    "interpretation": "Four JSON scalar failures plus explicitly injected parser RecursionError. Deep-array case already fell back in this interpreter; not counted as a new failure."
+  },
+  "fix": "Require a JSON object before accessing optional advice fields and catch RecursionError; preserve diagnostic and identical baseline Manager checkpoint. Still one bounded foreground read, no extra model/network/history work.",
+  "installed_cli_lifecycle": {
+    "status": "passed",
+    "commands": [
+      "init",
+      "cycle",
+      "status",
+      "disable",
+      "status",
+      "status",
+      "status",
+      "status",
+      "status",
+      "enable",
+      "rollback",
+      "disable",
+      "status"
+    ],
+    "installed_wheel": true,
+    "daemon_starts": 2,
+    "clean_sigterm_exits": 2,
+    "production_source_unchanged": true,
+    "corrupt_advice_preserves_checkpoint": true,
+    "disabled_restart_preserves_budget": true,
+    "external_model_calls": 0,
+    "gpu_jobs": 0,
+    "authority": "Synthetic CPU mechanics only; control delay is not an RSI benefit claim"
+  },
+  "installed_artifact_reuse": {
+    "status": "passed",
+    "elapsed_seconds": 2.4538519382476807,
+    "module_path": "/Users/daniel/Documents/ChatGPT/算子优化/rsi-user-acceptance-20261111/install-env/lib/python3.12/site-packages/kernel_envolve/__init__.py",
+    "python": "3.12.14 (main, Sep  1 2026, 14:09:38) [Clang 22.1.3 ]",
+    "wheel_sha256": "2c793054321ae934b1490255cda02d9fe4e8a4b2d66b4827bc32f91c9d509da0",
+    "source_files_matched": 48,
+    "commands": [
+      {
+        "command": "init",
+        "returncode": 0
+      },
+      {
+        "command": "register",
+        "returncode": 0
+      },
+      {
+        "command": "prepare",
+        "returncode": 0
+      },
+      {
+        "command": "observe",
+        "returncode": 0
+      },
+      {
+        "command": "observe",
+        "returncode": 0
+      },
+      {
+        "command": "status",
+        "returncode": 0
+      },
+      {
+        "command": "disable",
+        "returncode": 0
+      },
+      {
+        "command": "prepare",
+        "returncode": 0
+      },
+      {
+        "command": "enable",
+        "returncode": 0
+      },
+      {
+        "command": "status",
+        "returncode": 0
+      }
+    ],
+    "feedback_status": "helpful",
+    "fixed_max_actions": 4,
+    "external_model_requests": 0,
+    "gpu_jobs": 0,
+    "cpu_full_evaluations": 6,
+    "deterministic_callbacks": 2,
+    "entry": "1feec7159b9d5fa2e379dd220f82cd5d43373b0eccc966d0b04a3a21961a2ffa",
+    "scope": "Isolated installed wheel, real CPU receipts, no editable/source PYTHONPATH fallback"
+  },
+  "compatibility": "This context-only production fix does not change evaluator or validator identity, existing schema, learning budget, action limit or admission gates. Previous version migration restrictions remain.",
+  "static_checks": [
+    "ruff check .",
+    "ruff format --check .: 142 files",
+    "git diff --check",
+    "documentation links"
+  ],
+  "evidence_files": [
+    {
+      "workspace_relative_path": "rsi-user-acceptance-20261111/cli-lifecycle.json",
+      "sha256": "11feb48ec4f001da439d73062032c3c9a53573915f414327916ee28ef17ddccf"
+    },
+    {
+      "workspace_relative_path": "rsi-user-acceptance-20261111/context-old-implementation.log",
+      "sha256": "3cc6d6a728a1c8623979c45146e4b01523af542c9a351b78654dc19034c79e8b"
+    },
+    {
+      "workspace_relative_path": "rsi-user-acceptance-20261111/full-tests.json",
+      "sha256": "57bed434c0c80f43d6d0d7b717c3bae9d2c90659e55c4f0c7ae24a3fc75bdef2"
+    },
+    {
+      "workspace_relative_path": "rsi-user-acceptance-20261111/full-tests.log",
+      "sha256": "d046152be75ecac77f0331f8c88a49331663b27116e82693a8ea71043fcfa825"
+    },
+    {
+      "workspace_relative_path": "rsi-user-acceptance-20261111/package-smoke.json",
+      "sha256": "83b7fff0d6cbe458373c456d6ffc0d8611d3c29662c6b2f554d087f77d5522ff"
+    },
+    {
+      "workspace_relative_path": "rsi-user-acceptance-20261111/package-smoke.log",
+      "sha256": "83b7fff0d6cbe458373c456d6ffc0d8611d3c29662c6b2f554d087f77d5522ff"
+    },
+    {
+      "workspace_relative_path": "rsi-user-acceptance-20261111/package-smoke.py",
+      "sha256": "a401b499b474e8b950d25775ce3b6880215b7c93cc5fd1a11e3dffdc8fcb695e"
+    },
+    {
+      "workspace_relative_path": "rsi-user-acceptance-20261111/rsi-formal-context-before.log",
+      "sha256": "e051722c364978ceb65d38d9735325e6011024e94dc95ff25a8c88e079d5d422"
+    },
+    {
+      "workspace_relative_path": "rsi-user-acceptance-20261111/rsi-formal-context-confirmed-before.log",
+      "sha256": "489307e4bb3f0bfe1e87a2e8416b801a736b4aed87fe50378e08a8d3a457e88b"
+    },
+    {
+      "workspace_relative_path": "rsi-user-acceptance-20261111/rsi-formal-focused.log",
+      "sha256": "dc037dd8dae983a36bbd70aefac433c87d21dabbed8e86ea3379ee535aa6fdde"
+    },
+    {
+      "workspace_relative_path": "rsi-user-acceptance-20261111/run-full.py",
+      "sha256": "5347889de70b169f9bcd3da843206c7fef5b1093e97d69a91a771145139efd74"
+    }
+  ],
+  "usage_boundary": [
+    "Text advice uses existing Manager sidecar; source reuse is explicit trusted-controller integration for single-file generic tasks",
+    "Pin feature version and set KERNEL_ENVOLVE_AUTO_UPDATE=0",
+    "Existing OS isolation, independent final evaluation and resource budgets remain required",
+    "CPU acceptance does not certify untested GPU/driver/provider environments",
+    "Synthetic control adapter includes deliberate delay; lifecycle acceptance is not evidence of RSI savings"
+  ],
+  "new_gpu_jobs": 0,
+  "external_model_requests": 0,
+  "runtime_deployment": false,
+  "main_pushed_or_merged_by_this_task": false,
+  "ci": "Exact resulting commit push and PR checks verified after commit, with final evidence in workspace ci-final.json."
+}

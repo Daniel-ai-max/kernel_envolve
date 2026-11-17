@@ -14,6 +14,7 @@
 | `src/kernel_envolve/manager/execution/` | 进程身份与锁、GPU 准入、worker、远程桥接和恢复 |
 | `src/kernel_envolve/manager/results/` | `index.py` 收集已验证证据；assessment、validation、research 模块处理各类收据；archive 保存可移植快照；publication 验证 PR 交付 |
 | `src/kernel_envolve/manager/dashboard/` | HTTP 服务、展示模型、摘要生成；`static/` 随 Python 包安装 |
+| `src/kernel_envolve/rsi/` | 可选的策略学习、试验、验证、经验复用与独立状态；保留已有包边界和默认关闭行为 |
 | `src/kernel_envolve/updates/` | 更新缓存、版本选择及固定版本会话 |
 | `src/kernel_envolve/research.py`、`validation.py` | 面向研究脚本的轻量公共 API |
 | `src/kernel_envolve/_io.py`、`_paths.py` | 私有基础工具：持久化写入、安装位置；不依赖 manager |

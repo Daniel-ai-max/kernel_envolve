@@ -4,11 +4,13 @@ from kernel_envolve.evaluation.shared.storage import digest
 
 
 def row_facts(task):
-    best, assessment = task.get("best"), task.get("verified_assessment")
+    delivery = task.get("delivery") or {}
+    delivered = delivery.get("best") if delivery.get("status") == "verified" else None
+    best, assessment = task.get("best") or delivered, task.get("verified_assessment")
     benefit = {"ref": "system:benefit", "kind": "none", "value": None}
     if best:
         benefit.update(
-            kind="retained_best",
+            kind="native_delivery" if delivered else "retained_best",
             value={
                 k: best.get(k)
                 for k in ("baseline_speedup", "incremental_speedup", "run", "candidate_sha256")
@@ -50,7 +52,15 @@ def row_facts(task):
         )
         if k in latest[2]
     }
-    pr = task.get("implementation_pr")
+    if delivered:
+        candidates.append(
+            (delivered.get("recorded_at", 0), "delivery", delivered | {"task": delivery["task"]})
+        )
+        latest = max(candidates, key=lambda x: (x[0], x[1] == "validation"))
+        latest_value = dict(latest[2]) if latest[1] == "delivery" else latest_value
+    pr = task.get("implementation_pr") or delivery.get("implementation_pr")
+    if delivered and pr and not pr.get("current_head_verified"):
+        pr = None
     value = {
         "task": task["id"],
         "baseline": task["spec"]["baseline"]["revision"],
@@ -62,6 +72,7 @@ def row_facts(task):
             in ("id", "task", "kind", "status", "mode", "execution", "correctness", "recorded_at")
         },
         "evidence_error": task.get("evidence_error"),
+        "delivery": {k: delivery.get(k) for k in ("task", "status", "policy_phase")},
         "benefit": benefit,
         "optimization_pr": {"ref": "system:optimization_pr", "value": pr},
         "latest_result": {"ref": "system:latest_result", "kind": latest[1], "value": latest_value},

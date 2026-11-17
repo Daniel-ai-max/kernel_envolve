@@ -625,6 +625,14 @@ kernel-envolve manage --state /work/manager-state narrate
 kernel-envolve manage --state /work/manager-state narrate --once
 ```
 
+需要替换运行中管理器的旁白版本而不重启调度器时，使用独立框架路径启动
+`narrate --exclusive-service`。服务先等待旧旁白当前批次结束，再全程持有原来的
+`narrator.lock`；旧线程后续批次会立即跳过，不读取或消费游标。新服务复用原
+SQLite、游标、模型适配器与事实版本事务，不复制状态、不启动研究或评测。
+退出或异常时自动释放锁，旧线程可继续工作。不要同时启动两个普通 `narrate`
+来替代版本。节点启动包装应绑定原管理器的 PID 与进程出生身份，并在管理器退出、
+研究结束或原分配截止时间到达时终止这个独立旁白；本命令自身不延长研究预算。
+
 旁白和引用摘录随现有 SQLite、看板归档保存，归档重开无需模型或 GPU。它是有来源的模型解释，不是数值验收；模型无依据时应留空，作业状态、卡时、指标、正式验收和 PR 继续读取系统记录。
 
 ### 外部验收结果回流
@@ -646,3 +654,10 @@ kernel-envolve manage --state /path/to/research-state watch-validation operator-
 旁白失败时看板直接显示系统结论。不可用来源恢复后自动清除连接故障；不完整收据
 单独归档，不能阻止其他任务复盘。已有自定义宿主 verifier 可用
 `watch-assessment --validation` 输出 `validation-result-v1`；旧数据不伪造新的作业绑定。
+
+
+### Linked native delivery in the dashboard
+
+`policy-bind-delivery` records one explicit research owner for an observation-only native delivery task. Rebinding to a new attempt retains earlier delivery links and their original native run history. The dashboard shows one research row by default and opens each native attempt from that row's delivery details; names never imply this relationship. Research `best` and publication records remain empty. Only a verified native full, independent confirmation, matching baseline/source, and current source-bound PR can supply the row's separate delivery benefit and PR. No evaluator eligibility or scheduling state is transferred.
+
+The existing background scanner projects the frozen native full/confirmation/PR relationship at most once per 30 seconds and yields to GPU work. It reuses the existing deep-audited native index and checks the small result/config receipts, without a second source-tree audit. Missing/revoked index entries and changed receipts cannot supply a displayed benefit. Previously verified results remain visible when research proceeds to another candidate, when a refresh is unavailable, and when a terminal archive is reopened. Research-source equality still governs stop-policy success; it does not erase historical delivered results. Indexed corruption of the frozen evidence withdraws the affected result. A changed or stale PR head removes the current PR link from the research row while retaining the previously evaluated commit in delivery details. New attempts retain prior verified results until another published result is verified; unlike contracts are not ranked by speedup. All four narrated columns use the resulting row-facts revision, and hidden native child tasks do not generate duplicate narration.
