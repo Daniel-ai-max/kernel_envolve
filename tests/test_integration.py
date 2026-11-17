@@ -108,7 +108,9 @@ def test_relative_helpers_are_frozen(task):
     # This tests frozen imports and promotion, not a microbenchmark. Keep the
     # real gate but give it a clear synthetic gap on shared CI runners.
     with (task / "task.py").open("a") as stream:
-        stream.write("\nimport time\ndef baseline(x,y):\n time.sleep(.005)\n return reference(x,y)\n")
+        stream.write(
+            "\nimport time\ndef baseline(x,y):\n time.sleep(.005)\n return reference(x,y)\n"
+        )
     cfg_path = task / "task.json"
     cfg = read_json(cfg_path)
     cfg["full_trials"] = 7
