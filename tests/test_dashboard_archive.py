@@ -140,3 +140,33 @@ def test_terminal_snapshot_and_explicit_exports_are_not_pruned(managed):
     assert (root / final).is_dir()
     assert len(list(root.glob("snapshot-*"))) == 3
     assert archive.Archive(root / final).read()["state"]["tasks"][0]["desired"] == "paused"
+
+
+def test_wal_source_exports_standalone_database_that_survives_repeated_reads(managed, tmp_path):
+    import sqlite3
+
+    from kernel_envolve._io import hash_file
+
+    store, _, _ = managed
+    assert store.db.execute("PRAGMA journal_mode").fetchone()[0] == "wal"
+    target = tmp_path / "portable"
+    receipt = archive.export_archive(store, target)
+    generation = target / receipt["generation"]
+    manifest = json.loads((generation / "manifest.json").read_text())
+    assert "manager.sqlite" in manifest["files"]
+    assert not any(name.startswith("manager.sqlite-") for name in manifest["files"])
+    expected = {name: proof["sha256"] for name, proof in manifest["files"].items()}
+    for _ in range(3):
+        saved = Store(generation, readonly=True)
+        try:
+            assert saved.task("toy")["id"] == "toy"
+            assert saved.db.execute("PRAGMA journal_mode").fetchone()[0] == "delete"
+        finally:
+            saved.close()
+        # Ordinary SQLite inspection must also leave the immutable archive intact.
+        with sqlite3.connect(generation / "manager.sqlite") as connection:
+            assert connection.execute("PRAGMA quick_check").fetchone()[0] == "ok"
+        assert {name: hash_file(generation / name) for name in expected} == expected
+        assert not list(generation.glob("manager.sqlite-*"))
+        assert archive.Archive(target).read()["state"]["archived"]
+    assert store.db.execute("PRAGMA journal_mode").fetchone()[0] == "wal"

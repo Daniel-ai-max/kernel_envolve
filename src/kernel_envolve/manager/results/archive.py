@@ -48,6 +48,10 @@ def export_archive(
             stage = Path(temp)
             with sqlite3.connect(stage / "manager.sqlite") as db:
                 store.db.backup(db)
+                # A portable checkpoint is one standalone database. Inheriting WAL
+                # mode would let a reader create/change/remove hashed -shm/-wal files.
+                if db.execute("PRAGMA journal_mode=DELETE").fetchone()[0] != "delete":
+                    raise ValueError("Archive database could not become standalone")
             saved = Store(stage, readonly=True)
             try:
                 with saved.transaction(readonly=True):
