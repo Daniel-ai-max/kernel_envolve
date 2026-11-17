@@ -6,6 +6,7 @@ install it. The host deadline adapter owns allocation/remote-guard admission.
 
 import json
 import math
+import os
 import signal
 import statistics
 import subprocess
@@ -19,6 +20,37 @@ from .store import encode
 
 WINDOW = 4 * 3600
 TERMINAL = {"succeeded", "exhausted", "suspended"}
+FROZEN_DELIVERY_CAPABILITY = "frozen-delivery-proof-v1"
+
+
+def require_frozen_coordinator(store, *, owner=False):
+    """Never hand a new proof format to a legacy or unrelated coordinator.
+
+    Health is an attestation by the lock-owning service, not a heartbeat lease.
+    A CLI can bind a candidate to that service, but cannot advance its policy.
+    """
+    from .process import alive
+
+    row = store.one("SELECT data FROM metadata WHERE key='coordinator'")
+    health = json.loads(row["data"]) if row else {}
+    if (
+        not isinstance(health.get("capabilities"), list)
+        or FROZEN_DELIVERY_CAPABILITY not in health["capabilities"]
+        or not alive(health.get("pid"), health.get("identity"))
+    ):
+        raise ValueError(
+            "Frozen delivery requires an active capable coordinator; "
+            "upgrade the root manager at a safe drained boundary"
+        )
+    with exclusive(store.root / "coordinator.lock") as handle:
+        if handle is not None:
+            raise ValueError("Frozen delivery coordinator no longer holds its state lock")
+    if owner and health["pid"] != os.getpid():
+        raise ValueError(
+            "Only the capable coordinator may advance frozen delivery policy; "
+            "a separate CLI policy-tick cannot write its stopping proof"
+        )
+    return health["pid"], health["identity"]
 
 
 def get(store, key):
@@ -154,6 +186,7 @@ def bind_delivery(store, key, delivery, source_root):
         raise ValueError("An active installed research policy is required")
     if identity(store.task(key)["spec"]) != value["identity"]:
         raise ValueError("Research policy identity changed")
+    coordinator = require_frozen_coordinator(store)
     binding = source_link(store, key, delivery, source_root)
     if not store.task(delivery)["spec"].get("observe_only"):
         raise ValueError("Linked delivery must be an observation-only native task")
@@ -170,6 +203,8 @@ def bind_delivery(store, key, delivery, source_root):
     with store.transaction():
         if get(store, key) != value:
             raise ValueError("Research policy changed; retry from current state")
+        if require_frozen_coordinator(store) != coordinator:
+            raise ValueError("Frozen delivery coordinator changed during binding; retry")
         existing = store.one(
             "SELECT data FROM metadata WHERE key=?", ("delivery_link:" + delivery,)
         )
@@ -397,6 +432,8 @@ def tick(store, key, *, sync=invoke):
         value = get(store, key)
         if not value or value["phase"] in TERMINAL:
             return value
+        if "source_binding" in (value.get("delivery") or {}):
+            require_frozen_coordinator(store, owner=True)
         task = store.task(key)
         if identity(task["spec"]) != value["identity"] or task["superseded_by"]:
             raise ValueError("Research policy identity changed")

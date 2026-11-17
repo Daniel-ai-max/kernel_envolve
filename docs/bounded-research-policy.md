@@ -119,6 +119,17 @@ never writes a research `best` or merges qualification between tasks.
 Legacy bindings without a witness retain their current-research-source check.
 They gain a witness only through an explicit `policy-bind-delivery` while the
 research and native sources still match; no historical result implies provenance.
-Upgrading a CLI does not upgrade a running coordinator: the coordinator owns both
-the initial proof and the drain recheck. Deploy framework changes at a safe drained
-boundary, retaining the original policy state, clocks and evidence.
+Creating or upgrading a witness requires a live coordinator that advertises
+`frozen-delivery-proof-v1`, with matching PID/birth identity and its state lock
+still held. A legacy coordinator or stale capability record rejects the binding
+without changing policy state. Source binding also rechecks that same coordinator
+before committing its record.
+
+Only that capable coordinator process can advance a policy carrying a witness,
+including the initial proof and the drain recheck. A separate `policy-tick` CLI
+refuses to write a new stopping proof, even if it is newer than the running root
+manager; wait for the coordinator's existing policy loop instead. Legacy bindings
+retain their original CLI and coordinator path and proof format. No additional
+scheduler is installed. Deploy framework changes at a safe drained boundary,
+retaining the original policy state, clocks and evidence; do not downgrade an
+active witness policy to a coordinator that cannot interpret it.
