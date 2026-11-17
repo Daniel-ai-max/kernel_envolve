@@ -260,14 +260,27 @@ def test_cited_display_rounding_preserves_sources_and_is_idempotent(source, disp
         ("88.65015983581543", "-88.65"),
         ("v88.65015983581543", "88.65"),
         ("88.65015983581543e2", "88.65"),
+        ("88.65015983581543", "kernel88.65"),
+        ("88.65015983581543", "88.65suffix"),
+        ("88.65015983581543 4", "88.65e4"),
+        ("88.65015983581543 4", "88.65E+4"),
     ],
 )
 def test_rounding_does_not_admit_arithmetic_truncation_or_number_fragments(source, display):
     assert not n.cited_numbers(display, source)
 
 
+@pytest.mark.parametrize("sign", ["-", "+", "−", "±", "∓", "﹣", "－", "＋"])
+@pytest.mark.parametrize("space", ["", " "])
+def test_signed_rounding_is_rejected_in_both_citation_and_claim(sign, space):
+    assert not n.cited_numbers(f"{sign}{space}88.65", "88.65015983581543")
+    assert not n.cited_numbers("88.65", f"{sign}{space}88.65015983581543")
+
+
 def test_exact_numbers_remain_valid_at_any_original_precision():
     assert n.cited_numbers("1.2 0.10 89 88.650159", "1.2 0.1 89 88.650159")
+    # Only the new rounding path checks token boundaries; legacy exact behavior is unchanged.
+    assert n.cited_numbers("kernel88.65 88.65e4 −88.65", "88.65 4")
 
 
 def test_rounded_numbers_are_task_local_and_keep_revision_guard():

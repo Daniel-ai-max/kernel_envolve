@@ -343,10 +343,21 @@ def cited_numbers(text, observed):
     """Exact tokens, or narrowly defined display rounding; never metric arithmetic."""
     pattern = r"[0-9]+(?:\.[0-9]+)?"
     exact = {Decimal(v) for v in re.findall(pattern, observed)}
+
+    def standalone_decimal(match, content):
+        before, after = content[: match.start()], content[match.end() :]
+        return (
+            "." in match.group()
+            and not re.search(r"[A-Za-z0-9_.]$", before)
+            and not re.match(r"[A-Za-z0-9_.]", after)
+            and not re.search(r"[+\-−±∓﹣－＋]\s*$", before)
+        )
+
     # Do not round fragments of identifiers, signed numbers or scientific notation.
     decimals = {
-        Decimal(v)
-        for v in re.findall(r"(?<![A-Za-z0-9_.+-])[0-9]+\.[0-9]+(?![A-Za-z0-9_.])", observed)
+        Decimal(match.group())
+        for match in re.finditer(pattern, observed)
+        if standalone_decimal(match, observed)
     }
     for match in re.finditer(pattern, text):
         value = Decimal(match.group())
@@ -355,7 +366,7 @@ def cited_numbers(text, observed):
         if (
             value.as_tuple().exponent not in (-1, -2)
             or len(value.as_tuple().digits) < 3
-            or (match.start() and text[match.start() - 1] in "+-")
+            or not standalone_decimal(match, text)
         ):
             return False
         quantum = Decimal(1).scaleb(value.as_tuple().exponent)
