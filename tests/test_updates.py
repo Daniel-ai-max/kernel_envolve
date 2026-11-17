@@ -154,7 +154,7 @@ def test_session_pins_running_process_cli_and_skill(upstream):
     )
     try:
         first = json.loads(process.stdout.readline())
-        source = upstream / "src/kernel_envolve/scoring.py"
+        source = upstream / "src/kernel_envolve/evaluation/shared/scoring.py"
         source.write_text(source.read_text() + "\n# New evaluator revision\n")
         new = commit(upstream)
         assert updates.refresh()["revision"] == new

@@ -1,0 +1,658 @@
+"""A foreground host's one-request-at-a-time bridge; never a model runner."""
+
+import contextlib
+import hashlib
+import json
+import os
+import signal
+import subprocess
+import sys
+import tempfile
+import time
+from pathlib import Path
+
+from kernel_envolve.manager.config import identifier
+from kernel_envolve.manager.execution.process import exclusive, identity, terminate
+from kernel_envolve.manager.store import encode
+
+IDLE_EXIT_CODE = 75
+
+
+def idle_exit(store, job):
+    receipt = store.one("SELECT data FROM metadata WHERE key=?", ("bridge_idle:" + job["id"],))
+    return bool(
+        job["kind"] == "agent"
+        and store.task(job["task"])["spec"].get("host_driven")
+        and receipt
+        and json.loads(receipt["data"]).get("task") == job["task"]
+        and json.loads(receipt["data"]).get("round") == job["id"]
+    )
+
+
+def atomic(path, value):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(mode="w", dir=path.parent, delete=False) as stream:
+        temporary = Path(stream.name)
+        stream.write(encode(value))
+        stream.flush()
+        os.fsync(stream.fileno())
+    try:
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def open_host(store, task_id, owner, claim_id):
+    identifier(owner)
+    identifier(claim_id)
+    key = f"host-claim:{task_id}:{claim_id}"
+    with store.transaction():
+        if store.task(task_id)["spec"].get("host_command"):
+            raise ValueError("Automatic host_command owns continuation; do not open a second host")
+        old = store.one("SELECT data FROM metadata WHERE key=?", (key,))
+        if old:
+            value = json.loads(old["data"])
+            if value["owner"] != owner:
+                raise ValueError("Claim belongs to another host")
+            return value
+        task = store.task(task_id)
+        if not task["spec"].get("host_driven") or task["desired"] != "active":
+            raise ValueError("An active host_driven task is required")
+        if store.budget_reason(task) or task["next_at"] > time.time():
+            raise ValueError("Budget exhausted or retry delay has not elapsed")
+        if store.one(
+            "SELECT id FROM jobs WHERE task=? AND status IN ('queued','running')", (task_id,)
+        ):
+            raise ValueError("Continue the existing round instead of opening another")
+        ready = store.one("SELECT data FROM metadata WHERE key=?", ("host-ready:" + task_id,))
+        if ready and json.loads(ready["data"])["expires_at"] > time.time():
+            raise ValueError("An unconsumed host claim already exists")
+        value = {"claim": claim_id, "owner": owner, "expires_at": time.time() + 120}
+        store.db.execute("INSERT INTO metadata VALUES(?,?)", (key, encode(value)))
+        store.db.execute(
+            "INSERT OR REPLACE INTO metadata VALUES(?,?)", ("host-ready:" + task_id, encode(value))
+        )
+        store.event(task_id, "host_ready", value)
+        return value
+
+
+def active(store, task, round_id):
+    job = store.job(round_id)
+    return (
+        job["task"] == task
+        and job["kind"] == "agent"
+        and job["status"] == "running"
+        and not job["cancel_requested"]
+        and store.task(task)["desired"] == "active"
+        and not store.budget_reason(store.task(task))
+    )
+
+
+def folder(root, task, round_id):
+    return Path(root).resolve() / identifier(task) / identifier(round_id)
+
+
+def read(path):
+    return json.loads(path.read_text())
+
+
+def logs(directory, request_id, limit=4096):
+    """Bounded live output; the files remain the single complete log source."""
+    value = {}
+    claim = directory / "claims" / f"{request_id}.json"
+    gpu_directory = read(claim).get("gpu_logs") if claim.exists() else None
+    for name in ("stdout", "stderr"):
+        log = directory / "logs" / f"{request_id}.{name}.log"
+        if gpu_directory and (Path(gpu_directory) / f"{name}.log").exists():
+            if log.exists():
+                value.setdefault("wrapper_log_files", {})[name] = {
+                    "path": str(log.resolve()),
+                    "bytes": log.stat().st_size,
+                }
+            log = Path(gpu_directory) / f"{name}.log"
+        if log.exists():
+            with log.open("rb") as stream:
+                size = stream.seek(0, os.SEEK_END)
+                offset = max(0, size - limit)
+                stream.seek(offset)
+                value[name] = stream.read(size - offset).decode(errors="replace")
+            value.setdefault("log_files", {})[name] = {
+                "path": str(log.resolve()),
+                "bytes": size,
+                "truncated": offset > 0,
+            }
+    return value
+
+
+def result(directory, request_id, log_bytes=4096):
+    path = directory / "results" / (request_id + ".json")
+    if not path.exists():
+        return None
+    raw = path.read_bytes()
+    value = json.loads(raw)
+    value["receipt_sha256"] = hashlib.sha256(raw).hexdigest()
+    return value | logs(directory, request_id, log_bytes)
+
+
+def request(
+    store, root, task, round_id, owner, request_id, value=None, wait_seconds=0, log_bytes=4096
+):
+    identifier(request_id)
+    if not 0 <= wait_seconds <= 60:
+        raise ValueError("wait_seconds must be between 0 and 60")
+    if type(log_bytes) is not int or not 0 <= log_bytes <= 65536:
+        raise ValueError("log_bytes must be an integer between 0 and 65536")
+    directory = folder(root, task, round_id)
+    context = read(directory / "context.json")
+    if context["owner"] != owner:
+        raise ValueError("Request owner differs from the round host")
+    target = directory / "requests" / (request_id + ".json")
+    if value is not None:
+        encoded = dict(value, id=request_id, round=round_id)
+        with exclusive(directory / ".host.lock") as lock:
+            if lock is None:
+                raise ValueError("Another host operation is in progress")
+            if target.exists():
+                if read(target) != encoded:
+                    raise ValueError("Request ID already has different content")
+            else:
+                if (
+                    not active(store, task, round_id)
+                    or read(directory / "context.json")["status"] != "ready"
+                ):
+                    raise ValueError("Round is no longer active")
+                for previous in (directory / "requests").glob("*.json"):
+                    if not (directory / "results" / previous.name).exists():
+                        raise ValueError("Previous request is still pending; query its existing ID")
+                kind = encoded.get("kind")
+                if kind not in ("cpu", "gpu", "finish"):
+                    raise ValueError("kind must be cpu, gpu or finish")
+                if kind in ("cpu", "gpu"):
+                    argv = encoded.get("argv")
+                    if (
+                        not isinstance(argv, list)
+                        or not argv
+                        or any(not isinstance(a, str) or not a or "\0" in a for a in argv)
+                    ):
+                        raise ValueError("argv must be a nonempty list of nonempty strings")
+                    seconds = encoded.get("expected_seconds")
+                    if type(seconds) not in (float, int) or not 0 < seconds <= 86400:
+                        raise ValueError("expected_seconds must be in (0,86400]")
+                if "analysis" in encoded:
+                    previous = encoded["analysis"]
+                    fields = {"round", "request", "receipt_sha256", "outcome", "next_action"}
+                    required = {"request", "receipt_sha256", "outcome"}
+                    if (
+                        not isinstance(previous, dict)
+                        or not required <= previous.keys() <= fields
+                        or (previous.get("round", round_id), previous["request"])
+                        == (round_id, request_id)
+                    ):
+                        raise ValueError("analysis must identify a distinct completed result")
+                    previous_round = previous.get("round", round_id)
+                    previous_directory = folder(root, task, previous_round)
+                    record = analysis_record(
+                        previous_directory,
+                        owner,
+                        previous["request"],
+                        previous["receipt_sha256"],
+                        previous["outcome"],
+                        previous.get("next_action"),
+                    )
+                    # Analysis is optional evidence, never permission to run. Its
+                    # DB projection is idempotent even if request persistence fails.
+                    store.consume_result(task, previous_round, record)
+                atomic(target, encoded)
+                atomic(directory / "host.json", {"owner": owner, "at": time.time()})
+    elif not target.exists():
+        raise ValueError("Unknown request ID; never infer a submission")
+    deadline = time.monotonic() + wait_seconds
+    while True:
+        receipt = result(directory, request_id, log_bytes)
+        if receipt:
+            return receipt
+        if (
+            not active(store, task, round_id)
+            or read(directory / "context.json")["status"] != "ready"
+        ):
+            return {
+                "id": request_id,
+                "status": "interrupted_without_receipt"
+                if (directory / "claims" / target.name).exists()
+                else "not_executed",
+                "round": round_id,
+            } | logs(directory, request_id, log_bytes)
+        now = time.monotonic()
+        if now >= deadline:
+            return {"id": request_id, "status": "pending", "round": round_id} | logs(
+                directory, request_id, log_bytes
+            )
+        time.sleep(0.1)
+
+
+def analysis_record(directory, owner, request_id, sha256, outcome, next_action=None):
+    identifier(request_id)
+    if read(directory / "context.json")["owner"] != owner or any(
+        not isinstance(text, str) or not text.strip() or len(text) > 8000
+        for text in ((outcome,) if next_action is None else (outcome, next_action))
+    ):
+        raise ValueError("Matching host, outcome and concrete next_action are required")
+    value = result(directory, request_id, log_bytes=0)
+    if value is None or value["receipt_sha256"] != sha256:
+        raise ValueError("Read and match the completed result receipt before consuming it")
+    record = {
+        "request": request_id,
+        "receipt_sha256": sha256,
+        "owner": owner,
+        "outcome": outcome,
+    }
+    if next_action is not None:
+        record["next_action"] = next_action
+    return record
+
+
+def consume(store, root, task, round_id, owner, request_id, sha256, outcome, next_action):
+    """Legacy client compatibility; new requests never require consumption."""
+    directory = folder(root, task, round_id)
+    record = analysis_record(directory, owner, request_id, sha256, outcome, next_action)
+    with exclusive(directory / ".host.lock") as lock:
+        if lock is None:
+            raise ValueError("Another host operation is in progress")
+        target = directory / "consumed" / (request_id + ".json")
+        if target.exists() and read(target) != record:
+            raise ValueError("Result already consumed with a different analysis")
+        # Idempotent DB projection also repairs consumption files written by old releases.
+        store.consume_result(task, round_id, record, legacy=target.exists())
+        if not target.exists():
+            atomic(target, record)
+        if active(store, task, round_id):
+            atomic(directory / "host.json", {"owner": owner, "at": time.time()})
+    return record
+
+
+@contextlib.contextmanager
+def model_host(store, task, round_id, directory, owner):
+    """Run the configured foreground model under the existing registered-group supervisor."""
+    command = store.task(task)["spec"].get("host_command")
+    if not command:
+        yield None
+        return
+    completed = directory / "agent.exit.json"
+    with (
+        (directory / "agent.stdout.log").open("wb") as out,
+        (directory / "agent.stderr.log").open("wb") as err,
+    ):
+        process = subprocess.Popen(
+            [
+                sys.executable,
+                "-m",
+                "kernel_envolve.manager.execution.bridge",
+                str(completed),
+                str(directory / "prompt.txt"),
+            ],
+            stdin=subprocess.PIPE,
+            stdout=out,
+            stderr=err,
+            start_new_session=True,
+            env=os.environ
+            | {
+                "KERNEL_ENVOLVE_BRIDGE_ROOT": str(directory.parent.parent),
+                "KERNEL_ENVOLVE_BRIDGE_OWNER": owner,
+            },
+        )
+        try:
+            birth = identity(process.pid)
+            if not birth:
+                raise ValueError("Model host supervisor exited before registration")
+            store.db.execute(
+                "INSERT INTO processes(job,pid,identity) VALUES(?,?,?)",
+                (round_id, process.pid, birth),
+            )
+            process.stdin.write((encode(command) + "\n").encode())
+            process.stdin.flush()
+            yield process, completed
+        finally:
+            try:
+                terminate(process)
+            finally:
+                process.stdin.close()
+
+
+def run_bridge(store, root, idle_seconds=120):
+    if not 1 <= idle_seconds <= 300:
+        raise ValueError("idle_seconds must be in [1,300]")
+    task, round_id = os.environ["KERNEL_ENVOLVE_TASK"], os.environ["KERNEL_ENVOLVE_ROUND"]
+    if os.environ.get("CUDA_VISIBLE_DEVICES") != "" or os.environ.get("KERNEL_ENVOLVE_GPU_JOB"):
+        raise ValueError("Bridge must run as the agent command outside gpu-run")
+    claim = store.one("SELECT data FROM metadata WHERE key=?", ("host-round:" + round_id,))
+    if not claim or not active(store, task, round_id):
+        raise ValueError("The foreground host must open this round first")
+    owner = json.loads(claim["data"])["owner"]
+    directory = folder(root, task, round_id)
+    if any(
+        directory.is_relative_to(json.loads(row["spec"])["workspace"])
+        for row in store.rows("SELECT spec FROM tasks")
+    ):
+        raise ValueError("Bridge artifacts must remain outside task workspaces")
+    directory.mkdir(parents=True, exist_ok=False)
+    for child in ("requests", "results", "claims", "consumed", "logs"):
+        (directory / child).mkdir()
+    (directory / "prompt.txt").write_text(sys.stdin.read())
+    context = {
+        "task": task,
+        "round": round_id,
+        "owner": owner,
+        "status": "ready",
+        "idle_seconds": idle_seconds,
+    }
+    atomic(directory / "context.json", context)
+    atomic(directory / "host.json", {"owner": owner, "at": time.time()})
+    stopped = False
+    child = None
+    cpu_child = False
+    last_execution = time.time()
+
+    def stop(signum, frame):
+        nonlocal stopped
+        stopped = True
+        if child is not None:
+            child.terminate()
+
+    signals = {s: signal.signal(s, stop) for s in (signal.SIGTERM, signal.SIGINT)}
+    hosts = contextlib.ExitStack()
+    try:
+        host = hosts.enter_context(model_host(store, task, round_id, directory, owner))
+        while not stopped and active(store, task, round_id):
+            pending = [
+                p
+                for p in sorted((directory / "requests").glob("*.json"))
+                if not (directory / "claims" / p.name).exists()
+            ]
+            if not pending:
+                if host:
+                    process, completed = host
+                    if completed.exists():
+                        outcome = read(completed)
+                        return (
+                            outcome["returncode"] if type(outcome.get("returncode")) is int else 2
+                        )
+                    if process.poll() is not None:
+                        raise ValueError("Model host supervisor exited without a terminal receipt")
+                if (
+                    not host
+                    and time.time() - max(last_execution, read(directory / "host.json")["at"])
+                    > idle_seconds
+                ):
+                    receipt = {"task": task, "round": round_id, "at": time.time()}
+                    store.db.execute(
+                        "INSERT INTO metadata VALUES(?,?)",
+                        ("bridge_idle:" + round_id, encode(receipt)),
+                    )
+                    store.event(task, "host_disconnected", {"round": round_id})
+                    return IDLE_EXIT_CODE
+                time.sleep(0.1)
+                continue
+            path = pending[0]
+            value = read(path)
+            atomic(directory / "claims" / path.name, {"started_at": time.time()})
+            receipt = {"id": path.stem, "round": round_id, "started_at": time.time()}
+            try:
+                if value["kind"] == "finish":
+                    if "report" in value:
+                        if not isinstance(value["report"], dict):
+                            raise ValueError("An optional finish report must be an object")
+                        store.report(task, round_id, value["report"])
+                        atomic(Path(os.environ["KERNEL_ENVOLVE_REPORT"]), value["report"])
+                    receipt.update(status="succeeded", returncode=0, finished_at=time.time())
+                    atomic(directory / "results" / path.name, receipt)
+                    if host:
+                        continue  # Let the real host save its final output and exit normally.
+                    return 0
+                argv = value["argv"]
+                if value["kind"] == "gpu":
+                    release = os.environ.get("KERNEL_ENVOLVE_RELEASE")
+                    cli = (
+                        [str(Path(release) / ".entry/kernel-envolve")]
+                        if release
+                        else [sys.executable, "-m", "kernel_envolve.cli"]
+                    )
+                    argv = [
+                        *cli,
+                        "manage",
+                        "gpu-run",
+                        "--expected-seconds",
+                        str(value["expected_seconds"]),
+                        "--",
+                        *argv,
+                    ]
+                with (
+                    (directory / "logs" / f"{path.stem}.stdout.log").open("wb") as out,
+                    (directory / "logs" / f"{path.stem}.stderr.log").open("wb") as err,
+                ):
+                    cpu_child = value["kind"] == "cpu"
+                    completed = directory / "logs" / f"{path.stem}.exit.json"
+                    if cpu_child:
+                        child = subprocess.Popen(
+                            [
+                                sys.executable,
+                                "-m",
+                                "kernel_envolve.manager.execution.bridge",
+                                str(completed),
+                            ],
+                            stdin=subprocess.PIPE,
+                            stdout=out,
+                            stderr=err,
+                            start_new_session=True,
+                        )
+                        try:
+                            birth = identity(child.pid)
+                            if not birth:
+                                raise ValueError(
+                                    "CPU request supervisor exited before registration"
+                                )
+                            store.db.execute(
+                                "INSERT INTO processes(job,pid,identity) VALUES(?,?,?)",
+                                (round_id, child.pid, birth),
+                            )
+                            child.stdin.write((encode(argv) + "\n").encode())
+                            child.stdin.flush()
+                        except BaseException:
+                            terminate(child)
+                            child.stdin.close()
+                            raise
+                    else:
+                        child = subprocess.Popen(
+                            argv,
+                            stdin=subprocess.DEVNULL,
+                            stdout=out,
+                            stderr=err,
+                            env=os.environ | {"KERNEL_ENVOLVE_BRIDGE_CAPTURE": "1"},
+                        )
+                    if cpu_child:
+                        store.db.execute(
+                            "INSERT OR REPLACE INTO metadata VALUES(?,?)",
+                            (
+                                "cpu_activity:" + task,
+                                encode(
+                                    {
+                                        "task": task,
+                                        "round": round_id,
+                                        "request": path.stem,
+                                        "kind": "cpu_request",
+                                        "command": value["argv"],
+                                        "status": "running",
+                                        "recorded_at": time.time(),
+                                    }
+                                ),
+                            ),
+                        )
+                    # A short wrapper may already be a zombie. Capture its birth
+                    # before poll/wait can reap it; never fall back to PID alone.
+                    gpu_identity = (
+                        identity(child.pid, include_zombie=True) if not cpu_child else None
+                    )
+                    gpu_bound = False
+
+                    def bind_gpu_logs():
+                        nonlocal gpu_bound
+                        if cpu_child or gpu_bound:
+                            return
+                        gpu = store.one(
+                            "SELECT id FROM jobs WHERE parent=? AND kind='gpu' AND pid=? AND identity=? "
+                            "ORDER BY created DESC LIMIT 1",
+                            (round_id, child.pid, gpu_identity),
+                        )
+                        if gpu:
+                            atomic(
+                                directory / "claims" / path.name,
+                                {
+                                    "started_at": receipt["started_at"],
+                                    "gpu_job": gpu["id"],
+                                    "gpu_logs": str(store.root / "jobs" / gpu["id"]),
+                                },
+                            )
+                            receipt["gpu_job"] = gpu["id"]
+                            gpu_bound = True
+
+                    start = time.monotonic()
+                    while child.poll() is None:
+                        bind_gpu_logs()
+                        if cpu_child and completed.exists():
+                            break
+                        if (
+                            stopped
+                            or not active(store, task, round_id)
+                            or (cpu_child and time.monotonic() - start > value["expected_seconds"])
+                        ):
+                            stopped = True
+                            break
+                        time.sleep(0.1)
+                    if cpu_child:
+                        # The registered group leader remains alive after the command exits.
+                        # Publish a result only after its entire owned group has been cleaned.
+                        unexpected_exit = child.poll() is not None
+                        terminate(child)
+                        unexpected_exit = unexpected_exit or child.returncode != -signal.SIGTERM
+                        child.stdin.close()
+                        completion = read(completed) if completed.exists() else {"returncode": None}
+                        code = completion["returncode"]
+                        if unexpected_exit:
+                            code = None
+                            receipt["error"] = "CPU request supervisor exited before group cleanup"
+                        if completion.get("error"):
+                            receipt["error"] = completion["error"]
+                    else:
+                        if stopped and child.poll() is None:
+                            child.terminate()
+                        try:
+                            code = child.wait(timeout=3)
+                        except subprocess.TimeoutExpired:
+                            child.kill()
+                            code = child.wait()
+                        bind_gpu_logs()
+                child = None
+                receipt.update(
+                    status="succeeded" if code == 0 and not stopped else "failed",
+                    returncode=code,
+                    finished_at=time.time(),
+                )
+                if cpu_child:
+                    store.db.execute(
+                        "INSERT OR REPLACE INTO metadata VALUES(?,?)",
+                        (
+                            "cpu_activity:" + task,
+                            encode(
+                                {
+                                    "task": task,
+                                    "round": round_id,
+                                    "request": path.stem,
+                                    "kind": "cpu_request",
+                                    "command": value["argv"],
+                                    "status": receipt["status"],
+                                    "recorded_at": receipt["finished_at"],
+                                    "returncode": code,
+                                }
+                            ),
+                        ),
+                    )
+                # A visible completion receipt must never precede its terminal
+                # activity state: clients may read the dashboard immediately.
+                atomic(directory / "results" / path.name, receipt)
+                if cpu_child and type(code) is int:
+                    # A supervisor can finish without ever starting argv. Only
+                    # a command exit, after confirmed group cleanup, is activity.
+                    store.event(
+                        task,
+                        "bridge_execution",
+                        {
+                            "round": round_id,
+                            "request": path.stem,
+                            "command": value["argv"],
+                            "status": receipt["status"],
+                            "returncode": receipt["returncode"],
+                            "cleanup_confirmed": True,
+                            "receipt_sha256": hashlib.sha256(
+                                (directory / "results" / path.name).read_bytes()
+                            ).hexdigest(),
+                        },
+                    )
+                last_execution = time.time()
+            except (OSError, ValueError, KeyError, TypeError) as exc:
+                if child is not None or (directory / "results" / path.name).exists():
+                    # A protocol/persistence failure after launch is uncertain,
+                    # not a completed request. Exit through supervised cleanup;
+                    # never admit another command while this child may survive.
+                    raise
+                receipt.update(
+                    status="failed", error=str(exc), returncode=None, finished_at=time.time()
+                )
+                atomic(directory / "results" / path.name, receipt)
+                last_execution = time.time()
+        return 2
+    finally:
+        try:
+            hosts.close()
+        finally:
+            if child is not None and cpu_child:
+                terminate(child)
+                child.stdin.close()
+            elif child is not None and child.poll() is None:
+                child.terminate()
+                with contextlib.suppress(subprocess.TimeoutExpired):
+                    child.wait(timeout=3)
+                if child.poll() is None:
+                    child.kill()
+                    child.wait()
+            atomic(
+                directory / "context.json",
+                context | {"status": "closed", "finished_at": time.time()},
+            )
+            for sig, handler in signals.items():
+                signal.signal(sig, handler)
+
+
+def cpu_supervisor(completed, prompt=None):
+    """Keep a registered group leader alive until the bridge confirms group cleanup."""
+    line = sys.stdin.readline()
+    if not line:
+        return 2  # The bridge vanished before releasing the registration handshake.
+    try:
+        with (
+            Path(prompt).open("rb")
+            if prompt
+            else contextlib.nullcontext(subprocess.DEVNULL) as input_stream
+        ):
+            command = subprocess.Popen(json.loads(line), stdin=input_stream)
+            outcome = {"returncode": command.wait()}
+    except (OSError, ValueError, TypeError) as exc:
+        outcome = {"returncode": None, "error": str(exc)}
+    atomic(completed, outcome)
+    # Keeping stdin open is the bridge's ownership lease. If it dies after command
+    # completion, EOF cleans this group, including children of an exited command.
+    sys.stdin.read()
+    os.killpg(os.getpid(), signal.SIGKILL)
+    return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(cpu_supervisor(Path(sys.argv[1]), sys.argv[2] if len(sys.argv) > 2 else None))

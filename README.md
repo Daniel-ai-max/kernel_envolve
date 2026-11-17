@@ -216,8 +216,12 @@ Agent 适配器从 stdin 接收恢复提示；执行记录自动保留，研究�
 ## 仓库结构与开发
 
 ```text
-src/kernel_envolve/          通用/原生评测、证据保存与版本晋升
-src/kernel_envolve/manager/  持续任务、进程恢复、GPU 队列与面板
+src/kernel_envolve/cli.py                  CLI 解析与路由
+src/kernel_envolve/evaluation/{generic,native,shared}/
+                                          评测主控、worker 与共享证据规则
+src/kernel_envolve/manager/                持续任务、配置、状态和预算
+src/kernel_envolve/manager/{execution,results,dashboard}/
+                                          进程与 GPU、结果证据、看板
 skills/kernel-envolve/       Agent 优化流程、PR 规范和参考入口
 examples/                   CPU、CUDA、原生任务及管理层演示
 docs/                       配置、使用和设计说明
@@ -236,6 +240,8 @@ pytest -q
 PyTorch 路径需要安装兼容的 PyTorch；CUDA 测试需在空闲 GPU 上设置 `KERNEL_ENVOLVE_TEST_CUDA=1`。浏览器轮询逻辑的测试使用 Node.js，缺少时跳过对应测试。
 
 提交 PR 时使用[中文模板](.github/PULL_REQUEST_TEMPLATE.md)，说明修改前后、影响范围、实际验证结果和回滚方式。不适用项注明原因；性能收益附版本、硬件、覆盖范围和评测证据。发布前可运行 `python3 tools/check_pr_body.py --body-file /path/to/pr.md`。`Validate PR template` CI 会在创建、编辑正文和推送后检查；校验器只从默认分支加载，不执行 PR 分支代码。
+
+代码修改入口、兼容路径与收据版本边界见[代码组织说明](docs/code-organization.md)。
 
 更多资料：
 

@@ -5,7 +5,7 @@ import math
 import re
 from pathlib import Path
 
-from ..storage import digest
+from kernel_envolve.evaluation.shared.storage import digest
 
 
 def positive(value, name, nullable=False):
@@ -184,7 +184,7 @@ def validate(raw, base):
         if baseline["introduced_on"] and not url:
             raise ValueError("An introduction date needs a source URL; otherwise use null")
         if task["kind"] == "research":
-            from .research_task import validate_task
+            from kernel_envolve.manager.research_task import validate_task
 
             validate_task(task)
         task["identity"] = digest(

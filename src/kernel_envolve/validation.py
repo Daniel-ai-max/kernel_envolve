@@ -13,7 +13,7 @@ import subprocess
 import time
 from pathlib import Path
 
-from .manager.archive import durable_json
+from kernel_envolve._io import durable_json
 
 MARKER = "KE_VALIDATION_RECEIPT_SHA256="
 

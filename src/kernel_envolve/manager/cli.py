@@ -6,23 +6,23 @@ import os
 import tempfile
 from pathlib import Path
 
-from ..storage import config, contract, digest, file_hash, read_json
-from .config import resource_devices, validate
-from .store import Store
+from kernel_envolve.evaluation.shared.storage import config, contract, digest, file_hash, read_json
+from kernel_envolve.manager.config import resource_devices, validate
+from kernel_envolve.manager.store import Store
 
 
 def task_contract(task, kind, baseline=None):
     task = Path(task).resolve()
     if kind == "research":
-        from .research_task import baseline_revision, source_identity
+        from kernel_envolve.manager.research_task import baseline_revision, source_identity
 
         return source_identity(task, baseline_revision(task, baseline or "HEAD"))
     if baseline is not None:
         raise ValueError("--baseline requires --kind research")
     if kind == "generic":
         return contract(task, config(task))
-    from ..native import snapshot
-    from ..native_config import load_config
+    from kernel_envolve.evaluation.native.config import load_config
+    from kernel_envolve.evaluation.native.evaluator import snapshot
 
     cfg = load_config(task)
     with tempfile.TemporaryDirectory() as folder:
@@ -204,7 +204,7 @@ def main(argv=None):
         import signal
         import threading
 
-        from .narrator import command_from_env, serve
+        from kernel_envolve.manager.dashboard.narrator import command_from_env, serve
 
         command = args.command[1:] if args.command[:1] == ["--"] else args.command
         command = command or command_from_env()
@@ -227,7 +227,7 @@ def main(argv=None):
         print(task_contract(args.task, args.kind, args.baseline))
         return 0
     if args.action == "gpu-run":
-        from .gpu import DurationAdmissionError, run
+        from kernel_envolve.manager.execution.gpu import DurationAdmissionError, run
 
         command = args.command[1:] if args.command[:1] == ["--"] else args.command
         try:
@@ -247,7 +247,7 @@ def main(argv=None):
     )
     try:
         if args.action.startswith("policy-"):
-            from . import research_policy
+            from kernel_envolve.manager import research_policy
 
             if args.action == "policy-install":
                 value = research_policy.install(
@@ -267,7 +267,7 @@ def main(argv=None):
                 value = research_policy.get(store, args.task)
             print(json.dumps(value, ensure_ascii=False, indent=2))
         elif args.action.startswith("bridge"):
-            from . import bridge
+            from kernel_envolve.manager.execution import bridge
 
             if args.action == "bridge":
                 return bridge.run_bridge(store, args.root, args.idle_seconds)
@@ -326,7 +326,7 @@ def main(argv=None):
                 )
             print(json.dumps(value, ensure_ascii=False, indent=2))
         elif args.action == "archive":
-            from .archive import export_archive
+            from kernel_envolve.manager.results.archive import export_archive
 
             print(
                 json.dumps(
@@ -337,7 +337,7 @@ def main(argv=None):
                 )
             )
         elif args.action == "watch-assessment":
-            from .assessment import refresh_sources, watch
+            from kernel_envolve.manager.results.assessment import refresh_sources, watch
 
             watch(
                 store,
@@ -349,8 +349,8 @@ def main(argv=None):
             )
             refresh_sources(store)
         elif args.action == "watch-validation":
-            from .assessment import refresh_sources
-            from .validation_import import watch_external
+            from kernel_envolve.manager.results.assessment import refresh_sources
+            from kernel_envolve.manager.results.validation_import import watch_external
 
             watch_external(store, args.task, args.source_state, args.source_task)
             refresh_sources(store)
@@ -362,7 +362,7 @@ def main(argv=None):
                     # No evaluator files, imports or source copies are needed.
                     continue
                 if task["kind"] == "native":
-                    from ..native_config import load_config
+                    from kernel_envolve.evaluation.native.config import load_config
 
                     cfg = load_config(Path(task["task_dir"]))
                     if any(
@@ -392,7 +392,7 @@ def main(argv=None):
         elif args.action == "supersede":
             print(json.dumps(store.supersede(args.task, args.by), ensure_ascii=False, indent=2))
         elif args.action == "resource":
-            from .service import clear_resource, resource_sessions
+            from kernel_envolve.manager.service import clear_resource, resource_sessions
 
             if args.clear:
                 clear_resource(store, args.id)
@@ -405,21 +405,21 @@ def main(argv=None):
                 read_json(args.file),
             )
         elif args.action == "run":
-            from .service import run
+            from kernel_envolve.manager.service import run
 
             run(store, args.once)
         elif args.action == "refresh":
-            from .evidence import refresh
+            from kernel_envolve.manager.results.index import refresh
 
             if not refresh(store, args.force, task_id=args.task):
                 raise ValueError("Evidence scan already running; retry after it finishes")
         elif args.action == "serve":
-            from .web import serve
+            from kernel_envolve.manager.dashboard.web import serve
 
             serve(store.root, args.port, readonly=True)
         elif args.action == "sync-pr":
-            from .evidence import refresh
-            from .publication import sync_pr
+            from kernel_envolve.manager.results.index import refresh
+            from kernel_envolve.manager.results.publication import sync_pr
 
             if not refresh(store, task_id=args.task):
                 raise ValueError(
@@ -434,11 +434,11 @@ def main(argv=None):
                 base_branch=args.base_branch,
             )
         elif args.action == "import-usage":
-            from .usage import import_usage
+            from kernel_envolve.manager.usage import import_usage
 
             import_usage(store, read_json(args.file))
         elif args.action == "status":
-            from .views import overview
+            from kernel_envolve.manager.dashboard.views import overview
 
             print(json.dumps(overview(store), ensure_ascii=False, indent=2))
     finally:

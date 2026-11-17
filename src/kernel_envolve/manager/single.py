@@ -11,11 +11,11 @@ import threading
 import time
 from pathlib import Path
 
-from ..storage import config
-from .cli import task_contract
-from .config import positive, validate
-from .process import exclusive
-from .store import Store, encode
+from kernel_envolve.evaluation.shared.storage import config
+from kernel_envolve.manager.cli import task_contract
+from kernel_envolve.manager.config import positive, validate
+from kernel_envolve.manager.execution.process import exclusive
+from kernel_envolve.manager.store import Store, encode
 
 
 def parser():
@@ -86,7 +86,7 @@ def prepare(store, args):
     if old and (old["spec"]["kind"] == "research") != research:
         raise ValueError("Reuse the task's original --research or --task entry point")
     if old and research and args.baseline is not None:
-        from .research_task import baseline_revision
+        from kernel_envolve.manager.research_task import baseline_revision
 
         if baseline_revision(task_dir, args.baseline) != old["spec"]["baseline"]["revision"]:
             raise ValueError("Research baseline changed; establish a separate task identity")
@@ -108,7 +108,7 @@ def prepare(store, args):
     if native and (task_dir / "task.json").exists():
         raise ValueError("Ambiguous task: both task.json and native.json exist")
     if research:
-        from .research_task import baseline_revision, source_identity
+        from kernel_envolve.manager.research_task import baseline_revision, source_identity
 
         revision = (
             old["spec"]["baseline"]["revision"]
@@ -121,7 +121,7 @@ def prepare(store, args):
         frozen = source_identity(task_dir, revision)
     else:
         if native:
-            from ..native_config import load_config
+            from kernel_envolve.evaluation.native.config import load_config
 
             cfg = load_config(task_dir)
             roots = [task_dir, *(Path(p) for p in cfg["sources"]["candidate"].values())]
@@ -238,7 +238,7 @@ def main(argv=None):
             or (args.archive and args.state)
         ):
             raise ValueError("History viewing does not accept execution settings")
-        from .web import serve
+        from kernel_envolve.manager.dashboard.web import serve
 
         serve(args.archive or args.state, args.port, archive=bool(args.archive), readonly=True)
         return 0
@@ -259,8 +259,8 @@ def main(argv=None):
             if handle is None:
                 raise ValueError("A dashboard launcher already owns this state; reuse its URL")
             # Bind first: an occupied port must not start research or alter task settings.
-            from .service import run
-            from .web import server
+            from kernel_envolve.manager.dashboard.web import server
+            from kernel_envolve.manager.service import run
 
             with server(store.root, args.port) as http:
                 with exclusive(store.root / "coordinator.lock") as coordinator:
