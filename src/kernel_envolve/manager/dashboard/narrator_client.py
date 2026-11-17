@@ -79,6 +79,9 @@ def respond(request):
         raise ValueError("Narrator endpoint requires HTTPS (or loopback for local inference)")
     if parsed.username or parsed.password or parsed.fragment:
         raise ValueError("Do not put narrator credentials in the endpoint URL")
+    style = os.environ.get("NARRATOR_API_STYLE", "responses")
+    if style not in ("responses", "chat_completions"):
+        raise ValueError("Unsupported narrator API style")
     key = os.environ["NARRATOR_API_KEY"]
     body = {
         "model": os.environ["NARRATOR_MODEL"],
@@ -95,6 +98,25 @@ def respond(request):
         if effort not in ("minimal", "low", "medium", "high"):
             raise ValueError("Unsupported narrator reasoning effort")
         body["reasoning"] = {"effort": effort}
+    if style == "chat_completions":
+        schema = body["text"]["format"]
+        body = {
+            "model": body["model"],
+            "tools": [],
+            "store": False,
+            "stream": False,
+            "max_tokens": body["max_output_tokens"],
+            "messages": [
+                {"role": "system", "content": body["instructions"]},
+                {"role": "user", "content": body["input"]},
+            ],
+            "response_format": {
+                "type": "json_schema",
+                "json_schema": {k: v for k, v in schema.items() if k != "type"},
+            },
+        }
+        if effort:
+            body["reasoning_effort"] = effort
     req = urllib.request.Request(
         endpoint,
         json.dumps(body).encode(),
@@ -110,6 +132,16 @@ def respond(request):
     if len(raw) > 262144:
         raise ValueError("Narrator response too large")
     value = json.loads(raw)
+    if style == "chat_completions":
+        choices = value.get("choices", [])
+        if len(choices) != 1 or choices[0].get("finish_reason") != "stop":
+            raise ValueError("Narrator response incomplete")
+        message = choices[0].get("message", {})
+        if message.get("tool_calls") or message.get("function_call") or message.get("refusal"):
+            raise ValueError("Narrator must only return text")
+        if not isinstance(message.get("content"), str):
+            raise ValueError("Narrator did not return text")
+        return json.loads(message["content"])
     if value.get("status") != "completed":
         raise ValueError("Narrator response incomplete")
     chunks = []
