@@ -213,15 +213,18 @@ def test_real_host_runs_after_extension_without_notes_or_consume(lane, monkeypat
     assert store.job(job)["status"] == "succeeded"
 
 
-def test_real_native_full_confirmation_is_required_before_delivery(confirmation_task, tmp_path):
+def test_real_native_full_confirmation_is_required_before_delivery(
+    confirmation_task, tmp_path, monkeypatch
+):
     """Real CPU native receipts; only the already-tested remote PR binding is supplied."""
     import shutil
     import subprocess
 
+    from kernel_envolve.manager import linked_delivery
     from kernel_envolve.manager.cli import task_contract
     from kernel_envolve.manager.config import validate
     from kernel_envolve.manager.evidence import refresh_task
-    from kernel_envolve.manager.views import best
+    from kernel_envolve.manager.views import best, detail, overview, task_view
     from kernel_envolve.native import evaluate_native, promote_native
     from kernel_envolve.native_confirmation import confirm_native
     from kernel_envolve.storage import read_json, write_json
@@ -272,6 +275,12 @@ def test_real_native_full_confirmation_is_required_before_delivery(confirmation_
         )
         value = policy.bind_delivery(store, key, "delivery", "core")
         assert policy.delivery_proof(store, value) is None
+        pending = task_view(store, key)
+        assert pending["best"] is None and pending["delivery"]["status"] == "pending"
+        assert pending["implementation_pr"] is None
+        assert task_view(store, "delivery")["delivery_parent"] == key
+        assert len([t for t in overview(store)["tasks"] if not t.get("delivery_parent")]) == 1
+        original = {k: store.task(key)[k] for k in ("desired", "gpu_seconds", "wall_seconds")}
         run, result = evaluate_native(task, "full", timeout=90)
         assert result["decision"]["eligible_for_best"], result
         refresh_task(store, store.task("delivery"))
@@ -301,25 +310,164 @@ def test_real_native_full_confirmation_is_required_before_delivery(confirmation_
             "INSERT INTO metadata VALUES('publication:delivery',?)", (json.dumps(publication),)
         )
         assert policy.delivery_proof(store, value)
+        from kernel_envolve.manager import evidence
+
+        with monkeypatch.context() as isolated:
+            isolated.setattr(
+                evidence,
+                "inspect_run",
+                lambda *a, **kw: pytest.fail("Display must reuse the deep-audited index"),
+            )
+            linked_delivery.refresh(store, task_id="delivery")
+        delivered = task_view(store, key)
+        assert delivered["best"] is None and delivered["implementation_pr"] is None
+        assert delivered["delivery"]["best"]["baseline_speedup"] == verified["baseline_speedup"]
+        assert delivered["delivery"]["implementation_pr"]["url"] == publication["url"]
+        assert delivered["row_facts"]["benefit"]["kind"] == "native_delivery"
+        from kernel_envolve.manager import narrator
+
+        calls = []
+
+        def narrate(command, request, stop):
+            calls.append(request)
+            return {t["task"]: None for t in request["tasks"]}
+
+        narrator.step(store, [], call=narrate)
+        assert [t["task"] for t in calls[0]["tasks"]] == [key]
+        assert any(s["kind"] == "delivery" for s in calls[0]["tasks"][0]["sources"].values())
+        linked_delivery.refresh(store, task_id="delivery")
+        assert task_view(store, key)["row_facts"]["revision"] == delivered["row_facts"]["revision"]
+        assert narrator.collect(store) == []  # A repeated successful audit is not new research.
+        assert detail(store, key)["delivery_attempts"][0]["task"] == "delivery"
+        assert detail(store, "delivery")["runs"]
+        assert original == {k: store.task(key)[k] for k in original}
+        assert not store.one("SELECT data FROM metadata WHERE key=?", ("best:" + key,))
         assert not policy.delivery_proof(store, value | {"min_gain": 0.99999999})
+        # A small receipt change is rejected even before the next deep index
+        # scan. Historical display must not bypass missing/revoked index rows.
+        receipt_path = run / "receipt.json"
+        receipt_raw = receipt_path.read_bytes()
+        receipt_path.write_text('{"result_hash":"changed"}')
+        linked_delivery.refresh(store, task_id="delivery")
+        assert task_view(store, key)["delivery"]["best"] is None
+        receipt_path.write_bytes(receipt_raw)
+        linked_delivery.refresh(store, task_id="delivery")
+        indexed = store.one("SELECT * FROM runs WHERE path=?", (str(run),))
+        store.db.execute("UPDATE runs SET error='revoked' WHERE path=?", (str(run),))
+        assert task_view(store, key)["delivery"]["best"] is None
+        store.db.execute("DELETE FROM runs WHERE path=?", (str(run),))
+        assert task_view(store, key)["delivery"]["best"] is None
+        store.db.execute(
+            "INSERT INTO runs VALUES(?,?,?,?,?)",
+            tuple(indexed[k] for k in ("path", "task", "imported", "data", "error")),
+        )
+        assert task_view(store, key)["delivery"]["best"]["run"] == str(run)
+        # Temporarily unavailable evidence is not evidence of corruption and
+        # must not erase the last verified historical record.
+        unavailable = run.with_name(run.name + "-temporarily-unavailable")
+        run.rename(unavailable)
+        try:
+            linked_delivery.refresh(store, task_id="delivery")
+            assert task_view(store, key)["delivery"]["best"]["run"] == str(run)
+        finally:
+            unavailable.rename(run)
         raw = (run / "confirmation/receipt.json").read_bytes()
         (run / "confirmation/receipt.json").write_text("{}")
         with pytest.raises((ValueError, KeyError)):
             policy.delivery_proof(store, value)
+        refresh_task(store, store.task("delivery"))
+        assert task_view(store, key)["delivery"]["best"] is None
         (run / "confirmation/receipt.json").write_bytes(raw)
+        refresh_task(store, store.task("delivery"))
         previous = (work / "toyop.py").read_bytes()
         (work / "toyop.py").write_text("# different research candidate")
         assert policy.delivery_proof(store, value) is None
+        linked_delivery.refresh(store, task_id="delivery")
+        retained = task_view(store, key)
+        assert retained["delivery"]["best"]["run"] == str(run)
+        assert retained["row_facts"]["benefit"] == delivered["row_facts"]["benefit"]
         with pytest.raises(ValueError, match="contents"):
             policy.bind_delivery(store, key, "delivery", "core")
         (work / "toyop.py").write_bytes(previous)
+        linked_delivery.refresh(store, task_id="delivery")
+        assert task_view(store, key)["delivery"]["status"] == "verified"
+        assert task_view(store, key, now=time.time() + 10**6)["delivery"]["best"]["run"] == str(run)
         publication["checked_at"] = 1
         store.db.execute(
             "UPDATE metadata SET data=? WHERE key='publication:delivery'",
             (json.dumps(publication),),
         )
         assert policy.delivery_proof(store, value) is None
+        stale_pr = task_view(store, key)
+        assert stale_pr["delivery"]["best"]["run"] == str(run)
+        assert stale_pr["row_facts"]["optimization_pr"]["value"] is None
+        assert stale_pr["row_facts"]["revision"] != delivered["row_facts"]["revision"]
+        assert stale_pr["delivery"]["implementation_pr"]["head"] == publication["head"]
+        assert not stale_pr["delivery"]["implementation_pr"]["current_head_verified"]
         assert not store.one("SELECT * FROM metadata WHERE key=?", ("best:" + key,))
+        # A new attempt remains separate and auditable, while both children stay
+        # attached to the same research row. Names do not establish ownership.
+        another = tmp_path / "another-native"
+        shutil.copytree(native_workspace, another, ignore=shutil.ignore_patterns(".kernel_native"))
+        next_task = another / "task"
+        next_cfg = read_json(next_task / "native.json")
+        next_cfg["sources"]["candidate"]["core"] = str(another / "candidate")
+        write_json(next_task / "native.json", next_cfg)
+        next_spec = delivery | {
+            "id": "unrelated-name",
+            "workspace": str(another),
+            "task_dir": str(next_task),
+            "baseline": spec["baseline"] | {"contract": task_contract(next_task, "native")},
+        }
+        store.register(
+            validate(
+                {
+                    "version": 1,
+                    "resources": [store.resource(spec["resource"])["spec"]],
+                    "tasks": [next_spec],
+                },
+                tmp_path,
+            )
+        )
+        policy.bind_delivery(store, key, "unrelated-name", "core")
+        projected = task_view(store, key)
+        assert {x["task"] for x in projected["delivery_attempts"]} == {"delivery", "unrelated-name"}
+        assert len([t for t in overview(store)["tasks"] if not t.get("delivery_parent")]) == 1
+        assert detail(store, "delivery")["runs"]  # Old real evidence remains intact.
+        assert projected["current_delivery_task"] == "unrelated-name"
+        assert projected["delivery"]["task"] == "delivery"
+        assert projected["delivery"]["best"]["run"] == str(run)
+        other_work = tmp_path / "other-research"
+        shutil.copytree(work, other_work)
+        other_key = prepare(
+            store, arguments(other_work, "--device", "cpu", "--", sys.executable, "-c", "pass")
+        )
+        store.control(other_key, "pause")
+        policy.install(
+            store, other_key, started_at=time.time(), min_gain=0.05, deadline_command=["adapter"]
+        )
+        with pytest.raises(ValueError, match="belongs to another"):
+            policy.bind_delivery(store, other_key, "unrelated-name", "core")
+        # A successful stopped policy and its archive retain the real result;
+        # reopening needs neither the research checkout nor a live verifier.
+        publication["checked_at"] = time.time()
+        store.db.execute(
+            "UPDATE metadata SET data=? WHERE key='publication:delivery'",
+            (json.dumps(publication),),
+        )
+        policy.bind_delivery(store, key, "delivery", "core")
+        assert policy.tick(store, key)["phase"] == "stopping"
+        assert policy.tick(store, key)["phase"] == "succeeded"
+        from kernel_envolve.manager.archive import Archive, export_archive
+
+        destination = tmp_path / "delivery-archive"
+        export_archive(store, destination)
+        shutil.rmtree(work)
+        reopened = Archive(destination).read()["details"][key]
+        assert reopened["delivery"]["policy_phase"] == "succeeded"
+        assert reopened["delivery"]["best"]["run"] == str(run)
+        assert len(reopened["delivery_attempts"]) == 2
+        assert reopened["best"] is None
     finally:
         store.close()
 

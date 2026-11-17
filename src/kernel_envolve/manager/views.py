@@ -306,7 +306,10 @@ def task_view(store, key, now=None, predecessors=None, usage=None):
     task["run_count"] = store.db.execute(
         "SELECT COUNT(*) FROM runs WHERE task=?", (key,)
     ).fetchone()[0]
+    from .linked_delivery import view as delivery_view
     from .row_facts import row_facts
+
+    task.update(delivery_view(store, task, now))
 
     task["row_facts"] = row_facts(task)
     return task

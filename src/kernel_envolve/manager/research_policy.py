@@ -133,7 +133,59 @@ def bind_delivery(store, key, delivery, source_root):
     if not value or value["phase"] in TERMINAL:
         raise ValueError("An active installed research policy is required")
     binding = source_link(store, key, delivery, source_root)
-    return save(store, key, value, value | {"delivery": binding})
+    if not store.task(delivery)["spec"].get("observe_only"):
+        raise ValueError("Linked delivery must be an observation-only native task")
+    from .linked_delivery import links
+
+    owner = links(store).get(delivery)
+    if owner and owner["research_task"] != key:
+        raise ValueError("Native delivery already belongs to another research task")
+    relation = binding | {
+        "research_task": key,
+        "research_identity": value["identity"],
+        "bound_at": time.time(),
+    }
+    with store.transaction():
+        if get(store, key) != value:
+            raise ValueError("Research policy changed; retry from current state")
+        existing = store.one(
+            "SELECT data FROM metadata WHERE key=?", ("delivery_link:" + delivery,)
+        )
+        if existing:
+            old = json.loads(existing["data"])
+            if (
+                old["research_task"] != key
+                or old["identity"] != binding["identity"]
+                or old["source_root"] != binding["source_root"]
+            ):
+                raise ValueError("Native delivery already has a different owner or identity")
+        else:
+            store.db.execute(
+                "INSERT INTO metadata VALUES(?,?)", ("delivery_link:" + delivery, encode(relation))
+            )
+        previous = value.get("delivery")
+        if previous and previous["task"] != delivery:
+            store.db.execute(
+                "INSERT OR IGNORE INTO metadata VALUES(?,?)",
+                (
+                    "delivery_link:" + previous["task"],
+                    encode(
+                        previous
+                        | {
+                            "research_task": key,
+                            "research_identity": value["identity"],
+                            "bound_at": None,
+                        }
+                    ),
+                ),
+            )
+        updated = value | {"delivery": binding}
+        store.db.execute(
+            "INSERT OR REPLACE INTO metadata VALUES(?,?)",
+            ("research_policy:" + key, encode(updated)),
+        )
+        store.event(key, "research_policy", updated)
+    return updated
 
 
 def delivery_proof(store, value):
