@@ -646,3 +646,10 @@ kernel-envolve manage --state /path/to/research-state watch-validation operator-
 旁白失败时看板直接显示系统结论。不可用来源恢复后自动清除连接故障；不完整收据
 单独归档，不能阻止其他任务复盘。已有自定义宿主 verifier 可用
 `watch-assessment --validation` 输出 `validation-result-v1`；旧数据不伪造新的作业绑定。
+
+
+### Linked native delivery in the dashboard
+
+`policy-bind-delivery` records one explicit research owner for an observation-only native delivery task. Rebinding to a new attempt retains earlier delivery links and their original native run history. The dashboard shows one research row by default and opens each native attempt from that row's delivery details; names never imply this relationship. Research `best` and publication records remain empty. Only a verified native full, independent confirmation, matching baseline/source, and current source-bound PR can supply the row's separate delivery benefit and PR. No evaluator eligibility or scheduling state is transferred.
+
+The existing background scanner audits the frozen native full/confirmation/PR relationship at most once per 30 seconds and yields to GPU work. Previously verified results remain visible when research proceeds to another candidate, when a refresh is unavailable, and when a terminal archive is reopened. Research-source equality still governs stop-policy success; it does not erase historical delivered results. Indexed corruption of the frozen evidence withdraws the affected result. A changed or stale PR head removes the current PR link from the research row while retaining the previously evaluated commit in delivery details. New attempts retain prior verified results until another published result is verified; unlike contracts are not ranked by speedup. All four narrated columns use the resulting row-facts revision, and hidden native child tasks do not generate duplicate narration.

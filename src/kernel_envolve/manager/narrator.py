@@ -151,7 +151,20 @@ def collect(store, *, scan_logs=True):
         from .views import task_view
 
         view = task_view(store, key)
+        if view.get("delivery_parent"):
+            continue  # The research row cites this child through the verified delivery projection.
         facts = view["row_facts"]
+        delivery = view.get("delivery")
+        if delivery:
+            signature = digest({k: v for k, v in delivery.items() if k != "checked_at"})
+            if cursor["records"].get("delivery") != signature:
+                sources["delivery:" + signature] = {
+                    "kind": "delivery",
+                    "at": time.time(),
+                    "text": encode(delivery),
+                    "task": delivery["task"],
+                }
+                new_cursor["records"]["delivery"] = signature
         lifecycle = {
             "can_continue": task["desired"] == "active" and not store.budget_reason(task),
             "phase": view["phase"],
@@ -246,6 +259,7 @@ def collect(store, *, scan_logs=True):
             sources = retained | sources
             # Keep authoritative outcomes and candidate context ahead of noisy logs.
             priority = {
+                "delivery": 6,
                 "validation": 5,
                 "assessment": 4,
                 "research_result": 3,

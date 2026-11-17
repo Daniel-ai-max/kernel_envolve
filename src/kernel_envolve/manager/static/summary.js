@@ -105,7 +105,12 @@ export function evidenceSummary(task) {
     : r.correctness === "pass" ? "正确性通过" : "未完成";
   return `${({quick: "初筛", full: "完整评测"})[r.mode] || "评测"} · ${status}`;
 }
+export function deliveredBest(task) {
+  return task.spec?.kind === "research" && task.delivery?.status === "verified" ? task.delivery.best : null;
+}
 export function taskBenefit(task) {
+  const delivered = deliveredBest(task);
+  if (delivered) return {label: benefitLabel(delivered), detail: "已验证 native 交付", positive: delivered.baseline_speedup > 1};
   if (task.best) return {label: benefitLabel(task.best), detail: validationResult(task) ? "已保留最佳方案" : "", positive: task.best.baseline_speedup > 1};
   const a = scopedAssessment(task);
   // Research findings remain in progress/history, never in verified benefits.
@@ -133,7 +138,7 @@ export function executionLabelFor(record) {
   return `${mode} · ${result}`;
 }
 
-export const visibleTask = (task, showHistory = false) => showHistory || task.desired !== "superseded";
+export const visibleTask = (task, showHistory = false) => !task.delivery_parent && (showHistory || task.desired !== "superseded");
 
 export function resultSummary(record) {
   const label = executionLabelFor(record);
@@ -146,6 +151,7 @@ export function resultSummary(record) {
   return label;
 }
 export function phaseLabel(task) {
+  if (deliveredBest(task) && task.delivery.policy_phase === "succeeded") return "已交付";
   if (task.stale) return "会话失联";
   if (task.phase === "paused" && task.reason === "task deadline reached") return "预算结束";
   return ({archived: "历史快照", active: "持续优化", cooldown: "准备下一轮", resource_blocked: "资源异常",
@@ -156,6 +162,11 @@ export function phaseLabel(task) {
 }
 
 export function recentResult(task) {
+  const delivered = deliveredBest(task);
+  if (delivered && delivered.recorded_at >= Math.max(task.latest_validation?.recorded_at || 0,
+      task.research_result?.recorded_at || 0, task.recent_evaluation?.recorded_at || 0,
+      task.verified_assessment?.recorded_at || 0))
+    return {...delivered, task: task.delivery.task, kind: "evaluation"};
   const validation = validationResult(task);
   if (validation && validation.recorded_at >= Math.max(task.research_result?.recorded_at || 0,
       task.recent_evaluation?.recorded_at || 0, task.verified_assessment?.recorded_at || 0)) return validation;
@@ -178,7 +189,7 @@ export function recentResult(task) {
 // Numbers, PR identity and execution status always come from this task snapshot.
 export function narratedRow(task) {
   const n = narrationFor(task), recent = recentResult(task);
-  return {benefit: taskBenefit(task), pr: task.implementation_pr,
+  return {benefit: taskBenefit(task), pr: deliveredBest(task) ? (task.delivery.implementation_pr?.current_head_verified ? task.delivery.implementation_pr : null) : task.implementation_pr,
     progress: progressSource(task), recent,
     outcomeAt: n?.row ? Math.max(...n.row.latest_result.sources.map(ref => n.sources[ref].at || 0)) : recent?.recorded_at,
     outcome: n?.row ? n.row.latest_result.text : resultSummary(recent)};

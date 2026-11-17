@@ -47,7 +47,7 @@ function render() {
   const tasks = state.tasks;
   patch(
     $("metrics"),
-    metric("任务", tasks.filter((t) => t.desired !== "superseded").length) +
+    metric("任务", tasks.filter((t) => visibleTask(t)).length) +
       metric(
         "GPU 执行",
         tasks.filter((t) => t.phase === "gpu_running").length,
@@ -79,7 +79,7 @@ function render() {
         const next = canContinue(t) ? noteSnippet(record?.next_action, "") : "";
         const source = row.progress, progress = source.text;
         return `<tr data-key="${escape(t.id)}">
-          <td data-label="算子"><button class="name" data-task="${escape(t.id)}">${escape(t.spec.name)}</button>${t.spec.kind === "research" ? `<small>${assessment ? "探索 · 已有范围验收" : validationResult(t) ? "探索 · 外部验收有结果" : "探索 · 未接入验收"}</small>` : ""}</td>
+          <td data-label="算子"><button class="name" data-task="${escape(t.id)}">${escape(t.spec.name)}</button>${t.spec.kind === "research" ? `<small>${t.delivery ? (t.delivery.status === "verified" ? "探索 · 已验证交付" : "探索 · 已关联验收") : assessment ? "探索 · 已有范围验收" : validationResult(t) ? "探索 · 外部验收有结果" : "探索 · 未接入验收"}</small>` : ""}</td>
           <td data-label="阶段">${escape(phaseLabel(t))}</td>
           <td data-label="基线"><div title="${escape(baseline.revision)}"><code>${escape(baseline.revision.slice(0, 8))}</code></div><small>${link(baseline.repository, baseline.repository.split("/").filter(Boolean).pop())}</small></td>
           <td class="benefit ${benefit.positive ? "good" : "muted"}" data-label="收益">${escape(benefit.label)}${benefit.detail ? `<small>${escape(benefit.detail)}</small>` : ""}</td>
@@ -195,6 +195,9 @@ function renderDetail(t) {
     <div class="section-head"><h2>${escape(t.spec.name)}</h2><button id="close-detail">返回</button></div>
     <div class="detail-summary"><span>${executionLabel(t.execution_state)}</span><span>${assessment ? "算子验收通过" : evidenceSummary(t)}</span><span>${escape(benefit.label)}</span></div>
     ${t.superseded_by ? `<p>历史契约 · 后续任务：<button class="source-link" data-task="${escape(t.superseded_by)}">${escape(t.superseded_by)}</button></p>` : ""}
+    ${t.delivery_parent ? `<p>所属研究：<button class="source-link" data-task="${escape(t.delivery_parent)}">${escape(t.delivery_parent)}</button></p>` : ""}
+    ${t.delivery_attempts?.length ? `<article class="card"><h3>原生交付尝试</h3><div class="lineage">${t.delivery_attempts.map(a => `<div><button class="source-link" data-task="${escape(a.task)}">${escape(a.task)}</button><span>${a.task === t.current_delivery_task ? "当前关联" : "历史尝试"}${a.bound_at ? " · " + escape(stamp(a.bound_at)) : ""}</span></div>`).join("")}</div></article>` : ""}
+    ${t.delivery?.best ? `<p>已验交付：<button class="source-link" data-task="${escape(t.delivery.task)}">${escape(t.delivery.task)}</button> · ${escape(stamp(t.delivery.checked_at))}${t.delivery.implementation_pr?.commit_url ? " · " + link(t.delivery.implementation_pr.commit_url, "已验提交 " + t.delivery.implementation_pr.head.slice(0, 7)) : ""}</p>` : ""}
     ${assessmentDetail(t)}
     ${validationDetail(t)}
     ${narrationDetail(t)}

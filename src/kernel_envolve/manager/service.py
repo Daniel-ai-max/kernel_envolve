@@ -143,6 +143,11 @@ def run(store, once=False, *, observe=False):
                     from .publication import refresh_publications
 
                     refresh_publications(local)
+                    from .evidence import gpu_work_pending
+                    from .linked_delivery import refresh as refresh_deliveries
+
+                    if not stopped.is_set() and not gpu_work_pending(local):
+                        refresh_deliveries(local)
                     from .archive import checkpoint
 
                     checkpoint(local)
