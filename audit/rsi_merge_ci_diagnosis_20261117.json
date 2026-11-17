@@ -1,0 +1,56 @@
+{
+  "date": "2026-11-17",
+  "scope": "CPU integration and CI diagnosis, no GPU/model usage",
+  "full_local": {
+    "passed": 1337,
+    "skipped": 11,
+    "failed": 0,
+    "unchanged_source_and_tests": true,
+    "elapsed_seconds": 617.6686760410084,
+    "head_at_run": "879ffb4b7ebc43a98e5ecddc2ba8557736296888"
+  },
+  "runtime_sources_unchanged_after_full_suite": true,
+  "ci_initial": {
+    "push": 44014216685,
+    "pull_request": 44014221858,
+    "issues": [
+      "Synthetic frozen-import test depended on scheduler-sensitive performance measurements",
+      "Timeout test inferred immediate kernel lock reacquisition from process liveness"
+    ]
+  },
+  "ci_diagnostic": {
+    "push": 44015770870,
+    "pull_request": 44015775537,
+    "observation": "Both failed lock snapshots showed only the pytest process open descriptor; all registered child liveness assertions passed. No live descendant holder was observed at diagnostic scan. The exact kernel release instant was not measured."
+  },
+  "changes": [
+    "Frozen-import test uses an explicit synthetic baseline delay and seven trials; production gate unchanged",
+    "Timeout test still requires registered child exit and actual kernel lock acquisition within two seconds; no fixed blind sleep or force-unlock",
+    "Failure-only descriptor diagnostics omit process arguments and environment"
+  ],
+  "focused_after_adjustment": {
+    "passed": 95,
+    "seconds": 17.6,
+    "files": [
+      "tests/test_rsi_managed.py",
+      "tests/test_integration.py",
+      "tests/test_manager_gpu_groups.py"
+    ]
+  },
+  "diagnostic_only": {
+    "linux_single_test_repetitions": 20,
+    "linux_single_test_failures": 0,
+    "linux_cpu_quota_group_passed": 21,
+    "macos_python313_group_passed": 21,
+    "linux_full": {
+      "passed": 1169,
+      "failed": 7,
+      "skipped": 149,
+      "acceptance": false,
+      "limitations": "Minimal container initially lacked ps/pgrep (five failures); two pre-existing metadata timestamp assertions also failed. RSI managed timeout passed. This run is diagnostic only."
+    }
+  },
+  "final_ci": "Exact final-head push and PR three-version suites must pass before merge; use PR #2 checks as authoritative result",
+  "gpu_jobs": 0,
+  "external_model_calls": 0
+}

@@ -202,8 +202,16 @@ def test_expired_execution_cleans_child_and_preserves_failure(active):
     assert not alive(job["child_pid"], job["child_identity"])
     for child in store.rows("SELECT * FROM processes WHERE job=?", (job["id"],)):
         assert not alive(child["pid"], child["identity"])
-    with exclusive(lock_path("gpu", "cpu")) as handle:
-        assert handle is not None, device_lock_holders()
+    # Liveness and the final inherited file-description release are separate
+    # observations. Like the real queue, require the kernel lock itself; never
+    # infer device ownership from the process-state observation alone.
+    deadline = time.monotonic() + 2
+    while True:
+        with exclusive(lock_path("gpu", "cpu")) as handle:
+            if handle is not None:
+                break
+        assert time.monotonic() < deadline, device_lock_holders()
+        time.sleep(0.01)
 
 
 def device_lock_holders():
@@ -214,11 +222,14 @@ def device_lock_holders():
         try:
             if os.readlink(descriptor) == target:
                 process = descriptor.parent.parent
+                state = (process / "stat").read_text().rsplit(")", 1)[1].split()
                 holders.append(
                     {
                         "pid": process.name,
                         "fd": descriptor.name,
-                        "stat": (process / "stat").read_text(),
+                        "state": state[0],
+                        "parent": state[1],
+                        "group": state[2],
                         "self": int(process.name) == os.getpid(),
                     }
                 )
