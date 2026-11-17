@@ -74,6 +74,11 @@ def export_archive(
                     if recovery and not recovery_record:
                         raise ValueError("Recovery requires explicit provenance")
                     now = recovery_record["observed_at"] if recovery else time.time()
+                    log_jobs = (
+                        saved.rows("SELECT id,status,started FROM jobs ORDER BY created,id")
+                        if include_logs
+                        else []
+                    )
                     state = overview(saved, compact=True, now=now)
                     details = {t["id"]: detail(saved, t["id"], now) for t in state["tasks"]}
                 state.update(
@@ -260,13 +265,32 @@ def export_archive(
                 copied.append(
                     {"path": str(target.relative_to(stage)), "original": str(source.resolve())}
                 )
+            log_coverage = {"requested": include_logs, "complete": None, "jobs": []}
             if include_logs:
-                for source in (store.root / "jobs").glob("*/*.log"):
+                jobs_root = store.root / "jobs"
+                if jobs_root.is_symlink() or (jobs_root.exists() and not jobs_root.is_dir()):
+                    raise ValueError("Job logs root must be a real directory")
+                for source in jobs_root.glob("*/*.log"):
                     if source.is_symlink() or source.parent.is_symlink() or not source.is_file():
                         raise ValueError("Job logs must be regular files")
                     target = stage / "logs" / source.relative_to(store.root / "jobs")
                     target.parent.mkdir(parents=True, exist_ok=True)
                     shutil.copyfile(source, target)
+                log_coverage["complete"] = True
+                for job in log_jobs:
+                    job_id = job["id"]
+                    if Path(job_id).name != job_id or job_id in (".", ".."):
+                        raise ValueError("Invalid archived job identity")
+                    missing = [
+                        name
+                        for name in ("stdout.log", "stderr.log")
+                        if job["started"] is not None
+                        and not (stage / "logs" / job_id / name).is_file()
+                    ]
+                    active = job["status"] in ("queued", "running")
+                    log_coverage["jobs"].append(dict(job, missing=missing, active=active))
+                    if missing or active:
+                        log_coverage["complete"] = False
             manifest = {
                 "schema": "dashboard-archive-v1",
                 "automatic": automatic,
@@ -277,6 +301,7 @@ def export_archive(
                 "unverified_validation_receipts": unverified_validation_receipts,
                 "created_at": now,
                 "attachments": copied,
+                "log_coverage": log_coverage,
                 "files": {},
             }
             for path in sorted(stage.rglob("*")):

@@ -353,6 +353,11 @@ class Store:
                     raise ValueError(
                         f"Replacement {kind} budget exceeds predecessor's unused budget"
                     )
+            deadline, next_deadline = a.get("deadline_at"), b.get("deadline_at")
+            if deadline is not None and (next_deadline is None or next_deadline > deadline):
+                raise ValueError(
+                    "Replacement must preserve or shorten predecessor's absolute deadline"
+                )
             receipt = {
                 "task": key,
                 "superseded_by": replacement,
