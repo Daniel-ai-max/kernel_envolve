@@ -5,6 +5,7 @@ import os
 import signal
 import sys
 import time
+from pathlib import Path
 
 import pytest
 from test_manager import launch, replace_command
@@ -202,7 +203,28 @@ def test_expired_execution_cleans_child_and_preserves_failure(active):
     for child in store.rows("SELECT * FROM processes WHERE job=?", (job["id"],)):
         assert not alive(child["pid"], child["identity"])
     with exclusive(lock_path("gpu", "cpu")) as handle:
-        assert handle is not None
+        assert handle is not None, device_lock_holders()
+
+
+def device_lock_holders():
+    """Diagnose inherited descriptors without dumping command arguments or environment."""
+    target = str(lock_path("gpu", "cpu"))
+    holders = []
+    for descriptor in Path("/proc").glob("[0-9]*/fd/*"):
+        try:
+            if os.readlink(descriptor) == target:
+                process = descriptor.parent.parent
+                holders.append(
+                    {
+                        "pid": process.name,
+                        "fd": descriptor.name,
+                        "stat": (process / "stat").read_text(),
+                        "self": int(process.name) == os.getpid(),
+                    }
+                )
+        except OSError:
+            continue
+    return holders
 
 
 def test_device_probe_cannot_swallow_queue_deadline(active, monkeypatch):

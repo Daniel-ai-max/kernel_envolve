@@ -105,8 +105,13 @@ def test_source_result_and_contract_edits_rejected(task):
 
 
 def test_relative_helpers_are_frozen(task):
+    # This tests frozen imports and promotion, not a microbenchmark. Keep the
+    # real gate but give it a clear synthetic gap on shared CI runners.
+    with (task / "task.py").open("a") as stream:
+        stream.write("\nimport time\ndef baseline(x,y):\n time.sleep(.005)\n return reference(x,y)\n")
     cfg_path = task / "task.json"
     cfg = read_json(cfg_path)
+    cfg["full_trials"] = 7
     cfg["candidate_files"] = ["candidate.py", "helper.py"]
     cfg_path.write_text(json.dumps(cfg))
     (task / "helper.py").write_text("def add(x,y): return x+y\n")
