@@ -213,3 +213,95 @@ def test_row_version_ignores_polling_duration_and_large_execution_payloads():
     assert "cases" not in first["execution"]
     task["recent_execution"]["status"] = "succeeded"
     assert row_facts(task)["revision"] != first["revision"]
+
+
+@pytest.mark.parametrize(
+    "source,display",
+    [
+        ("88.65015983581543", "88.65"),
+        ("74.19519901275635", "74.20"),
+        ("88.65015983581543", "88.7"),
+        ("1.235", "1.24"),  # Decimal half-up, not binary float or ties-to-even.
+        ("1.245", "1.25"),
+        ("9.999", "10.0"),
+        ("123456789012345678901234567890.125", "123456789012345678901234567890.13"),
+    ],
+)
+def test_cited_display_rounding_preserves_sources_and_is_idempotent(source, display):
+    batch = dict(
+        task="toy",
+        sources={"measurement": dict(kind="trace", at=1, text=f"耗时{source}微秒。")},
+        row_facts={"revision": "revision", "latest_result": {"kind": "none"}},
+    )
+    request = {"tasks": [batch]}
+    output = reply([], request, None)
+    for claim in (output["toy"]["finding"], output["toy"]["row"]["latest_result"]):
+        claim["text"] = f"局部耗时约{display}微秒。"
+    original = copy.deepcopy((batch, output))
+    assert n.validate(output, [batch]) == output
+    assert n.validate(output, [batch]) == output
+    assert (batch, output) == original
+
+
+@pytest.mark.parametrize(
+    "source,display",
+    [
+        ("88.65015983581543", "88.64"),  # Wrong neighbor, not tolerance matching.
+        ("88.65015983581543", "88.66"),
+        ("74.19519901275635", "74.19"),  # Truncation is not rounding.
+        ("88.65015983581543", "88.650159"),
+        ("88.65015983581543", "89"),  # Integer display not admitted.
+        ("1.2345", "1.2"),  # Fewer than three significant digits.
+        ("0.10499", "0.10"),
+        ("88.65015983581543 74.19519901275635", "16.31%"),  # Derived gain.
+        ("88.65015983581543微秒", "0.09毫秒"),  # Unit conversion.
+        ("88.65015983581543微秒", "88650.16纳秒"),
+        ("-88.65015983581543", "88.65"),
+        ("88.65015983581543", "-88.65"),
+        ("v88.65015983581543", "88.65"),
+        ("88.65015983581543e2", "88.65"),
+    ],
+)
+def test_rounding_does_not_admit_arithmetic_truncation_or_number_fragments(source, display):
+    assert not n.cited_numbers(display, source)
+
+
+def test_exact_numbers_remain_valid_at_any_original_precision():
+    assert n.cited_numbers("1.2 0.10 89 88.650159", "1.2 0.1 89 88.650159")
+
+
+def test_rounded_numbers_are_task_local_and_keep_revision_guard():
+    batch = dict(
+        task="toy",
+        sources={"own": dict(kind="trace", at=1, text="耗时99.123微秒。")},
+        row_facts={"revision": "revision", "latest_result": {"kind": "none"}},
+    )
+    other = copy.deepcopy(batch)
+    other.update(task="other", sources={"foreign": dict(kind="trace", at=1, text="88.650159")})
+    output = reply([], {"tasks": [batch, other]}, None)
+    output["toy"]["finding"].update(text="耗时约88.65微秒。", sources=["foreign"])
+    with pytest.raises(ValueError, match="task-local"):
+        n.validate(output, [batch, other])
+    output["toy"]["finding"]["sources"] = ["own"]
+    with pytest.raises(n.UncitedNumberError):
+        n.validate(output, [batch, other])
+    output["toy"]["finding"]["text"] = "耗时约99.12微秒。"
+    output["toy"]["row"]["revision"] = "stale"
+    with pytest.raises(ValueError, match="current system facts"):
+        n.validate(output, [batch, other])
+
+
+def test_invalid_number_records_only_safe_error_code(managed):
+    store, _, _ = managed
+    store.event("toy", "research_context", {"text": "耗时74.195199微秒。"})
+
+    def model(*args):
+        output = reply(*args)
+        output["toy"]["finding"]["text"] = "耗时约74.19微秒。"
+        return output
+
+    assert n.step(store, [], call=model) == 0
+    attempt = n.get(store, "narrator_attempt")
+    assert attempt["error_code"] == "numeric_not_cited"
+    assert "74.19" not in n.encode(attempt)
+    assert n.get(store, "narration:toy") is None
