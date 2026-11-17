@@ -457,7 +457,8 @@ def validate_row(row, claims, batch):
 
 
 def invoke(command, request, stop, timeout=45):
-    timeout = max(timeout, min(300, int(os.environ.get("NARRATOR_TIMEOUT_SECONDS", "35"))) + 10)
+    if "NARRATOR_TIMEOUT_SECONDS" in os.environ and timeout == 45:
+        timeout = min(300, max(1, int(os.environ["NARRATOR_TIMEOUT_SECONDS"]))) + 10
     """A trusted tool-free model adapter, stdin JSON -> stdout JSON. No GPU visibility."""
     launcher = (
         "import os,resource,sys; resource.setrlimit(resource.RLIMIT_FSIZE,(65536,65536)); "
