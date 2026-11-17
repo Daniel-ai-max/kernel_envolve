@@ -96,16 +96,40 @@ kernel-envolve manage --state /host/state policy-bind-delivery lane \
 Both tasks retain their own workspaces, evaluator contracts, jobs and best. Binding
 requires the same frozen baseline revision, an owned native candidate root whose
 file contents match the research source, all operator/numerical/integration scopes,
-and independent confirmation configuration. No research result becomes a native
-best. Full native evaluation, independent confirmation, promotion and `sync-pr`
+and independent confirmation configuration. Binding records a source witness for
+all baseline/candidate roots, the research owner and the native task identity.
+An attempt cannot be rebound to changed sources; register a new delivery task.
+Repeated binding still checks the live research source and refuses mismatches
+without changing the existing binding. A recorded witness needs no repeat binding
+for early success. No research result becomes a native best. Full native evaluation,
+independent confirmation, promotion and `sync-pr`
 use the existing official paths. Native delivery resource scheduling is explicit;
 this policy does not allocate extra GPUs or transfer research budget to it.
 
 Early success requires the **current** verified native best; deep full and
 confirmation receipt/source audit; the minimum gain in both full and confirmation;
-a fresh same-source PR binding; and research source files equal to the frozen
-candidate. A scoped summary, external `passed` validation, successful command,
+a fresh same-source PR binding; and evaluated sources matching the binding-time
+witness. Research may continue editing its workspace after binding; those edits
+remain untouched. A scoped summary, external `passed` validation, successful command,
 quick run or PR alone never qualifies. The policy pauses and drains research, then
-rechecks the proof before recording success. Changed sources/evidence during drain
+rechecks the proof before recording success. Changed frozen sources/evidence during drain
 suspend completion. It stores only a delivery reference in policy metadata; it
 never writes a research `best` or merges qualification between tasks.
+
+Legacy bindings without a witness retain their current-research-source check.
+They gain a witness only through an explicit `policy-bind-delivery` while the
+research and native sources still match; no historical result implies provenance.
+Creating or upgrading a witness requires a live coordinator that advertises
+`frozen-delivery-proof-v1`, with matching PID/birth identity and its state lock
+still held. A legacy coordinator or stale capability record rejects the binding
+without changing policy state. Source binding also rechecks that same coordinator
+before committing its record.
+
+Only that capable coordinator process can advance a policy carrying a witness,
+including the initial proof and the drain recheck. A separate `policy-tick` CLI
+refuses to write a new stopping proof, even if it is newer than the running root
+manager; wait for the coordinator's existing policy loop instead. Legacy bindings
+retain their original CLI and coordinator path and proof format. No additional
+scheduler is installed. Deploy framework changes at a safe drained boundary,
+retaining the original policy state, clocks and evidence; do not downgrade an
+active witness policy to a coordinator that cannot interpret it.

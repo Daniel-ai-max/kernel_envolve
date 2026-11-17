@@ -166,11 +166,20 @@ def run(store, once=False, *, observe=False):
 
         try:
             while not stop_requested:
+                from .research_policy import FROZEN_DELIVERY_CAPABILITY
+
                 health = {
                     "pid": os.getpid(),
                     "identity": identity(os.getpid()),
                     "heartbeat": time.time(),
                 }
+                if not observe:
+                    health["capabilities"] = [FROZEN_DELIVERY_CAPABILITY]
+                    # Publish the actual coordinator's capability before its
+                    # first policy scan can bind/advance a frozen delivery.
+                    store.db.execute(
+                        "INSERT OR REPLACE INTO metadata VALUES(?,?)", (role, encode(health))
+                    )
                 try:
                     if not observe:
                         reconcile(store)

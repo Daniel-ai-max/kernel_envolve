@@ -1,8 +1,10 @@
 """Fixed research clocks, real continuation, and evidence-only completion policy."""
 
 import json
+import os
 import sys
 import time
+from contextlib import ExitStack
 from pathlib import Path
 
 import pytest
@@ -15,6 +17,29 @@ from kernel_envolve.manager.store import Store
 from kernel_envolve.storage import digest
 
 pytest_plugins = ["test_research_task", "test_native_confirmation"]
+
+
+@pytest.fixture
+def coordinator_lease():
+    """Represent the real coordinator owner, including its live process and lock."""
+    from kernel_envolve.manager.process import exclusive, identity
+
+    with ExitStack() as stack:
+
+        def claim(store):
+            handle = stack.enter_context(exclusive(store.root / "coordinator.lock"))
+            assert handle is not None
+            health = {
+                "pid": os.getpid(),
+                "identity": identity(os.getpid()),
+                "capabilities": [policy.FROZEN_DELIVERY_CAPABILITY],
+            }
+            store.db.execute(
+                "INSERT OR REPLACE INTO metadata VALUES('coordinator',?)", (json.dumps(health),)
+            )
+            return handle
+
+        yield claim
 
 
 @pytest.fixture
@@ -175,6 +200,171 @@ def test_scoped_summary_does_not_stop_research(lane):
     assert store.task(key)["desired"] == "active"
 
 
+@pytest.fixture
+def bound_sources(lane, tmp_path, monkeypatch, coordinator_lease):
+    """Synthetic native config, real Git sources and persistent binding state."""
+    import shutil
+
+    from kernel_envolve.manager.config import validate
+
+    store, key, _, _ = lane
+    coordinator_lease(store)
+    research = store.task(key)["spec"]
+    native = tmp_path / "native"
+    roots = {role: {} for role in ("baseline", "candidate")}
+    for role in roots:
+        for name in ("core", "support"):
+            path = native / role / name
+            shutil.copytree(research["workspace"], path)
+            roots[role][name] = str(path)
+    cfg = {
+        "sources": roots,
+        "artifacts": {},
+        "required_scopes": ["operator", "numerical", "integration"],
+        "confirmation": {},
+    }
+    monkeypatch.setattr("kernel_envolve.native_config.load_config", lambda _: cfg)
+    (native / "task").mkdir()
+    delivery = {
+        "id": "delivery",
+        "name": "delivery",
+        "kind": "native",
+        "workspace": str(native),
+        "task_dir": str(native / "task"),
+        "resource": research["resource"],
+        "baseline": research["baseline"],
+        "command": [],
+        "observe_only": True,
+    }
+    store.register(
+        validate(
+            {
+                "version": 1,
+                "tasks": [delivery],
+                "resources": [store.resource(research["resource"])["spec"]],
+            },
+            tmp_path,
+        )
+    )
+    policy.bind_delivery(store, key, "delivery", "core")
+    return store, key, roots
+
+
+@pytest.mark.parametrize("role", ["baseline", "candidate"])
+@pytest.mark.parametrize("root", ["core", "support"])
+def test_bound_attempt_cannot_silently_replace_any_source_root(bound_sources, role, root):
+    store, key, roots = bound_sources
+    old = policy.get(store, key)
+    assert policy.bind_delivery(store, key, "delivery", "core") == old
+    (Path(roots[role][root]) / "kernel.py").write_text("# different frozen input")
+    if (role, root) == ("candidate", "core"):
+        work = Path(store.task(key)["spec"]["workspace"])
+        (work / "kernel.py").write_text("# different frozen input")
+    with pytest.raises(ValueError, match="source binding changed"):
+        policy.bind_delivery(store, key, "delivery", "core")
+    assert policy.get(store, key) == old
+
+
+def test_legacy_binding_upgrades_only_after_explicit_source_match(bound_sources):
+    store, key, _ = bound_sources
+    old = policy.get(store, key)
+    old["delivery"].pop("source_binding")
+    store.db.execute(
+        "UPDATE metadata SET data=? WHERE key=?", (json.dumps(old), "research_policy:" + key)
+    )
+    row = store.one("SELECT data FROM metadata WHERE key='delivery_link:delivery'")
+    relation = json.loads(row["data"])
+    relation.pop("source_binding")
+    store.db.execute(
+        "UPDATE metadata SET data=? WHERE key='delivery_link:delivery'", (json.dumps(relation),)
+    )
+    work = Path(store.task(key)["spec"]["workspace"]) / "kernel.py"
+    original = work.read_bytes()
+    work.write_text("# continued research")
+    with pytest.raises(ValueError, match="contents"):
+        policy.bind_delivery(store, key, "delivery", "core")
+    assert policy.get(store, key) == old
+    work.write_bytes(original)
+    upgraded = policy.bind_delivery(store, key, "delivery", "core")
+    assert upgraded["delivery"]["source_binding"]
+    assert {k: v for k, v in upgraded.items() if k != "delivery"} == {
+        k: v for k, v in old.items() if k != "delivery"
+    }
+    row = store.one("SELECT data FROM metadata WHERE key='delivery_link:delivery'")
+    linked = json.loads(row["data"])
+    assert linked["source_binding"] == upgraded["delivery"]["source_binding"]
+    assert linked["bound_at"] == relation["bound_at"]
+
+
+@pytest.mark.parametrize("change", ["legacy", "stale_birth", "invalid_capability"])
+def test_incompatible_coordinator_cannot_bind_or_advance_new_proof(bound_sources, change):
+    store, key, _ = bound_sources
+    row = store.one("SELECT data FROM metadata WHERE key='coordinator'")
+    health = json.loads(row["data"])
+    if change == "legacy":
+        health.pop("capabilities")
+    elif change == "stale_birth":
+        health["identity"] += "-old-process"
+    else:
+        health["capabilities"] = policy.FROZEN_DELIVERY_CAPABILITY
+    store.db.execute("UPDATE metadata SET data=? WHERE key='coordinator'", (json.dumps(health),))
+    before = policy.get(store, key), store.task(key), store.rows("SELECT * FROM events")
+    with pytest.raises(ValueError, match="active capable coordinator"):
+        policy.bind_delivery(store, key, "delivery", "core")
+    with pytest.raises(ValueError, match="active capable coordinator"):
+        policy.tick(store, key, sync=ready)
+    assert before == (policy.get(store, key), store.task(key), store.rows("SELECT * FROM events"))
+
+
+def test_capability_without_live_coordinator_lock_is_not_admission(lane, coordinator_lease):
+    store, key, _, _ = lane
+    handle = coordinator_lease(store)
+    handle.close()
+    before = policy.get(store, key), store.task(key)
+    with pytest.raises(ValueError, match="state lock"):
+        policy.bind_delivery(store, key, "not-yet-registered", "core")
+    assert before == (policy.get(store, key), store.task(key))
+
+
+@pytest.mark.parametrize("phase", ["initial", "stopping"])
+def test_external_new_cli_cannot_write_coordinator_stopping_proof(bound_sources, phase):
+    import subprocess
+
+    store, key, _ = bound_sources
+    old = policy.get(store, key)
+    policy.save(store, key, old, old | {"phase": phase, "delivery_proof": {"untouched": True}})
+    before = policy.get(store, key), store.task(key), store.rows("SELECT * FROM events")
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "from kernel_envolve.manager.cli import main;main()",
+            "--state",
+            str(store.root),
+            "policy-tick",
+            key,
+        ],
+        capture_output=True,
+        text=True,
+        timeout=15,
+        env=os.environ | {"PYTHONPATH": str(Path(policy.__file__).resolve().parents[2])},
+    )
+    assert result.returncode != 0 and "Only the capable coordinator" in result.stderr
+    assert before == (policy.get(store, key), store.task(key), store.rows("SELECT * FROM events"))
+
+
+def test_old_binding_keeps_legacy_policy_path_with_old_coordinator(bound_sources):
+    store, key, _ = bound_sources
+    value = policy.get(store, key)
+    value["delivery"].pop("source_binding")
+    store.db.execute(
+        "UPDATE metadata SET data=? WHERE key=?", (json.dumps(value), "research_policy:" + key)
+    )
+    store.db.execute("UPDATE metadata SET data='{}' WHERE key='coordinator'")
+    assert policy.tick(store, key, sync=ready)["phase"] == "initial"
+    assert store.task(key)["desired"] == "active"
+
+
 def test_success_waits_for_drain_and_rechecks_proof(lane, monkeypatch):
     store, key, _, _ = lane
     activate(lane)
@@ -214,7 +404,7 @@ def test_real_host_runs_after_extension_without_notes_or_consume(lane, monkeypat
 
 
 def test_real_native_full_confirmation_is_required_before_delivery(
-    confirmation_task, tmp_path, monkeypatch
+    confirmation_task, tmp_path, monkeypatch, coordinator_lease
 ):
     """Real CPU native receipts; only the already-tested remote PR binding is supplied."""
     import shutil
@@ -244,6 +434,7 @@ def test_real_native_full_confirmation_is_required_before_delivery(
     cfg["sources"]["candidate"]["core"] = str(candidate)
     write_json(task / "native.json", cfg)
     store = Store(tmp_path / "policy-state")
+    coordinator_lease(store)
     try:
         key = prepare(store, arguments(work, "--device", "cpu", "--", sys.executable, "-c", "pass"))
         store.control(key, "pause")
@@ -310,6 +501,58 @@ def test_real_native_full_confirmation_is_required_before_delivery(
             "INSERT INTO metadata VALUES('publication:delivery',?)", (json.dumps(publication),)
         )
         assert policy.delivery_proof(store, value)
+        proof = policy.delivery_proof(store, value)
+        # A witness binds the owner, native identity, selected root and every
+        # frozen source root; another otherwise valid best cannot substitute.
+        from copy import deepcopy
+
+        for field, replacement in (
+            ("source_binding", "0" * 64),
+            ("source_binding", None),
+            ("source_root", "another-root"),
+        ):
+            changed = deepcopy(value)
+            changed["delivery"][field] = replacement
+            assert policy.delivery_proof(store, changed) is None
+        wrong_owner = deepcopy(value)
+        wrong_owner["identity"]["baseline"]["revision"] = "f" * 40
+        assert policy.delivery_proof(store, wrong_owner) is None
+        for task_id in (key, "delivery"):
+            original_spec = store.task(task_id)["spec"]
+            changed_spec = deepcopy(original_spec)
+            changed_spec["baseline"]["revision"] = "f" * 40
+            store.db.execute(
+                "UPDATE tasks SET spec=? WHERE id=?", (json.dumps(changed_spec), task_id)
+            )
+            try:
+                if task_id == key:
+                    assert policy.delivery_proof(store, value) is None
+                    with pytest.raises(ValueError, match="Research policy identity changed"):
+                        policy.bind_delivery(store, key, "delivery", "core")
+                else:
+                    with pytest.raises(ValueError, match="Delivery identity changed"):
+                        policy.delivery_proof(store, value)
+            finally:
+                store.db.execute(
+                    "UPDATE tasks SET spec=? WHERE id=?", (json.dumps(original_spec), task_id)
+                )
+        legacy = deepcopy(value)
+        legacy["delivery"].pop("source_binding")
+        legacy_proof = policy.delivery_proof(store, legacy)
+        assert legacy_proof and "source_binding" not in legacy_proof
+        for target in (
+            run / "result.json",
+            run / "config.json",
+            run / "sources/baseline/core/toyop.py",
+            run / "sources/candidate/core/toyop.py",
+        ):
+            saved = target.read_bytes()
+            target.write_text("{}" if target.suffix == ".json" else "# altered frozen source")
+            try:
+                with pytest.raises((ValueError, KeyError)):
+                    policy.delivery_proof(store, value)
+            finally:
+                target.write_bytes(saved)
         from kernel_envolve.manager import evidence
 
         with monkeypatch.context() as isolated:
@@ -381,13 +624,21 @@ def test_real_native_full_confirmation_is_required_before_delivery(
         refresh_task(store, store.task("delivery"))
         previous = (work / "toyop.py").read_bytes()
         (work / "toyop.py").write_text("# different research candidate")
-        assert policy.delivery_proof(store, value) is None
+        assert policy.delivery_proof(store, value) == proof
+        assert policy.delivery_proof(store, legacy) is None
         linked_delivery.refresh(store, task_id="delivery")
         retained = task_view(store, key)
         assert retained["delivery"]["best"]["run"] == str(run)
         assert retained["row_facts"]["benefit"] == delivered["row_facts"]["benefit"]
         with pytest.raises(ValueError, match="contents"):
             policy.bind_delivery(store, key, "delivery", "core")
+        candidate_previous = (candidate / "toyop.py").read_bytes()
+        (candidate / "toyop.py").write_bytes((work / "toyop.py").read_bytes())
+        changed_link = policy.source_link(store, key, "delivery", "core")
+        assert policy.delivery_proof(store, value | {"delivery": changed_link}) is None
+        with pytest.raises(ValueError, match="source binding changed"):
+            policy.bind_delivery(store, key, "delivery", "core")
+        (candidate / "toyop.py").write_bytes(candidate_previous)
         (work / "toyop.py").write_bytes(previous)
         linked_delivery.refresh(store, task_id="delivery")
         assert task_view(store, key)["delivery"]["status"] == "verified"
@@ -456,8 +707,21 @@ def test_real_native_full_confirmation_is_required_before_delivery(
             (json.dumps(publication),),
         )
         policy.bind_delivery(store, key, "delivery", "core")
+        job = store.schedule()[0]
+        store.db.execute("UPDATE jobs SET status='running' WHERE id=?", (job,))
+        # Continuing research neither overwrites the accepted snapshot nor
+        # blocks early success. A final host edit during drain is preserved.
+        (work / "toyop.py").write_text("# unfinished next candidate")
+        counters = {k: store.task(key)[k] for k in ("gpu_seconds", "wall_seconds")}
+        clocks = {k: policy.get(store, key)[k] for k in ("started_at", "maximum_end")}
         assert policy.tick(store, key)["phase"] == "stopping"
+        (work / "toyop.py").write_text("# unfinished next candidate during drain")
+        assert policy.tick(store, key)["phase"] == "stopping"
+        store.db.execute("UPDATE jobs SET status='cancelled' WHERE id=?", (job,))
         assert policy.tick(store, key)["phase"] == "succeeded"
+        assert (work / "toyop.py").read_text() == "# unfinished next candidate during drain"
+        assert counters == {k: store.task(key)[k] for k in counters}
+        assert clocks == {k: policy.get(store, key)[k] for k in clocks}
         from kernel_envolve.manager.archive import Archive, export_archive
 
         destination = tmp_path / "delivery-archive"
@@ -500,11 +764,18 @@ def test_observer_never_invokes_policy_but_coordinator_does(lane, monkeypatch):
 
     store, key, _, _ = lane
     calls = []
-    monkeypatch.setattr(policy, "refresh", lambda local: calls.append(local.root))
+
+    def refresh(local):
+        policy.require_frozen_coordinator(local, owner=True)
+        calls.append(local.root)
+
+    monkeypatch.setattr(policy, "refresh", refresh)
     service.run(store, once=True, observe=True)
     assert not calls
     service.run(store, once=True)
     assert calls == [store.root]
+    with pytest.raises(ValueError, match="state lock"):
+        policy.require_frozen_coordinator(store)
 
 
 @pytest.mark.parametrize("phase", ["succeeded", "exhausted"])
