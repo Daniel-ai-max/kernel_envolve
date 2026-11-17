@@ -201,3 +201,23 @@ export function narratedRow(task) {
     outcomeAt: n?.row ? Math.max(...n.row.latest_result.sources.map(ref => n.sources[ref].at || 0)) : recent?.recorded_at,
     outcome: n?.row ? n.row.latest_result.text : resultSummary(recent)};
 }
+
+// Transport health and successful output are distinct from research activity.
+export function narratorStatus(state, connected) {
+  const narrator = state?.narrator;
+  const labels = {
+    disabled: "旁白未配置", configuration_error: "旁白启动失败",
+    unavailable: "旁白服务失联", stopped: "旁白已停止",
+    call_failed: "旁白调用失败", generating: "旁白生成中",
+    waiting: "旁白等待材料", no_output: "旁白尚未生成", ready: "旁白在线",
+  };
+  const interrupted = !connected || state?.observation?.stale;
+  return {
+    label: state?.archived ? "旁白历史记录" : interrupted ? "旁白观测已中断"
+      : labels[narrator?.status] || "旁白状态未知",
+    warn: !state?.archived && (interrupted ||
+      !["ready", "generating", "waiting"].includes(narrator?.status)),
+    error: narrator?.last_attempt?.error_code || narrator?.last_attempt?.error ||
+      narrator?.service?.error || "",
+  };
+}

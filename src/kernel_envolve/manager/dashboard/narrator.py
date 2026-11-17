@@ -15,7 +15,7 @@ from decimal import ROUND_HALF_UP, Decimal, localcontext
 from pathlib import Path
 
 from kernel_envolve.evaluation.shared.storage import digest
-from kernel_envolve.manager.execution.process import exclusive
+from kernel_envolve.manager.execution.process import alive, exclusive, identity
 from kernel_envolve.manager.store import Store, encode
 
 FIELDS = ("direction", "finding", "failure", "next")
@@ -71,10 +71,14 @@ def put(store, key, value):
 def command_from_env():
     raw = os.environ.get("KERNEL_ENVOLVE_NARRATOR_COMMAND")
     if not raw:
-        if all(
-            os.environ.get(k)
-            for k in ("NARRATOR_MODEL", "NARRATOR_RESPONSES_URL", "NARRATOR_API_KEY")
-        ):
+        keys = ("NARRATOR_MODEL", "NARRATOR_RESPONSES_URL", "NARRATOR_API_KEY")
+        present = [key for key in keys if os.environ.get(key)]
+        if present and len(present) != len(keys):
+            raise ValueError(
+                "Incomplete narrator configuration; missing "
+                + ", ".join(key for key in keys if key not in present)
+            )
+        if present:
             return [sys.executable, str(Path(__file__).with_name("narrator_client.py"))]
         return None
     command = json.loads(raw)
@@ -85,6 +89,59 @@ def command_from_env():
     ):
         raise ValueError("Narrator command must be a nonempty JSON argv array")
     return command
+
+
+def service_status(store, status, *, owns_lock=False, error=None):
+    """Only the current service owner may stop itself; startup cannot mask a live service."""
+    now = time.time()
+    owner = f"{os.getpid()}:{threading.get_ident()}"
+    old = get(store, "narrator_service", {})
+    if not owns_lock and old.get("owner") != owner and old.get("status") == "running":
+        if alive(old.get("pid"), old.get("identity")) and now - old["heartbeat"] < old["lease"]:
+            return
+    try:
+        lease = min(300, max(1, int(os.environ.get("NARRATOR_TIMEOUT_SECONDS", "35")))) + 45
+    except ValueError:
+        lease = 80  # Reporting invalid configuration must not itself fail.
+    put(
+        store,
+        "narrator_service",
+        {
+            "owner": owner,
+            "pid": os.getpid(),
+            "identity": identity(os.getpid()),
+            "status": status,
+            "heartbeat": now,
+            "lease": lease,
+            "error": error,
+        },
+    )
+
+
+def health(store, now=None):
+    """Project service health separately from research liveness and model-authored text."""
+    now = time.time() if now is None else now
+    service = get(store, "narrator_service")
+    attempt = get(store, "narrator_attempt")
+    status = service["status"] if service else "unknown"
+    if status == "running":
+        if now - service["heartbeat"] > service["lease"] or not alive(
+            service["pid"], service["identity"]
+        ):
+            status = "unavailable"
+        elif attempt and attempt["status"] == "failed":
+            status = "call_failed"
+        elif attempt and attempt["status"] == "started":
+            status = "generating"
+        elif attempt and attempt["status"] == "complete":
+            status = (
+                "ready"
+                if store.one("SELECT 1 FROM metadata WHERE key LIKE 'narration:%' LIMIT 1")
+                else "no_output"
+            )
+        else:
+            status = "waiting"
+    return {"status": status, "service": service, "last_attempt": attempt}
 
 
 def log_paths(store, task, job):
@@ -493,7 +550,12 @@ def invoke(command, request, stop, timeout=45):
                     if stop.wait(0.05) or time.monotonic() >= deadline:
                         raise TimeoutError("Narrator cancelled or timed out")
                 if process.returncode:
-                    raise ValueError(f"Narrator adapter exited {process.returncode}")
+                    err.seek(0)
+                    diagnostic = err.read(128).decode(errors="replace").strip()
+                    code = (
+                        diagnostic if re.fullmatch(r"HTTPError:[1-5][0-9]{2}", diagnostic) else None
+                    )
+                    raise NarratorAdapterError(process.returncode, code)
                 out.seek(0)
                 return json.loads(out.read(65537))
             finally:
@@ -502,6 +564,14 @@ def invoke(command, request, stop, timeout=45):
                 except ProcessLookupError:
                     pass
                 process.wait()
+
+
+class NarratorAdapterError(ValueError):
+    """Only the built-in adapter's bounded HTTP code may enter public diagnostics."""
+
+    def __init__(self, exit_code, code):
+        super().__init__(f"Narrator adapter exited {exit_code}")
+        self.code = code
 
 
 def step(store, command, stop=None, *, scan_logs=True, call=invoke, replay=False):
@@ -514,6 +584,7 @@ def step(store, command, stop=None, *, scan_logs=True, call=invoke, replay=False
 
 def _step_locked(store, command, stop, *, scan_logs=True, call=invoke, replay=False):
     """Run only while the caller owns this state directory's narrator.lock."""
+    service_status(store, "running", owns_lock=True)
     batches = collect(store, scan_logs=scan_logs, replay=replay)
     if not batches or stop.is_set():
         return 0
@@ -611,7 +682,11 @@ def _step_locked(store, command, stop, *, scan_logs=True, call=invoke, replay=Fa
             | {
                 "status": "failed",
                 "error": type(exc).__name__,
-                **({"error_code": exc.code} if isinstance(exc, UncitedNumberError) else {}),
+                **(
+                    {"error_code": exc.code}
+                    if isinstance(exc, (UncitedNumberError, NarratorAdapterError)) and exc.code
+                    else {}
+                ),
                 "seconds": time.time() - attempt["at"],
             },
         )
@@ -655,7 +730,10 @@ def _serve(root, command, stop, *, once, step_fn):
                 break
             stop.wait(1)
     finally:
-        store.close()
+        try:
+            service_status(store, "stopped")
+        finally:
+            store.close()
 
 
 def start(root, stop):
@@ -666,8 +744,23 @@ def start(root, stop):
             command = command_from_env()
             if command:
                 serve(root, command, stop)
+            else:
+                store = Store(root)
+                try:
+                    service_status(store, "disabled")
+                finally:
+                    store.close()
+                print("Narrator disabled: no model adapter configured", file=sys.stderr)
         except Exception as exc:
             # No raw provider messages or secrets in diagnostics.
+            try:
+                store = Store(root)
+                try:
+                    service_status(store, "configuration_error", error=type(exc).__name__)
+                finally:
+                    store.close()
+            except (OSError, sqlite3.Error):
+                pass
             print("Narrator unavailable: " + type(exc).__name__, file=sys.stderr)
 
     thread = threading.Thread(target=background, name="narrator", daemon=True)

@@ -1,6 +1,6 @@
 import { patch, poller } from "/sync.js";
 import { executionLabel, jobLabel, noteSnippet, executionLabelFor, visibleTask, resultSummary, phaseLabel, recentResult, scopedAssessment, taskBenefit, researchResult, evidenceSummary } from "/summary.js";
-import { narrationFor, narrationText, validationResult, canContinue, narratedRow } from "/summary.js";
+import { narrationFor, narrationText, validationResult, canContinue, narratedRow, narratorStatus } from "/summary.js";
 /* All external text passes through textContent or escaping. No HTML from agent reports. */
 const $ = (id) => document.getElementById(id);
 const escape = (s) =>
@@ -105,6 +105,10 @@ function render() {
   renderStatus();
 }
 function renderStatus() {
+  const narration = narratorStatus(state, connected);
+  $("narrator-status").textContent = narration.label;
+  $("narrator-status").classList.toggle("warn", narration.warn);
+  $("narrator-status").title = narration.error;
   if (state?.archived) {
     $("updated").textContent = connected ? `归档记录 · ${stamp(state.as_of)}` : `连接中断 · ${shortTime(state.as_of)}`;
     $("updated").classList.toggle("warn", !connected);
