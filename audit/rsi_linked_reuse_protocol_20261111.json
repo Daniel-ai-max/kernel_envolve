@@ -1,0 +1,267 @@
+{
+  "registered_at": 1794336617.942531,
+  "status": "frozen_before_submission",
+  "source_commit": "14a3e29fd5ba8cf04e3c0fd92b0488c1c9dd3c21",
+  "phase": "linked-history-artifact-retuning-development",
+  "arms": [
+    "control",
+    "source-memory",
+    "artifact-reuse",
+    "artifact-full"
+  ],
+  "catalog": {
+    "data": {
+      "cases": {
+        "e": {
+          "pointwise": [
+            [
+              131101
+            ],
+            [
+              3145753
+            ]
+          ],
+          "row-reduction": [
+            [
+              149,
+              1031
+            ],
+            [
+              683,
+              2063
+            ]
+          ],
+          "strides": [
+            1,
+            3
+          ],
+          "seeds": [
+            431,
+            433
+          ]
+        },
+        "f": {
+          "pointwise": [
+            [
+              393241
+            ],
+            [
+              6291469
+            ]
+          ],
+          "row-reduction": [
+            [
+              277,
+              1543
+            ],
+            [
+              389,
+              4111
+            ]
+          ],
+          "strides": [
+            1,
+            6
+          ],
+          "seeds": [
+            457,
+            461
+          ]
+        }
+      },
+      "episodes": [
+        {
+          "id": "f4d08a34c9dc48c2b919fc470129cb556b3e259d21dc644399e7ecf2321d482b",
+          "task": "value-train-swish-gate"
+        },
+        {
+          "id": "8e7f3e6f024917bcb6a2cc01fca05b1fb5892111bfe3efdbec50dbf85867befd",
+          "task": "value-train-smooth-l1"
+        },
+        {
+          "id": "575207e89a57d44fe9ba07704ed6d5c700abf3b05862617154949fc959caa51b",
+          "task": "value-train-rms-normalize"
+        },
+        {
+          "id": "30328cf08106c3390296659a93dd2c324a571260f554ef4712b98f3802a8a557",
+          "task": "value-train-central-variance"
+        }
+      ],
+      "scope": "Same exact task/reference/input-generator source; new case configuration only."
+    },
+    "sha256": "ce20e0455880470126d1139d19390f66e3c0d3160305610d430665ddc12f5d0d"
+  },
+  "validation_tasks": [
+    "artifact-retune-swish-gate-e",
+    "artifact-retune-swish-gate-f",
+    "artifact-retune-smooth-l1-e",
+    "artifact-retune-smooth-l1-f",
+    "artifact-retune-rms-normalize-e",
+    "artifact-retune-rms-normalize-f",
+    "artifact-retune-central-variance-e",
+    "artifact-retune-central-variance-f"
+  ],
+  "repeats": 2,
+  "max_actions": 4,
+  "artifact_actions": 1,
+  "max_model_requests": 224,
+  "model": "gpt-6-astra",
+  "reasoning": "medium",
+  "platform_seconds": 7200,
+  "worker_seconds": 7050,
+  "validation_total_seconds": 6600,
+  "prior_confirmed_gpu_seconds": 10395.908143281937,
+  "training_manifest_sha256": "dbb5fced15ed50cfa39204dad97b0d51212b2e540b7fc00f3de36cbd6e7b4d25",
+  "order": [
+    [
+      "control",
+      "source-memory",
+      "artifact-full",
+      "artifact-reuse"
+    ],
+    [
+      "source-memory",
+      "artifact-reuse",
+      "control",
+      "artifact-full"
+    ],
+    [
+      "artifact-reuse",
+      "artifact-full",
+      "source-memory",
+      "control"
+    ],
+    [
+      "artifact-full",
+      "control",
+      "artifact-reuse",
+      "source-memory"
+    ],
+    [
+      "control",
+      "source-memory",
+      "artifact-full",
+      "artifact-reuse"
+    ],
+    [
+      "source-memory",
+      "artifact-reuse",
+      "control",
+      "artifact-full"
+    ],
+    [
+      "artifact-reuse",
+      "artifact-full",
+      "source-memory",
+      "control"
+    ],
+    [
+      "artifact-full",
+      "control",
+      "artifact-reuse",
+      "source-memory"
+    ],
+    [
+      "control",
+      "source-memory",
+      "artifact-full",
+      "artifact-reuse"
+    ],
+    [
+      "source-memory",
+      "artifact-reuse",
+      "control",
+      "artifact-full"
+    ],
+    [
+      "artifact-reuse",
+      "artifact-full",
+      "source-memory",
+      "control"
+    ],
+    [
+      "artifact-full",
+      "control",
+      "artifact-reuse",
+      "source-memory"
+    ],
+    [
+      "control",
+      "source-memory",
+      "artifact-full",
+      "artifact-reuse"
+    ],
+    [
+      "source-memory",
+      "artifact-reuse",
+      "control",
+      "artifact-full"
+    ],
+    [
+      "artifact-reuse",
+      "artifact-full",
+      "source-memory",
+      "control"
+    ],
+    [
+      "artifact-full",
+      "control",
+      "artifact-reuse",
+      "source-memory"
+    ]
+  ],
+  "comparisons": [
+    [
+      "control",
+      "source-memory"
+    ],
+    [
+      "control",
+      "artifact-reuse"
+    ],
+    [
+      "source-memory",
+      "artifact-reuse"
+    ],
+    [
+      "artifact-full",
+      "artifact-reuse"
+    ]
+  ],
+  "primary_criteria": {
+    "screen": "Same immutable per-task .02 quality allowance, nondecreasing aggregate quality per repeat, <=5% wall/solver overhead and original quality/cost benefit gates; complete independent full results.",
+    "practical": "Additionally >=10% relative quality gain with <=5% wall and token overhead, or >=10% wall saving at protected quality with <=5% token overhead. Both repeats protected; failed/incomplete usage prevents acceptance.",
+    "uncertainty": "Exhaustive paired bootstrap over4operator clusters,256draws. Fourcomparisons x2outcomes; alpha.05/8. No claim of8independent operators.",
+    "cost": "All acquisition/failed development costs retained; explicit incremental effects and total campaign resources, no hypothetical amortization claimed as observed ROI."
+  },
+  "selection": "Original exact-source/runtime/profile matching and same4original successful sources; compact prompt and both artifact arms use identical source. Linked view only changes duplicated measurement representation; full trace remains. No learner.",
+  "stop_rules": [
+    "One frozen comparison, no model/job retries or resampling; preserve every failure/cost.",
+    "Missing complete final outcomes or model usage prevents acceptance.",
+    "Only a method passing original and practical/token conditions againstcontrol can enter newly reserved confirmation; artifact must additionally earn advantage over compact source.",
+    "Full-history artifact arm is a causal ablation; a failed ablation does not grant a representation-improvement claim.",
+    "Old c/d confirmation and older audit sets remain unused."
+  ],
+  "limitations": [
+    "Same4known operator formulas on new shapes/strides/seeds, not unseen operators, families, hardware or production evidence",
+    "Initial and independent final full remain; artifact spends one of4action slots, leaving at most3model decisions",
+    "Content hashes are integrity checks; approved manifests/trusted adapters are not OS sandboxes",
+    "No proof of general recursive capability improvement or superiority to original reference algorithms"
+  ],
+  "solver_seconds": 600,
+  "decision_seconds": 125,
+  "local_model_process_seconds": 115,
+  "representation": {
+    "control": "linked",
+    "source-memory": "linked",
+    "artifact-reuse": "linked",
+    "artifact-full": "full"
+  },
+  "timeout_recovery": "All arms use opt-in bounded decision timeout stop, retain only actual full incumbent, require independent final; failed calls/costs not erased and missing usage still prevents acceptance. Local model process will have115s hard timeout and zero retries.",
+  "study_relation": "Materially new lossless decision representation, an explicit full-history ablation, and bounded failure recovery on fresh e/f cases. Original artifact experiment and reserved c/d confirmation closed, not rerun. No claim that changing timeouts or representation alone proves RSI.",
+  "prior_study": {
+    "job": "10b153b8dcbb40d5b36d6270f0bdde4d",
+    "summary_sha256": "2fde1469f3ecf1ec7e5626e60271929fb0dfd22a6c9dc2a815677bf05ac9c9b0",
+    "disposition": "Rejected and closed; original c/d confirmation never launched."
+  }
+}

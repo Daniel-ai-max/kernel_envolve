@@ -61,6 +61,9 @@ def checkpoint(store, task, job):
     from .recovery import context
 
     spec = task["spec"]
+    from ..rsi.context import for_task
+
+    advice = for_task(store.root, task)
     recovery = context(store, task)
     validation_guidance = (
         "This is research without an evaluator. Run bounded native experiments directly; "
@@ -142,6 +145,7 @@ Consumed active session wall seconds: {task["wall_seconds"]:.1f}; GPU card-secon
 {task["gpu_seconds"]:.1f}. Cumulative budgets: wall={spec["wall_budget_seconds"]},
 gpu={spec["gpu_budget_seconds"]}. Absolute deadline (Unix UTC seconds): {spec.get("deadline_at")}.
 This round is limited to {spec["round_timeout_seconds"]}s.
+{advice}
 """
 
 

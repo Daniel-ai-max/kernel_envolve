@@ -1,0 +1,170 @@
+{
+  "checked_at": "2026-11-10T19:46:49.157719+00:00",
+  "sources": [
+    {
+      "paper": "2611.04998",
+      "url": "https://arxiv.org/abs/2611.04998",
+      "sha256": "70c84563633f16a076c9507234f72b7ffbd2cdc4e8c2eda245c74b4d61fb7f92",
+      "submission_history_utc": [
+        "Tue, 3 Nov 2026 14:49:28 UTC"
+      ],
+      "withdrawn": false,
+      "github_links": []
+    },
+    {
+      "paper": "2611.11558",
+      "url": "https://arxiv.org/abs/2611.11558",
+      "sha256": "65ff51de83b5a8812781726ddc2bbf12b4b89fe2f89ac1dd495fce4b602c038a",
+      "submission_history_utc": [
+        "Sun, 8 Nov 2026 18:59:37 UTC"
+      ],
+      "withdrawn": false,
+      "github_links": [
+        "https://github.com/TokenRhythm/InfraRSI"
+      ]
+    },
+    {
+      "paper": "2611.09218",
+      "url": "https://arxiv.org/abs/2611.09218",
+      "sha256": "141a3d5e7d6ae29db4d6a4feb13569eae515ee9724e517f2cf00b27320558295",
+      "submission_history_utc": [
+        "Fri, 6 Nov 2026 09:36:00 UTC",
+        "Mon, 9 Nov 2026 08:31:43 UTC"
+      ],
+      "withdrawn": true,
+      "github_links": []
+    },
+    {
+      "paper": "2608.25570",
+      "url": "https://arxiv.org/abs/2608.25570",
+      "sha256": "c599f4f89d79e39a0a141a132afaef747e62dd2dd3c02dba1119b5aee1df48f1",
+      "submission_history_utc": [
+        "Wed, 26 Aug 2026 09:27:39 UTC"
+      ],
+      "withdrawn": false,
+      "github_links": []
+    },
+    {
+      "paper": "2512.23236",
+      "url": "https://arxiv.org/abs/2512.23236",
+      "sha256": "56dcf5cc672d547690337b0faa17b6752720f9486993023647b18a5ee355ce50",
+      "submission_history_utc": [
+        "Mon, 29 Dec 2025 06:31:55 UTC",
+        "Tue, 30 Dec 2025 19:57:26 UTC",
+        "Fri, 16 Jan 2026 22:31:23 UTC",
+        "Mon, 6 Jul 2026 22:18:07 UTC"
+      ],
+      "withdrawn": false,
+      "github_links": []
+    },
+    {
+      "paper": "2506.13131",
+      "url": "https://arxiv.org/abs/2506.13131",
+      "sha256": "7a0d9acc7002b1960fea119a059a925a6c20d27edd8233777aa0179cb5e8f451",
+      "submission_history_utc": [
+        "Mon, 16 Jun 2025 06:37:18 UTC"
+      ],
+      "withdrawn": false,
+      "github_links": []
+    }
+  ],
+  "code": [
+    {
+      "commit": {
+        "repo": "OpenBMB/ForgeKernel",
+        "sha": "024f7e0b39a9b6e87819e0f6a925dd940c704f77",
+        "commit_date": "2026-11-10T07:51:51Z",
+        "message": "Merge pull request #6 from bingdongni/fix/validate-task-judge-output"
+      },
+      "files": [
+        {
+          "path": "scripts/self_evolve.py",
+          "url": "https://raw.githubusercontent.com/OpenBMB/ForgeKernel/024f7e0b39a9b6e87819e0f6a925dd940c704f77/scripts/self_evolve.py",
+          "bytes": 5878,
+          "sha256": "eb8396ff61ba1e966e8e2fe71e9aa1faea0392cb1df9679ba965b218d24332aa"
+        },
+        {
+          "path": "src/forgekernel/sealref.py",
+          "url": "https://raw.githubusercontent.com/OpenBMB/ForgeKernel/024f7e0b39a9b6e87819e0f6a925dd940c704f77/src/forgekernel/sealref.py",
+          "bytes": 16944,
+          "sha256": "014a5f805b166fef0e634ff05ace9ed37c2b4f45496fde9432fe39a3e3d8a4c9"
+        },
+        {
+          "path": "src/forgekernel/sealref_tool.py",
+          "url": "https://raw.githubusercontent.com/OpenBMB/ForgeKernel/024f7e0b39a9b6e87819e0f6a925dd940c704f77/src/forgekernel/sealref_tool.py",
+          "bytes": 2859,
+          "sha256": "0cd06211b6f60cf912d0eec11732aa2e66528d1ce4503155b6e4dff40df21af3"
+        },
+        {
+          "path": "hw_kb/README.md",
+          "url": "https://raw.githubusercontent.com/OpenBMB/ForgeKernel/024f7e0b39a9b6e87819e0f6a925dd940c704f77/hw_kb/README.md",
+          "bytes": 764,
+          "sha256": "86a323ca12e16c8014ed288d4938b69f64efe9415443302fe0ad3a81c45f5c93"
+        },
+        {
+          "path": "tests/test_self_evolve.py",
+          "url": "https://raw.githubusercontent.com/OpenBMB/ForgeKernel/024f7e0b39a9b6e87819e0f6a925dd940c704f77/tests/test_self_evolve.py",
+          "bytes": 4480,
+          "sha256": "310cee2c13ae24c48db1455df88d14b2cceb7239a827867827c336d5bfccd953"
+        },
+        {
+          "path": "tests/test_sealref.py",
+          "url": "https://raw.githubusercontent.com/OpenBMB/ForgeKernel/024f7e0b39a9b6e87819e0f6a925dd940c704f77/tests/test_sealref.py",
+          "bytes": 20954,
+          "sha256": "2679137f5268fdb56b003182b035a1dd101ace0e7609d61df4c5e4ccd554a63f"
+        }
+      ]
+    },
+    {
+      "commit": {
+        "repo": "TokenRhythm/InfraRSI",
+        "sha": "5e5f6944d8e298d96abcc2340b5396728d5f1604",
+        "commit_date": "2026-11-10T11:26:35Z",
+        "message": "Initial release of InfraRSI"
+      },
+      "files": [
+        {
+          "url": "https://raw.githubusercontent.com/TokenRhythm/InfraRSI/5e5f6944d8e298d96abcc2340b5396728d5f1604/infrarsi/experience/transfer.py",
+          "path": "infrarsi/experience/transfer.py",
+          "sha256": "cdde86c725d034f365a421114f992120cf3ad9728ebe5a33372b333f83c08885",
+          "bytes": 12143
+        },
+        {
+          "url": "https://raw.githubusercontent.com/TokenRhythm/InfraRSI/5e5f6944d8e298d96abcc2340b5396728d5f1604/infrarsi/experience/learned.py",
+          "path": "infrarsi/experience/learned.py",
+          "sha256": "61839fe45e3491d33d4545ed1e9e19480109e54dc921ae6c312ee15d897786f1",
+          "bytes": 8566
+        },
+        {
+          "url": "https://raw.githubusercontent.com/TokenRhythm/InfraRSI/5e5f6944d8e298d96abcc2340b5396728d5f1604/infrarsi/experience/accounting.py",
+          "path": "infrarsi/experience/accounting.py",
+          "sha256": "7d1dbfbaad5c0e5243ab9214a8c4654669f67f67b06f3a1e7003579171eeb520",
+          "bytes": 17234
+        },
+        {
+          "url": "https://raw.githubusercontent.com/TokenRhythm/InfraRSI/5e5f6944d8e298d96abcc2340b5396728d5f1604/tests/cpu/experience/test_transfer_and_write_back.py",
+          "path": "tests/cpu/experience/test_transfer_and_write_back.py",
+          "sha256": "1e4bc98ab0977d623ae8d74695fa75143eb5cee24fcd4fb55a102fbf3407e91e",
+          "bytes": 8504
+        }
+      ]
+    }
+  ],
+  "blogs": [
+    {
+      "url": "https://deepmind.google/blog/alphaevolve-a-gemini-powered-coding-agent-for-designing-advanced-algorithms/",
+      "published": "2025-05-14",
+      "distinction": "Public announcement predates arXiv submission on2025-06-16; not an arXiv v1 date."
+    },
+    {
+      "url": "https://engineering.fb.com/2026/04/02/developer-tools/kernelevolve-how-metas-ranking-engineer-agent-optimizes-ai-infrastructure/",
+      "published": "2026-04-02",
+      "distinction": "Engineering blog after2025-12-29paper v1; Meta project is not this user repository."
+    }
+  ],
+  "scope": "Read-only targeted official code/paper/blog inspection, no code execution or reproduction; current frozen protocols unchanged.",
+  "source_findings": {
+    "ForgeKernel": "self_evolve.py reads confirmed best and same-job ratio noise, creates a fresh next-generation task, refuses overwrite, supports max-gen but defaults to no generation cap. Source-mode comments permit teacher previous source while student remains separated. Do not infer stronger confidentiality or cumulative global budget from this script.",
+    "InfraRSI": "transfer.py records/scores quantitative predicted gains instead of directly using them for search order; negative sign-flip diagnostic limits override of partial data. learned.py scopes failed combinations by framework/software. Tests retain invalid observations as failure evidence and exclude promotion-nonreproducing candidate from write-back effects. No experimental reproduction."
+  }
+}

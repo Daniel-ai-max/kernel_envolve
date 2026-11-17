@@ -1,0 +1,52 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+__ test_second_trace_read_cannot_replace_the_actually_verified_parent_action ___
+
+rounds = (<function rounds.<locals>.perform at 0x107494c20>, PosixPath('/private/var/folders/1_/pg6y0vt5551__6957j13nzmc0000gn/...test-of-daniel/pytest-265/test_second_trace_read_cannot_0/task/candidate.py'], 'model': 'deterministic-no-model', ...})
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x107380c80>
+
+    def test_second_trace_read_cannot_replace_the_actually_verified_parent_action(rounds, monkeypatch):
+        perform, library, packet = rounds
+        seed, *_ = perform(SOURCES[0])
+        _, trace, final, output = perform(SOURCES[1])  # No parent supplied or used.
+        seed_record = lineage.audit(library, seed)
+        view = load(library / "views", seed_record["snapshot"])
+        forged = copy.deepcopy(trace)
+        initial_run = Path(trace["initial_observation"]["run"])
+        forged["artifact_snapshot"] = {
+            "identity": seed_record["snapshot"],
+            "reason": "compatible_proposal",
+            "initial_run": str(initial_run),
+            "initial_result_hash": digest(json.loads((initial_run / "result.json").read_text())),
+        }
+        forged["artifact_proposal_hash"] = digest(view["proposal"])
+        forged["steps"][0].update(
+            decision_kind="artifact_proposal", artifact_episode_id=view["proposal"]["episode_id"]
+        )
+        forged["steps"][0]["observation"]["candidate"] = view["proposal"]["source_hash"]
+        original = lineage.read
+    
+        def changed_between_reads(path, limit):
+            if Path(path) == output / "search-trace.json":
+                return forged
+            if Path(path) == output / "artifact-proposal.json":
+                return view["proposal"]
+            return original(path, limit)
+    
+        # episodes.build has its own reader and still verifies the actual agent
+        # action and raw source. A later metadata read must not override that fact.
+        monkeypatch.setattr(lineage, "read", changed_between_reads)
+        identity = lineage.collect(
+            library, packet["task"], output, {}, confirmation_run=final, parent=seed
+        )
+        record = lineage.audit(library, identity)
+>       assert record["kind"] == "observation" and not record["parent_activated"]
+E       AssertionError: assert ('candidate' == 'observation'
+E         
+E         - observation
+E         + candidate)
+
+tests/test_rsi_artifact_lineage.py:280: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_rsi_artifact_lineage.py::test_second_trace_read_cannot_replace_the_actually_verified_parent_action
+1 failed in 4.26s

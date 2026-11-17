@@ -1,0 +1,112 @@
+{
+  "date": "2026-11-11 Asia/Singapore",
+  "status": "Engineering prototype; no new GPU value result",
+  "training_import": {
+    "created_at": 1794326561.432544,
+    "source_training_archive_sha256": "e2a5884e276b2a2ae31d2f76ab3a9963409b27efab27d3fcdf135e9432bcf013",
+    "items": [
+      {
+        "id": "f4d08a34c9dc48c2b919fc470129cb556b3e259d21dc644399e7ecf2321d482b",
+        "task": "value-train-swish-gate",
+        "archive_bytes": 66953,
+        "view_bytes": 25026,
+        "source_count": 4,
+        "observations": 5,
+        "failures": 1,
+        "complete_sources": true,
+        "final_confirmation": 4
+      },
+      {
+        "id": "8e7f3e6f024917bcb6a2cc01fca05b1fb5892111bfe3efdbec50dbf85867befd",
+        "task": "value-train-smooth-l1",
+        "archive_bytes": 47440,
+        "view_bytes": 18249,
+        "source_count": 2,
+        "observations": 3,
+        "failures": 0,
+        "complete_sources": true,
+        "final_confirmation": 2
+      },
+      {
+        "id": "575207e89a57d44fe9ba07704ed6d5c700abf3b05862617154949fc959caa51b",
+        "task": "value-train-rms-normalize",
+        "archive_bytes": 55619,
+        "view_bytes": 22651,
+        "source_count": 4,
+        "observations": 5,
+        "failures": 2,
+        "complete_sources": true,
+        "final_confirmation": 4
+      },
+      {
+        "id": "30328cf08106c3390296659a93dd2c324a571260f554ef4712b98f3802a8a557",
+        "task": "value-train-central-variance",
+        "archive_bytes": 47532,
+        "view_bytes": 18137,
+        "source_count": 2,
+        "observations": 3,
+        "failures": 0,
+        "complete_sources": true,
+        "final_confirmation": 2
+      }
+    ],
+    "scope": "All original training research observations plus separate final confirmations. Only training; no development or audit. No GPU/model execution. Source file hashes recorded below."
+  },
+  "reference": {
+    "meta_harness": {
+      "paper_date": "2026-03-30",
+      "code_commit": "f805ad3aa4ada290458c1e0deadbe132fbbdea4e",
+      "code_date": "2026-11-05",
+      "source": "https://github.com/stanford-iris-lab/meta-harness/blob/f805ad3aa4ada290458c1e0deadbe132fbbdea4e/ONBOARDING.md",
+      "applied": "Preserve code, outcomes and complete observed trajectories; keep final test outside candidate generation",
+      "not_applied": "Arbitrary executable harness self-modification"
+    },
+    "openevolve": {
+      "code_commit": "3e72b5bcce27cdd948d8cdff2fa00e67c4d6066c",
+      "code_date": "2026-11-08",
+      "source": "https://github.com/algorithmicsuperintelligence/openevolve/blob/3e72b5bcce27cdd948d8cdff2fa00e67c4d6066c/openevolve/database.py",
+      "applied": "Keep source with measured outcome and provenance",
+      "not_applied": "Population search, islands, migration or cross-task score ranking"
+    },
+    "dream_rsi": {
+      "paper_date": "2026-09-14",
+      "code_date": "2026-10-08",
+      "code_commit": "8ec35bd2538220517ce1bfca4282db21b8c518db",
+      "applied": "Retain actually evaluated attempts; do not invent outcomes for unseen branches",
+      "not_applied": "Counterfactual replay or branch causality from a linear trace"
+    }
+  },
+  "new_gpu_seconds": 0,
+  "new_model_calls": 0,
+  "known_limitations": [
+    "Generic single-file research tasks only",
+    "Oversized or incomplete episodes rejected from this index; original failures and their costs must remain in external logs",
+    "Content hashes protect integrity, not authenticity against a privileged writer; callers must pin approved manifest IDs",
+    "Experimental experience input is up to32KiB and can increase model cost; no foreground production integration or automatic policy publication",
+    "Trace times are labeled as reported; API token usage is unknown in the archive and accounted separately"
+  ],
+  "validation": {
+    "full_suite_summary": "297 passed, 8 skipped in 113.54s (0:01:53)",
+    "full_suite_log": "/tmp/rsi-episodes-final-stable-20261111.log",
+    "ruff_check": true,
+    "ruff_format_check": true,
+    "diff_check": true,
+    "real_training_receipts": 16,
+    "new_workload_cpu_small_cases": 120,
+    "offline_retrieval_check": "../rsi-episode-study-20261110/retrieval-check.json",
+    "prior_test_failure": {
+      "log": "/tmp/rsi-episodes-full-final-20261111.log",
+      "result": "1 failed, 294 passed, 8 skipped",
+      "failure": "Routing publication fixture failed Aggregate seconds regression while CPU suites overlapped. The routing assertion depended on uncontrolled full trial wall time.",
+      "repair": "Only this synthetic routing fixture fixes its reported total duration, preserving actual adapter/full evaluation. Separate numerical cost gate tests remain. No production gates or GPU measurements altered."
+    },
+    "source_files_sha256": {
+      "src/kernel_envolve/rsi/episodes.py": "fda5d311726e7bdeadac1f4b9623a78170871530704f9e5bbb9afb51dc041146",
+      "src/kernel_envolve/rsi/research.py": "cbddae976bff4dcf4cfc36145e665dae76a99dbd80e782edcc7d2dc98e83218f",
+      "src/kernel_envolve/rsi/trials.py": "549eb5c98ba560ca80068f9d654bbed34d00a348cfe97fc437a831b532d4b693",
+      "tests/test_rsi.py": "228d602818b94874b5e0bfd49a1cdbdb28dfb838d698529e0f45e5b29bb67025",
+      "tests/test_rsi_research.py": "1d855181ee8c1336b78a5970b511e099592be3fb35cdf6a4e2eb1708f3b3042e",
+      "tests/test_rsi_routing.py": "a31be200b25cbc0619824e7047e8837871562a7f890e340b95d16f62dcd24404"
+    }
+  }
+}

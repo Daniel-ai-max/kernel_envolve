@@ -1,0 +1,29 @@
+"""Independent study-only rule reconstruction; never imports the production allocator.
+
+The frozen study uses baseline comparators, CUDA, <=128 measured cases and no
+absolute caps. Any other contract is a protocol violation, not inferred success.
+"""
+import math
+
+def expected_allocation(raw,cfg):
+    value={'policy':'artifact-margin-v1','actions':4,'reason':'not_eligible_full'}
+    assert cfg['device'].startswith('cuda')
+    assert len(cfg['cases'])<=256
+    measured=[c for c in cfg['cases']if c.get('measure',True)]
+    assert 1<=len(measured)<=128 and any(c.get('performance_role','objective')=='objective'for c in measured)
+    assert not any('max_us'in c for c in measured)
+    if not(raw['mode']=='full'and raw['execution']=='completed'and raw['correctness']=='pass'and raw['signal_only']is False and raw['check_only']is False and raw['selection']=={} and raw['decision']['eligible_for_best']is True):return value
+    assert raw['comparator']['kind']=='baseline'
+    assert raw['environment']['gpu']['name'].find('B300')>=0
+    rows=raw['decision']['cases']
+    expected={(c['id'],batch)for c in measured for batch in(0,1)}
+    assert len(rows)==len(expected) and {(row['case'],row['batch'])for row in rows}==expected
+    slow=[]
+    for row in rows:
+        a,b=row['candidate_us'],row['comparator_us']
+        assert all(type(v)in(int,float)and math.isfinite(v)and v>0 for v in(a,b))
+        assert 'baseline_us'not in row or row['baseline_us']==b
+        slow.append(a/b-1)
+    worst=max(slow);m0=cfg['max_baseline_regression']*.5;m1=cfg['max_regression']*.5
+    short=worst<=m0 and worst<=m1
+    return {'policy':'artifact-margin-v1','actions':2 if short else 4,'reason':'within_margin'if short else'near_performance_limit','case_batch_count':len(rows),'max_baseline_slowdown':worst,'max_comparator_slowdown':worst,'baseline_margin':m0,'comparator_margin':m1}

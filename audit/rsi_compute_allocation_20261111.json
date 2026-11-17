@@ -1,0 +1,5332 @@
+{
+  "source_commit": "4894926cb0538d2f641d63e8d881c08f6d517617",
+  "job": "d8a9d1bae69346e9b58b8544e4abf2c8",
+  "completed": true,
+  "comparison_performed": true,
+  "stop_reason": null,
+  "error": null,
+  "environment": {
+    "count": 1,
+    "gpu": "NVIDIA B300 SXM6 AC",
+    "torch": "2.12.1+cu130",
+    "triton": "3.7.1"
+  },
+  "trials": [
+    {
+      "repeat": 0,
+      "task": 0,
+      "arm": "control-4",
+      "error": null,
+      "trial_id": "0-0-control-4",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 3,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 4
+      },
+      "wrong_candidate_evaluations": 1,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.2930995901669528,
+      "promotable": true,
+      "baseline_speedup": 1.414626425575529,
+      "solver_seconds": 70.83007319271564,
+      "trial_seconds": 78.10073722386733,
+      "result_hash": "d48f032de03afaf4803b056cf4aed2a211a09a77df6dad883dd4e2e8fcb2656e"
+    },
+    {
+      "repeat": 0,
+      "task": 0,
+      "arm": "control-2",
+      "error": null,
+      "trial_id": "0-0-control-2",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 2
+      },
+      "search_modes": {
+        "full": 3
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "action_budget_exhausted",
+      "passed": true,
+      "quality": 0.2914349403080047,
+      "promotable": true,
+      "baseline_speedup": 1.411303007848973,
+      "solver_seconds": 57.31925105210394,
+      "trial_seconds": 64.53760968288407,
+      "result_hash": "af972de1e031f7ba4dd6de5742249fd47c6029d1c6d7b242c56c6c41190cbd2d"
+    },
+    {
+      "repeat": 0,
+      "task": 0,
+      "arm": "reuse-2",
+      "error": null,
+      "trial_id": "0-0-reuse-2",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 2
+      },
+      "search_modes": {
+        "full": 3
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "action_budget_exhausted",
+      "passed": true,
+      "quality": 0.2895907360810932,
+      "promotable": true,
+      "baseline_speedup": 1.407639301440965,
+      "solver_seconds": 41.54251965600997,
+      "trial_seconds": 48.98723028274253,
+      "result_hash": "f3a068111cebd6ef36c2ef80818d249f351d3970f8c74fccbaa8b5856799216b"
+    },
+    {
+      "repeat": 0,
+      "task": 0,
+      "arm": "reuse-4",
+      "error": null,
+      "trial_id": "0-0-reuse-4",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 4
+      },
+      "search_modes": {
+        "full": 5
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "action_budget_exhausted",
+      "passed": true,
+      "quality": 0.3137001101972269,
+      "promotable": true,
+      "baseline_speedup": 1.4570889706646712,
+      "solver_seconds": 74.01304596010596,
+      "trial_seconds": 81.70813619205728,
+      "result_hash": "ce2dc6c72770525e99dcc08122395bc9fa5c2f010d21a19da15a4bd8ac4659e9"
+    },
+    {
+      "repeat": 0,
+      "task": 1,
+      "arm": "control-2",
+      "error": null,
+      "trial_id": "0-1-control-2",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 2
+      },
+      "search_modes": {
+        "full": 3
+      },
+      "wrong_candidate_evaluations": 1,
+      "duplicate_skipped": 0,
+      "stop_reason": "action_budget_exhausted",
+      "passed": true,
+      "quality": 0,
+      "promotable": false,
+      "baseline_speedup": 0.9999147353578937,
+      "solver_seconds": 51.54344845702872,
+      "trial_seconds": 56.25390293402597,
+      "result_hash": "6499fc2f754cff513c64ea6770a1ed535739d4cb235e988e523ac3edb80b5493"
+    },
+    {
+      "repeat": 0,
+      "task": 1,
+      "arm": "reuse-4",
+      "error": null,
+      "trial_id": "0-1-reuse-4",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 3,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 4
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.31507685111169453,
+      "promotable": true,
+      "baseline_speedup": 1.4600178160470907,
+      "solver_seconds": 49.444303650874645,
+      "trial_seconds": 54.856943138409406,
+      "result_hash": "d69f6d95f9dc0cf9b6c0b62ef3a66f3a25d4c3ee48379b2bf4b4e364dc95ee02"
+    },
+    {
+      "repeat": 0,
+      "task": 1,
+      "arm": "control-4",
+      "error": null,
+      "trial_id": "0-1-control-4",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 3,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 4
+      },
+      "wrong_candidate_evaluations": 1,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.31179767553944815,
+      "promotable": true,
+      "baseline_speedup": 1.4530610613439168,
+      "solver_seconds": 63.06073510320857,
+      "trial_seconds": 68.77583771618083,
+      "result_hash": "e890f62b40fb10e479895425a8aad29441080e8a4646a85ca57987d29ac00c25"
+    },
+    {
+      "repeat": 0,
+      "task": 1,
+      "arm": "reuse-2",
+      "error": null,
+      "trial_id": "0-1-reuse-2",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 2
+      },
+      "search_modes": {
+        "full": 3
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "action_budget_exhausted",
+      "passed": true,
+      "quality": 0.3072884518392766,
+      "promotable": true,
+      "baseline_speedup": 1.4436023228646673,
+      "solver_seconds": 35.8657414582558,
+      "trial_seconds": 41.32850680779666,
+      "result_hash": "26e15bb995cc1b54105cb8ee781cd03c36f012a4c0c599693e45611442eaefb0"
+    },
+    {
+      "repeat": 0,
+      "task": 2,
+      "arm": "reuse-4",
+      "error": null,
+      "trial_id": "0-2-reuse-4",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 3,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 4
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.6139417895631112,
+      "promotable": true,
+      "baseline_speedup": 2.590282949476283,
+      "solver_seconds": 66.56161044724286,
+      "trial_seconds": 72.57578311488032,
+      "result_hash": "de3f4c7c301a5ccacb1c228d9a19489db09e18c5d50079a65075dd57fab9fef3"
+    },
+    {
+      "repeat": 0,
+      "task": 2,
+      "arm": "reuse-2",
+      "error": null,
+      "trial_id": "0-2-reuse-2",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 2
+      },
+      "search_modes": {
+        "full": 3
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "action_budget_exhausted",
+      "passed": true,
+      "quality": 0.6166644439611063,
+      "promotable": true,
+      "baseline_speedup": 2.608680526099016,
+      "solver_seconds": 32.37996794702485,
+      "trial_seconds": 38.443897501099855,
+      "result_hash": "0aaa1ee747f9ff50d63e567a19c906210bb32c7bc4595299341153a3a5d63fb3"
+    },
+    {
+      "repeat": 0,
+      "task": 2,
+      "arm": "control-2",
+      "error": null,
+      "trial_id": "0-2-control-2",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.6134319850825133,
+      "promotable": true,
+      "baseline_speedup": 2.586866893820615,
+      "solver_seconds": 38.7232303339988,
+      "trial_seconds": 44.679688026662916,
+      "result_hash": "baacacb4e4b0080e56faf51b4eaa4489388b98a22f9a49918ed73d8ce5503def"
+    },
+    {
+      "repeat": 0,
+      "task": 2,
+      "arm": "control-4",
+      "error": null,
+      "trial_id": "0-2-control-4",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 4
+      },
+      "search_modes": {
+        "full": 5
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "action_budget_exhausted",
+      "passed": true,
+      "quality": 0.63771227494356,
+      "promotable": true,
+      "baseline_speedup": 2.7602370459672962,
+      "solver_seconds": 94.35264716902748,
+      "trial_seconds": 100.2673794706352,
+      "result_hash": "1b54b649652593bb78ed7690eedeb34773baf6261c4a9a36d34b94bbeef8d32c"
+    },
+    {
+      "repeat": 0,
+      "task": 3,
+      "arm": "reuse-2",
+      "error": null,
+      "trial_id": "0-3-reuse-2",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.6286560290390449,
+      "promotable": true,
+      "baseline_speedup": 2.6929210602564084,
+      "solver_seconds": 20.966657403390855,
+      "trial_seconds": 25.876994570717216,
+      "result_hash": "e6e8d8787d1ec334dc0077b469ec1000009a1fede09781f567424bf2750e3722"
+    },
+    {
+      "repeat": 0,
+      "task": 3,
+      "arm": "control-4",
+      "error": null,
+      "trial_id": "0-3-control-4",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 3,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 4
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.6285859938245861,
+      "promotable": true,
+      "baseline_speedup": 2.692413272987108,
+      "solver_seconds": 68.29198385495692,
+      "trial_seconds": 73.15257783140987,
+      "result_hash": "cb342656f8915a0f32d202902ae07828e35d7689e23141995eb2bd89cb6f3e59"
+    },
+    {
+      "repeat": 0,
+      "task": 3,
+      "arm": "reuse-4",
+      "error": null,
+      "trial_id": "0-3-reuse-4",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 3,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 4
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.634121061370734,
+      "promotable": true,
+      "baseline_speedup": 2.7331444760018546,
+      "solver_seconds": 57.483830923680216,
+      "trial_seconds": 62.69779658829793,
+      "result_hash": "27fae7e7a75d817460a0bfeb013d0d33158b37ef2d255f6ac69bddf4228b4cd4"
+    },
+    {
+      "repeat": 0,
+      "task": 3,
+      "arm": "control-2",
+      "error": null,
+      "trial_id": "0-3-control-2",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.6278744866382673,
+      "promotable": true,
+      "baseline_speedup": 2.6872653556219035,
+      "solver_seconds": 33.8584159379825,
+      "trial_seconds": 38.66763268504292,
+      "result_hash": "9d14380126f063eadd035299985d1111f0cc6eb71f707eff522da722875081f3"
+    },
+    {
+      "repeat": 0,
+      "task": 4,
+      "arm": "control-4",
+      "error": null,
+      "trial_id": "0-4-control-4",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 3,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 4
+      },
+      "wrong_candidate_evaluations": 1,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.25642839253705185,
+      "promotable": true,
+      "baseline_speedup": 1.3448603873028189,
+      "solver_seconds": 79.09629426477477,
+      "trial_seconds": 86.16521526919678,
+      "result_hash": "0f7a94275fdb0c9e30968eeb10942ba4889e9d95781575b6daae07f0f979371c"
+    },
+    {
+      "repeat": 0,
+      "task": 4,
+      "arm": "control-2",
+      "error": null,
+      "trial_id": "0-4-control-2",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 2
+      },
+      "search_modes": {
+        "full": 3
+      },
+      "wrong_candidate_evaluations": 1,
+      "duplicate_skipped": 0,
+      "stop_reason": "action_budget_exhausted",
+      "passed": true,
+      "quality": 0,
+      "promotable": false,
+      "baseline_speedup": 0.9983707859557788,
+      "solver_seconds": 57.058628167025745,
+      "trial_seconds": 61.96921263076365,
+      "result_hash": "fa84f98f3e8c8d963f87fe49e21fce02716c0fcdb8be38e6b82ef01d380a0249"
+    },
+    {
+      "repeat": 0,
+      "task": 4,
+      "arm": "reuse-2",
+      "error": null,
+      "trial_id": "0-4-reuse-2",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.25289065606461164,
+      "promotable": true,
+      "baseline_speedup": 1.338492160642127,
+      "solver_seconds": 33.53322730213404,
+      "trial_seconds": 40.349460820201784,
+      "result_hash": "265f6dbc5d7aebea8a36145dfa36e8767bc89853f69c86e657cf25547c3494cb"
+    },
+    {
+      "repeat": 0,
+      "task": 4,
+      "arm": "reuse-4",
+      "error": null,
+      "trial_id": "0-4-reuse-4",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 2,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 3
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.2694443451783168,
+      "promotable": true,
+      "baseline_speedup": 1.3688211067835534,
+      "solver_seconds": 63.50211097765714,
+      "trial_seconds": 70.27073250990361,
+      "result_hash": "0db38e841c0c4a5743c0399f20b970ac38d18b2a2a15212f7956f036f175adc7"
+    },
+    {
+      "repeat": 0,
+      "task": 5,
+      "arm": "control-2",
+      "error": null,
+      "trial_id": "0-5-control-2",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 2
+      },
+      "search_modes": {
+        "full": 3
+      },
+      "wrong_candidate_evaluations": 1,
+      "duplicate_skipped": 0,
+      "stop_reason": "action_budget_exhausted",
+      "passed": true,
+      "quality": 0,
+      "promotable": false,
+      "baseline_speedup": 1.0009541188283864,
+      "solver_seconds": 49.8631958370097,
+      "trial_seconds": 53.67292443057522,
+      "result_hash": "b9890119f09b387fbb332abcc3260f58562d76be5823b3b31db4b7fa51381460"
+    },
+    {
+      "repeat": 0,
+      "task": 5,
+      "arm": "reuse-4",
+      "error": null,
+      "trial_id": "0-5-reuse-4",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 2,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 3
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.2502251917399634,
+      "promotable": true,
+      "baseline_speedup": 1.333733794445092,
+      "solver_seconds": 60.9452620591037,
+      "trial_seconds": 67.26038276683539,
+      "result_hash": "77e5831fc9b6582c7b29abf651766994f3c440c8d3413561247406309057389f"
+    },
+    {
+      "repeat": 0,
+      "task": 5,
+      "arm": "control-4",
+      "error": null,
+      "trial_id": "0-5-control-4",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 3,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 4
+      },
+      "wrong_candidate_evaluations": 1,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.2631413339681241,
+      "promotable": true,
+      "baseline_speedup": 1.35711235559621,
+      "solver_seconds": 83.54555223928764,
+      "trial_seconds": 89.81075683096424,
+      "result_hash": "242efd44e2fb9a6c8abc4dbb09911c997194abf08d7dcbf9d8903152078a9a68"
+    },
+    {
+      "repeat": 0,
+      "task": 5,
+      "arm": "reuse-2",
+      "error": null,
+      "trial_id": "0-5-reuse-2",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 2
+      },
+      "search_modes": {
+        "full": 3
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "action_budget_exhausted",
+      "passed": true,
+      "quality": 0.25366606487510635,
+      "promotable": true,
+      "baseline_speedup": 1.3398827963419044,
+      "solver_seconds": 29.37397030601278,
+      "trial_seconds": 35.63876318093389,
+      "result_hash": "0aec1f53324915f6097b7519d950e91796401877eef2135e06df12295de6d577"
+    },
+    {
+      "repeat": 0,
+      "task": 6,
+      "arm": "reuse-4",
+      "error": null,
+      "trial_id": "0-6-reuse-4",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 2,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 3
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.3668425920195392,
+      "promotable": true,
+      "baseline_speedup": 1.5793860853490322,
+      "solver_seconds": 49.58337438199669,
+      "trial_seconds": 54.744613979011774,
+      "result_hash": "93bd96017b873047f3559898b90f18531249fc27e6d8dffc3fd22fd30a47e66f"
+    },
+    {
+      "repeat": 0,
+      "task": 6,
+      "arm": "reuse-2",
+      "error": null,
+      "trial_id": "0-6-reuse-2",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.398011460575657,
+      "promotable": true,
+      "baseline_speedup": 1.661161192464327,
+      "solver_seconds": 18.927566807251424,
+      "trial_seconds": 23.937587657943368,
+      "result_hash": "9e26181f7dcabbf4999c953f8f3e731ad91731ab65a41587946314b9869a0619"
+    },
+    {
+      "repeat": 0,
+      "task": 6,
+      "arm": "control-2",
+      "error": null,
+      "trial_id": "0-6-control-2",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.37590773334745314,
+      "promotable": true,
+      "baseline_speedup": 1.602327177299785,
+      "solver_seconds": 31.959568215999752,
+      "trial_seconds": 36.970827247947454,
+      "result_hash": "9a5a5d869b1683c80113c46152a976ad3e3ac841df7eb1b910a6acf5bcde4b98"
+    },
+    {
+      "repeat": 0,
+      "task": 6,
+      "arm": "control-4",
+      "error": null,
+      "trial_id": "0-6-control-4",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.37082821510730984,
+      "promotable": true,
+      "baseline_speedup": 1.5893910439269896,
+      "solver_seconds": 28.469983852934092,
+      "trial_seconds": 33.43045909423381,
+      "result_hash": "94f0de022bcd54ad12f5d49c10625caf6cd0587cf8e5f925b9d441c90b87bdfe"
+    },
+    {
+      "repeat": 0,
+      "task": 7,
+      "arm": "reuse-2",
+      "error": null,
+      "trial_id": "0-7-reuse-2",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.3466359407341707,
+      "promotable": true,
+      "baseline_speedup": 1.5305402643721753,
+      "solver_seconds": 17.20567574677989,
+      "trial_seconds": 21.464938623830676,
+      "result_hash": "fd6be19e1a9ff6753369f7fb02856aa0441e7650a503f1710358e9efc20e510a"
+    },
+    {
+      "repeat": 0,
+      "task": 7,
+      "arm": "control-4",
+      "error": null,
+      "trial_id": "0-7-control-4",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.351155330575315,
+      "promotable": true,
+      "baseline_speedup": 1.541200917758446,
+      "solver_seconds": 31.570407926104963,
+      "trial_seconds": 35.67825012234971,
+      "result_hash": "4b32c64b404e898bddef49f140517f6c4c2daad0b76f8b00487d7c9f87737e67"
+    },
+    {
+      "repeat": 0,
+      "task": 7,
+      "arm": "reuse-4",
+      "error": null,
+      "trial_id": "0-7-reuse-4",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 2,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 3
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.3850814846991547,
+      "promotable": true,
+      "baseline_speedup": 1.6262317284604055,
+      "solver_seconds": 38.87489436613396,
+      "trial_seconds": 42.932695121038705,
+      "result_hash": "350a4bddb7061c4c7b09fb6aaecc97003ac4d7b239b91aea1deca9c8a6e1fec9"
+    },
+    {
+      "repeat": 0,
+      "task": 7,
+      "arm": "control-2",
+      "error": null,
+      "trial_id": "0-7-control-2",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.35135384231528544,
+      "promotable": true,
+      "baseline_speedup": 1.5416725870533359,
+      "solver_seconds": 27.618474379181862,
+      "trial_seconds": 31.68222873006016,
+      "result_hash": "3de9e8dea8e6e63baac5186cb9b51b5a4364fb2b4e52d113fb2c9d5c00fcfd7e"
+    },
+    {
+      "repeat": 1,
+      "task": 0,
+      "arm": "control-4",
+      "error": null,
+      "trial_id": "1-0-control-4",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 3,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 4
+      },
+      "wrong_candidate_evaluations": 1,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.29297848705490775,
+      "promotable": true,
+      "baseline_speedup": 1.4143841194230544,
+      "solver_seconds": 67.52098266314715,
+      "trial_seconds": 74.54183096298948,
+      "result_hash": "31e9f0902bc6024356d29fde4549ba55d7c16077b498e5bb20985ef6a69b127a"
+    },
+    {
+      "repeat": 1,
+      "task": 0,
+      "arm": "control-2",
+      "error": null,
+      "trial_id": "1-0-control-2",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 2
+      },
+      "search_modes": {
+        "full": 3
+      },
+      "wrong_candidate_evaluations": 1,
+      "duplicate_skipped": 0,
+      "stop_reason": "action_budget_exhausted",
+      "passed": true,
+      "quality": 0,
+      "promotable": false,
+      "baseline_speedup": 0.9998269003928077,
+      "solver_seconds": 58.5611038338393,
+      "trial_seconds": 65.52749704569578,
+      "result_hash": "9eca919b449a961984b2927d525cf2ff59b8dd734837e990d1657e5ea48fd1e9"
+    },
+    {
+      "repeat": 1,
+      "task": 0,
+      "arm": "reuse-2",
+      "error": null,
+      "trial_id": "1-0-reuse-2",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 2
+      },
+      "search_modes": {
+        "full": 3
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "action_budget_exhausted",
+      "passed": true,
+      "quality": 0.28740164429324816,
+      "promotable": true,
+      "baseline_speedup": 1.4033150539734327,
+      "solver_seconds": 47.779072110075504,
+      "trial_seconds": 55.02253058832139,
+      "result_hash": "661ae9f7bb9005734e24a7bdd745b8c7a6d8794b4a66c6c62fd6f1695f9deebc"
+    },
+    {
+      "repeat": 1,
+      "task": 0,
+      "arm": "reuse-4",
+      "error": null,
+      "trial_id": "1-0-reuse-4",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 3,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 4
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.29250878714570944,
+      "promotable": true,
+      "baseline_speedup": 1.413445116817235,
+      "solver_seconds": 58.91108053084463,
+      "trial_seconds": 65.92950260313228,
+      "result_hash": "6fa282ba6dc58100e32909f752a64abb8a97f9be902390180f2f75acc2cba8c3"
+    },
+    {
+      "repeat": 1,
+      "task": 1,
+      "arm": "control-2",
+      "error": null,
+      "trial_id": "1-1-control-2",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 2
+      },
+      "search_modes": {
+        "full": 3
+      },
+      "wrong_candidate_evaluations": 1,
+      "duplicate_skipped": 0,
+      "stop_reason": "action_budget_exhausted",
+      "passed": true,
+      "quality": 0,
+      "promotable": false,
+      "baseline_speedup": 0.9988713805820959,
+      "solver_seconds": 41.34918961301446,
+      "trial_seconds": 45.958691557869315,
+      "result_hash": "85a7cb2f0c71d207353c4b31931dda0c109744a3007734646de7e9302955aa95"
+    },
+    {
+      "repeat": 1,
+      "task": 1,
+      "arm": "reuse-4",
+      "error": null,
+      "trial_id": "1-1-reuse-4",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 3,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 4
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.31191290335696437,
+      "promotable": true,
+      "baseline_speedup": 1.4533043925379374,
+      "solver_seconds": 61.70052970899269,
+      "trial_seconds": 67.76597196795046,
+      "result_hash": "a1f0faae4ce98d5f3d41e07452a7575e6cb5cd78f899b1005c52943c99173427"
+    },
+    {
+      "repeat": 1,
+      "task": 1,
+      "arm": "control-4",
+      "error": null,
+      "trial_id": "1-1-control-4",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 3,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 4
+      },
+      "wrong_candidate_evaluations": 1,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.31639408486796405,
+      "promotable": true,
+      "baseline_speedup": 1.4628311105336964,
+      "solver_seconds": 63.027158916927874,
+      "trial_seconds": 68.33977307286114,
+      "result_hash": "532ee62da76740bacaa15a6bfc5d242acc1a71aa9ff95704c3272c5f7ae7503e"
+    },
+    {
+      "repeat": 1,
+      "task": 1,
+      "arm": "reuse-2",
+      "error": null,
+      "trial_id": "1-1-reuse-2",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 2
+      },
+      "search_modes": {
+        "full": 3
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "action_budget_exhausted",
+      "passed": true,
+      "quality": 0.3093715779078781,
+      "promotable": true,
+      "baseline_speedup": 1.4479566261850303,
+      "solver_seconds": 34.03388729412109,
+      "trial_seconds": 39.295227092225105,
+      "result_hash": "92517dec6000e53ece7d5a805ef8040b44c0fda8a94f588200b66039a4237362"
+    },
+    {
+      "repeat": 1,
+      "task": 2,
+      "arm": "reuse-4",
+      "error": null,
+      "trial_id": "1-2-reuse-4",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 3,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 4
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.6148464883900352,
+      "promotable": true,
+      "baseline_speedup": 2.5963673440751975,
+      "solver_seconds": 61.59485848573968,
+      "trial_seconds": 67.50896416138858,
+      "result_hash": "35842f6e0d21e0e2b646a310c028ba79ac88fb3915269e2a643d61e7a4da6009"
+    },
+    {
+      "repeat": 1,
+      "task": 2,
+      "arm": "reuse-2",
+      "error": null,
+      "trial_id": "1-2-reuse-2",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.6209090438324405,
+      "promotable": true,
+      "baseline_speedup": 2.6378893606683578,
+      "solver_seconds": 20.36576445400715,
+      "trial_seconds": 26.981842991430312,
+      "result_hash": "52a9d36a7287180a19b05cc2054edc6decc1f00820e3120e1f7f413558c75b06"
+    },
+    {
+      "repeat": 1,
+      "task": 2,
+      "arm": "control-2",
+      "error": null,
+      "trial_id": "1-2-control-2",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.621073785702756,
+      "promotable": true,
+      "baseline_speedup": 2.639036208816005,
+      "solver_seconds": 28.720842266920954,
+      "trial_seconds": 34.735254644881934,
+      "result_hash": "210d5b0ea0a4f4eec29ee713b13e38d8e2f4bc1668e05028c90ee007bc17fad8"
+    },
+    {
+      "repeat": 1,
+      "task": 2,
+      "arm": "control-4",
+      "error": null,
+      "trial_id": "1-2-control-4",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 2,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 3
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.616320140786222,
+      "promotable": true,
+      "baseline_speedup": 2.606339571874222,
+      "solver_seconds": 54.32316606491804,
+      "trial_seconds": 60.437542736995965,
+      "result_hash": "8e5e0b23965d7c1f9d0d51961253c43cfae4997d35cd2e07ca88932492913ecc"
+    },
+    {
+      "repeat": 1,
+      "task": 3,
+      "arm": "reuse-2",
+      "error": null,
+      "trial_id": "1-3-reuse-2",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 2
+      },
+      "search_modes": {
+        "full": 3
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "action_budget_exhausted",
+      "passed": true,
+      "quality": 0.6273110089736322,
+      "promotable": true,
+      "baseline_speedup": 2.683202412945034,
+      "solver_seconds": 32.230523734819144,
+      "trial_seconds": 37.09081464679912,
+      "result_hash": "dc891e706c351719748c7cb802818ac8737614f7173ec5081296439aa3c04df4"
+    },
+    {
+      "repeat": 1,
+      "task": 3,
+      "arm": "control-4",
+      "error": null,
+      "trial_id": "1-3-control-4",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 2,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 3
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.6310938169983047,
+      "promotable": true,
+      "baseline_speedup": 2.710716290692814,
+      "solver_seconds": 55.83879616810009,
+      "trial_seconds": 60.69930766988546,
+      "result_hash": "e27529700fbeeabbe74d598f041696b61ccb7b6060b99858885612cf1fa59d0f"
+    },
+    {
+      "repeat": 1,
+      "task": 3,
+      "arm": "reuse-4",
+      "error": null,
+      "trial_id": "1-3-reuse-4",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 3,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 4
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.6270504629791114,
+      "promotable": true,
+      "baseline_speedup": 2.681327902932859,
+      "solver_seconds": 61.64858531020582,
+      "trial_seconds": 66.66017977474257,
+      "result_hash": "3e6ab6e6257f8d3c92b8848a0d0c59ae9290870ae39571ece964ea0aab6b1085"
+    },
+    {
+      "repeat": 1,
+      "task": 3,
+      "arm": "control-2",
+      "error": null,
+      "trial_id": "1-3-control-2",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.6309376593376854,
+      "promotable": true,
+      "baseline_speedup": 2.7095693323935808,
+      "solver_seconds": 37.11774892685935,
+      "trial_seconds": 42.17793032294139,
+      "result_hash": "ca5ce9b2412cda1ac3e9b18e66222f8771d7c493c745a763e57def1ac346b6c7"
+    },
+    {
+      "repeat": 1,
+      "task": 4,
+      "arm": "control-4",
+      "error": null,
+      "trial_id": "1-4-control-4",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 4
+      },
+      "search_modes": {
+        "full": 5
+      },
+      "wrong_candidate_evaluations": 2,
+      "duplicate_skipped": 0,
+      "stop_reason": "action_budget_exhausted",
+      "passed": true,
+      "quality": 0.250774905739212,
+      "promotable": true,
+      "baseline_speedup": 1.3347123683659254,
+      "solver_seconds": 99.19020571419969,
+      "trial_seconds": 106.00744289485738,
+      "result_hash": "4244d96de3a2cfe06589eb5ee5084d0d97f720a939554300b87c8d420c63a88b"
+    },
+    {
+      "repeat": 1,
+      "task": 4,
+      "arm": "control-2",
+      "error": null,
+      "trial_id": "1-4-control-2",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 2
+      },
+      "search_modes": {
+        "full": 3
+      },
+      "wrong_candidate_evaluations": 1,
+      "duplicate_skipped": 0,
+      "stop_reason": "action_budget_exhausted",
+      "passed": true,
+      "quality": 0,
+      "promotable": false,
+      "baseline_speedup": 0.9972264037752577,
+      "solver_seconds": 50.9630864369683,
+      "trial_seconds": 56.024120124056935,
+      "result_hash": "3d419d5dfa924f42cdbb73e6eab363e585baf2776a34db47f3ce31c2abfebbc8"
+    },
+    {
+      "repeat": 1,
+      "task": 4,
+      "arm": "reuse-2",
+      "error": null,
+      "trial_id": "1-4-reuse-2",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 2
+      },
+      "search_modes": {
+        "full": 3
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "action_budget_exhausted",
+      "passed": true,
+      "quality": 0.26532502678378006,
+      "promotable": true,
+      "baseline_speedup": 1.3611461346263842,
+      "solver_seconds": 46.67207936197519,
+      "trial_seconds": 53.990118170622736,
+      "result_hash": "229560f32dbc2c43695ebab815cd2953e9c1677539da7071301d96365b7a80ba"
+    },
+    {
+      "repeat": 1,
+      "task": 4,
+      "arm": "reuse-4",
+      "error": null,
+      "trial_id": "1-4-reuse-4",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 4
+      },
+      "search_modes": {
+        "full": 5
+      },
+      "wrong_candidate_evaluations": 2,
+      "duplicate_skipped": 0,
+      "stop_reason": "action_budget_exhausted",
+      "passed": true,
+      "quality": 0.27014063835961344,
+      "promotable": true,
+      "baseline_speedup": 1.3701269759045935,
+      "solver_seconds": 94.59836154291406,
+      "trial_seconds": 101.26514535676688,
+      "result_hash": "4a2b70a3587d0654917232556a1e4b37eb88cda24569e6b4404ea6b45456f5f4"
+    },
+    {
+      "repeat": 1,
+      "task": 5,
+      "arm": "control-2",
+      "error": null,
+      "trial_id": "1-5-control-2",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 2
+      },
+      "search_modes": {
+        "full": 3
+      },
+      "wrong_candidate_evaluations": 1,
+      "duplicate_skipped": 0,
+      "stop_reason": "action_budget_exhausted",
+      "passed": true,
+      "quality": 0,
+      "promotable": false,
+      "baseline_speedup": 0.9989023033566031,
+      "solver_seconds": 63.20104019809514,
+      "trial_seconds": 66.90771826682612,
+      "result_hash": "99af48a51417c4b5ad7fa4924ee90668fca95ef39516133dba42ea670affbe7a"
+    },
+    {
+      "repeat": 1,
+      "task": 5,
+      "arm": "reuse-4",
+      "error": null,
+      "trial_id": "1-5-reuse-4",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 3,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 4
+      },
+      "wrong_candidate_evaluations": 1,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.28397868914690055,
+      "promotable": true,
+      "baseline_speedup": 1.3966064764309258,
+      "solver_seconds": 68.49298383295536,
+      "trial_seconds": 74.75841756118461,
+      "result_hash": "fe24f2d7ee5ca460e9bd90a371c856f48e3c0e0a58f19d3fe64950509ac0e26b"
+    },
+    {
+      "repeat": 1,
+      "task": 5,
+      "arm": "control-4",
+      "error": null,
+      "trial_id": "1-5-control-4",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 3,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 4
+      },
+      "wrong_candidate_evaluations": 1,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.270876581192391,
+      "promotable": true,
+      "baseline_speedup": 1.371509917532722,
+      "solver_seconds": 81.68259283388034,
+      "trial_seconds": 88.09801361104473,
+      "result_hash": "fe39f9f6d578563335d743ce924eb1fd7515d55b58db61ef621c2500db7e35f7"
+    },
+    {
+      "repeat": 1,
+      "task": 5,
+      "arm": "reuse-2",
+      "error": null,
+      "trial_id": "1-5-reuse-2",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 2
+      },
+      "search_modes": {
+        "full": 3
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "action_budget_exhausted",
+      "passed": true,
+      "quality": 0,
+      "promotable": false,
+      "baseline_speedup": 1.3242123757094317,
+      "solver_seconds": 34.33590464992449,
+      "trial_seconds": 40.55078720720485,
+      "result_hash": "ec6c81d0caf9ba40a09ad30dc167424e41c28423536a1f6809a36576e0e0fbbe"
+    },
+    {
+      "repeat": 1,
+      "task": 6,
+      "arm": "reuse-4",
+      "error": null,
+      "trial_id": "1-6-reuse-4",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 3,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 4
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.4131883255944517,
+      "promotable": true,
+      "baseline_speedup": 1.7041242422673673,
+      "solver_seconds": 58.68284825515002,
+      "trial_seconds": 63.64377700164914,
+      "result_hash": "8d630ca20e282ebda4077568474b18593b4fe39074ed8915c37d241a4dc59f5e"
+    },
+    {
+      "repeat": 1,
+      "task": 6,
+      "arm": "reuse-2",
+      "error": null,
+      "trial_id": "1-6-reuse-2",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.36532260815467393,
+      "promotable": true,
+      "baseline_speedup": 1.5756036261075843,
+      "solver_seconds": 17.205139325000346,
+      "trial_seconds": 22.16530138393864,
+      "result_hash": "b1a51ee790016cd003e6d62d8b3d0a7aba62648dda0878d37e0ca6e279ed5dca"
+    },
+    {
+      "repeat": 1,
+      "task": 6,
+      "arm": "control-2",
+      "error": null,
+      "trial_id": "1-6-control-2",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.36877682396107153,
+      "promotable": true,
+      "baseline_speedup": 1.5842257349852575,
+      "solver_seconds": 27.870633386075497,
+      "trial_seconds": 32.83147238474339,
+      "result_hash": "726d503b7428ee69188fc6ec40a4ed554bee72ba70326260b6a699c17e3d626d"
+    },
+    {
+      "repeat": 1,
+      "task": 6,
+      "arm": "control-4",
+      "error": null,
+      "trial_id": "1-6-control-4",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.3803817945242352,
+      "promotable": true,
+      "baseline_speedup": 1.6138970597743565,
+      "solver_seconds": 32.67727066716179,
+      "trial_seconds": 37.78770722588524,
+      "result_hash": "f272d6a11fb1f862a0fe176d1269395db3f3580a23200fec9ef0ca3d2e066418"
+    },
+    {
+      "repeat": 1,
+      "task": 7,
+      "arm": "reuse-2",
+      "error": null,
+      "trial_id": "1-7-reuse-2",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.3741717521733002,
+      "promotable": true,
+      "baseline_speedup": 1.597882491678313,
+      "solver_seconds": 15.425184964202344,
+      "trial_seconds": 19.482658536639065,
+      "result_hash": "6b034f1565258b62e44dcdcda189d111af40ce6b44308c08ea9b89ed88bc7065"
+    },
+    {
+      "repeat": 1,
+      "task": 7,
+      "arm": "control-4",
+      "error": null,
+      "trial_id": "1-7-control-4",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.35742663971728933,
+      "promotable": true,
+      "baseline_speedup": 1.5562425425791597,
+      "solver_seconds": 32.026516902726144,
+      "trial_seconds": 36.33471841318533,
+      "result_hash": "0ed3736b62ac864943f375e3f0c732c3979d656d1d99285c23a344120db17916"
+    },
+    {
+      "repeat": 1,
+      "task": 7,
+      "arm": "reuse-4",
+      "error": null,
+      "trial_id": "1-7-reuse-4",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 3,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 4
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.530176210542787,
+      "promotable": true,
+      "baseline_speedup": 2.1284575673686064,
+      "solver_seconds": 61.17699655564502,
+      "trial_seconds": 64.63331902772188,
+      "result_hash": "19364fa97943efcbf6b4153c5eaef6324acbeeec3e2e82aa131c457973629796"
+    },
+    {
+      "repeat": 1,
+      "task": 7,
+      "arm": "control-2",
+      "error": null,
+      "trial_id": "1-7-control-2",
+      "workspace_protected": true,
+      "actions": {
+        "propose": 1,
+        "stop": 1
+      },
+      "search_modes": {
+        "full": 2
+      },
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "stop_reason": "model_stopped",
+      "passed": true,
+      "quality": 0.356914139865358,
+      "promotable": true,
+      "baseline_speedup": 1.555002313051373,
+      "solver_seconds": 24.953345115296543,
+      "trial_seconds": 30.164050039835274,
+      "result_hash": "c471797f72b5dd03d9e7fbb90a72c03f1a04e9596c1ddc1def0b317897828a4c"
+    }
+  ],
+  "aggregates": {
+    "control-4": {
+      "attempts": 16,
+      "completed_full": 16,
+      "correct_full": 16,
+      "promotable": 16,
+      "failed_attempts": 0,
+      "all_attempt_trial_seconds": 1097.6275501465425,
+      "completed_solver_seconds": 1005.5043675340712,
+      "model_requests": 54,
+      "missing_usage_calls": 0,
+      "known_tokens": 537114,
+      "wrong_candidate_evaluations": 9,
+      "duplicate_skipped": 0,
+      "actions": {
+        "propose": 40,
+        "stop": 14
+      },
+      "search_modes": {
+        "full": 56
+      }
+    },
+    "control-2": {
+      "attempts": 16,
+      "completed_full": 16,
+      "correct_full": 16,
+      "promotable": 9,
+      "failed_attempts": 0,
+      "all_attempt_trial_seconds": 762.7607607548125,
+      "completed_solver_seconds": 680.6812021574005,
+      "model_requests": 32,
+      "missing_usage_calls": 0,
+      "known_tokens": 235051,
+      "wrong_candidate_evaluations": 7,
+      "duplicate_skipped": 0,
+      "actions": {
+        "propose": 24,
+        "stop": 8
+      },
+      "search_modes": {
+        "full": 40
+      }
+    },
+    "reuse-4": {
+      "attempts": 16,
+      "completed_full": 16,
+      "correct_full": 16,
+      "promotable": 16,
+      "failed_attempts": 0,
+      "all_attempt_trial_seconds": 1079.2123608649708,
+      "completed_solver_seconds": 987.2146769892424,
+      "model_requests": 44,
+      "missing_usage_calls": 0,
+      "known_tokens": 599196,
+      "wrong_candidate_evaluations": 3,
+      "duplicate_skipped": 0,
+      "actions": {
+        "propose": 46,
+        "stop": 14
+      },
+      "search_modes": {
+        "full": 62
+      }
+    },
+    "reuse-2": {
+      "attempts": 16,
+      "completed_full": 16,
+      "correct_full": 16,
+      "promotable": 15,
+      "failed_attempts": 0,
+      "all_attempt_trial_seconds": 570.6066600624472,
+      "completed_solver_seconds": 477.84288252098486,
+      "model_requests": 16,
+      "missing_usage_calls": 0,
+      "known_tokens": 161518,
+      "wrong_candidate_evaluations": 0,
+      "duplicate_skipped": 0,
+      "actions": {
+        "propose": 25,
+        "stop": 7
+      },
+      "search_modes": {
+        "full": 41
+      }
+    }
+  },
+  "gate_comparisons": {
+    "control-2-vs-control-4": {
+      "accepted": false,
+      "reasons": [
+        "Aggregate quality regression",
+        "No reproducible whole-suite quality, correctness or cost benefit",
+        "Per-task quality regression"
+      ],
+      "repeats": [
+        {
+          "candidate_passed": 8,
+          "candidate_quality": 0.28250037346144047,
+          "candidate_seconds": 388.43402636796236,
+          "candidate_solver_seconds": 347.944212380331,
+          "control_passed": 8,
+          "control_quality": 0.3890936008327935,
+          "control_seconds": 565.3812135588378,
+          "control_solver_seconds": 519.2176776030101,
+          "quality_gain": -0.10659322737135302,
+          "repeat": 0
+        },
+        {
+          "candidate_passed": 8,
+          "candidate_quality": 0.24721280110835886,
+          "candidate_seconds": 374.32673438685015,
+          "candidate_solver_seconds": 332.73698977706954,
+          "control_passed": 8,
+          "control_quality": 0.38953080636006576,
+          "control_seconds": 532.2463365877047,
+          "control_solver_seconds": 486.2866899310611,
+          "quality_gain": -0.1423180052517069,
+          "repeat": 1
+        }
+      ],
+      "scope": "Equal-weight declared tasks only; wall time is not token cost or a significance test"
+    },
+    "reuse-2-vs-control-2": {
+      "accepted": true,
+      "reasons": [],
+      "repeats": [
+        {
+          "candidate_passed": 8,
+          "candidate_quality": 0.38667547289625837,
+          "candidate_seconds": 276.027379445266,
+          "candidate_solver_seconds": 229.7953266268596,
+          "control_passed": 8,
+          "control_quality": 0.28250037346144047,
+          "control_seconds": 388.43402636796236,
+          "control_solver_seconds": 347.944212380331,
+          "quality_gain": 0.1041750994348179,
+          "repeat": 0
+        },
+        {
+          "candidate_passed": 8,
+          "candidate_quality": 0.3562265827648691,
+          "candidate_seconds": 294.5792806171812,
+          "candidate_solver_seconds": 248.04755589412525,
+          "control_passed": 8,
+          "control_quality": 0.24721280110835886,
+          "control_seconds": 374.32673438685015,
+          "control_solver_seconds": 332.73698977706954,
+          "quality_gain": 0.10901378165651027,
+          "repeat": 1
+        }
+      ],
+      "scope": "Equal-weight declared tasks only; wall time is not token cost or a significance test"
+    },
+    "reuse-2-vs-control-4": {
+      "accepted": false,
+      "reasons": [
+        "Aggregate quality regression",
+        "No reproducible whole-suite quality, correctness or cost benefit",
+        "Per-task quality regression"
+      ],
+      "repeats": [
+        {
+          "candidate_passed": 8,
+          "candidate_quality": 0.38667547289625837,
+          "candidate_seconds": 276.027379445266,
+          "candidate_solver_seconds": 229.7953266268596,
+          "control_passed": 8,
+          "control_quality": 0.3890936008327935,
+          "control_seconds": 565.3812135588378,
+          "control_solver_seconds": 519.2176776030101,
+          "quality_gain": -0.0024181279365351194,
+          "repeat": 0
+        },
+        {
+          "candidate_passed": 8,
+          "candidate_quality": 0.3562265827648691,
+          "candidate_seconds": 294.5792806171812,
+          "candidate_solver_seconds": 248.04755589412525,
+          "control_passed": 8,
+          "control_quality": 0.38953080636006576,
+          "control_seconds": 532.2463365877047,
+          "control_solver_seconds": 486.2866899310611,
+          "quality_gain": -0.033304223595196636,
+          "repeat": 1
+        }
+      ],
+      "scope": "Equal-weight declared tasks only; wall time is not token cost or a significance test"
+    },
+    "reuse-2-vs-reuse-4": {
+      "accepted": false,
+      "reasons": [
+        "Aggregate quality regression",
+        "No reproducible whole-suite quality, correctness or cost benefit",
+        "Per-task quality regression"
+      ],
+      "repeats": [
+        {
+          "candidate_passed": 8,
+          "candidate_quality": 0.38667547289625837,
+          "candidate_seconds": 276.027379445266,
+          "candidate_solver_seconds": 229.7953266268596,
+          "control_passed": 8,
+          "control_quality": 0.3935541782349676,
+          "control_seconds": 507.0470834104344,
+          "control_solver_seconds": 460.40843276679516,
+          "quality_gain": -0.006878705338709212,
+          "repeat": 0
+        },
+        {
+          "candidate_passed": 8,
+          "candidate_quality": 0.3562265827648691,
+          "candidate_seconds": 294.5792806171812,
+          "candidate_solver_seconds": 248.04755589412525,
+          "control_passed": 8,
+          "control_quality": 0.41797531318944664,
+          "control_seconds": 572.1652774545364,
+          "control_solver_seconds": 526.8062442224473,
+          "quality_gain": -0.061748730424577514,
+          "repeat": 1
+        }
+      ],
+      "scope": "Equal-weight declared tasks only; wall time is not token cost or a significance test"
+    }
+  },
+  "advice_assignment": [
+    {
+      "arms": {
+        "control-2": {
+          "experience_hash": null,
+          "proposal_hash": null
+        },
+        "control-4": {
+          "experience_hash": null,
+          "proposal_hash": null
+        },
+        "reuse-2": {
+          "experience_hash": null,
+          "proposal_hash": "cb74d57346c9de14563dc03c3fb3deb1a32f77e3400870a695b41da873b38a16"
+        },
+        "reuse-4": {
+          "experience_hash": null,
+          "proposal_hash": "cb74d57346c9de14563dc03c3fb3deb1a32f77e3400870a695b41da873b38a16"
+        }
+      },
+      "episode_id": "f4d08a34c9dc48c2b919fc470129cb556b3e259d21dc644399e7ecf2321d482b",
+      "operator_cluster": 0,
+      "source_hash": "e784db6f757ebcd9a9b53ec7ecb71afed4d699a8ddcdb2d4c52e405419751c3c",
+      "task": "artifact-retune-swish-gate-i",
+      "template_hash": "1ed720ee54c6e432b1ebf91035144e41ed6cac31479529054f8b238e8fbbb18e"
+    },
+    {
+      "arms": {
+        "control-2": {
+          "experience_hash": null,
+          "proposal_hash": null
+        },
+        "control-4": {
+          "experience_hash": null,
+          "proposal_hash": null
+        },
+        "reuse-2": {
+          "experience_hash": null,
+          "proposal_hash": "cb74d57346c9de14563dc03c3fb3deb1a32f77e3400870a695b41da873b38a16"
+        },
+        "reuse-4": {
+          "experience_hash": null,
+          "proposal_hash": "cb74d57346c9de14563dc03c3fb3deb1a32f77e3400870a695b41da873b38a16"
+        }
+      },
+      "episode_id": "f4d08a34c9dc48c2b919fc470129cb556b3e259d21dc644399e7ecf2321d482b",
+      "operator_cluster": 0,
+      "source_hash": "e784db6f757ebcd9a9b53ec7ecb71afed4d699a8ddcdb2d4c52e405419751c3c",
+      "task": "artifact-retune-swish-gate-j",
+      "template_hash": "fcaac1d7cb4543f783e63423c8fac4de2f2ffda4386032fe4f4acc8334b1fbca"
+    },
+    {
+      "arms": {
+        "control-2": {
+          "experience_hash": null,
+          "proposal_hash": null
+        },
+        "control-4": {
+          "experience_hash": null,
+          "proposal_hash": null
+        },
+        "reuse-2": {
+          "experience_hash": null,
+          "proposal_hash": "f40c4b3652ecfe511ffe3b5db5befdf714e0fa09a168f500567510c656d0e278"
+        },
+        "reuse-4": {
+          "experience_hash": null,
+          "proposal_hash": "f40c4b3652ecfe511ffe3b5db5befdf714e0fa09a168f500567510c656d0e278"
+        }
+      },
+      "episode_id": "8e7f3e6f024917bcb6a2cc01fca05b1fb5892111bfe3efdbec50dbf85867befd",
+      "operator_cluster": 1,
+      "source_hash": "069ea821a724a318d4adbddbf0611082ab400f39ef7d58a3829ddd6180cb15a0",
+      "task": "artifact-retune-smooth-l1-i",
+      "template_hash": "5e5522c16d1a941ed6b4ac4b728566c012a1ca026c8683e4fef52e1910b11e30"
+    },
+    {
+      "arms": {
+        "control-2": {
+          "experience_hash": null,
+          "proposal_hash": null
+        },
+        "control-4": {
+          "experience_hash": null,
+          "proposal_hash": null
+        },
+        "reuse-2": {
+          "experience_hash": null,
+          "proposal_hash": "f40c4b3652ecfe511ffe3b5db5befdf714e0fa09a168f500567510c656d0e278"
+        },
+        "reuse-4": {
+          "experience_hash": null,
+          "proposal_hash": "f40c4b3652ecfe511ffe3b5db5befdf714e0fa09a168f500567510c656d0e278"
+        }
+      },
+      "episode_id": "8e7f3e6f024917bcb6a2cc01fca05b1fb5892111bfe3efdbec50dbf85867befd",
+      "operator_cluster": 1,
+      "source_hash": "069ea821a724a318d4adbddbf0611082ab400f39ef7d58a3829ddd6180cb15a0",
+      "task": "artifact-retune-smooth-l1-j",
+      "template_hash": "1c9d19689af9f068cd346b8602fa5172f56d6109cc3a80a037a9c0dc62ba731e"
+    },
+    {
+      "arms": {
+        "control-2": {
+          "experience_hash": null,
+          "proposal_hash": null
+        },
+        "control-4": {
+          "experience_hash": null,
+          "proposal_hash": null
+        },
+        "reuse-2": {
+          "experience_hash": null,
+          "proposal_hash": "b46278a0414bd96c4832a9efb3e59b92f2481b792d0246a8f6584506bc00868b"
+        },
+        "reuse-4": {
+          "experience_hash": null,
+          "proposal_hash": "b46278a0414bd96c4832a9efb3e59b92f2481b792d0246a8f6584506bc00868b"
+        }
+      },
+      "episode_id": "575207e89a57d44fe9ba07704ed6d5c700abf3b05862617154949fc959caa51b",
+      "operator_cluster": 2,
+      "source_hash": "a67bd93beb27c14500f49b35d2b54e25d92737d68da647fc02d1624d82826b77",
+      "task": "artifact-retune-rms-normalize-i",
+      "template_hash": "2290187a077e6456101c04fc26a0fa8abc60dec8093883949156a63e7ac4b83a"
+    },
+    {
+      "arms": {
+        "control-2": {
+          "experience_hash": null,
+          "proposal_hash": null
+        },
+        "control-4": {
+          "experience_hash": null,
+          "proposal_hash": null
+        },
+        "reuse-2": {
+          "experience_hash": null,
+          "proposal_hash": "b46278a0414bd96c4832a9efb3e59b92f2481b792d0246a8f6584506bc00868b"
+        },
+        "reuse-4": {
+          "experience_hash": null,
+          "proposal_hash": "b46278a0414bd96c4832a9efb3e59b92f2481b792d0246a8f6584506bc00868b"
+        }
+      },
+      "episode_id": "575207e89a57d44fe9ba07704ed6d5c700abf3b05862617154949fc959caa51b",
+      "operator_cluster": 2,
+      "source_hash": "a67bd93beb27c14500f49b35d2b54e25d92737d68da647fc02d1624d82826b77",
+      "task": "artifact-retune-rms-normalize-j",
+      "template_hash": "af98dad1905582784aed8d9ed1be0628288288a888e38d0127133e86513fe80f"
+    },
+    {
+      "arms": {
+        "control-2": {
+          "experience_hash": null,
+          "proposal_hash": null
+        },
+        "control-4": {
+          "experience_hash": null,
+          "proposal_hash": null
+        },
+        "reuse-2": {
+          "experience_hash": null,
+          "proposal_hash": "8b790f728514334fc908200f5d6b2cfdcff8da42c354e94d3f9f2bb67918d0ff"
+        },
+        "reuse-4": {
+          "experience_hash": null,
+          "proposal_hash": "8b790f728514334fc908200f5d6b2cfdcff8da42c354e94d3f9f2bb67918d0ff"
+        }
+      },
+      "episode_id": "30328cf08106c3390296659a93dd2c324a571260f554ef4712b98f3802a8a557",
+      "operator_cluster": 3,
+      "source_hash": "7cc561e1f7ec8726c730c9e9d4138038d989710f4019e990a0ee277515520791",
+      "task": "artifact-retune-central-variance-i",
+      "template_hash": "b696a6b405301a1bbe075cb186bd70a800869f699b1002385a355c6960f7ec3b"
+    },
+    {
+      "arms": {
+        "control-2": {
+          "experience_hash": null,
+          "proposal_hash": null
+        },
+        "control-4": {
+          "experience_hash": null,
+          "proposal_hash": null
+        },
+        "reuse-2": {
+          "experience_hash": null,
+          "proposal_hash": "8b790f728514334fc908200f5d6b2cfdcff8da42c354e94d3f9f2bb67918d0ff"
+        },
+        "reuse-4": {
+          "experience_hash": null,
+          "proposal_hash": "8b790f728514334fc908200f5d6b2cfdcff8da42c354e94d3f9f2bb67918d0ff"
+        }
+      },
+      "episode_id": "30328cf08106c3390296659a93dd2c324a571260f554ef4712b98f3802a8a557",
+      "operator_cluster": 3,
+      "source_hash": "7cc561e1f7ec8726c730c9e9d4138038d989710f4019e990a0ee277515520791",
+      "task": "artifact-retune-central-variance-j",
+      "template_hash": "69748a6147f08a48fd5986499a1e382927d3d8161dd1808d2d7135081129855a"
+    }
+  ],
+  "model_calls": [
+    {
+      "id": "01-solve-66bf22e4",
+      "trial_id": "0-0-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 9.25478982925415,
+      "usage": {
+        "cost": 0.047635,
+        "input_tokens": 5425,
+        "input_tokens_details": {
+          "cache_write_tokens": 5422,
+          "cached_tokens": 0
+        },
+        "output_tokens": 276,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 5701
+      },
+      "error_type": null,
+      "stage": 0
+    },
+    {
+      "id": "02-solve-ba486790",
+      "trial_id": "0-0-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 9.302028179168701,
+      "usage": {
+        "cost": 0.059192,
+        "input_tokens": 6536,
+        "input_tokens_details": {
+          "cache_write_tokens": 6533,
+          "cached_tokens": 0
+        },
+        "output_tokens": 384,
+        "output_tokens_details": {
+          "reasoning_tokens": 71
+        },
+        "total_tokens": 6920
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "03-solve-7fff36f1",
+      "trial_id": "0-0-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 9.860093832015991,
+      "usage": {
+        "cost": 0.0718025,
+        "input_tokens": 10760,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 459,
+        "output_tokens_details": {
+          "reasoning_tokens": 87
+        },
+        "total_tokens": 11219
+      },
+      "error_type": null,
+      "stage": 2
+    },
+    {
+      "id": "04-solve-39fb0f02",
+      "trial_id": "0-0-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 5.696515083312988,
+      "usage": {
+        "cost": 0.107303,
+        "input_tokens": 14899,
+        "input_tokens_details": {
+          "cache_write_tokens": 14896,
+          "cached_tokens": 0
+        },
+        "output_tokens": 86,
+        "output_tokens_details": {
+          "reasoning_tokens": 29
+        },
+        "total_tokens": 14985
+      },
+      "error_type": null,
+      "stage": 3
+    },
+    {
+      "id": "05-solve-0b737bb3",
+      "trial_id": "0-0-control-2",
+      "arm": "control-2",
+      "status": "completed",
+      "seconds": 16.982307195663452,
+      "usage": {
+        "cost": 0.058506,
+        "input_tokens": 5433,
+        "input_tokens_details": {
+          "cache_write_tokens": 5430,
+          "cached_tokens": 0
+        },
+        "output_tokens": 585,
+        "output_tokens_details": {
+          "reasoning_tokens": 234
+        },
+        "total_tokens": 6018
+      },
+      "error_type": null,
+      "stage": 0
+    },
+    {
+      "id": "06-solve-4df5c49a",
+      "trial_id": "0-0-control-2",
+      "arm": "control-2",
+      "status": "completed",
+      "seconds": 13.781320810317993,
+      "usage": {
+        "cost": 0.086205,
+        "input_tokens": 9685,
+        "input_tokens_details": {
+          "cache_write_tokens": 9682,
+          "cached_tokens": 0
+        },
+        "output_tokens": 526,
+        "output_tokens_details": {
+          "reasoning_tokens": 117
+        },
+        "total_tokens": 10211
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "07-solve-081f4560",
+      "trial_id": "0-0-reuse-2",
+      "arm": "reuse-2",
+      "status": "completed",
+      "seconds": 16.65678906440735,
+      "usage": {
+        "cost": 0.090104,
+        "input_tokens": 9602,
+        "input_tokens_details": {
+          "cache_write_tokens": 9599,
+          "cached_tokens": 0
+        },
+        "output_tokens": 654,
+        "output_tokens_details": {
+          "reasoning_tokens": 245
+        },
+        "total_tokens": 10256
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "08-solve-87f96efd",
+      "trial_id": "0-0-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 8.412329912185669,
+      "usage": {
+        "cost": 0.063657,
+        "input_tokens": 9604,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 394,
+        "output_tokens_details": {
+          "reasoning_tokens": 56
+        },
+        "total_tokens": 9998
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "09-solve-1c865b98",
+      "trial_id": "0-0-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 10.437730073928833,
+      "usage": {
+        "cost": 0.0890065,
+        "input_tokens": 13863,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 464,
+        "output_tokens_details": {
+          "reasoning_tokens": 56
+        },
+        "total_tokens": 14327
+      },
+      "error_type": null,
+      "stage": 2
+    },
+    {
+      "id": "10-solve-96a586d7",
+      "trial_id": "0-0-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 14.31014895439148,
+      "usage": {
+        "cost": 0.146937,
+        "input_tokens": 18036,
+        "input_tokens_details": {
+          "cache_write_tokens": 18033,
+          "cached_tokens": 0
+        },
+        "output_tokens": 591,
+        "output_tokens_details": {
+          "reasoning_tokens": 176
+        },
+        "total_tokens": 18627
+      },
+      "error_type": null,
+      "stage": 3
+    },
+    {
+      "id": "100-solve-eb94b71b",
+      "trial_id": "1-2-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 11.16386890411377,
+      "usage": {
+        "cost": 0.065087,
+        "input_tokens": 9534,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 460,
+        "output_tokens_details": {
+          "reasoning_tokens": 101
+        },
+        "total_tokens": 9994
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "101-solve-120e481e",
+      "trial_id": "1-2-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 9.25524091720581,
+      "usage": {
+        "cost": 0.0786225,
+        "input_tokens": 13605,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 138,
+        "output_tokens_details": {
+          "reasoning_tokens": 76
+        },
+        "total_tokens": 13743
+      },
+      "error_type": null,
+      "stage": 2
+    },
+    {
+      "id": "102-solve-cc9d7bc7",
+      "trial_id": "1-3-reuse-2",
+      "arm": "reuse-2",
+      "status": "completed",
+      "seconds": 14.876055002212524,
+      "usage": {
+        "cost": 0.085932,
+        "input_tokens": 9566,
+        "input_tokens_details": {
+          "cache_write_tokens": 9563,
+          "cached_tokens": 0
+        },
+        "output_tokens": 542,
+        "output_tokens_details": {
+          "reasoning_tokens": 169
+        },
+        "total_tokens": 10108
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "103-solve-2ec8855f",
+      "trial_id": "1-3-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 7.058224201202393,
+      "usage": {
+        "cost": 0.039446,
+        "input_tokens": 5467,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 341,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 5808
+      },
+      "error_type": null,
+      "stage": 0
+    },
+    {
+      "id": "104-solve-1db435ca",
+      "trial_id": "1-3-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 10.648533821105957,
+      "usage": {
+        "cost": 0.08498,
+        "input_tokens": 9530,
+        "input_tokens_details": {
+          "cache_write_tokens": 9527,
+          "cached_tokens": 0
+        },
+        "output_tokens": 522,
+        "output_tokens_details": {
+          "reasoning_tokens": 126
+        },
+        "total_tokens": 10052
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "105-solve-850dfef5",
+      "trial_id": "1-3-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 16.5628662109375,
+      "usage": {
+        "cost": 0.106834,
+        "input_tokens": 13647,
+        "input_tokens_details": {
+          "cache_write_tokens": 13644,
+          "cached_tokens": 0
+        },
+        "output_tokens": 323,
+        "output_tokens_details": {
+          "reasoning_tokens": 260
+        },
+        "total_tokens": 13970
+      },
+      "error_type": null,
+      "stage": 2
+    },
+    {
+      "id": "106-solve-78154474",
+      "trial_id": "1-3-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 9.788492918014526,
+      "usage": {
+        "cost": 0.0660935,
+        "input_tokens": 9572,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 489,
+        "output_tokens_details": {
+          "reasoning_tokens": 108
+        },
+        "total_tokens": 10061
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "107-solve-86c6c406",
+      "trial_id": "1-3-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 17.84646511077881,
+      "usage": {
+        "cost": 0.119154,
+        "input_tokens": 13677,
+        "input_tokens_details": {
+          "cache_write_tokens": 13674,
+          "cached_tokens": 0
+        },
+        "output_tokens": 669,
+        "output_tokens_details": {
+          "reasoning_tokens": 210
+        },
+        "total_tokens": 14346
+      },
+      "error_type": null,
+      "stage": 2
+    },
+    {
+      "id": "108-solve-fcf1d971",
+      "trial_id": "1-3-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 7.176654100418091,
+      "usage": {
+        "cost": 0.127799,
+        "input_tokens": 17867,
+        "input_tokens_details": {
+          "cache_write_tokens": 17864,
+          "cached_tokens": 0
+        },
+        "output_tokens": 78,
+        "output_tokens_details": {
+          "reasoning_tokens": 26
+        },
+        "total_tokens": 17945
+      },
+      "error_type": null,
+      "stage": 3
+    },
+    {
+      "id": "109-solve-cc2a4632",
+      "trial_id": "1-3-control-2",
+      "arm": "control-2",
+      "status": "completed",
+      "seconds": 14.920804977416992,
+      "usage": {
+        "cost": 0.054796,
+        "input_tokens": 5463,
+        "input_tokens_details": {
+          "cache_write_tokens": 5460,
+          "cached_tokens": 0
+        },
+        "output_tokens": 473,
+        "output_tokens_details": {
+          "reasoning_tokens": 100
+        },
+        "total_tokens": 5936
+      },
+      "error_type": null,
+      "stage": 0
+    },
+    {
+      "id": "11-solve-913f3c9f",
+      "trial_id": "0-1-control-2",
+      "arm": "control-2",
+      "status": "completed",
+      "seconds": 12.574433088302612,
+      "usage": {
+        "cost": 0.055902,
+        "input_tokens": 5436,
+        "input_tokens_details": {
+          "cache_write_tokens": 5433,
+          "cached_tokens": 0
+        },
+        "output_tokens": 510,
+        "output_tokens_details": {
+          "reasoning_tokens": 182
+        },
+        "total_tokens": 5946
+      },
+      "error_type": null,
+      "stage": 0
+    },
+    {
+      "id": "110-solve-9c86276b",
+      "trial_id": "1-3-control-2",
+      "arm": "control-2",
+      "status": "completed",
+      "seconds": 8.296568155288696,
+      "usage": {
+        "cost": 0.07126,
+        "input_tokens": 9565,
+        "input_tokens_details": {
+          "cache_write_tokens": 9562,
+          "cached_tokens": 0
+        },
+        "output_tokens": 123,
+        "output_tokens_details": {
+          "reasoning_tokens": 58
+        },
+        "total_tokens": 9688
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "111-solve-65558e9d",
+      "trial_id": "1-4-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 10.458958864212036,
+      "usage": {
+        "cost": 0.05187,
+        "input_tokens": 5495,
+        "input_tokens_details": {
+          "cache_write_tokens": 5492,
+          "cached_tokens": 0
+        },
+        "output_tokens": 383,
+        "output_tokens_details": {
+          "reasoning_tokens": 46
+        },
+        "total_tokens": 5878
+      },
+      "error_type": null,
+      "stage": 0
+    },
+    {
+      "id": "112-solve-dec5150e",
+      "trial_id": "1-4-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 20.23668909072876,
+      "usage": {
+        "cost": 0.072884,
+        "input_tokens": 6722,
+        "input_tokens_details": {
+          "cache_write_tokens": 6719,
+          "cached_tokens": 0
+        },
+        "output_tokens": 738,
+        "output_tokens_details": {
+          "reasoning_tokens": 180
+        },
+        "total_tokens": 7460
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "113-solve-760044c4",
+      "trial_id": "1-4-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 13.905074834823608,
+      "usage": {
+        "cost": 0.108276,
+        "input_tokens": 11028,
+        "input_tokens_details": {
+          "cache_write_tokens": 11025,
+          "cached_tokens": 0
+        },
+        "output_tokens": 888,
+        "output_tokens_details": {
+          "reasoning_tokens": 93
+        },
+        "total_tokens": 11916
+      },
+      "error_type": null,
+      "stage": 2
+    },
+    {
+      "id": "114-solve-83bf1b54",
+      "trial_id": "1-4-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 14.750558853149414,
+      "usage": {
+        "cost": 0.110198,
+        "input_tokens": 15551,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 897,
+        "output_tokens_details": {
+          "reasoning_tokens": 80
+        },
+        "total_tokens": 16448
+      },
+      "error_type": null,
+      "stage": 3
+    },
+    {
+      "id": "115-solve-21a55e94",
+      "trial_id": "1-4-control-2",
+      "arm": "control-2",
+      "status": "completed",
+      "seconds": 6.751772880554199,
+      "usage": {
+        "cost": 0.039226,
+        "input_tokens": 5502,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 326,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 5828
+      },
+      "error_type": null,
+      "stage": 0
+    },
+    {
+      "id": "116-solve-c825bdbf",
+      "trial_id": "1-4-control-2",
+      "arm": "control-2",
+      "status": "completed",
+      "seconds": 21.253073930740356,
+      "usage": {
+        "cost": 0.0686345,
+        "input_tokens": 6724,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 1151,
+        "output_tokens_details": {
+          "reasoning_tokens": 355
+        },
+        "total_tokens": 7875
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "117-solve-45f399d0",
+      "trial_id": "1-4-reuse-2",
+      "arm": "reuse-2",
+      "status": "completed",
+      "seconds": 23.078436136245728,
+      "usage": {
+        "cost": 0.104125,
+        "input_tokens": 9800,
+        "input_tokens_details": {
+          "cache_write_tokens": 9797,
+          "cached_tokens": 0
+        },
+        "output_tokens": 1015,
+        "output_tokens_details": {
+          "reasoning_tokens": 257
+        },
+        "total_tokens": 10815
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "118-solve-7912120b",
+      "trial_id": "1-4-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 23.482798099517822,
+      "usage": {
+        "cost": 0.104349,
+        "input_tokens": 9797,
+        "input_tokens_details": {
+          "cache_write_tokens": 9794,
+          "cached_tokens": 0
+        },
+        "output_tokens": 1022,
+        "output_tokens_details": {
+          "reasoning_tokens": 285
+        },
+        "total_tokens": 10819
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "119-solve-73043c87",
+      "trial_id": "1-4-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 16.833938121795654,
+      "usage": {
+        "cost": 0.119686,
+        "input_tokens": 14283,
+        "input_tokens_details": {
+          "cache_write_tokens": 14280,
+          "cached_tokens": 0
+        },
+        "output_tokens": 563,
+        "output_tokens_details": {
+          "reasoning_tokens": 228
+        },
+        "total_tokens": 14846
+      },
+      "error_type": null,
+      "stage": 2
+    },
+    {
+      "id": "12-solve-6f5f8fb0",
+      "trial_id": "0-1-control-2",
+      "arm": "control-2",
+      "status": "completed",
+      "seconds": 19.593183994293213,
+      "usage": {
+        "cost": 0.068656,
+        "input_tokens": 6598,
+        "input_tokens_details": {
+          "cache_write_tokens": 6595,
+          "cached_tokens": 0
+        },
+        "output_tokens": 642,
+        "output_tokens_details": {
+          "reasoning_tokens": 281
+        },
+        "total_tokens": 7240
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "120-solve-4dbab0b6",
+      "trial_id": "1-4-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 15.019949674606323,
+      "usage": {
+        "cost": 0.105072,
+        "input_tokens": 15519,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 717,
+        "output_tokens_details": {
+          "reasoning_tokens": 149
+        },
+        "total_tokens": 16236
+      },
+      "error_type": null,
+      "stage": 3
+    },
+    {
+      "id": "121-solve-c32a7bc8",
+      "trial_id": "1-5-control-2",
+      "arm": "control-2",
+      "status": "completed",
+      "seconds": 12.488962888717651,
+      "usage": {
+        "cost": 0.052241,
+        "input_tokens": 5498,
+        "input_tokens_details": {
+          "cache_write_tokens": 5495,
+          "cached_tokens": 0
+        },
+        "output_tokens": 393,
+        "output_tokens_details": {
+          "reasoning_tokens": 55
+        },
+        "total_tokens": 5891
+      },
+      "error_type": null,
+      "stage": 0
+    },
+    {
+      "id": "122-solve-6eb0f047",
+      "trial_id": "1-5-control-2",
+      "arm": "control-2",
+      "status": "completed",
+      "seconds": 32.273029088974,
+      "usage": {
+        "cost": 0.081571,
+        "input_tokens": 6728,
+        "input_tokens_details": {
+          "cache_write_tokens": 6725,
+          "cached_tokens": 0
+        },
+        "output_tokens": 985,
+        "output_tokens_details": {
+          "reasoning_tokens": 369
+        },
+        "total_tokens": 7713
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "123-solve-f08a3a68",
+      "trial_id": "1-5-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 14.903968095779419,
+      "usage": {
+        "cost": 0.083237,
+        "input_tokens": 9881,
+        "input_tokens_details": {
+          "cache_write_tokens": 9878,
+          "cached_tokens": 0
+        },
+        "output_tokens": 402,
+        "output_tokens_details": {
+          "reasoning_tokens": 81
+        },
+        "total_tokens": 10283
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "124-solve-c6e234ac",
+      "trial_id": "1-5-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 17.16236114501953,
+      "usage": {
+        "cost": 0.09387,
+        "input_tokens": 11095,
+        "input_tokens_details": {
+          "cache_write_tokens": 11092,
+          "cached_tokens": 0
+        },
+        "output_tokens": 463,
+        "output_tokens_details": {
+          "reasoning_tokens": 82
+        },
+        "total_tokens": 11558
+      },
+      "error_type": null,
+      "stage": 2
+    },
+    {
+      "id": "125-solve-4e28382c",
+      "trial_id": "1-5-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 10.05522894859314,
+      "usage": {
+        "cost": 0.111279,
+        "input_tokens": 15197,
+        "input_tokens_details": {
+          "cache_write_tokens": 15194,
+          "cached_tokens": 0
+        },
+        "output_tokens": 140,
+        "output_tokens_details": {
+          "reasoning_tokens": 77
+        },
+        "total_tokens": 15337
+      },
+      "error_type": null,
+      "stage": 3
+    },
+    {
+      "id": "126-solve-d46632ea",
+      "trial_id": "1-5-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 6.2568182945251465,
+      "usage": {
+        "cost": 0.048426,
+        "input_tokens": 5498,
+        "input_tokens_details": {
+          "cache_write_tokens": 5495,
+          "cached_tokens": 0
+        },
+        "output_tokens": 284,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 5782
+      },
+      "error_type": null,
+      "stage": 0
+    },
+    {
+      "id": "127-solve-fc28e054",
+      "trial_id": "1-5-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 26.269163131713867,
+      "usage": {
+        "cost": 0.081774,
+        "input_tokens": 6672,
+        "input_tokens_details": {
+          "cache_write_tokens": 6669,
+          "cached_tokens": 0
+        },
+        "output_tokens": 1002,
+        "output_tokens_details": {
+          "reasoning_tokens": 337
+        },
+        "total_tokens": 7674
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "128-solve-a2d20a92",
+      "trial_id": "1-5-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 8.98204493522644,
+      "usage": {
+        "cost": 0.072391,
+        "input_tokens": 11222,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 388,
+        "output_tokens_details": {
+          "reasoning_tokens": 32
+        },
+        "total_tokens": 11610
+      },
+      "error_type": null,
+      "stage": 2
+    },
+    {
+      "id": "129-solve-f0361124",
+      "trial_id": "1-5-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 10.281468152999878,
+      "usage": {
+        "cost": 0.109865,
+        "input_tokens": 15345,
+        "input_tokens_details": {
+          "cache_write_tokens": 15342,
+          "cached_tokens": 0
+        },
+        "output_tokens": 70,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 15415
+      },
+      "error_type": null,
+      "stage": 3
+    },
+    {
+      "id": "13-solve-3459d6a2",
+      "trial_id": "0-1-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 7.847510099411011,
+      "usage": {
+        "cost": 0.080563,
+        "input_tokens": 9609,
+        "input_tokens_details": {
+          "cache_write_tokens": 9606,
+          "cached_tokens": 0
+        },
+        "output_tokens": 380,
+        "output_tokens_details": {
+          "reasoning_tokens": 40
+        },
+        "total_tokens": 9989
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "130-solve-5f8057f3",
+      "trial_id": "1-5-reuse-2",
+      "arm": "reuse-2",
+      "status": "completed",
+      "seconds": 14.972141027450562,
+      "usage": {
+        "cost": 0.0787215,
+        "input_tokens": 9783,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 906,
+        "output_tokens_details": {
+          "reasoning_tokens": 163
+        },
+        "total_tokens": 10689
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "131-solve-3d9572f6",
+      "trial_id": "1-6-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 19.296469926834106,
+      "usage": {
+        "cost": 0.08113,
+        "input_tokens": 9530,
+        "input_tokens_details": {
+          "cache_write_tokens": 9527,
+          "cached_tokens": 0
+        },
+        "output_tokens": 412,
+        "output_tokens_details": {
+          "reasoning_tokens": 312
+        },
+        "total_tokens": 9942
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "132-solve-2b8e3560",
+      "trial_id": "1-6-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 10.582987070083618,
+      "usage": {
+        "cost": 0.108458,
+        "input_tokens": 13384,
+        "input_tokens_details": {
+          "cache_write_tokens": 13381,
+          "cached_tokens": 0
+        },
+        "output_tokens": 422,
+        "output_tokens_details": {
+          "reasoning_tokens": 97
+        },
+        "total_tokens": 13806
+      },
+      "error_type": null,
+      "stage": 2
+    },
+    {
+      "id": "133-solve-a784f66f",
+      "trial_id": "1-6-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 5.398184061050415,
+      "usage": {
+        "cost": 0.09856,
+        "input_tokens": 17465,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 91,
+        "output_tokens_details": {
+          "reasoning_tokens": 38
+        },
+        "total_tokens": 17556
+      },
+      "error_type": null,
+      "stage": 3
+    },
+    {
+      "id": "134-solve-e1aaad2e",
+      "trial_id": "1-6-reuse-2",
+      "arm": "reuse-2",
+      "status": "completed",
+      "seconds": 5.484730005264282,
+      "usage": {
+        "cost": 0.069895,
+        "input_tokens": 9535,
+        "input_tokens_details": {
+          "cache_write_tokens": 9532,
+          "cached_tokens": 0
+        },
+        "output_tokens": 90,
+        "output_tokens_details": {
+          "reasoning_tokens": 32
+        },
+        "total_tokens": 9625
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "135-solve-f5c409ab",
+      "trial_id": "1-6-control-2",
+      "arm": "control-2",
+      "status": "completed",
+      "seconds": 7.79080605506897,
+      "usage": {
+        "cost": 0.052038,
+        "input_tokens": 5489,
+        "input_tokens_details": {
+          "cache_write_tokens": 5486,
+          "cached_tokens": 0
+        },
+        "output_tokens": 389,
+        "output_tokens_details": {
+          "reasoning_tokens": 47
+        },
+        "total_tokens": 5878
+      },
+      "error_type": null,
+      "stage": 0
+    },
+    {
+      "id": "136-solve-20a3abf0",
+      "trial_id": "1-6-control-2",
+      "arm": "control-2",
+      "status": "completed",
+      "seconds": 5.981496810913086,
+      "usage": {
+        "cost": 0.071267,
+        "input_tokens": 9566,
+        "input_tokens_details": {
+          "cache_write_tokens": 9563,
+          "cached_tokens": 0
+        },
+        "output_tokens": 123,
+        "output_tokens_details": {
+          "reasoning_tokens": 63
+        },
+        "total_tokens": 9689
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "137-solve-733612ea",
+      "trial_id": "1-6-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 8.863014936447144,
+      "usage": {
+        "cost": 0.040392,
+        "input_tokens": 5489,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 371,
+        "output_tokens_details": {
+          "reasoning_tokens": 53
+        },
+        "total_tokens": 5860
+      },
+      "error_type": null,
+      "stage": 0
+    },
+    {
+      "id": "138-solve-7612f51b",
+      "trial_id": "1-6-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 10.350234746932983,
+      "usage": {
+        "cost": 0.0583935,
+        "input_tokens": 9552,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 213,
+        "output_tokens_details": {
+          "reasoning_tokens": 150
+        },
+        "total_tokens": 9765
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "139-solve-bbc44dc1",
+      "trial_id": "1-7-reuse-2",
+      "arm": "reuse-2",
+      "status": "completed",
+      "seconds": 5.188398838043213,
+      "usage": {
+        "cost": 0.055605,
+        "input_tokens": 9530,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 116,
+        "output_tokens_details": {
+          "reasoning_tokens": 62
+        },
+        "total_tokens": 9646
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "14-solve-dcc59f63",
+      "trial_id": "0-1-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 8.180206298828125,
+      "usage": {
+        "cost": 0.111699,
+        "input_tokens": 13862,
+        "input_tokens_details": {
+          "cache_write_tokens": 13859,
+          "cached_tokens": 0
+        },
+        "output_tokens": 419,
+        "output_tokens_details": {
+          "reasoning_tokens": 32
+        },
+        "total_tokens": 14281
+      },
+      "error_type": null,
+      "stage": 2
+    },
+    {
+      "id": "140-solve-eae98e70",
+      "trial_id": "1-7-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 5.864178895950317,
+      "usage": {
+        "cost": 0.0381535,
+        "input_tokens": 5487,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 290,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 5777
+      },
+      "error_type": null,
+      "stage": 0
+    },
+    {
+      "id": "141-solve-49cc5220",
+      "trial_id": "1-7-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 15.201702117919922,
+      "usage": {
+        "cost": 0.0646415,
+        "input_tokens": 9533,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 444,
+        "output_tokens_details": {
+          "reasoning_tokens": 370
+        },
+        "total_tokens": 9977
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "142-solve-a73c8482",
+      "trial_id": "1-7-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 22.853325128555298,
+      "usage": {
+        "cost": 0.083132,
+        "input_tokens": 9546,
+        "input_tokens_details": {
+          "cache_write_tokens": 9543,
+          "cached_tokens": 0
+        },
+        "output_tokens": 466,
+        "output_tokens_details": {
+          "reasoning_tokens": 365
+        },
+        "total_tokens": 10012
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "143-solve-6e83c44f",
+      "trial_id": "1-7-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 12.579241037368774,
+      "usage": {
+        "cost": 0.100296,
+        "input_tokens": 13398,
+        "input_tokens_details": {
+          "cache_write_tokens": 13395,
+          "cached_tokens": 0
+        },
+        "output_tokens": 186,
+        "output_tokens_details": {
+          "reasoning_tokens": 73
+        },
+        "total_tokens": 13584
+      },
+      "error_type": null,
+      "stage": 2
+    },
+    {
+      "id": "144-solve-f957bd53",
+      "trial_id": "1-7-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 4.637771129608154,
+      "usage": {
+        "cost": 0.123053,
+        "input_tokens": 17264,
+        "input_tokens_details": {
+          "cache_write_tokens": 17261,
+          "cached_tokens": 0
+        },
+        "output_tokens": 63,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 17327
+      },
+      "error_type": null,
+      "stage": 3
+    },
+    {
+      "id": "145-solve-82cf030d",
+      "trial_id": "1-7-control-2",
+      "arm": "control-2",
+      "status": "completed",
+      "seconds": 6.874291896820068,
+      "usage": {
+        "cost": 0.050358,
+        "input_tokens": 5489,
+        "input_tokens_details": {
+          "cache_write_tokens": 5486,
+          "cached_tokens": 0
+        },
+        "output_tokens": 341,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 5830
+      },
+      "error_type": null,
+      "stage": 0
+    },
+    {
+      "id": "146-solve-22335fcd",
+      "trial_id": "1-7-control-2",
+      "arm": "control-2",
+      "status": "completed",
+      "seconds": 4.999983072280884,
+      "usage": {
+        "cost": 0.055561,
+        "input_tokens": 9582,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 104,
+        "output_tokens_details": {
+          "reasoning_tokens": 44
+        },
+        "total_tokens": 9686
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "15-solve-d4ad74bf",
+      "trial_id": "0-1-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 7.415089845657349,
+      "usage": {
+        "cost": 0.10373,
+        "input_tokens": 18000,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 172,
+        "output_tokens_details": {
+          "reasoning_tokens": 117
+        },
+        "total_tokens": 18172
+      },
+      "error_type": null,
+      "stage": 3
+    },
+    {
+      "id": "16-solve-e250ee29",
+      "trial_id": "0-1-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 8.270149946212769,
+      "usage": {
+        "cost": 0.049028,
+        "input_tokens": 5434,
+        "input_tokens_details": {
+          "cache_write_tokens": 5431,
+          "cached_tokens": 0
+        },
+        "output_tokens": 314,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 5748
+      },
+      "error_type": null,
+      "stage": 0
+    },
+    {
+      "id": "17-solve-427b08a2",
+      "trial_id": "0-1-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 10.239519119262695,
+      "usage": {
+        "cost": 0.062034,
+        "input_tokens": 6587,
+        "input_tokens_details": {
+          "cache_write_tokens": 6584,
+          "cached_tokens": 0
+        },
+        "output_tokens": 455,
+        "output_tokens_details": {
+          "reasoning_tokens": 104
+        },
+        "total_tokens": 7042
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "18-solve-7ceb96bf",
+      "trial_id": "0-1-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 10.686743974685669,
+      "usage": {
+        "cost": 0.092722,
+        "input_tokens": 10846,
+        "input_tokens_details": {
+          "cache_write_tokens": 10843,
+          "cached_tokens": 0
+        },
+        "output_tokens": 480,
+        "output_tokens_details": {
+          "reasoning_tokens": 68
+        },
+        "total_tokens": 11326
+      },
+      "error_type": null,
+      "stage": 2
+    },
+    {
+      "id": "19-solve-1046dbe0",
+      "trial_id": "0-1-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 6.155709981918335,
+      "usage": {
+        "cost": 0.10836,
+        "input_tokens": 15020,
+        "input_tokens_details": {
+          "cache_write_tokens": 15017,
+          "cached_tokens": 0
+        },
+        "output_tokens": 92,
+        "output_tokens_details": {
+          "reasoning_tokens": 34
+        },
+        "total_tokens": 15112
+      },
+      "error_type": null,
+      "stage": 3
+    },
+    {
+      "id": "20-solve-6a4a5bde",
+      "trial_id": "0-1-reuse-2",
+      "arm": "reuse-2",
+      "status": "completed",
+      "seconds": 19.036915063858032,
+      "usage": {
+        "cost": 0.071379,
+        "input_tokens": 9608,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 674,
+        "output_tokens_details": {
+          "reasoning_tokens": 272
+        },
+        "total_tokens": 10282
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "21-solve-19b27266",
+      "trial_id": "0-2-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 13.3472740650177,
+      "usage": {
+        "cost": 0.083006,
+        "input_tokens": 9568,
+        "input_tokens_details": {
+          "cache_write_tokens": 9565,
+          "cached_tokens": 0
+        },
+        "output_tokens": 458,
+        "output_tokens_details": {
+          "reasoning_tokens": 99
+        },
+        "total_tokens": 10026
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "22-solve-5a2f42c3",
+      "trial_id": "0-2-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 14.78406810760498,
+      "usage": {
+        "cost": 0.0936705,
+        "input_tokens": 13661,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 674,
+        "output_tokens_details": {
+          "reasoning_tokens": 213
+        },
+        "total_tokens": 14335
+      },
+      "error_type": null,
+      "stage": 2
+    },
+    {
+      "id": "23-solve-b10594b8",
+      "trial_id": "0-2-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 3.866471767425537,
+      "usage": {
+        "cost": 0.099572,
+        "input_tokens": 17829,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 55,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 17884
+      },
+      "error_type": null,
+      "stage": 3
+    },
+    {
+      "id": "24-solve-d25ea9e2",
+      "trial_id": "0-2-reuse-2",
+      "arm": "reuse-2",
+      "status": "completed",
+      "seconds": 12.473251104354858,
+      "usage": {
+        "cost": 0.08435,
+        "input_tokens": 9585,
+        "input_tokens_details": {
+          "cache_write_tokens": 9582,
+          "cached_tokens": 0
+        },
+        "output_tokens": 493,
+        "output_tokens_details": {
+          "reasoning_tokens": 126
+        },
+        "total_tokens": 10078
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "25-solve-6bbc0f95",
+      "trial_id": "0-2-control-2",
+      "arm": "control-2",
+      "status": "completed",
+      "seconds": 14.042449951171875,
+      "usage": {
+        "cost": 0.055468,
+        "input_tokens": 5474,
+        "input_tokens_details": {
+          "cache_write_tokens": 5471,
+          "cached_tokens": 0
+        },
+        "output_tokens": 490,
+        "output_tokens_details": {
+          "reasoning_tokens": 118
+        },
+        "total_tokens": 5964
+      },
+      "error_type": null,
+      "stage": 0
+    },
+    {
+      "id": "26-solve-397a0a75",
+      "trial_id": "0-2-control-2",
+      "arm": "control-2",
+      "status": "completed",
+      "seconds": 6.657630920410156,
+      "usage": {
+        "cost": 0.071526,
+        "input_tokens": 9583,
+        "input_tokens_details": {
+          "cache_write_tokens": 9580,
+          "cached_tokens": 0
+        },
+        "output_tokens": 127,
+        "output_tokens_details": {
+          "reasoning_tokens": 59
+        },
+        "total_tokens": 9710
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "27-solve-d6e1168d",
+      "trial_id": "0-2-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 7.594490051269531,
+      "usage": {
+        "cost": 0.049966,
+        "input_tokens": 5478,
+        "input_tokens_details": {
+          "cache_write_tokens": 5475,
+          "cached_tokens": 0
+        },
+        "output_tokens": 332,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 5810
+      },
+      "error_type": null,
+      "stage": 0
+    },
+    {
+      "id": "28-solve-82d4c16a",
+      "trial_id": "0-2-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 7.7932448387146,
+      "usage": {
+        "cost": 0.080304,
+        "input_tokens": 9552,
+        "input_tokens_details": {
+          "cache_write_tokens": 9549,
+          "cached_tokens": 0
+        },
+        "output_tokens": 384,
+        "output_tokens_details": {
+          "reasoning_tokens": 26
+        },
+        "total_tokens": 9936
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "29-solve-d02efdc3",
+      "trial_id": "0-2-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 16.002737045288086,
+      "usage": {
+        "cost": 0.11389,
+        "input_tokens": 13635,
+        "input_tokens_details": {
+          "cache_write_tokens": 13632,
+          "cached_tokens": 0
+        },
+        "output_tokens": 527,
+        "output_tokens_details": {
+          "reasoning_tokens": 166
+        },
+        "total_tokens": 14162
+      },
+      "error_type": null,
+      "stage": 2
+    },
+    {
+      "id": "30-solve-deec217b",
+      "trial_id": "0-2-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 10.203130960464478,
+      "usage": {
+        "cost": 0.14007,
+        "input_tokens": 17715,
+        "input_tokens_details": {
+          "cache_write_tokens": 17712,
+          "cached_tokens": 0
+        },
+        "output_tokens": 459,
+        "output_tokens_details": {
+          "reasoning_tokens": 84
+        },
+        "total_tokens": 18174
+      },
+      "error_type": null,
+      "stage": 3
+    },
+    {
+      "id": "31-solve-54761ea9",
+      "trial_id": "0-3-reuse-2",
+      "arm": "reuse-2",
+      "status": "completed",
+      "seconds": 7.499119758605957,
+      "usage": {
+        "cost": 0.0561825,
+        "input_tokens": 9560,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 131,
+        "output_tokens_details": {
+          "reasoning_tokens": 69
+        },
+        "total_tokens": 9691
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "32-solve-544894a1",
+      "trial_id": "0-3-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 7.483494997024536,
+      "usage": {
+        "cost": 0.0393305,
+        "input_tokens": 5476,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 335,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 5811
+      },
+      "error_type": null,
+      "stage": 0
+    },
+    {
+      "id": "33-solve-fb33091a",
+      "trial_id": "0-3-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 11.590970039367676,
+      "usage": {
+        "cost": 0.083902,
+        "input_tokens": 9536,
+        "input_tokens_details": {
+          "cache_write_tokens": 9533,
+          "cached_tokens": 0
+        },
+        "output_tokens": 490,
+        "output_tokens_details": {
+          "reasoning_tokens": 131
+        },
+        "total_tokens": 10026
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "34-solve-26ff6e44",
+      "trial_id": "0-3-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 12.730268001556396,
+      "usage": {
+        "cost": 0.0914815,
+        "input_tokens": 13608,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 605,
+        "output_tokens_details": {
+          "reasoning_tokens": 154
+        },
+        "total_tokens": 14213
+      },
+      "error_type": null,
+      "stage": 2
+    },
+    {
+      "id": "35-solve-de53a717",
+      "trial_id": "0-3-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 7.184082269668579,
+      "usage": {
+        "cost": 0.128541,
+        "input_tokens": 17778,
+        "input_tokens_details": {
+          "cache_write_tokens": 17775,
+          "cached_tokens": 0
+        },
+        "output_tokens": 117,
+        "output_tokens_details": {
+          "reasoning_tokens": 58
+        },
+        "total_tokens": 17895
+      },
+      "error_type": null,
+      "stage": 3
+    },
+    {
+      "id": "36-solve-0bf8bbaf",
+      "trial_id": "0-3-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 10.859724760055542,
+      "usage": {
+        "cost": 0.084574,
+        "input_tokens": 9557,
+        "input_tokens_details": {
+          "cache_write_tokens": 9554,
+          "cached_tokens": 0
+        },
+        "output_tokens": 505,
+        "output_tokens_details": {
+          "reasoning_tokens": 111
+        },
+        "total_tokens": 10062
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "37-solve-ca23c3f3",
+      "trial_id": "0-3-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 13.193511962890625,
+      "usage": {
+        "cost": 0.115871,
+        "input_tokens": 13693,
+        "input_tokens_details": {
+          "cache_write_tokens": 13690,
+          "cached_tokens": 0
+        },
+        "output_tokens": 572,
+        "output_tokens_details": {
+          "reasoning_tokens": 107
+        },
+        "total_tokens": 14265
+      },
+      "error_type": null,
+      "stage": 2
+    },
+    {
+      "id": "38-solve-5b2c0e1f",
+      "trial_id": "0-3-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 7.5579588413238525,
+      "usage": {
+        "cost": 0.128758,
+        "input_tokens": 17884,
+        "input_tokens_details": {
+          "cache_write_tokens": 17881,
+          "cached_tokens": 0
+        },
+        "output_tokens": 102,
+        "output_tokens_details": {
+          "reasoning_tokens": 40
+        },
+        "total_tokens": 17986
+      },
+      "error_type": null,
+      "stage": 3
+    },
+    {
+      "id": "39-solve-52cfe561",
+      "trial_id": "0-3-control-2",
+      "arm": "control-2",
+      "status": "completed",
+      "seconds": 10.737377882003784,
+      "usage": {
+        "cost": 0.053529,
+        "input_tokens": 5482,
+        "input_tokens_details": {
+          "cache_write_tokens": 5479,
+          "cached_tokens": 0
+        },
+        "output_tokens": 433,
+        "output_tokens_details": {
+          "reasoning_tokens": 61
+        },
+        "total_tokens": 5915
+      },
+      "error_type": null,
+      "stage": 0
+    },
+    {
+      "id": "40-solve-449ef6c0",
+      "trial_id": "0-3-control-2",
+      "arm": "control-2",
+      "status": "completed",
+      "seconds": 8.362833976745605,
+      "usage": {
+        "cost": 0.071169,
+        "input_tokens": 9582,
+        "input_tokens_details": {
+          "cache_write_tokens": 9579,
+          "cached_tokens": 0
+        },
+        "output_tokens": 117,
+        "output_tokens_details": {
+          "reasoning_tokens": 48
+        },
+        "total_tokens": 9699
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "41-solve-f1899b79",
+      "trial_id": "0-4-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 8.845641136169434,
+      "usage": {
+        "cost": 0.048349,
+        "input_tokens": 5507,
+        "input_tokens_details": {
+          "cache_write_tokens": 5504,
+          "cached_tokens": 0
+        },
+        "output_tokens": 280,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 5787
+      },
+      "error_type": null,
+      "stage": 0
+    },
+    {
+      "id": "42-solve-a53535e1",
+      "trial_id": "0-4-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 18.052249908447266,
+      "usage": {
+        "cost": 0.074501,
+        "input_tokens": 6683,
+        "input_tokens_details": {
+          "cache_write_tokens": 6680,
+          "cached_tokens": 0
+        },
+        "output_tokens": 792,
+        "output_tokens_details": {
+          "reasoning_tokens": 265
+        },
+        "total_tokens": 7475
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "43-solve-3d1a2897",
+      "trial_id": "0-4-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 8.720125913619995,
+      "usage": {
+        "cost": 0.092708,
+        "input_tokens": 11099,
+        "input_tokens_details": {
+          "cache_write_tokens": 11096,
+          "cached_tokens": 0
+        },
+        "output_tokens": 429,
+        "output_tokens_details": {
+          "reasoning_tokens": 46
+        },
+        "total_tokens": 11528
+      },
+      "error_type": null,
+      "stage": 2
+    },
+    {
+      "id": "44-solve-cfec71f5",
+      "trial_id": "0-4-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 6.997604131698608,
+      "usage": {
+        "cost": 0.110362,
+        "input_tokens": 15231,
+        "input_tokens_details": {
+          "cache_write_tokens": 15228,
+          "cached_tokens": 0
+        },
+        "output_tokens": 107,
+        "output_tokens_details": {
+          "reasoning_tokens": 40
+        },
+        "total_tokens": 15338
+      },
+      "error_type": null,
+      "stage": 3
+    },
+    {
+      "id": "45-solve-e87d6252",
+      "trial_id": "0-4-control-2",
+      "arm": "control-2",
+      "status": "completed",
+      "seconds": 7.746752977371216,
+      "usage": {
+        "cost": 0.040887,
+        "input_tokens": 5499,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 387,
+        "output_tokens_details": {
+          "reasoning_tokens": 47
+        },
+        "total_tokens": 5886
+      },
+      "error_type": null,
+      "stage": 0
+    },
+    {
+      "id": "46-solve-d49cc213",
+      "trial_id": "0-4-control-2",
+      "arm": "control-2",
+      "status": "completed",
+      "seconds": 28.868475914001465,
+      "usage": {
+        "cost": 0.08673,
+        "input_tokens": 6730,
+        "input_tokens_details": {
+          "cache_write_tokens": 6727,
+          "cached_tokens": 0
+        },
+        "output_tokens": 1132,
+        "output_tokens_details": {
+          "reasoning_tokens": 327
+        },
+        "total_tokens": 7862
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "47-solve-040b7b66",
+      "trial_id": "0-4-reuse-2",
+      "arm": "reuse-2",
+      "status": "completed",
+      "seconds": 17.90576696395874,
+      "usage": {
+        "cost": 0.067342,
+        "input_tokens": 9804,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 488,
+        "output_tokens_details": {
+          "reasoning_tokens": 413
+        },
+        "total_tokens": 10292
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "48-solve-20accd90",
+      "trial_id": "0-4-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 28.795199155807495,
+      "usage": {
+        "cost": 0.111181,
+        "input_tokens": 9813,
+        "input_tokens_details": {
+          "cache_write_tokens": 9810,
+          "cached_tokens": 0
+        },
+        "output_tokens": 1214,
+        "output_tokens_details": {
+          "reasoning_tokens": 484
+        },
+        "total_tokens": 11027
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "49-solve-c1ccabc4",
+      "trial_id": "0-4-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 11.899575233459473,
+      "usage": {
+        "cost": 0.109298,
+        "input_tokens": 14359,
+        "input_tokens_details": {
+          "cache_write_tokens": 14356,
+          "cached_tokens": 0
+        },
+        "output_tokens": 251,
+        "output_tokens_details": {
+          "reasoning_tokens": 182
+        },
+        "total_tokens": 14610
+      },
+      "error_type": null,
+      "stage": 2
+    },
+    {
+      "id": "50-solve-60433435",
+      "trial_id": "0-5-control-2",
+      "arm": "control-2",
+      "status": "completed",
+      "seconds": 8.475144863128662,
+      "usage": {
+        "cost": 0.052969,
+        "input_tokens": 5497,
+        "input_tokens_details": {
+          "cache_write_tokens": 5494,
+          "cached_tokens": 0
+        },
+        "output_tokens": 414,
+        "output_tokens_details": {
+          "reasoning_tokens": 66
+        },
+        "total_tokens": 5911
+      },
+      "error_type": null,
+      "stage": 0
+    },
+    {
+      "id": "51-solve-d699063f",
+      "trial_id": "0-5-control-2",
+      "arm": "control-2",
+      "status": "completed",
+      "seconds": 21.02349591255188,
+      "usage": {
+        "cost": 0.078295,
+        "input_tokens": 6735,
+        "input_tokens_details": {
+          "cache_write_tokens": 6732,
+          "cached_tokens": 0
+        },
+        "output_tokens": 890,
+        "output_tokens_details": {
+          "reasoning_tokens": 282
+        },
+        "total_tokens": 7625
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "52-solve-b2c52693",
+      "trial_id": "0-5-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 9.486091136932373,
+      "usage": {
+        "cost": 0.084693,
+        "input_tokens": 9879,
+        "input_tokens_details": {
+          "cache_write_tokens": 9876,
+          "cached_tokens": 0
+        },
+        "output_tokens": 444,
+        "output_tokens_details": {
+          "reasoning_tokens": 73
+        },
+        "total_tokens": 10323
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "53-solve-96d45b58",
+      "trial_id": "0-5-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 29.437610864639282,
+      "usage": {
+        "cost": 0.0924935,
+        "input_tokens": 14002,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 563,
+        "output_tokens_details": {
+          "reasoning_tokens": 498
+        },
+        "total_tokens": 14565
+      },
+      "error_type": null,
+      "stage": 2
+    },
+    {
+      "id": "54-solve-5671a1e7",
+      "trial_id": "0-5-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 9.103785276412964,
+      "usage": {
+        "cost": 0.049693,
+        "input_tokens": 5504,
+        "input_tokens_details": {
+          "cache_write_tokens": 5501,
+          "cached_tokens": 0
+        },
+        "output_tokens": 319,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 5823
+      },
+      "error_type": null,
+      "stage": 0
+    },
+    {
+      "id": "55-solve-67ba0545",
+      "trial_id": "0-5-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 19.798194885253906,
+      "usage": {
+        "cost": 0.061622,
+        "input_tokens": 6719,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 897,
+        "output_tokens_details": {
+          "reasoning_tokens": 291
+        },
+        "total_tokens": 7616
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "56-solve-9f9fae5c",
+      "trial_id": "0-5-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 13.520119190216064,
+      "usage": {
+        "cost": 0.095956,
+        "input_tokens": 11128,
+        "input_tokens_details": {
+          "cache_write_tokens": 11125,
+          "cached_tokens": 0
+        },
+        "output_tokens": 516,
+        "output_tokens_details": {
+          "reasoning_tokens": 122
+        },
+        "total_tokens": 11644
+      },
+      "error_type": null,
+      "stage": 2
+    },
+    {
+      "id": "57-solve-fdede6ad",
+      "trial_id": "0-5-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 10.64360499382019,
+      "usage": {
+        "cost": 0.11179,
+        "input_tokens": 15260,
+        "input_tokens_details": {
+          "cache_write_tokens": 15257,
+          "cached_tokens": 0
+        },
+        "output_tokens": 142,
+        "output_tokens_details": {
+          "reasoning_tokens": 83
+        },
+        "total_tokens": 15402
+      },
+      "error_type": null,
+      "stage": 3
+    },
+    {
+      "id": "58-solve-5aa907c3",
+      "trial_id": "0-5-reuse-2",
+      "arm": "reuse-2",
+      "status": "completed",
+      "seconds": 11.691899061203003,
+      "usage": {
+        "cost": 0.086884,
+        "input_tokens": 9882,
+        "input_tokens_details": {
+          "cache_write_tokens": 9879,
+          "cached_tokens": 0
+        },
+        "output_tokens": 506,
+        "output_tokens_details": {
+          "reasoning_tokens": 122
+        },
+        "total_tokens": 10388
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "59-solve-4f5fc537",
+      "trial_id": "0-6-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 19.89603877067566,
+      "usage": {
+        "cost": 0.088179,
+        "input_tokens": 9537,
+        "input_tokens_details": {
+          "cache_write_tokens": 9534,
+          "cached_tokens": 0
+        },
+        "output_tokens": 612,
+        "output_tokens_details": {
+          "reasoning_tokens": 175
+        },
+        "total_tokens": 10149
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "60-solve-6217854a",
+      "trial_id": "0-6-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 8.840254068374634,
+      "usage": {
+        "cost": 0.078738,
+        "input_tokens": 13721,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 119,
+        "output_tokens_details": {
+          "reasoning_tokens": 47
+        },
+        "total_tokens": 13840
+      },
+      "error_type": null,
+      "stage": 2
+    },
+    {
+      "id": "61-solve-8feb22e6",
+      "trial_id": "0-6-reuse-2",
+      "arm": "reuse-2",
+      "status": "completed",
+      "seconds": 6.992937803268433,
+      "usage": {
+        "cost": 0.069825,
+        "input_tokens": 9540,
+        "input_tokens_details": {
+          "cache_write_tokens": 9537,
+          "cached_tokens": 0
+        },
+        "output_tokens": 87,
+        "output_tokens_details": {
+          "reasoning_tokens": 28
+        },
+        "total_tokens": 9627
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "62-solve-2c23527d",
+      "trial_id": "0-6-control-2",
+      "arm": "control-2",
+      "status": "completed",
+      "seconds": 9.260076999664307,
+      "usage": {
+        "cost": 0.0427735,
+        "input_tokens": 5487,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 458,
+        "output_tokens_details": {
+          "reasoning_tokens": 74
+        },
+        "total_tokens": 5945
+      },
+      "error_type": null,
+      "stage": 0
+    },
+    {
+      "id": "63-solve-73dc642f",
+      "trial_id": "0-6-control-2",
+      "arm": "control-2",
+      "status": "completed",
+      "seconds": 7.475940227508545,
+      "usage": {
+        "cost": 0.070959,
+        "input_tokens": 9597,
+        "input_tokens_details": {
+          "cache_write_tokens": 9594,
+          "cached_tokens": 0
+        },
+        "output_tokens": 108,
+        "output_tokens_details": {
+          "reasoning_tokens": 38
+        },
+        "total_tokens": 9705
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "64-solve-07a127d6",
+      "trial_id": "0-6-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 7.5858471393585205,
+      "usage": {
+        "cost": 0.051156,
+        "input_tokens": 5483,
+        "input_tokens_details": {
+          "cache_write_tokens": 5480,
+          "cached_tokens": 0
+        },
+        "output_tokens": 365,
+        "output_tokens_details": {
+          "reasoning_tokens": 39
+        },
+        "total_tokens": 5848
+      },
+      "error_type": null,
+      "stage": 0
+    },
+    {
+      "id": "65-solve-db3346a7",
+      "trial_id": "0-6-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 8.655445098876953,
+      "usage": {
+        "cost": 0.071225,
+        "input_tokens": 9550,
+        "input_tokens_details": {
+          "cache_write_tokens": 9547,
+          "cached_tokens": 0
+        },
+        "output_tokens": 125,
+        "output_tokens_details": {
+          "reasoning_tokens": 71
+        },
+        "total_tokens": 9675
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "66-solve-96676faa",
+      "trial_id": "0-7-reuse-2",
+      "arm": "reuse-2",
+      "status": "completed",
+      "seconds": 8.122281074523926,
+      "usage": {
+        "cost": 0.0560725,
+        "input_tokens": 9535,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 132,
+        "output_tokens_details": {
+          "reasoning_tokens": 78
+        },
+        "total_tokens": 9667
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "67-solve-e38ebedd",
+      "trial_id": "0-7-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 7.089953184127808,
+      "usage": {
+        "cost": 0.0386595,
+        "input_tokens": 5479,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 310,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 5789
+      },
+      "error_type": null,
+      "stage": 0
+    },
+    {
+      "id": "68-solve-002766c1",
+      "trial_id": "0-7-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 12.109301090240479,
+      "usage": {
+        "cost": 0.075677,
+        "input_tokens": 9521,
+        "input_tokens_details": {
+          "cache_write_tokens": 9518,
+          "cached_tokens": 0
+        },
+        "output_tokens": 258,
+        "output_tokens_details": {
+          "reasoning_tokens": 191
+        },
+        "total_tokens": 9779
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "69-solve-ecf68e6b",
+      "trial_id": "0-7-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 12.085561990737915,
+      "usage": {
+        "cost": 0.0659175,
+        "input_tokens": 9550,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 487,
+        "output_tokens_details": {
+          "reasoning_tokens": 180
+        },
+        "total_tokens": 10037
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "70-solve-9df45068",
+      "trial_id": "0-7-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 10.248057842254639,
+      "usage": {
+        "cost": 0.100415,
+        "input_tokens": 13590,
+        "input_tokens_details": {
+          "cache_write_tokens": 13587,
+          "cached_tokens": 0
+        },
+        "output_tokens": 151,
+        "output_tokens_details": {
+          "reasoning_tokens": 88
+        },
+        "total_tokens": 13741
+      },
+      "error_type": null,
+      "stage": 2
+    },
+    {
+      "id": "71-solve-66816574",
+      "trial_id": "0-7-control-2",
+      "arm": "control-2",
+      "status": "completed",
+      "seconds": 9.834100246429443,
+      "usage": {
+        "cost": 0.052605,
+        "input_tokens": 5485,
+        "input_tokens_details": {
+          "cache_write_tokens": 5482,
+          "cached_tokens": 0
+        },
+        "output_tokens": 406,
+        "output_tokens_details": {
+          "reasoning_tokens": 68
+        },
+        "total_tokens": 5891
+      },
+      "error_type": null,
+      "stage": 0
+    },
+    {
+      "id": "72-solve-c15e3077",
+      "trial_id": "0-7-control-2",
+      "arm": "control-2",
+      "status": "completed",
+      "seconds": 5.852382183074951,
+      "usage": {
+        "cost": 0.07035,
+        "input_tokens": 9565,
+        "input_tokens_details": {
+          "cache_write_tokens": 9562,
+          "cached_tokens": 0
+        },
+        "output_tokens": 97,
+        "output_tokens_details": {
+          "reasoning_tokens": 36
+        },
+        "total_tokens": 9662
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "73-solve-44becd08",
+      "trial_id": "1-0-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 5.941565990447998,
+      "usage": {
+        "cost": 0.049182,
+        "input_tokens": 5421,
+        "input_tokens_details": {
+          "cache_write_tokens": 5418,
+          "cached_tokens": 0
+        },
+        "output_tokens": 321,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 5742
+      },
+      "error_type": null,
+      "stage": 0
+    },
+    {
+      "id": "74-solve-7ba7f86c",
+      "trial_id": "1-0-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 8.896448850631714,
+      "usage": {
+        "cost": 0.0481745,
+        "input_tokens": 6574,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 437,
+        "output_tokens_details": {
+          "reasoning_tokens": 92
+        },
+        "total_tokens": 7011
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "75-solve-fda892fe",
+      "trial_id": "1-0-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 11.725231170654297,
+      "usage": {
+        "cost": 0.093324,
+        "input_tokens": 10822,
+        "input_tokens_details": {
+          "cache_write_tokens": 10819,
+          "cached_tokens": 0
+        },
+        "output_tokens": 502,
+        "output_tokens_details": {
+          "reasoning_tokens": 95
+        },
+        "total_tokens": 11324
+      },
+      "error_type": null,
+      "stage": 2
+    },
+    {
+      "id": "76-solve-c0336a00",
+      "trial_id": "1-0-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 5.865222930908203,
+      "usage": {
+        "cost": 0.085646,
+        "input_tokens": 14997,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 115,
+        "output_tokens_details": {
+          "reasoning_tokens": 58
+        },
+        "total_tokens": 15112
+      },
+      "error_type": null,
+      "stage": 3
+    },
+    {
+      "id": "77-solve-f2a2362b",
+      "trial_id": "1-0-control-2",
+      "arm": "control-2",
+      "status": "completed",
+      "seconds": 10.331813097000122,
+      "usage": {
+        "cost": 0.053452,
+        "input_tokens": 5431,
+        "input_tokens_details": {
+          "cache_write_tokens": 5428,
+          "cached_tokens": 0
+        },
+        "output_tokens": 441,
+        "output_tokens_details": {
+          "reasoning_tokens": 111
+        },
+        "total_tokens": 5872
+      },
+      "error_type": null,
+      "stage": 0
+    },
+    {
+      "id": "78-solve-e9b47350",
+      "trial_id": "1-0-control-2",
+      "arm": "control-2",
+      "status": "completed",
+      "seconds": 19.304654836654663,
+      "usage": {
+        "cost": 0.058839,
+        "input_tokens": 6598,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 820,
+        "output_tokens_details": {
+          "reasoning_tokens": 372
+        },
+        "total_tokens": 7418
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "79-solve-633dc23c",
+      "trial_id": "1-0-reuse-2",
+      "arm": "reuse-2",
+      "status": "completed",
+      "seconds": 23.656239986419678,
+      "usage": {
+        "cost": 0.0730565,
+        "input_tokens": 9598,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 737,
+        "output_tokens_details": {
+          "reasoning_tokens": 333
+        },
+        "total_tokens": 10335
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "80-solve-aecc1acc",
+      "trial_id": "1-0-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 8.69732117652893,
+      "usage": {
+        "cost": 0.081697,
+        "input_tokens": 9586,
+        "input_tokens_details": {
+          "cache_write_tokens": 9583,
+          "cached_tokens": 0
+        },
+        "output_tokens": 417,
+        "output_tokens_details": {
+          "reasoning_tokens": 80
+        },
+        "total_tokens": 10003
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "81-solve-6a946b16",
+      "trial_id": "1-0-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 10.218136072158813,
+      "usage": {
+        "cost": 0.113701,
+        "input_tokens": 13843,
+        "input_tokens_details": {
+          "cache_write_tokens": 13840,
+          "cached_tokens": 0
+        },
+        "output_tokens": 480,
+        "output_tokens_details": {
+          "reasoning_tokens": 70
+        },
+        "total_tokens": 14323
+      },
+      "error_type": null,
+      "stage": 2
+    },
+    {
+      "id": "82-solve-e651f125",
+      "trial_id": "1-0-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 7.190953969955444,
+      "usage": {
+        "cost": 0.103015,
+        "input_tokens": 18010,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 144,
+        "output_tokens_details": {
+          "reasoning_tokens": 74
+        },
+        "total_tokens": 18154
+      },
+      "error_type": null,
+      "stage": 3
+    },
+    {
+      "id": "83-solve-59854dea",
+      "trial_id": "1-1-control-2",
+      "arm": "control-2",
+      "status": "completed",
+      "seconds": 11.210886240005493,
+      "usage": {
+        "cost": 0.053662,
+        "input_tokens": 5441,
+        "input_tokens_details": {
+          "cache_write_tokens": 5438,
+          "cached_tokens": 0
+        },
+        "output_tokens": 445,
+        "output_tokens_details": {
+          "reasoning_tokens": 114
+        },
+        "total_tokens": 5886
+      },
+      "error_type": null,
+      "stage": 0
+    },
+    {
+      "id": "84-solve-d5a6ad11",
+      "trial_id": "1-1-control-2",
+      "arm": "control-2",
+      "status": "completed",
+      "seconds": 13.922459840774536,
+      "usage": {
+        "cost": 0.065723,
+        "input_tokens": 6609,
+        "input_tokens_details": {
+          "cache_write_tokens": 6606,
+          "cached_tokens": 0
+        },
+        "output_tokens": 556,
+        "output_tokens_details": {
+          "reasoning_tokens": 196
+        },
+        "total_tokens": 7165
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "85-solve-88514d0b",
+      "trial_id": "1-1-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 16.154382944107056,
+      "usage": {
+        "cost": 0.086177,
+        "input_tokens": 9596,
+        "input_tokens_details": {
+          "cache_write_tokens": 9593,
+          "cached_tokens": 0
+        },
+        "output_tokens": 543,
+        "output_tokens_details": {
+          "reasoning_tokens": 202
+        },
+        "total_tokens": 10139
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "86-solve-67b5f38c",
+      "trial_id": "1-1-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 11.140079975128174,
+      "usage": {
+        "cost": 0.111965,
+        "input_tokens": 13860,
+        "input_tokens_details": {
+          "cache_write_tokens": 13857,
+          "cached_tokens": 0
+        },
+        "output_tokens": 427,
+        "output_tokens_details": {
+          "reasoning_tokens": 47
+        },
+        "total_tokens": 14287
+      },
+      "error_type": null,
+      "stage": 2
+    },
+    {
+      "id": "87-solve-8bfda6fa",
+      "trial_id": "1-1-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 7.690747261047363,
+      "usage": {
+        "cost": 0.130291,
+        "input_tokens": 17993,
+        "input_tokens_details": {
+          "cache_write_tokens": 17990,
+          "cached_tokens": 0
+        },
+        "output_tokens": 124,
+        "output_tokens_details": {
+          "reasoning_tokens": 62
+        },
+        "total_tokens": 18117
+      },
+      "error_type": null,
+      "stage": 3
+    },
+    {
+      "id": "88-solve-7776be67",
+      "trial_id": "1-1-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 7.831267833709717,
+      "usage": {
+        "cost": 0.04037,
+        "input_tokens": 5435,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 381,
+        "output_tokens_details": {
+          "reasoning_tokens": 62
+        },
+        "total_tokens": 5816
+      },
+      "error_type": null,
+      "stage": 0
+    },
+    {
+      "id": "89-solve-bb704d9e",
+      "trial_id": "1-1-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 11.527786016464233,
+      "usage": {
+        "cost": 0.061306,
+        "input_tokens": 6583,
+        "input_tokens_details": {
+          "cache_write_tokens": 6580,
+          "cached_tokens": 0
+        },
+        "output_tokens": 435,
+        "output_tokens_details": {
+          "reasoning_tokens": 89
+        },
+        "total_tokens": 7018
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "90-solve-b04cc146",
+      "trial_id": "1-1-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 9.524110078811646,
+      "usage": {
+        "cost": 0.072369,
+        "input_tokens": 10853,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 461,
+        "output_tokens_details": {
+          "reasoning_tokens": 81
+        },
+        "total_tokens": 11314
+      },
+      "error_type": null,
+      "stage": 2
+    },
+    {
+      "id": "91-solve-ffaaf136",
+      "trial_id": "1-1-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 7.154853820800781,
+      "usage": {
+        "cost": 0.107051,
+        "input_tokens": 14998,
+        "input_tokens_details": {
+          "cache_write_tokens": 14995,
+          "cached_tokens": 0
+        },
+        "output_tokens": 59,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 15057
+      },
+      "error_type": null,
+      "stage": 3
+    },
+    {
+      "id": "92-solve-0b894077",
+      "trial_id": "1-1-reuse-2",
+      "arm": "reuse-2",
+      "status": "completed",
+      "seconds": 16.983261108398438,
+      "usage": {
+        "cost": 0.092204,
+        "input_tokens": 9602,
+        "input_tokens_details": {
+          "cache_write_tokens": 9599,
+          "cached_tokens": 0
+        },
+        "output_tokens": 714,
+        "output_tokens_details": {
+          "reasoning_tokens": 304
+        },
+        "total_tokens": 10316
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "93-solve-01c494a9",
+      "trial_id": "1-2-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 10.680930852890015,
+      "usage": {
+        "cost": 0.082621,
+        "input_tokens": 9573,
+        "input_tokens_details": {
+          "cache_write_tokens": 9570,
+          "cached_tokens": 0
+        },
+        "output_tokens": 446,
+        "output_tokens_details": {
+          "reasoning_tokens": 85
+        },
+        "total_tokens": 10019
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "94-solve-54fbe5ff",
+      "trial_id": "1-2-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 15.996342897415161,
+      "usage": {
+        "cost": 0.0930655,
+        "input_tokens": 13666,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 651,
+        "output_tokens_details": {
+          "reasoning_tokens": 197
+        },
+        "total_tokens": 14317
+      },
+      "error_type": null,
+      "stage": 2
+    },
+    {
+      "id": "95-solve-c23337b7",
+      "trial_id": "1-2-reuse-4",
+      "arm": "reuse-4",
+      "status": "completed",
+      "seconds": 5.138061761856079,
+      "usage": {
+        "cost": 0.1006445,
+        "input_tokens": 17844,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 91,
+        "output_tokens_details": {
+          "reasoning_tokens": 42
+        },
+        "total_tokens": 17935
+      },
+      "error_type": null,
+      "stage": 3
+    },
+    {
+      "id": "96-solve-8fc7a400",
+      "trial_id": "1-2-reuse-2",
+      "arm": "reuse-2",
+      "status": "completed",
+      "seconds": 6.30098819732666,
+      "usage": {
+        "cost": 0.0564465,
+        "input_tokens": 9563,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 140,
+        "output_tokens_details": {
+          "reasoning_tokens": 83
+        },
+        "total_tokens": 9703
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "97-solve-93ec5aab",
+      "trial_id": "1-2-control-2",
+      "arm": "control-2",
+      "status": "completed",
+      "seconds": 6.857825994491577,
+      "usage": {
+        "cost": 0.0395395,
+        "input_tokens": 5479,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 342,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 5821
+      },
+      "error_type": null,
+      "stage": 0
+    },
+    {
+      "id": "98-solve-36830244",
+      "trial_id": "1-2-control-2",
+      "arm": "control-2",
+      "status": "completed",
+      "seconds": 6.5978779792785645,
+      "usage": {
+        "cost": 0.071407,
+        "input_tokens": 9556,
+        "input_tokens_details": {
+          "cache_write_tokens": 9553,
+          "cached_tokens": 0
+        },
+        "output_tokens": 129,
+        "output_tokens_details": {
+          "reasoning_tokens": 62
+        },
+        "total_tokens": 9685
+      },
+      "error_type": null,
+      "stage": 1
+    },
+    {
+      "id": "99-solve-1e9948ca",
+      "trial_id": "1-2-control-4",
+      "arm": "control-4",
+      "status": "completed",
+      "seconds": 7.3658058643341064,
+      "usage": {
+        "cost": 0.050113,
+        "input_tokens": 5469,
+        "input_tokens_details": {
+          "cache_write_tokens": 5466,
+          "cached_tokens": 0
+        },
+        "output_tokens": 338,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 5807
+      },
+      "error_type": null,
+      "stage": 0
+    }
+  ],
+  "known_total_tokens": 1532879,
+  "missing_usage_calls": 0,
+  "ledger": null,
+  "driver_seconds": 3520.5489139556885,
+  "current_conservative_gpu_seconds": 3580.0410652160645,
+  "cumulative_gpu_seconds": 17863.102749586105,
+  "live_pods_empty": true,
+  "policy_not_adopted": true,
+  "verification": {
+    "raw_receipts": 263,
+    "source_bindings": 199,
+    "call_to_arm_and_prompt_verified": true,
+    "declared_gates_recomputed": true
+  },
+  "evidence_sha256": "18017d1cac84696c09cc923aebd652ea6cabfd9427b5c8a42067ed49131b0daa",
+  "limitations": [
+    "Four known formulas with fresh shapes/strides/seeds only, not eight independent operators or native production training.",
+    "Reduced search may lose worthwhile refinements; this is why both no-memory references and separate final full remain.",
+    "Content identity and approved manifests are not an OS sandbox or universal compatibility proof.",
+    "This is a separate explicit budget-allocation mechanism, not a repeat of closed advice/memory/retuning studies."
+  ],
+  "practical_comparisons": {
+    "reuse-2-vs-control-4": {
+      "quality_relative_gain": -0.04587879753284385,
+      "wall_relative_saving": 0.48014546465577834,
+      "token_relative_change": -0.6992854403348265,
+      "screen_accepted": false,
+      "practical_accepted": false
+    },
+    "reuse-2-vs-control-2": {
+      "quality_relative_gain": 0.4024609757242059,
+      "wall_relative_saving": 0.2519192262882185,
+      "token_relative_change": -0.31283849037017497,
+      "screen_accepted": true,
+      "practical_accepted": true
+    },
+    "reuse-2-vs-reuse-4": {
+      "quality_relative_gain": -0.08456554751057832,
+      "wall_relative_saving": 0.4712749031107136,
+      "token_relative_change": -0.7304421257818811,
+      "screen_accepted": false,
+      "practical_accepted": false
+    },
+    "control-2-vs-control-4": {
+      "quality_relative_gain": -0.3196807476411492,
+      "wall_relative_saving": 0.3050823472379337,
+      "token_relative_change": -0.5623815428382057,
+      "screen_accepted": false,
+      "practical_accepted": false
+    }
+  },
+  "exploratory_intervals": {
+    "reuse-2-vs-control-4": {
+      "quality_relative_gain": {
+        "one_sided_lower": -0.19102086946736596,
+        "median": -0.04587879753284385,
+        "upper_quantile": 0.009373478357354248,
+        "valid_draws": 256,
+        "alpha": 0.00625,
+        "operator_clusters": 4,
+        "case_sets": 8,
+        "scope": "Exploratory development; not final efficacy evidence"
+      },
+      "wall_relative_saving": {
+        "one_sided_lower": 0.36696555053693025,
+        "median": 0.48014546465577834,
+        "upper_quantile": 0.5567625461601178,
+        "valid_draws": 256,
+        "alpha": 0.00625,
+        "operator_clusters": 4,
+        "case_sets": 8,
+        "scope": "Exploratory development; not final efficacy evidence"
+      }
+    },
+    "reuse-2-vs-control-2": {
+      "quality_relative_gain": {
+        "one_sided_lower": 0.0035662580855808645,
+        "median": 0.4024609757242059,
+        "upper_quantile": 11.041444480140813,
+        "valid_draws": 255,
+        "alpha": 0.00625,
+        "operator_clusters": 4,
+        "case_sets": 8,
+        "scope": "Exploratory development; not final efficacy evidence"
+      },
+      "wall_relative_saving": {
+        "one_sided_lower": 0.200888047850459,
+        "median": 0.2519192262882185,
+        "upper_quantile": 0.31859959410527683,
+        "valid_draws": 256,
+        "alpha": 0.00625,
+        "operator_clusters": 4,
+        "case_sets": 8,
+        "scope": "Exploratory development; not final efficacy evidence"
+      }
+    },
+    "reuse-2-vs-reuse-4": {
+      "quality_relative_gain": {
+        "one_sided_lower": -0.2271601636676609,
+        "median": -0.08456554751057832,
+        "upper_quantile": -0.0033096418285644136,
+        "valid_draws": 256,
+        "alpha": 0.00625,
+        "operator_clusters": 4,
+        "case_sets": 8,
+        "scope": "Exploratory development; not final efficacy evidence"
+      },
+      "wall_relative_saving": {
+        "one_sided_lower": 0.35568246975181994,
+        "median": 0.4712749031107136,
+        "upper_quantile": 0.588786481464503,
+        "valid_draws": 256,
+        "alpha": 0.00625,
+        "operator_clusters": 4,
+        "case_sets": 8,
+        "scope": "Exploratory development; not final efficacy evidence"
+      }
+    },
+    "control-2-vs-control-4": {
+      "quality_relative_gain": {
+        "one_sided_lower": -0.9328171024774617,
+        "median": -0.3196807476411492,
+        "upper_quantile": -0.005935312317092656,
+        "valid_draws": 256,
+        "alpha": 0.00625,
+        "operator_clusters": 4,
+        "case_sets": 8,
+        "scope": "Exploratory development; not final efficacy evidence"
+      },
+      "wall_relative_saving": {
+        "one_sided_lower": 0.12819229149578015,
+        "median": 0.3050823472379337,
+        "upper_quantile": 0.426237742742657,
+        "valid_draws": 256,
+        "alpha": 0.00625,
+        "operator_clusters": 4,
+        "case_sets": 8,
+        "scope": "Exploratory development; not final efficacy evidence"
+      }
+    }
+  },
+  "acceptance_complete": true,
+  "all_in_net_benefit_proven": false,
+  "cost_note": "Trial effects include measured retrieval and final evaluation. Prior acquisition, failed development and current comparison are actual campaign costs, not amortized away. No production ROI claimed."
+}

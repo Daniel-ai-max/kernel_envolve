@@ -1,0 +1,13 @@
+{
+  "registered_at": 1794322790.386631,
+  "analysis_sha256": "e91916bfb356c9d7f421cfa9195007fb0385d5f0829ce572b67f33643dd1a1c6",
+  "parent_protocol_sha256": "a892d77815ccb6fa6fdbbf1d2671c5bb416600859fc8e9e6ccea990e06d3ebc9",
+  "timing": "Before any final audit execution. Development round1 is running; no development outcome used to select analysis method.",
+  "multiple_testing": "Four primary benefit tests (two outcomes x two references), one-sided alpha .0125 per test; additionally require quality protection and token cost guard.",
+  "bootstrap_unit": "Paired task cluster; all repeats retained together",
+  "limitations": [
+    "Small or related task families can make interval estimates unreliable",
+    "All overhead explicitly supplied; no zero defaults",
+    "Unobserved amortization is reported separately and never counted as measured net gain"
+  ]
+}

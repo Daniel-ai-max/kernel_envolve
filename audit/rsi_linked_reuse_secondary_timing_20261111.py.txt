@@ -1,0 +1,34 @@
+"""Posthoc descriptive timing conversion of CLOSED linked-history trial only.
+Does not change the registered score, acceptance rule, or future experiments.
+"""
+import hashlib,json,math,statistics,time
+from pathlib import Path
+from kernel_envolve.storage import config
+from kernel_envolve.protocol import objective_cases
+ROOT=Path(__file__).resolve().parent
+summary=json.loads((ROOT/'summary.json').read_text());raw=json.loads((ROOT/'evidence/pilot-result.json').read_text())
+assert summary['job']=='ef46cf6e2cc74cbfb469f0bbc4850963' and summary['acceptance_complete']
+trials={(t['repeat'],t['task'],t['arm']):t for t in summary['trials']}
+measurements={};configs={}
+for t in raw['trials']:
+ result=t['result'];key=(t['repeat'],t['task'],t['arm']);assert result['result_hash']==trials[key]['result_hash']
+ path=ROOT/'evidence'/Path(result['run']).relative_to('/tmp/kernel-rsi-pilot')
+ observed=json.loads((path/'result.json').read_text());cfg=config(path/'source')
+ assert observed['mode']=='full'and observed['correctness']=='pass'and observed['execution']=='completed'
+ configs[key]={x['id']:x['weight']for x in objective_cases(cfg['cases'])}
+ measurements[key]={(x['case'],x['batch']):x['candidate_us'] for x in observed['decision']['cases'] if x['case'] in configs[key]}
+rows=[]
+for reference,arm in [('control','artifact-reuse'),('source-memory','artifact-reuse'),('control','source-memory')]:
+ pairs=[]
+ for repeat in range(2):
+  for task in range(8):
+   rk=(repeat,task,reference);ak=(repeat,task,arm);r,a=measurements[rk],measurements[ak]
+   assert r.keys()==a.keys() and configs[rk]==configs[ak]
+   weights=configs[rk];total=sum(weights[case]for case,batch in r)
+   value=math.exp(sum(weights[case]*math.log(r[case,batch]/a[case,batch])for case,batch in r)/total)
+   pairs.append({'repeat':repeat,'task':task,'case_weighted_geomean_control_over_candidate_time':value,'cases_batches':len(r)})
+ aggregate=math.exp(statistics.mean(math.log(x['case_weighted_geomean_control_over_candidate_time'])for x in pairs))
+ baseline=math.exp(statistics.mean(math.log(trials[j,t,arm]['baseline_speedup']/trials[j,t,reference]['baseline_speedup'])for j in range(2)for t in range(8)))
+ rows.append({'comparison':arm+'-vs-'+reference,'geomean_measured_kernel_time_ratio':aggregate,'relative_kernel_time_reduction':1-1/aggregate,'geomean_fixed_baseline_speedup_ratio':baseline,'worst_trial_kernel_time_ratio':min(x['case_weighted_geomean_control_over_candidate_time']for x in pairs),'best_trial_kernel_time_ratio':max(x['case_weighted_geomean_control_over_candidate_time']for x in pairs),'pairs':pairs})
+report={'analyzed_at':time.time(),'source_summary_sha256':hashlib.sha256((ROOT/'summary.json').read_bytes()).hexdigest(),'scope':'Posthoc descriptive secondary statistic on a closed study; no registered gate changes, no significance or production throughput claim. Uses the already verified full-result paths and hashes. Candidate timings occurred at different trial times; drift/noise can affect their ratio. Each of16trials equal weight; within trial objective-case weights and both measurement batches retained; correctness-only cases have no latency weight.','comparisons':rows}
+(ROOT/'secondary-kernel-timing.json').write_text(json.dumps(report,indent=2));print(json.dumps([{k:v for k,v in row.items()if k!='pairs'}for row in rows],indent=2))

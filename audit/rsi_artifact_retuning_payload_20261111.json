@@ -1,0 +1,55 @@
+{
+  "role": "Post-hoc packet-size diagnosis only; not a model benchmark or new acceptance opportunity",
+  "deduplication": "Hypothetically replace history observation copies with source/run/mode references, retaining candidate observations and all code unchanged",
+  "arms": {
+    "control": {
+      "requests": 49,
+      "request_packet_bytes": 1514735,
+      "mean_packet_bytes": 30912.95918367347,
+      "duplicate_history_removal_bytes": 357581,
+      "hypothetical_byte_reduction": 0.23606835519084202,
+      "top_level_bytes": {
+        "task_config": 136264,
+        "task_source": 39054,
+        "candidates": 894113,
+        "history": 393496,
+        "historical_experience": 0
+      },
+      "known_input_tokens": 537394,
+      "known_output_tokens": 17178
+    },
+    "source-memory": {
+      "requests": 44,
+      "request_packet_bytes": 1584809,
+      "mean_packet_bytes": 36018.38636363636,
+      "duplicate_history_removal_bytes": 403042,
+      "hypothetical_byte_reduction": 0.25431581976124573,
+      "top_level_bytes": {
+        "task_config": 122323,
+        "task_source": 34956,
+        "candidates": 883570,
+        "history": 433774,
+        "historical_experience": 62470
+      },
+      "known_input_tokens": 559861,
+      "known_output_tokens": 15403
+    },
+    "artifact-reuse": {
+      "requests": 36,
+      "request_packet_bytes": 1743328,
+      "mean_packet_bytes": 48425.77777777778,
+      "duplicate_history_removal_bytes": 557716,
+      "hypothetical_byte_reduction": 0.31991455423190585,
+      "top_level_bytes": {
+        "task_config": 100183,
+        "task_source": 28654,
+        "candidates": 976247,
+        "history": 600181,
+        "historical_experience": 0
+      },
+      "known_input_tokens": 630553,
+      "known_output_tokens": 15065
+    }
+  },
+  "limits": "Byte savings are not measured token, latency or quality savings. Current experiment unchanged; any new request format requires separate validation."
+}

@@ -1,0 +1,163 @@
+{
+  "date": "2026-11-11",
+  "scope": "Code readiness only; no deployment or resource activation",
+  "parent_commit": "e6783a37ba419ad14208161eeaf1e7ecadf0c001",
+  "branch": "feature/rsi-evolution",
+  "files_sha256": {
+    "src/kernel_envolve/rsi/artifact_registry.py": "ae87eecac63f19b670f3e15f11f63f0df00b7da591cd579928fbf415ea361e73",
+    "src/kernel_envolve/rsi/reuse_memory.py": "6b6fd80a5193d9be5849f8506abb3c1bbfeabeec6e0ef8bed4f80dd1bb6a0ea3",
+    "src/kernel_envolve/rsi/reuse_cli.py": "66be5982a3c28f1bdf0e1266f4ca3c6e27812fd59aef5cc8c26054bcf15f77fe",
+    "tests/test_rsi_artifact_registry.py": "2e3d96e8c60053e6eca8736cd9df407a77c8bca1f0e22910d4fb370900bcf6ef",
+    "tests/test_rsi_reuse_memory.py": "47fd337b78bb2ba81825d0cf26d2ca7a0346218f07b8848ce335fb1dba6674bb",
+    "tests/test_rsi_reuse_cli.py": "77677a3f5ee0bd414ca2d01eb89f5621186fab6ef14845f9932e7ab3a23e192f",
+    "tests/test_transaction_interrupt.py": "7f64da37a7879dfad6f1557e6d2d0c8675212035cc3e16970b2f90dc4d916160",
+    "docs/rsi-readiness.md": "69028f2a025a8233ee36a6e67e05bb1195da668b48b3af07335a75b43e0b2794",
+    "docs/rsi-reuse-memory.md": "f577b71ed70507e5f6f98ae6fe6f1d1ba4e3c12bf740bb61f2a36c57cd639b06",
+    "docs/rsi.md": "27c8d94a394f4ff8cafa5eba28b15c848ee5c8af79e5d668ae3a9e4f443c436d"
+  },
+  "full_tests": {
+    "exit_code": 0,
+    "elapsed_seconds": 304.5469288825989,
+    "unchanged_source_and_tests": true,
+    "python": "3.12.14 (main, Sep  1 2026, 14:09:38) [Clang 22.1.3 ]",
+    "pythonpath": "/Users/daniel/Documents/ChatGPT/算子优化/kernel_envolve-rsi/src",
+    "passed": 705,
+    "skipped": 10,
+    "pytest_seconds": 303.93
+  },
+  "installed_wheel": {
+    "status": "passed",
+    "elapsed_seconds": 3.1605207920074463,
+    "module_path": "/Users/daniel/Documents/ChatGPT/算子优化/rsi-readiness-validation-20261111/install-env/lib/python3.12/site-packages/kernel_envolve/__init__.py",
+    "python": "3.12.14 (main, Sep  1 2026, 14:09:38) [Clang 22.1.3 ]",
+    "wheel_sha256": "0172062d770ec69ae14e09680222e107ac41a50fd7515f8d76e7fb7bcc71b1c8",
+    "source_files_matched": 48,
+    "commands": [
+      {
+        "command": "init",
+        "returncode": 0
+      },
+      {
+        "command": "register",
+        "returncode": 0
+      },
+      {
+        "command": "prepare",
+        "returncode": 0
+      },
+      {
+        "command": "observe",
+        "returncode": 0
+      },
+      {
+        "command": "observe",
+        "returncode": 0
+      },
+      {
+        "command": "status",
+        "returncode": 0
+      },
+      {
+        "command": "disable",
+        "returncode": 0
+      },
+      {
+        "command": "prepare",
+        "returncode": 0
+      },
+      {
+        "command": "enable",
+        "returncode": 0
+      },
+      {
+        "command": "status",
+        "returncode": 0
+      }
+    ],
+    "feedback_status": "helpful",
+    "fixed_max_actions": 4,
+    "external_model_requests": 0,
+    "gpu_jobs": 0,
+    "cpu_full_evaluations": 6,
+    "deterministic_callbacks": 2,
+    "entry": "1feec7159b9d5fa2e379dd220f82cd5d43373b0eccc966d0b04a3a21961a2ffa",
+    "scope": "Isolated installed wheel, real CPU receipts, no editable/source PYTHONPATH fallback"
+  },
+  "static_checks": [
+    "ruff check .: passed",
+    "ruff format --check .: 141 files formatted",
+    "git diff --check: passed",
+    "changed documentation links: passed"
+  ],
+  "fixed_regressions": [
+    "Reserved evidence paths cannot be reused even without traces or when disabled/no candidate",
+    "Task/evidence/memory/archive directories must not overlap",
+    "Stale implementation allows read-only inspection and explicit withdrawal/abandon, never re-enable or new work",
+    "Unknown/conflicting feedback requests do not create orphan files",
+    "Registry owns and cleans BEGIN-after-interruption transactions without rolling back caller transactions",
+    "Code drift cannot revoke Registry entries, consume admission or re-enable stale state",
+    "Missing Registry opens do not create files; corrupt initialization closes its connection"
+  ],
+  "development_logs": {
+    "rsi-readiness-regressions-before.log": "7 genuine pre-fix failures",
+    "rsi-readiness-transactions-before.log": "Initial probe: one genuine BEGIN failure and one false positive caused by rollback proxy semantics",
+    "rsi-readiness-transactions-confirmed-before.log": "Faithful sqlite semantics: 1 genuine BEGIN failure and 23 passed before fix",
+    "rsi-readiness-registry-drift-before.log": "4 genuine code drift failures before guards",
+    "rsi-readiness-focused.log": "94 passed / 2 failed; invalidated because source changed during suite, not final acceptance. Final full suite freezes source and tests."
+  },
+  "evidence_files": [
+    {
+      "workspace_relative_path": "rsi-readiness-validation-20261111/full-tests.json",
+      "sha256": "04901d6d1fd254ebb952c24669fce4768558819ee5b7621a5bd9d45697aed359"
+    },
+    {
+      "workspace_relative_path": "rsi-readiness-validation-20261111/full-tests.log",
+      "sha256": "cb59b97f900771d21568fa2ec8eab98befbad90312a8a26f62ca782a92da68c6"
+    },
+    {
+      "workspace_relative_path": "rsi-readiness-validation-20261111/package-smoke.json",
+      "sha256": "8cfa58b7e6e9dcbbd4acfcdf7509fe4a9df7d379923587e77d5868c25b5f84a4"
+    },
+    {
+      "workspace_relative_path": "rsi-readiness-validation-20261111/package-smoke.log",
+      "sha256": "8cfa58b7e6e9dcbbd4acfcdf7509fe4a9df7d379923587e77d5868c25b5f84a4"
+    },
+    {
+      "workspace_relative_path": "rsi-readiness-validation-20261111/package-smoke.py",
+      "sha256": "a401b499b474e8b950d25775ce3b6880215b7c93cc5fd1a11e3dffdc8fcb695e"
+    },
+    {
+      "workspace_relative_path": "rsi-readiness-validation-20261111/rsi-readiness-focused.log",
+      "sha256": "8b1c4f0fae1946d82e0794fd588a2da07bccb3a9891af945d413307c2bec7c03"
+    },
+    {
+      "workspace_relative_path": "rsi-readiness-validation-20261111/rsi-readiness-registry-drift-before.log",
+      "sha256": "2041fd2e09f751ac570b71144c18d4a13df0dd279f4b6e6b9d85d840c91a6dc9"
+    },
+    {
+      "workspace_relative_path": "rsi-readiness-validation-20261111/rsi-readiness-regressions-before.log",
+      "sha256": "f8b2d70766c61dc2fca30c550bb30517c3ac2899324a3a9591218d9544f3c1b5"
+    },
+    {
+      "workspace_relative_path": "rsi-readiness-validation-20261111/rsi-readiness-transactions-before.log",
+      "sha256": "5d69eeb349e89e16d9d00056fe867b56303673d03a8cecbb4546af8c8f8cec54"
+    },
+    {
+      "workspace_relative_path": "rsi-readiness-validation-20261111/rsi-readiness-transactions-confirmed-before.log",
+      "sha256": "bc8373c42f32965a486e37be6224652bf2d9f33d15f7cf2e19fe9bc867f0b032"
+    }
+  ],
+  "compatibility": "Registry fixes change validator identity. Retain historical raw evidence and frozen code; do not rewrite historical hashes. Evaluator core unchanged. Revalidate to create new-version evidence.",
+  "limits": [
+    "Single-file generic source reuse with local paths and trusted controller",
+    "No automatic production Manager hook, native multi-file source reuse or remote path migration",
+    "No new efficacy/production latency claim; historical observed benefits and rejected adaptive result unchanged",
+    "10 environment-specific skips remain; CPU CI does not certify GPU execution",
+    "Readiness is bounded engineering evidence, not a universal absence-of-bugs claim"
+  ],
+  "new_gpu_jobs": 0,
+  "external_model_requests": 0,
+  "production_enabled": false,
+  "main_modified": false,
+  "ci": "Pending exact resulting commit at receipt creation; final exact-head CI evidence saved separately in workspace readiness validation directory, avoiding self-referential audit commits."
+}

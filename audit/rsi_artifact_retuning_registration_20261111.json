@@ -1,0 +1,27 @@
+{
+  "registered_at": 1794332074.750109,
+  "before_submission": true,
+  "sha256": {
+    "analyze.py": "22bcc3cc479e94527d7aa4efb803ec96d3fa8965a22fbaf9125aa45bf04d4c67",
+    "artifact_adapter_smoke.py": "1114bc2dbdf86411f5bbb5a8187c8698e00565df29929b78e2b92bc1e065424c",
+    "batch_worker.py": "fe41de02069601730f58c5e195e7be82d160f1d3d3dd84f0fd6be19d75a48c71",
+    "controller.py": "3631533e76b28fcff6e1483c3f3bd75210704a8fb32fac7b0ade768cf31d90b4",
+    "controller_guard_test.py": "9461f3e36d71a411d5e875ced6740e89a34b40d8c21add12b341173fe8689cf8",
+    "jupyter_remote.py": "897c9cad9c8e1be7ce102ec04477360b2358240f3f7410c243b48a5b2927e2d8",
+    "model_client.py": "59b9c285944fbc4f62e3b13b091975351195f8d3eca7c0e628edda1005d516ff",
+    "pilot_adapter.py": "751ebce6746126c9dc4d1edef688d205b4b1a8909609b9db21179e34eb5105af",
+    "pilot_driver.py": "a7a876d85842d96beb9bc8368a2b5b38e7d33f4ffb33335d199414a70b1c08ba",
+    "pilot_guard.py": "65e892ce4e1ca5d2d665f62ca81cf1b66d509341e902a5ea0fd992311bd50b1c",
+    "prepare.py": "cec4e1baef2b4e2e638d0b69797d84e280d0e57ee5ffa0627e036eee4f37ce5b",
+    "protocol.json": "3881622ff7ae2596a5ea1751acbc3cf1a537efd9407c89ced610775b37122b3b",
+    "relay.py": "8c0cdd5cad244a135b37944fcd520a45f99b232816c1291d3fa01c264da7efcb",
+    "reuse_context.py": "fcda47c081603dc1c71b04c131380917f13ff0ab8c9ea25787eea47aff5997fa",
+    "training-episodes-manifest.json": "dbb5fced15ed50cfa39204dad97b0d51212b2e540b7fc00f3de36cbd6e7b4d25",
+    "training-episodes/30328cf08106c3390296659a93dd2c324a571260f554ef4712b98f3802a8a557.json": "30328cf08106c3390296659a93dd2c324a571260f554ef4712b98f3802a8a557",
+    "training-episodes/575207e89a57d44fe9ba07704ed6d5c700abf3b05862617154949fc959caa51b.json": "575207e89a57d44fe9ba07704ed6d5c700abf3b05862617154949fc959caa51b",
+    "training-episodes/8e7f3e6f024917bcb6a2cc01fca05b1fb5892111bfe3efdbec50dbf85867befd.json": "8e7f3e6f024917bcb6a2cc01fca05b1fb5892111bfe3efdbec50dbf85867befd",
+    "training-episodes/f4d08a34c9dc48c2b919fc470129cb556b3e259d21dc644399e7ecf2321d482b.json": "f4d08a34c9dc48c2b919fc470129cb556b3e259d21dc644399e7ecf2321d482b",
+    "workloads.py": "422847bd3ae7b76f795c9951f35ab7cd14f93a51569fb0843faa30729ce3273e"
+  },
+  "scope": "Original matched gates plus frozen practical criterion; exhaustive4operator-cluster bootstrap descriptive, not generalization proof. Full independent final, template regeneration, exact source selection, artifact action slots, real call attribution and all costs verified."
+}

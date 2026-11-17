@@ -1,0 +1,251 @@
+{
+  "registered_at": 1794321385.2745001,
+  "status": "offline_preparation",
+  "purpose": "Determine whether learned task-scoped experience earns its total cost compared with no memory and a bounded factual-memory baseline.",
+  "source_commit_before_current_trial_analysis": "649c8b004532fb23f8bcbcc654ebc8a50b106b56",
+  "catalog": {
+    "data": {
+      "formulas": {
+        "train": [
+          [
+            "swish-gate",
+            "pointwise",
+            "a * torch.sigmoid(a) * b"
+          ],
+          [
+            "smooth-l1",
+            "pointwise",
+            "torch.where((a-b).abs()<1, 0.5*(a-b).square(), (a-b).abs()-0.5)"
+          ],
+          [
+            "rms-normalize",
+            "row-reduction",
+            "a * torch.rsqrt(a.square().mean(dim=1,keepdim=True)+1e-5)"
+          ],
+          [
+            "central-variance",
+            "row-reduction",
+            "(a-a.mean(dim=1,keepdim=True)).square().mean(dim=1)"
+          ]
+        ],
+        "development": [
+          [
+            "sigmoid-residual",
+            "pointwise",
+            "a * torch.sigmoid(b) + b"
+          ],
+          [
+            "pseudo-huber",
+            "pointwise",
+            "torch.sqrt(1+(a-b).square())-1"
+          ],
+          [
+            "standardize",
+            "row-reduction",
+            "(a-a.mean(dim=1,keepdim=True))*torch.rsqrt((a-a.mean(dim=1,keepdim=True)).square().mean(dim=1,keepdim=True)+1e-4)"
+          ],
+          [
+            "stable-logsumexp",
+            "row-reduction",
+            "torch.logsumexp(a,dim=1)"
+          ]
+        ],
+        "audit": [
+          [
+            "mish-gate",
+            "pointwise",
+            "a*torch.tanh(torch.nn.functional.softplus(a))*b"
+          ],
+          [
+            "gelu-residual",
+            "pointwise",
+            "torch.nn.functional.gelu(a,approximate='tanh')+b"
+          ],
+          [
+            "logistic-loss",
+            "pointwise",
+            "torch.nn.functional.softplus(a)-torch.sigmoid(b)*a"
+          ],
+          [
+            "cauchy-loss",
+            "pointwise",
+            "torch.log1p((a-b).square())"
+          ],
+          [
+            "symmetric-gate",
+            "pointwise",
+            "torch.sigmoid(a)*b+torch.sigmoid(-a)*a"
+          ],
+          [
+            "bounded-residual",
+            "pointwise",
+            "a+torch.tanh(b-a)/(1+b.abs())"
+          ],
+          [
+            "softmax",
+            "row-reduction",
+            "torch.softmax(a,dim=1)"
+          ],
+          [
+            "log-softmax",
+            "row-reduction",
+            "torch.log_softmax(a,dim=1)"
+          ],
+          [
+            "centered-rms",
+            "row-reduction",
+            "torch.sqrt((a-a.mean(dim=1,keepdim=True)).square().mean(dim=1)+1e-6)"
+          ],
+          [
+            "l2-normalize",
+            "row-reduction",
+            "a*torch.rsqrt(a.square().sum(dim=1,keepdim=True)+1e-5)"
+          ],
+          [
+            "softmax-energy",
+            "row-reduction",
+            "(torch.softmax(a,dim=1)*a).sum(dim=1)"
+          ],
+          [
+            "clipped-center",
+            "row-reduction",
+            "torch.clamp(a-a.mean(dim=1,keepdim=True),min=-1.5,max=1.5)"
+          ]
+        ]
+      },
+      "sizes": {
+        "train": {
+          "pointwise": [
+            65539,
+            2097169
+          ],
+          "row-reduction": [
+            [
+              129,
+              127
+            ],
+            [
+              513,
+              2049
+            ]
+          ]
+        },
+        "development": {
+          "pointwise": [
+            131101,
+            3145753
+          ],
+          "row-reduction": [
+            [
+              197,
+              257
+            ],
+            [
+              769,
+              1537
+            ]
+          ]
+        },
+        "audit": {
+          "pointwise": [
+            262171,
+            4194349
+          ],
+          "row-reduction": [
+            [
+              389,
+              385
+            ],
+            [
+              1027,
+              3073
+            ]
+          ]
+        }
+      },
+      "seeds": {
+        "train": [
+          211,
+          223
+        ],
+        "development": [
+          227,
+          229
+        ],
+        "audit": [
+          233,
+          239,
+          241
+        ]
+      }
+    },
+    "sha256": "9c737c5dd0d4ec552a808c2dc5f6a7766fa7a9455f5b5fbab55edcea67227f00"
+  },
+  "arms": [
+    "control",
+    "raw-memory",
+    "rsi"
+  ],
+  "training": {
+    "tasks": 4,
+    "max_actions_per_task": 4,
+    "fresh_model_trajectories": true,
+    "synthetic_failures": false,
+    "selection": "All valid receipts, including failures; no resampling to obtain desired examples"
+  },
+  "development": {
+    "tasks": 4,
+    "repeats": 2,
+    "max_actions_per_trial": 4,
+    "maximum_candidate_rounds": 2,
+    "purpose": "Select a useful mechanism before audit. Every rejected round remains in the resource ledger."
+  },
+  "audit": {
+    "tasks": 12,
+    "repeats": 4,
+    "max_actions_per_trial": 4,
+    "freeze_policy_before_start": true,
+    "no_training_on_audit": true,
+    "one_final_analysis": true,
+    "split_scope": "Held-out operator formulas and sizes within pointwise/reduction families, not unseen families"
+  },
+  "common_controls": {
+    "model": "gpt-6-astra",
+    "reasoning": "medium",
+    "evaluator_and_thresholds_frozen": true,
+    "all_arms_same_solver_tools_and_caps": true,
+    "trial_order": "Balanced permutation by task and repeat frozen before submissions",
+    "automatic_retries": 0,
+    "invalid_or_timeout_attempts": "Count as failed attempts with full observed cost, never silently replace",
+    "no_production_adoption": true
+  },
+  "primary_criteria": {
+    "correctness": "No wrong final kernel; fallback and no-result outcomes distinguished",
+    "quality": "Per-task protection and no overall quality reduction; same frozen evaluator gate",
+    "cost": "All-attempt solver, independent full evaluation and model tokens retained; include learning and development selection cost for RSI",
+    "minimum_practical_effect": "At least 10% lower all-in cost at protected quality, or at least 10% higher paired quality at no more than 5% additional all-in cost",
+    "uncertainty": "Paired task-cluster bootstrap 95% interval for primary outcome; repeat trajectories are not independent task samples",
+    "comparison": "Must beat control and raw-memory on the predeclared primary criterion; otherwise complex RSI is not justified"
+  },
+  "additional_reports": [
+    "Budget-limited kernel yield",
+    "Time to first promotable candidate, failures treated as not reached",
+    "Actual quick/full and stop decisions",
+    "Cause-classified repeated errors with source/condition bindings",
+    "Per-task and worst-case regressions",
+    "GPU allocation seconds and known/unknown API usage",
+    "Break-even task count with explicit deployment horizon; no hypothetical amortization claimed as observed gain"
+  ],
+  "stop_rules": [
+    "Stop development after two candidate rounds if neither passes practical gates; do not spend audit GPU to search for a positive result",
+    "Final audit is never fed back into selection and rerun as independent evidence",
+    "Any resource exhaustion exports partial results and terminates; no blind retry",
+    "No candidate may modify evaluator, thresholds, permissions, budgets or protected files"
+  ],
+  "limitations": [
+    "Not a reproduction of ACE/GEPA/DGM and cannot establish superiority over those algorithms",
+    "GPU wall time, model tokens and money are separate units; no unsupported conversion",
+    "A single hardware/model configuration does not establish production or cross-device generality"
+  ],
+  "budget_receipt": "../rsi-routing-review-20261110/extended-budget.json"
+}

@@ -1,0 +1,10 @@
+{
+  "at": 1794336447.899321,
+  "observed_run": "https://github.com/Daniel-ai-max/kernel_envolve/actions/runs/42875960591",
+  "failure": "test_three_failures_deliver_evidence_to_real_repair_round assumed its assertions completed before the1second cooldown. CI had already passed the deadline and correctly admitted a newround.",
+  "change": "Test configured cooldown and admission immediately before/after recorded next_at. Real preceding subprocesses and cumulative wall/GPU accounting unchanged. No production code or gate changes.",
+  "validation": "20 manager-recovery tests passed in6.95s;ruff/diffchecks passed. Full523tests passed on preceding c55f3a1; CI will validate this test-only change.",
+  "test_sha256": "0c87e62509493568fac7077ae8dd0ffc5cea273e16faa22438eb9a2023b7561b",
+  "log": "/tmp/rsi-recovery-ci-flake-20261111.log",
+  "separate_pr_body_fix": "Restored single selected template change type; local PR body checker passed. No gate bypass."
+}

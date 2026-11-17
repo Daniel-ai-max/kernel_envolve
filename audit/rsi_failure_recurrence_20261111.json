@@ -1,0 +1,1079 @@
+{
+  "job": "ef46cf6e2cc74cbfb469f0bbc4850963",
+  "source_commit": "14a3e29fd5ba8cf04e3c0fd92b0488c1c9dd3c21",
+  "evidence_sha256": "bf379d61fc421031887dcf89c6c354d176572df0e3bf76905df24e99f7432f4e",
+  "summary_sha256": "7d4d93430edc4fcfeaedd8955f7ed0f3c84f1313897ab1172d3fc6610b2b3769",
+  "analysis": "Posthoc descriptive diagnosis, no change to the closed verdict or current i/j protocol.",
+  "failures": 22,
+  "error_types": {
+    "Mismatch": 21,
+    "FailOnRecompileLimitHit": 1
+  },
+  "by_arm": {
+    "control": {
+      "failed_evaluations": 8,
+      "exact_repeat_observations_after_first": 0,
+      "same_source_observations_after_first_across_configs": 0,
+      "worker_wall_seconds": 33.5713091106154,
+      "trace_reported_model_seconds": 78.04553255625069
+    },
+    "source-memory": {
+      "failed_evaluations": 4,
+      "exact_repeat_observations_after_first": 2,
+      "same_source_observations_after_first_across_configs": 3,
+      "worker_wall_seconds": 15.63450788334012,
+      "trace_reported_model_seconds": 61.4357041567564
+    },
+    "artifact-reuse": {
+      "failed_evaluations": 5,
+      "exact_repeat_observations_after_first": 2,
+      "same_source_observations_after_first_across_configs": 3,
+      "worker_wall_seconds": 25.413159863092005,
+      "trace_reported_model_seconds": 118.26530098542571
+    },
+    "artifact-full": {
+      "failed_evaluations": 5,
+      "exact_repeat_observations_after_first": 2,
+      "same_source_observations_after_first_across_configs": 3,
+      "worker_wall_seconds": 24.46158912824467,
+      "trace_reported_model_seconds": 102.25807097507641
+    }
+  },
+  "same_source_groups": [
+    {
+      "indices": [
+        4,
+        7,
+        15,
+        18
+      ],
+      "arm": "source-memory",
+      "source": "d81510ace2d6ee50e1631de1407c7a5df2bd3de64c493cb797854a21d66d45a8",
+      "observations": 4,
+      "distinct_trials": 4,
+      "distinct_contracts": 2
+    },
+    {
+      "indices": [
+        5,
+        10,
+        16,
+        21
+      ],
+      "arm": "artifact-full",
+      "source": "d81510ace2d6ee50e1631de1407c7a5df2bd3de64c493cb797854a21d66d45a8",
+      "observations": 4,
+      "distinct_trials": 4,
+      "distinct_contracts": 2
+    },
+    {
+      "indices": [
+        6,
+        8,
+        17,
+        19
+      ],
+      "arm": "artifact-reuse",
+      "source": "d81510ace2d6ee50e1631de1407c7a5df2bd3de64c493cb797854a21d66d45a8",
+      "observations": 4,
+      "distinct_trials": 4,
+      "distinct_contracts": 2
+    }
+  ],
+  "exact_failure_groups": [
+    {
+      "indices": [
+        4,
+        15
+      ],
+      "arm": "source-memory",
+      "source": "d81510ace2d6ee50e1631de1407c7a5df2bd3de64c493cb797854a21d66d45a8",
+      "observations": 2,
+      "distinct_trials": 2,
+      "distinct_contracts": 1
+    },
+    {
+      "indices": [
+        5,
+        16
+      ],
+      "arm": "artifact-full",
+      "source": "d81510ace2d6ee50e1631de1407c7a5df2bd3de64c493cb797854a21d66d45a8",
+      "observations": 2,
+      "distinct_trials": 2,
+      "distinct_contracts": 1
+    },
+    {
+      "indices": [
+        6,
+        17
+      ],
+      "arm": "artifact-reuse",
+      "source": "d81510ace2d6ee50e1631de1407c7a5df2bd3de64c493cb797854a21d66d45a8",
+      "observations": 2,
+      "distinct_trials": 2,
+      "distinct_contracts": 1
+    },
+    {
+      "indices": [
+        7,
+        18
+      ],
+      "arm": "source-memory",
+      "source": "d81510ace2d6ee50e1631de1407c7a5df2bd3de64c493cb797854a21d66d45a8",
+      "observations": 2,
+      "distinct_trials": 2,
+      "distinct_contracts": 1
+    },
+    {
+      "indices": [
+        8,
+        19
+      ],
+      "arm": "artifact-reuse",
+      "source": "d81510ace2d6ee50e1631de1407c7a5df2bd3de64c493cb797854a21d66d45a8",
+      "observations": 2,
+      "distinct_trials": 2,
+      "distinct_contracts": 1
+    },
+    {
+      "indices": [
+        10,
+        21
+      ],
+      "arm": "artifact-full",
+      "source": "d81510ace2d6ee50e1631de1407c7a5df2bd3de64c493cb797854a21d66d45a8",
+      "observations": 2,
+      "distinct_trials": 2,
+      "distinct_contracts": 1
+    }
+  ],
+  "rows": [
+    {
+      "trial": "0-0-control",
+      "arm": "control",
+      "task": 0,
+      "repeat": 0,
+      "step": 0,
+      "source": "8b2a04063192b6901a49b5d943d436c926ef51377f471d40b7f0a8217b6745a1",
+      "task_source": "65d75a6e1dfe95a9cdd6a43df490e98f373926c16e801a2f79b4038d07dcf03f",
+      "contract": "e5325489ba750e912077f0fe5cf0e6fac0b53882ae12a54faae374280e7715dc",
+      "evaluator": "a36a49281a74e704617935c5ef0c259d4b4bae81d7ce163162af1015ed50b267",
+      "runtime_key_hash": "bc7482565db47a84d87e0d786f45d8c18e6b9405c4bb16029ee056ecb67cb836",
+      "mode": "full",
+      "result_hash": "8f35db7ef9423bc69a0ef4d4b22fac8bba1745cbc49d447754d2917b2b985240",
+      "error_type": "Mismatch",
+      "failed_checks": {
+        "checks": [
+          {
+            "case": "size-0-bfloat16-stride-1",
+            "case_id_truncated": false,
+            "role": "candidate",
+            "kind": "reuse",
+            "seed": 431,
+            "args": {
+              "dtype": "bfloat16",
+              "pattern": "normal",
+              "shape": [
+                131101
+              ],
+              "stride": 1
+            },
+            "args_truncated": false
+          }
+        ],
+        "count": 1,
+        "truncated": false,
+        "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+      },
+      "trace_reported_model_seconds": 11.605859963223338,
+      "worker_wall_seconds": 3.7209072997793555,
+      "run": "comparison/0-0-control/workspace/task/.kernel_envolve/runs/20261110T185454-b3611b87"
+    },
+    {
+      "trial": "0-0-artifact-reuse",
+      "arm": "artifact-reuse",
+      "task": 0,
+      "repeat": 0,
+      "step": 1,
+      "source": "dc07cd3cc3612070da7673f76eff7bb4c67ee163fe8ff84d3f785a689065655c",
+      "task_source": "65d75a6e1dfe95a9cdd6a43df490e98f373926c16e801a2f79b4038d07dcf03f",
+      "contract": "e5325489ba750e912077f0fe5cf0e6fac0b53882ae12a54faae374280e7715dc",
+      "evaluator": "a36a49281a74e704617935c5ef0c259d4b4bae81d7ce163162af1015ed50b267",
+      "runtime_key_hash": "bc7482565db47a84d87e0d786f45d8c18e6b9405c4bb16029ee056ecb67cb836",
+      "mode": "full",
+      "result_hash": "3e1cb5170cb2bb0cf9e109abb24931c14a5d8aebecd587f6de2490cb3b738c7e",
+      "error_type": "FailOnRecompileLimitHit",
+      "failed_checks": {
+        "checks": [
+          {
+            "case": "size-1-float16-stride-1",
+            "case_id_truncated": false,
+            "role": "candidate",
+            "kind": "fresh",
+            "seed": 431,
+            "args": {
+              "dtype": "float16",
+              "pattern": "wide",
+              "shape": [
+                3145753
+              ],
+              "stride": 1
+            },
+            "args_truncated": false
+          }
+        ],
+        "count": 1,
+        "truncated": false,
+        "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+      },
+      "trace_reported_model_seconds": 25.414960872381926,
+      "worker_wall_seconds": 11.030232932884246,
+      "run": "comparison/0-0-artifact-reuse/workspace/task/.kernel_envolve/runs/20261110T185913-94ce7a76"
+    },
+    {
+      "trial": "0-1-control",
+      "arm": "control",
+      "task": 1,
+      "repeat": 0,
+      "step": 0,
+      "source": "d75216764c1aa39cb5fa2aed2c8d022cb2ce8eebcd3f7c765fd1b43175be29ef",
+      "task_source": "65d75a6e1dfe95a9cdd6a43df490e98f373926c16e801a2f79b4038d07dcf03f",
+      "contract": "cbdc993d049b44c05ec220a90a69fc84813d7879e450b9204606c8c935beaaa4",
+      "evaluator": "a36a49281a74e704617935c5ef0c259d4b4bae81d7ce163162af1015ed50b267",
+      "runtime_key_hash": "bc7482565db47a84d87e0d786f45d8c18e6b9405c4bb16029ee056ecb67cb836",
+      "mode": "full",
+      "result_hash": "4a40843f27ec0160509a5bc27647e32c679199f921ae95ffc11aa6d1046256e1",
+      "error_type": "Mismatch",
+      "failed_checks": {
+        "checks": [
+          {
+            "case": "size-0-bfloat16-stride-1",
+            "case_id_truncated": false,
+            "role": "candidate",
+            "kind": "fresh",
+            "seed": 457,
+            "args": {
+              "dtype": "bfloat16",
+              "pattern": "normal",
+              "shape": [
+                393241
+              ],
+              "stride": 1
+            },
+            "args_truncated": false
+          }
+        ],
+        "count": 1,
+        "truncated": false,
+        "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+      },
+      "trace_reported_model_seconds": 9.805595105979592,
+      "worker_wall_seconds": 4.571894672233611,
+      "run": "comparison/0-1-control/workspace/task/.kernel_envolve/runs/20261110T190250-b7adad49"
+    },
+    {
+      "trial": "0-4-control",
+      "arm": "control",
+      "task": 4,
+      "repeat": 0,
+      "step": 0,
+      "source": "59b8b1756f78d245df50bfb217a49c2d38c516b864af9cbf206b03a38f504240",
+      "task_source": "6499c04c2660969f8fe9829372bfa2e48ce2757324454e2e80064077f497fe09",
+      "contract": "8aa2c98f746290e7d16bb1adb5b0bb8989bcbfed9bc687a13d7afe9b64910396",
+      "evaluator": "a36a49281a74e704617935c5ef0c259d4b4bae81d7ce163162af1015ed50b267",
+      "runtime_key_hash": "bc7482565db47a84d87e0d786f45d8c18e6b9405c4bb16029ee056ecb67cb836",
+      "mode": "full",
+      "result_hash": "3014669969236b6f8e11c4cf9d23cc551bcc8a237fe233a266204cdf3d6a33d4",
+      "error_type": "Mismatch",
+      "failed_checks": {
+        "checks": [
+          {
+            "case": "size-1-bfloat16-stride-3",
+            "case_id_truncated": false,
+            "role": "candidate",
+            "kind": "fresh",
+            "seed": 433,
+            "args": {
+              "dtype": "bfloat16",
+              "pattern": "wide",
+              "shape": [
+                683,
+                2063
+              ],
+              "stride": 3
+            },
+            "args_truncated": false
+          }
+        ],
+        "count": 1,
+        "truncated": false,
+        "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+      },
+      "trace_reported_model_seconds": 9.605622666887939,
+      "worker_wall_seconds": 5.022485599853098,
+      "run": "comparison/0-4-control/workspace/task/.kernel_envolve/runs/20261110T191138-dd81ca70"
+    },
+    {
+      "trial": "0-4-source-memory",
+      "arm": "source-memory",
+      "task": 4,
+      "repeat": 0,
+      "step": 1,
+      "source": "d81510ace2d6ee50e1631de1407c7a5df2bd3de64c493cb797854a21d66d45a8",
+      "task_source": "6499c04c2660969f8fe9829372bfa2e48ce2757324454e2e80064077f497fe09",
+      "contract": "8aa2c98f746290e7d16bb1adb5b0bb8989bcbfed9bc687a13d7afe9b64910396",
+      "evaluator": "a36a49281a74e704617935c5ef0c259d4b4bae81d7ce163162af1015ed50b267",
+      "runtime_key_hash": "bc7482565db47a84d87e0d786f45d8c18e6b9405c4bb16029ee056ecb67cb836",
+      "mode": "full",
+      "result_hash": "ea7fc5aae286317f0e6aa7ad0f6a96821e380611710a7e6b873ff0da006a2e7a",
+      "error_type": "Mismatch",
+      "failed_checks": {
+        "checks": [
+          {
+            "case": "size-1-bfloat16-stride-3",
+            "case_id_truncated": false,
+            "role": "candidate",
+            "kind": "fresh",
+            "seed": 433,
+            "args": {
+              "dtype": "bfloat16",
+              "pattern": "wide",
+              "shape": [
+                683,
+                2063
+              ],
+              "stride": 3
+            },
+            "args_truncated": false
+          }
+        ],
+        "count": 1,
+        "truncated": false,
+        "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+      },
+      "trace_reported_model_seconds": 10.006494034081697,
+      "worker_wall_seconds": 4.521970918867737,
+      "run": "comparison/0-4-source-memory/workspace/task/.kernel_envolve/runs/20261110T191311-75892023"
+    },
+    {
+      "trial": "0-4-artifact-full",
+      "arm": "artifact-full",
+      "task": 4,
+      "repeat": 0,
+      "step": 1,
+      "source": "d81510ace2d6ee50e1631de1407c7a5df2bd3de64c493cb797854a21d66d45a8",
+      "task_source": "6499c04c2660969f8fe9829372bfa2e48ce2757324454e2e80064077f497fe09",
+      "contract": "8aa2c98f746290e7d16bb1adb5b0bb8989bcbfed9bc687a13d7afe9b64910396",
+      "evaluator": "a36a49281a74e704617935c5ef0c259d4b4bae81d7ce163162af1015ed50b267",
+      "runtime_key_hash": "bc7482565db47a84d87e0d786f45d8c18e6b9405c4bb16029ee056ecb67cb836",
+      "mode": "full",
+      "result_hash": "51de073b3a319efb0d94e31220083d5f6692584c3bfe556e2c1848cc1f4567f5",
+      "error_type": "Mismatch",
+      "failed_checks": {
+        "checks": [
+          {
+            "case": "size-1-bfloat16-stride-3",
+            "case_id_truncated": false,
+            "role": "candidate",
+            "kind": "fresh",
+            "seed": 433,
+            "args": {
+              "dtype": "bfloat16",
+              "pattern": "wide",
+              "shape": [
+                683,
+                2063
+              ],
+              "stride": 3
+            },
+            "args_truncated": false
+          }
+        ],
+        "count": 1,
+        "truncated": false,
+        "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+      },
+      "trace_reported_model_seconds": 20.41129303863272,
+      "worker_wall_seconds": 3.5706925499252975,
+      "run": "comparison/0-4-artifact-full/workspace/task/.kernel_envolve/runs/20261110T191424-cfd1b987"
+    },
+    {
+      "trial": "0-4-artifact-reuse",
+      "arm": "artifact-reuse",
+      "task": 4,
+      "repeat": 0,
+      "step": 1,
+      "source": "d81510ace2d6ee50e1631de1407c7a5df2bd3de64c493cb797854a21d66d45a8",
+      "task_source": "6499c04c2660969f8fe9829372bfa2e48ce2757324454e2e80064077f497fe09",
+      "contract": "8aa2c98f746290e7d16bb1adb5b0bb8989bcbfed9bc687a13d7afe9b64910396",
+      "evaluator": "a36a49281a74e704617935c5ef0c259d4b4bae81d7ce163162af1015ed50b267",
+      "runtime_key_hash": "bc7482565db47a84d87e0d786f45d8c18e6b9405c4bb16029ee056ecb67cb836",
+      "mode": "full",
+      "result_hash": "a933bf0544cc93e62f94128c01422a90fc2a7ffc15f13256c2212da107bf071f",
+      "error_type": "Mismatch",
+      "failed_checks": {
+        "checks": [
+          {
+            "case": "size-1-bfloat16-stride-3",
+            "case_id_truncated": false,
+            "role": "candidate",
+            "kind": "fresh",
+            "seed": 433,
+            "args": {
+              "dtype": "bfloat16",
+              "pattern": "wide",
+              "shape": [
+                683,
+                2063
+              ],
+              "stride": 3
+            },
+            "args_truncated": false
+          }
+        ],
+        "count": 1,
+        "truncated": false,
+        "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+      },
+      "trace_reported_model_seconds": 17.2095247451216,
+      "worker_wall_seconds": 3.6207614559680223,
+      "run": "comparison/0-4-artifact-reuse/workspace/task/.kernel_envolve/runs/20261110T191547-0079a047"
+    },
+    {
+      "trial": "0-5-source-memory",
+      "arm": "source-memory",
+      "task": 5,
+      "repeat": 0,
+      "step": 0,
+      "source": "d81510ace2d6ee50e1631de1407c7a5df2bd3de64c493cb797854a21d66d45a8",
+      "task_source": "6499c04c2660969f8fe9829372bfa2e48ce2757324454e2e80064077f497fe09",
+      "contract": "2c6540726285c3ddfe4ac126e86d208d570425ef5ec050ca3fd4294fb6fa0080",
+      "evaluator": "a36a49281a74e704617935c5ef0c259d4b4bae81d7ce163162af1015ed50b267",
+      "runtime_key_hash": "bc7482565db47a84d87e0d786f45d8c18e6b9405c4bb16029ee056ecb67cb836",
+      "mode": "full",
+      "result_hash": "4c41122ecb5736927248f6b3c5ec0c7fc5dd387f8aa19879b86a939c44b08af7",
+      "error_type": "Mismatch",
+      "failed_checks": {
+        "checks": [
+          {
+            "case": "size-0-bfloat16-stride-3",
+            "case_id_truncated": false,
+            "role": "candidate",
+            "kind": "fresh",
+            "seed": 461,
+            "args": {
+              "dtype": "bfloat16",
+              "pattern": "normal",
+              "shape": [
+                277,
+                1543
+              ],
+              "stride": 6
+            },
+            "args_truncated": false
+          }
+        ],
+        "count": 1,
+        "truncated": false,
+        "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+      },
+      "trace_reported_model_seconds": 13.207744165323675,
+      "worker_wall_seconds": 4.021085557062179,
+      "run": "comparison/0-5-source-memory/workspace/task/.kernel_envolve/runs/20261110T191659-7e0e0542"
+    },
+    {
+      "trial": "0-5-artifact-reuse",
+      "arm": "artifact-reuse",
+      "task": 5,
+      "repeat": 0,
+      "step": 1,
+      "source": "d81510ace2d6ee50e1631de1407c7a5df2bd3de64c493cb797854a21d66d45a8",
+      "task_source": "6499c04c2660969f8fe9829372bfa2e48ce2757324454e2e80064077f497fe09",
+      "contract": "2c6540726285c3ddfe4ac126e86d208d570425ef5ec050ca3fd4294fb6fa0080",
+      "evaluator": "a36a49281a74e704617935c5ef0c259d4b4bae81d7ce163162af1015ed50b267",
+      "runtime_key_hash": "bc7482565db47a84d87e0d786f45d8c18e6b9405c4bb16029ee056ecb67cb836",
+      "mode": "full",
+      "result_hash": "556221cf199ee5812bc918101ba0b30c7d90e189f859c2866c6ad4fdf4a920a0",
+      "error_type": "Mismatch",
+      "failed_checks": {
+        "checks": [
+          {
+            "case": "size-0-bfloat16-stride-3",
+            "case_id_truncated": false,
+            "role": "candidate",
+            "kind": "fresh",
+            "seed": 461,
+            "args": {
+              "dtype": "bfloat16",
+              "pattern": "normal",
+              "shape": [
+                277,
+                1543
+              ],
+              "stride": 6
+            },
+            "args_truncated": false
+          }
+        ],
+        "count": 1,
+        "truncated": false,
+        "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+      },
+      "trace_reported_model_seconds": 26.414207516703755,
+      "worker_wall_seconds": 3.5206895391456783,
+      "run": "comparison/0-5-artifact-reuse/workspace/task/.kernel_envolve/runs/20261110T191841-c2f59c32"
+    },
+    {
+      "trial": "0-5-control",
+      "arm": "control",
+      "task": 5,
+      "repeat": 0,
+      "step": 0,
+      "source": "d2ac1356316cea43810c32c14f16d0ca5e5cf6f17e739aded0e819ee16cbb2bd",
+      "task_source": "6499c04c2660969f8fe9829372bfa2e48ce2757324454e2e80064077f497fe09",
+      "contract": "2c6540726285c3ddfe4ac126e86d208d570425ef5ec050ca3fd4294fb6fa0080",
+      "evaluator": "a36a49281a74e704617935c5ef0c259d4b4bae81d7ce163162af1015ed50b267",
+      "runtime_key_hash": "bc7482565db47a84d87e0d786f45d8c18e6b9405c4bb16029ee056ecb67cb836",
+      "mode": "full",
+      "result_hash": "27f9735eea27a814dbc8a7621cee04a8ffcc9272ce42f1f8fb5eed7b50987587",
+      "error_type": "Mismatch",
+      "failed_checks": {
+        "checks": [
+          {
+            "case": "size-0-bfloat16-stride-3",
+            "case_id_truncated": false,
+            "role": "candidate",
+            "kind": "fresh",
+            "seed": 461,
+            "args": {
+              "dtype": "bfloat16",
+              "pattern": "normal",
+              "shape": [
+                277,
+                1543
+              ],
+              "stride": 6
+            },
+            "args_truncated": false
+          }
+        ],
+        "count": 1,
+        "truncated": false,
+        "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+      },
+      "trace_reported_model_seconds": 9.40553434100002,
+      "worker_wall_seconds": 4.021031111013144,
+      "run": "comparison/0-5-control/workspace/task/.kernel_envolve/runs/20261110T191933-5119e2b1"
+    },
+    {
+      "trial": "0-5-artifact-full",
+      "arm": "artifact-full",
+      "task": 5,
+      "repeat": 0,
+      "step": 1,
+      "source": "d81510ace2d6ee50e1631de1407c7a5df2bd3de64c493cb797854a21d66d45a8",
+      "task_source": "6499c04c2660969f8fe9829372bfa2e48ce2757324454e2e80064077f497fe09",
+      "contract": "2c6540726285c3ddfe4ac126e86d208d570425ef5ec050ca3fd4294fb6fa0080",
+      "evaluator": "a36a49281a74e704617935c5ef0c259d4b4bae81d7ce163162af1015ed50b267",
+      "runtime_key_hash": "bc7482565db47a84d87e0d786f45d8c18e6b9405c4bb16029ee056ecb67cb836",
+      "mode": "full",
+      "result_hash": "306d6769d58daee6ea0ff24d21130cd05dca6525482b06be6d2968d5c24b59a5",
+      "error_type": "Mismatch",
+      "failed_checks": {
+        "checks": [
+          {
+            "case": "size-0-bfloat16-stride-3",
+            "case_id_truncated": false,
+            "role": "candidate",
+            "kind": "fresh",
+            "seed": 461,
+            "args": {
+              "dtype": "bfloat16",
+              "pattern": "normal",
+              "shape": [
+                277,
+                1543
+              ],
+              "stride": 6
+            },
+            "args_truncated": false
+          }
+        ],
+        "count": 1,
+        "truncated": false,
+        "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+      },
+      "trace_reported_model_seconds": 19.210786648094654,
+      "worker_wall_seconds": 4.121374238282442,
+      "run": "comparison/0-5-artifact-full/workspace/task/.kernel_envolve/runs/20261110T192113-61e35c5f"
+    },
+    {
+      "trial": "1-0-control",
+      "arm": "control",
+      "task": 0,
+      "repeat": 1,
+      "step": 0,
+      "source": "3cd349044aa8576fa55d2dce233a5b8c089b0c5da08e3b29cde871c821811f88",
+      "task_source": "65d75a6e1dfe95a9cdd6a43df490e98f373926c16e801a2f79b4038d07dcf03f",
+      "contract": "e5325489ba750e912077f0fe5cf0e6fac0b53882ae12a54faae374280e7715dc",
+      "evaluator": "a36a49281a74e704617935c5ef0c259d4b4bae81d7ce163162af1015ed50b267",
+      "runtime_key_hash": "bc7482565db47a84d87e0d786f45d8c18e6b9405c4bb16029ee056ecb67cb836",
+      "mode": "full",
+      "result_hash": "5d03affce88f6a3ebcf56b67413dd47f99aff499cf1771e82daf359fcb0fbd26",
+      "error_type": "Mismatch",
+      "failed_checks": {
+        "checks": [
+          {
+            "case": "size-0-bfloat16-stride-1",
+            "case_id_truncated": false,
+            "role": "candidate",
+            "kind": "reuse",
+            "seed": 431,
+            "args": {
+              "dtype": "bfloat16",
+              "pattern": "normal",
+              "shape": [
+                131101
+              ],
+              "stride": 1
+            },
+            "args_truncated": false
+          }
+        ],
+        "count": 1,
+        "truncated": false,
+        "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+      },
+      "trace_reported_model_seconds": 12.207300061825663,
+      "worker_wall_seconds": 3.069998702965677,
+      "run": "comparison/1-0-control/workspace/task/.kernel_envolve/runs/20261110T192535-89aa0505"
+    },
+    {
+      "trial": "1-0-artifact-full",
+      "arm": "artifact-full",
+      "task": 0,
+      "repeat": 1,
+      "step": 1,
+      "source": "95dcd365a453c5d2e01b887959ffb6c1421dbd32bcd091a03c6e27ab9d531b23",
+      "task_source": "65d75a6e1dfe95a9cdd6a43df490e98f373926c16e801a2f79b4038d07dcf03f",
+      "contract": "e5325489ba750e912077f0fe5cf0e6fac0b53882ae12a54faae374280e7715dc",
+      "evaluator": "a36a49281a74e704617935c5ef0c259d4b4bae81d7ce163162af1015ed50b267",
+      "runtime_key_hash": "bc7482565db47a84d87e0d786f45d8c18e6b9405c4bb16029ee056ecb67cb836",
+      "mode": "full",
+      "result_hash": "8205b376216dae8ac586679e77d8de6f23b24c55e6c26888be94ad334073ce26",
+      "error_type": "Mismatch",
+      "failed_checks": {
+        "checks": [
+          {
+            "case": "size-0-bfloat16-stride-1",
+            "case_id_truncated": false,
+            "role": "candidate",
+            "kind": "reuse",
+            "seed": 431,
+            "args": {
+              "dtype": "bfloat16",
+              "pattern": "normal",
+              "shape": [
+                131101
+              ],
+              "stride": 1
+            },
+            "args_truncated": false
+          }
+        ],
+        "count": 1,
+        "truncated": false,
+        "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+      },
+      "trace_reported_model_seconds": 18.41092744190246,
+      "worker_wall_seconds": 8.476793833076954,
+      "run": "comparison/1-0-artifact-full/workspace/task/.kernel_envolve/runs/20261110T192759-90ec5dcb"
+    },
+    {
+      "trial": "1-1-control",
+      "arm": "control",
+      "task": 1,
+      "repeat": 1,
+      "step": 0,
+      "source": "7deca38daaa00dca467ddc7180c02b7dbe4ced3adc46a2e21223aed7848f70a4",
+      "task_source": "65d75a6e1dfe95a9cdd6a43df490e98f373926c16e801a2f79b4038d07dcf03f",
+      "contract": "cbdc993d049b44c05ec220a90a69fc84813d7879e450b9204606c8c935beaaa4",
+      "evaluator": "a36a49281a74e704617935c5ef0c259d4b4bae81d7ce163162af1015ed50b267",
+      "runtime_key_hash": "bc7482565db47a84d87e0d786f45d8c18e6b9405c4bb16029ee056ecb67cb836",
+      "mode": "full",
+      "result_hash": "a00c8b594b55b536e17d961b152c2843c6db3704ab031357d7f2267942fe67f4",
+      "error_type": "Mismatch",
+      "failed_checks": {
+        "checks": [
+          {
+            "case": "size-0-bfloat16-stride-1",
+            "case_id_truncated": false,
+            "role": "candidate",
+            "kind": "fresh",
+            "seed": 457,
+            "args": {
+              "dtype": "bfloat16",
+              "pattern": "normal",
+              "shape": [
+                393241
+              ],
+              "stride": 1
+            },
+            "args_truncated": false
+          }
+        ],
+        "count": 1,
+        "truncated": false,
+        "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+      },
+      "trace_reported_model_seconds": 8.00507081206888,
+      "worker_wall_seconds": 4.521919570397586,
+      "run": "comparison/1-1-control/workspace/task/.kernel_envolve/runs/20261110T193222-b7202239"
+    },
+    {
+      "trial": "1-4-control",
+      "arm": "control",
+      "task": 4,
+      "repeat": 1,
+      "step": 0,
+      "source": "6a6090e2c7eda9167d22f6a52fad5119451efa509094a4a70ace9415b19f49a2",
+      "task_source": "6499c04c2660969f8fe9829372bfa2e48ce2757324454e2e80064077f497fe09",
+      "contract": "8aa2c98f746290e7d16bb1adb5b0bb8989bcbfed9bc687a13d7afe9b64910396",
+      "evaluator": "a36a49281a74e704617935c5ef0c259d4b4bae81d7ce163162af1015ed50b267",
+      "runtime_key_hash": "bc7482565db47a84d87e0d786f45d8c18e6b9405c4bb16029ee056ecb67cb836",
+      "mode": "full",
+      "result_hash": "f8114a1f69b17fcfa40a58ad7750fe3511bbc46413916a6a2228226cb2ac2c04",
+      "error_type": "Mismatch",
+      "failed_checks": {
+        "checks": [
+          {
+            "case": "size-1-bfloat16-stride-3",
+            "case_id_truncated": false,
+            "role": "candidate",
+            "kind": "fresh",
+            "seed": 433,
+            "args": {
+              "dtype": "bfloat16",
+              "pattern": "wide",
+              "shape": [
+                683,
+                2063
+              ],
+              "stride": 3
+            },
+            "args_truncated": false
+          }
+        ],
+        "count": 1,
+        "truncated": false,
+        "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+      },
+      "trace_reported_model_seconds": 8.605241088196635,
+      "worker_wall_seconds": 4.621830438729376,
+      "run": "comparison/1-4-control/workspace/task/.kernel_envolve/runs/20261110T194041-a569fb36"
+    },
+    {
+      "trial": "1-4-source-memory",
+      "arm": "source-memory",
+      "task": 4,
+      "repeat": 1,
+      "step": 1,
+      "source": "d81510ace2d6ee50e1631de1407c7a5df2bd3de64c493cb797854a21d66d45a8",
+      "task_source": "6499c04c2660969f8fe9829372bfa2e48ce2757324454e2e80064077f497fe09",
+      "contract": "8aa2c98f746290e7d16bb1adb5b0bb8989bcbfed9bc687a13d7afe9b64910396",
+      "evaluator": "a36a49281a74e704617935c5ef0c259d4b4bae81d7ce163162af1015ed50b267",
+      "runtime_key_hash": "bc7482565db47a84d87e0d786f45d8c18e6b9405c4bb16029ee056ecb67cb836",
+      "mode": "full",
+      "result_hash": "c02cf60e31ccce11ddcc92dc7ea52b2526f664ac8b5ce0a7bba2df9bafd09124",
+      "error_type": "Mismatch",
+      "failed_checks": {
+        "checks": [
+          {
+            "case": "size-1-bfloat16-stride-3",
+            "case_id_truncated": false,
+            "role": "candidate",
+            "kind": "fresh",
+            "seed": 433,
+            "args": {
+              "dtype": "bfloat16",
+              "pattern": "wide",
+              "shape": [
+                683,
+                2063
+              ],
+              "stride": 3
+            },
+            "args_truncated": false
+          }
+        ],
+        "count": 1,
+        "truncated": false,
+        "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+      },
+      "trace_reported_model_seconds": 25.013872544281185,
+      "worker_wall_seconds": 3.5707964971661568,
+      "run": "comparison/1-4-source-memory/workspace/task/.kernel_envolve/runs/20261110T194242-b3a99c11"
+    },
+    {
+      "trial": "1-4-artifact-full",
+      "arm": "artifact-full",
+      "task": 4,
+      "repeat": 1,
+      "step": 2,
+      "source": "d81510ace2d6ee50e1631de1407c7a5df2bd3de64c493cb797854a21d66d45a8",
+      "task_source": "6499c04c2660969f8fe9829372bfa2e48ce2757324454e2e80064077f497fe09",
+      "contract": "8aa2c98f746290e7d16bb1adb5b0bb8989bcbfed9bc687a13d7afe9b64910396",
+      "evaluator": "a36a49281a74e704617935c5ef0c259d4b4bae81d7ce163162af1015ed50b267",
+      "runtime_key_hash": "bc7482565db47a84d87e0d786f45d8c18e6b9405c4bb16029ee056ecb67cb836",
+      "mode": "full",
+      "result_hash": "ba33991cf59799970a4c0c0aea789b8d5bae0df56f7bc0f80cd9da340c618667",
+      "error_type": "Mismatch",
+      "failed_checks": {
+        "checks": [
+          {
+            "case": "size-1-bfloat16-stride-3",
+            "case_id_truncated": false,
+            "role": "candidate",
+            "kind": "fresh",
+            "seed": 433,
+            "args": {
+              "dtype": "bfloat16",
+              "pattern": "wide",
+              "shape": [
+                683,
+                2063
+              ],
+              "stride": 3
+            },
+            "args_truncated": false
+          }
+        ],
+        "count": 1,
+        "truncated": false,
+        "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+      },
+      "trace_reported_model_seconds": 22.61342022381723,
+      "worker_wall_seconds": 4.772228837944567,
+      "run": "comparison/1-4-artifact-full/workspace/task/.kernel_envolve/runs/20261110T194433-a9614bf4"
+    },
+    {
+      "trial": "1-4-artifact-reuse",
+      "arm": "artifact-reuse",
+      "task": 4,
+      "repeat": 1,
+      "step": 2,
+      "source": "d81510ace2d6ee50e1631de1407c7a5df2bd3de64c493cb797854a21d66d45a8",
+      "task_source": "6499c04c2660969f8fe9829372bfa2e48ce2757324454e2e80064077f497fe09",
+      "contract": "8aa2c98f746290e7d16bb1adb5b0bb8989bcbfed9bc687a13d7afe9b64910396",
+      "evaluator": "a36a49281a74e704617935c5ef0c259d4b4bae81d7ce163162af1015ed50b267",
+      "runtime_key_hash": "bc7482565db47a84d87e0d786f45d8c18e6b9405c4bb16029ee056ecb67cb836",
+      "mode": "full",
+      "result_hash": "f8a212c16dc610c4242ef92b45b17b361ea0edf003b134d677bc1e7f15bf3ced",
+      "error_type": "Mismatch",
+      "failed_checks": {
+        "checks": [
+          {
+            "case": "size-1-bfloat16-stride-3",
+            "case_id_truncated": false,
+            "role": "candidate",
+            "kind": "fresh",
+            "seed": 433,
+            "args": {
+              "dtype": "bfloat16",
+              "pattern": "wide",
+              "shape": [
+                683,
+                2063
+              ],
+              "stride": 3
+            },
+            "args_truncated": false
+          }
+        ],
+        "count": 1,
+        "truncated": false,
+        "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+      },
+      "trace_reported_model_seconds": 21.012292345054448,
+      "worker_wall_seconds": 3.570730173960328,
+      "run": "comparison/1-4-artifact-reuse/workspace/task/.kernel_envolve/runs/20261110T194609-a3294748"
+    },
+    {
+      "trial": "1-5-source-memory",
+      "arm": "source-memory",
+      "task": 5,
+      "repeat": 1,
+      "step": 0,
+      "source": "d81510ace2d6ee50e1631de1407c7a5df2bd3de64c493cb797854a21d66d45a8",
+      "task_source": "6499c04c2660969f8fe9829372bfa2e48ce2757324454e2e80064077f497fe09",
+      "contract": "2c6540726285c3ddfe4ac126e86d208d570425ef5ec050ca3fd4294fb6fa0080",
+      "evaluator": "a36a49281a74e704617935c5ef0c259d4b4bae81d7ce163162af1015ed50b267",
+      "runtime_key_hash": "bc7482565db47a84d87e0d786f45d8c18e6b9405c4bb16029ee056ecb67cb836",
+      "mode": "full",
+      "result_hash": "82e7da2fa222cb827817e6b90d4453d9d2b67313f49178d4d3240ebc923a6778",
+      "error_type": "Mismatch",
+      "failed_checks": {
+        "checks": [
+          {
+            "case": "size-0-bfloat16-stride-3",
+            "case_id_truncated": false,
+            "role": "candidate",
+            "kind": "fresh",
+            "seed": 461,
+            "args": {
+              "dtype": "bfloat16",
+              "pattern": "normal",
+              "shape": [
+                277,
+                1543
+              ],
+              "stride": 6
+            },
+            "args_truncated": false
+          }
+        ],
+        "count": 1,
+        "truncated": false,
+        "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+      },
+      "trace_reported_model_seconds": 13.207593413069844,
+      "worker_wall_seconds": 3.5206549102440476,
+      "run": "comparison/1-5-source-memory/workspace/task/.kernel_envolve/runs/20261110T194700-dc493efd"
+    },
+    {
+      "trial": "1-5-artifact-reuse",
+      "arm": "artifact-reuse",
+      "task": 5,
+      "repeat": 1,
+      "step": 1,
+      "source": "d81510ace2d6ee50e1631de1407c7a5df2bd3de64c493cb797854a21d66d45a8",
+      "task_source": "6499c04c2660969f8fe9829372bfa2e48ce2757324454e2e80064077f497fe09",
+      "contract": "2c6540726285c3ddfe4ac126e86d208d570425ef5ec050ca3fd4294fb6fa0080",
+      "evaluator": "a36a49281a74e704617935c5ef0c259d4b4bae81d7ce163162af1015ed50b267",
+      "runtime_key_hash": "bc7482565db47a84d87e0d786f45d8c18e6b9405c4bb16029ee056ecb67cb836",
+      "mode": "full",
+      "result_hash": "007767b283db910ed31cf9be5571d24167cde1e7fd85e921894eefdb1e259310",
+      "error_type": "Mismatch",
+      "failed_checks": {
+        "checks": [
+          {
+            "case": "size-0-bfloat16-stride-3",
+            "case_id_truncated": false,
+            "role": "candidate",
+            "kind": "fresh",
+            "seed": 461,
+            "args": {
+              "dtype": "bfloat16",
+              "pattern": "normal",
+              "shape": [
+                277,
+                1543
+              ],
+              "stride": 6
+            },
+            "args_truncated": false
+          }
+        ],
+        "count": 1,
+        "truncated": false,
+        "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+      },
+      "trace_reported_model_seconds": 28.214315506163985,
+      "worker_wall_seconds": 3.6707457611337304,
+      "run": "comparison/1-5-artifact-reuse/workspace/task/.kernel_envolve/runs/20261110T194816-01c4e8ce"
+    },
+    {
+      "trial": "1-5-control",
+      "arm": "control",
+      "task": 5,
+      "repeat": 1,
+      "step": 0,
+      "source": "45d121b1bda4dfb1c3faf8a9e66a7aa08eb6a2844ab36d02f26d8e7e0c2736dc",
+      "task_source": "6499c04c2660969f8fe9829372bfa2e48ce2757324454e2e80064077f497fe09",
+      "contract": "2c6540726285c3ddfe4ac126e86d208d570425ef5ec050ca3fd4294fb6fa0080",
+      "evaluator": "a36a49281a74e704617935c5ef0c259d4b4bae81d7ce163162af1015ed50b267",
+      "runtime_key_hash": "bc7482565db47a84d87e0d786f45d8c18e6b9405c4bb16029ee056ecb67cb836",
+      "mode": "full",
+      "result_hash": "e89cc1e14f0571ce46ac593745cea237b6c4d9f5400a47a93e36aafaea00603f",
+      "error_type": "Mismatch",
+      "failed_checks": {
+        "checks": [
+          {
+            "case": "size-0-bfloat16-stride-3",
+            "case_id_truncated": false,
+            "role": "candidate",
+            "kind": "fresh",
+            "seed": 461,
+            "args": {
+              "dtype": "bfloat16",
+              "pattern": "normal",
+              "shape": [
+                277,
+                1543
+              ],
+              "stride": 6
+            },
+            "args_truncated": false
+          }
+        ],
+        "count": 1,
+        "truncated": false,
+        "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+      },
+      "trace_reported_model_seconds": 8.805308517068624,
+      "worker_wall_seconds": 4.021241715643555,
+      "run": "comparison/1-5-control/workspace/task/.kernel_envolve/runs/20261110T194917-fead56b3"
+    },
+    {
+      "trial": "1-5-artifact-full",
+      "arm": "artifact-full",
+      "task": 5,
+      "repeat": 1,
+      "step": 1,
+      "source": "d81510ace2d6ee50e1631de1407c7a5df2bd3de64c493cb797854a21d66d45a8",
+      "task_source": "6499c04c2660969f8fe9829372bfa2e48ce2757324454e2e80064077f497fe09",
+      "contract": "2c6540726285c3ddfe4ac126e86d208d570425ef5ec050ca3fd4294fb6fa0080",
+      "evaluator": "a36a49281a74e704617935c5ef0c259d4b4bae81d7ce163162af1015ed50b267",
+      "runtime_key_hash": "bc7482565db47a84d87e0d786f45d8c18e6b9405c4bb16029ee056ecb67cb836",
+      "mode": "full",
+      "result_hash": "a5e06c4e026fbf67b66972359e6a02d78ee9223248c49dc9404a2ad42551ceb0",
+      "error_type": "Mismatch",
+      "failed_checks": {
+        "checks": [
+          {
+            "case": "size-0-bfloat16-stride-3",
+            "case_id_truncated": false,
+            "role": "candidate",
+            "kind": "fresh",
+            "seed": 461,
+            "args": {
+              "dtype": "bfloat16",
+              "pattern": "normal",
+              "shape": [
+                277,
+                1543
+              ],
+              "stride": 6
+            },
+            "args_truncated": false
+          }
+        ],
+        "count": 1,
+        "truncated": false,
+        "scope": "Observed failed checks only. Evaluation may stop early; unlisted cases are unknown."
+      },
+      "trace_reported_model_seconds": 21.611643622629344,
+      "worker_wall_seconds": 3.5204996690154076,
+      "run": "comparison/1-5-artifact-full/workspace/task/.kernel_envolve/runs/20261110T195055-151fa1f2"
+    }
+  ],
+  "limitations": [
+    "Each trial was independent; repeated observations across trials are NOT observed failures of a continuously updating learner.",
+    "Exact means same source bytes, task contract, evaluator, declared runtime key, mode, error type and failed-check payload. It does not prove deterministic recurrence or safe veto after environmental drift.",
+    "Cross-arm repetitions are not counted as learned recurrence. General error labels are not a causal equivalence class.",
+    "Repeated-source observations under new input configurations are evidence of those measurements, not proof of failure on every future shape or seed.",
+    "Worker/model durations are reported components, not measured GPU kernel time or a counterfactual cost saving.",
+    "No memory method was tested here; future negative-memory utility needs a prospective same-budget comparison."
+  ]
+}

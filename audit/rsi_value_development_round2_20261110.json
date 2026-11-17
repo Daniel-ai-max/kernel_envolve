@@ -1,0 +1,268 @@
+{
+  "source_commit": "69e00a6913a9b0d9d47d9f0ae477844ee72dbd3e",
+  "job": "42831a44bb6045ee8ce0e9932fe253c3",
+  "aggregates": {
+    "control": {
+      "attempts": 8,
+      "completed_full": 8,
+      "correct_full": 8,
+      "promotable": 8,
+      "failed_attempts": 0,
+      "all_attempt_trial_seconds": 448.204982385505,
+      "completed_solver_seconds": 415.4851774177514,
+      "model_requests": 26,
+      "missing_usage_calls": 0,
+      "known_tokens": 301399,
+      "wrong_candidate_evaluations": 6,
+      "duplicate_skipped": 0,
+      "actions": {
+        "propose": 18,
+        "stop": 8
+      },
+      "search_modes": {
+        "full": 26
+      }
+    },
+    "raw-memory": {
+      "attempts": 8,
+      "completed_full": 8,
+      "correct_full": 8,
+      "promotable": 8,
+      "failed_attempts": 0,
+      "all_attempt_trial_seconds": 471.45832059904933,
+      "completed_solver_seconds": 438.78346511209384,
+      "model_requests": 26,
+      "missing_usage_calls": 0,
+      "known_tokens": 321135,
+      "wrong_candidate_evaluations": 5,
+      "duplicate_skipped": 0,
+      "actions": {
+        "propose": 18,
+        "stop": 8
+      },
+      "search_modes": {
+        "full": 26
+      }
+    },
+    "rsi": {
+      "attempts": 8,
+      "completed_full": 8,
+      "correct_full": 8,
+      "promotable": 8,
+      "failed_attempts": 0,
+      "all_attempt_trial_seconds": 384.1527114235796,
+      "completed_solver_seconds": 352.54116771463305,
+      "model_requests": 24,
+      "missing_usage_calls": 0,
+      "known_tokens": 259778,
+      "wrong_candidate_evaluations": 6,
+      "duplicate_skipped": 0,
+      "actions": {
+        "propose": 16,
+        "stop": 8
+      },
+      "search_modes": {
+        "full": 24
+      }
+    }
+  },
+  "gate_comparisons": {
+    "raw-memory-vs-control": {
+      "accepted": false,
+      "reasons": [
+        "Aggregate quality regression",
+        "Aggregate seconds regression",
+        "Aggregate solver_seconds regression",
+        "No reproducible whole-suite quality, correctness or cost benefit",
+        "Per-task quality regression"
+      ],
+      "repeats": [
+        {
+          "candidate_passed": 4,
+          "candidate_quality": 0.40310658817131917,
+          "candidate_seconds": 221.96465427288786,
+          "candidate_solver_seconds": 206.0838747927919,
+          "control_passed": 4,
+          "control_quality": 0.39943858599144855,
+          "control_seconds": 224.17595927603543,
+          "control_solver_seconds": 208.29443252226338,
+          "quality_gain": 0.003668002179870622,
+          "repeat": 0
+        },
+        {
+          "candidate_passed": 4,
+          "candidate_quality": 0.41165050748783183,
+          "candidate_seconds": 249.49366632616147,
+          "candidate_solver_seconds": 232.69959031930193,
+          "control_passed": 4,
+          "control_quality": 0.4137746726625924,
+          "control_seconds": 224.02902310946956,
+          "control_solver_seconds": 207.19074489548802,
+          "quality_gain": -0.0021241651747605506,
+          "repeat": 1
+        }
+      ],
+      "scope": "Equal-weight declared tasks only; wall time is not token cost or a significance test"
+    },
+    "rsi-vs-control": {
+      "accepted": false,
+      "reasons": [
+        "Aggregate quality regression",
+        "No reproducible whole-suite quality, correctness or cost benefit",
+        "Per-task quality regression"
+      ],
+      "repeats": [
+        {
+          "candidate_passed": 4,
+          "candidate_quality": 0.3932518999089054,
+          "candidate_seconds": 196.22976554976776,
+          "candidate_solver_seconds": 180.34990393184125,
+          "control_passed": 4,
+          "control_quality": 0.39943858599144855,
+          "control_seconds": 224.17595927603543,
+          "control_solver_seconds": 208.29443252226338,
+          "quality_gain": -0.006186686082543136,
+          "repeat": 0
+        },
+        {
+          "candidate_passed": 4,
+          "candidate_quality": 0.3881612223350229,
+          "candidate_seconds": 187.92294587381184,
+          "candidate_solver_seconds": 172.1912637827918,
+          "control_passed": 4,
+          "control_quality": 0.4137746726625924,
+          "control_seconds": 224.02902310946956,
+          "control_solver_seconds": 207.19074489548802,
+          "quality_gain": -0.025613450327569454,
+          "repeat": 1
+        }
+      ],
+      "scope": "Equal-weight declared tasks only; wall time is not token cost or a significance test"
+    },
+    "rsi-vs-raw-memory": {
+      "accepted": false,
+      "reasons": [
+        "Aggregate quality regression",
+        "No reproducible whole-suite quality, correctness or cost benefit",
+        "Per-task quality regression"
+      ],
+      "repeats": [
+        {
+          "candidate_passed": 4,
+          "candidate_quality": 0.3932518999089054,
+          "candidate_seconds": 196.22976554976776,
+          "candidate_solver_seconds": 180.34990393184125,
+          "control_passed": 4,
+          "control_quality": 0.40310658817131917,
+          "control_seconds": 221.96465427288786,
+          "control_solver_seconds": 206.0838747927919,
+          "quality_gain": -0.009854688262413758,
+          "repeat": 0
+        },
+        {
+          "candidate_passed": 4,
+          "candidate_quality": 0.3881612223350229,
+          "candidate_seconds": 187.92294587381184,
+          "candidate_solver_seconds": 172.1912637827918,
+          "control_passed": 4,
+          "control_quality": 0.41165050748783183,
+          "control_seconds": 249.49366632616147,
+          "control_solver_seconds": 232.69959031930193,
+          "quality_gain": -0.023489285152808903,
+          "repeat": 1
+        }
+      ],
+      "scope": "Equal-weight declared tasks only; wall time is not token cost or a significance test"
+    }
+  },
+  "known_total_tokens": 914142,
+  "missing_usage_calls": 0,
+  "ledger": [
+    {
+      "charged": 24.139497139956802,
+      "ended": 1794324266.9739945,
+      "error": null,
+      "id": "366c312ae038401886318df2166b51dc",
+      "kind": "learn",
+      "reserved": 90.0,
+      "started": 1794324242.8313508
+    },
+    {
+      "charged": 1306.0661540720612,
+      "ended": 1794325573.0531979,
+      "error": null,
+      "id": "2ac83ea208f74f9ba9a58968a48d1312",
+      "kind": "validation",
+      "reserved": 4900.0,
+      "started": 1794324266.9870863
+    }
+  ],
+  "current_conservative_gpu_seconds": 1377.60174202919,
+  "cumulative_gpu_seconds": 5231.132279634476,
+  "verification": {
+    "raw_receipts": 116,
+    "source_bindings": 76,
+    "call_to_arm_and_prompt_verified": true,
+    "declared_gates_recomputed": true
+  },
+  "evidence_sha256": "740a29c035313797d08f27c0d431cc889ee96ec49707b477bc24622f22ac85cc",
+  "date": "2026-11-10",
+  "scope": "Second and final preregistered development round; final audit not run",
+  "mean_quality": {
+    "control": 0.40660662932702046,
+    "raw-memory": 0.4073785478295755,
+    "rsi": 0.39070656112196417
+  },
+  "learning_cost": {
+    "wall_seconds": 24.139497139956802,
+    "known_tokens": 31830,
+    "missing_usage": 0
+  },
+  "failure_aggregates": {
+    "control": {
+      "nonpassing_evaluations": 6,
+      "candidate_failure_evaluations": 6,
+      "recurring_class_dtype_events": 0,
+      "categories": {
+        "numerical_tolerance": 6
+      }
+    },
+    "raw-memory": {
+      "nonpassing_evaluations": 5,
+      "candidate_failure_evaluations": 5,
+      "recurring_class_dtype_events": 0,
+      "categories": {
+        "numerical_tolerance": 5
+      }
+    },
+    "rsi": {
+      "nonpassing_evaluations": 6,
+      "candidate_failure_evaluations": 6,
+      "recurring_class_dtype_events": 0,
+      "categories": {
+        "numerical_tolerance": 6
+      }
+    }
+  },
+  "accepted": false,
+  "adopted": false,
+  "resources_released": true,
+  "raw_directory": "/Users/daniel/Documents/ChatGPT/\u7b97\u5b50\u4f18\u5316/rsi-value-study-20261110/dev-round2",
+  "diagnosis": {
+    "localized_repair": "Both RSI standardize traces now preserve the float16 fused path and limit fallback to bfloat16. This removes the observed broad-fallback pattern in round1 but is not proof of net benefit.",
+    "remaining_limit": "RSI standardize directly selects a fused finish and stops. Control compares another variant and keeps a better measured candidate. Pointwise trajectories still encounter the same observed bfloat16 category; no reduction in overall wrong-candidate count. Timing/source variations preclude strong causal attribution."
+  },
+  "decision": "Stop this two-round study per frozen protocol; do not use independent audit as a search set. No production adoption and no universal negative claim about RSI.",
+  "validation": {
+    "local_rsi_tests": "49 passed after learner instruction change",
+    "previous_full_suite": "284 passed, 8 GPU opt-in skipped for failure-context code",
+    "exact_commit_ci": "https://github.com/Daniel-ai-max/kernel_envolve/actions/runs/42843724837",
+    "exact_commit_ci_conclusion": "success"
+  },
+  "limitations": [
+    "4 development tasks within 2 related families, 2 repeats; no final audit run",
+    "Raw-memory baseline contains bounded incomplete source excerpts; not a reproduction of a strong retrieval system or any reference algorithm",
+    "Relative quality change is not correctness loss and not directly percentage change in kernel latency",
+    "Learning-only cost subtotal excludes training and selection; no observed all-in positive return"
+  ]
+}

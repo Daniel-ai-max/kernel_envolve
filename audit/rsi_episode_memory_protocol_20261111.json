@@ -1,0 +1,219 @@
+{
+  "registered_at": 1794327571.7659671,
+  "status": "frozen_before_submission",
+  "source_commit": "635f7b1b5a70ddb13acb800a404eb5444bcd841a",
+  "phase": "concrete-memory-development",
+  "arms": [
+    "control",
+    "success-memory",
+    "episode-memory"
+  ],
+  "catalog": {
+    "data": {
+      "formulas": {
+        "development": [
+          [
+            "sigmoid-sum-residual",
+            "pointwise",
+            "a*torch.sigmoid(a+b)+b"
+          ],
+          [
+            "sigmoid-difference-gate",
+            "pointwise",
+            "b*torch.sigmoid(a-b)+a"
+          ],
+          [
+            "smooth-root-composite",
+            "pointwise",
+            "torch.sqrt(1+(a+b).square())+0.25*(a-b)"
+          ],
+          [
+            "scaled-piecewise-quadratic",
+            "pointwise",
+            "torch.where((a-b).abs()<0.75,(a-b).square(),1.5*(a-b).abs()-0.5625)"
+          ],
+          [
+            "shifted-rms",
+            "row-reduction",
+            "(a+0.25)*torch.rsqrt((a+0.25).square().mean(dim=1,keepdim=True)+1e-4)"
+          ],
+          [
+            "partial-center-rms",
+            "row-reduction",
+            "(a-0.5*a.mean(dim=1,keepdim=True))*torch.rsqrt((a-0.5*a.mean(dim=1,keepdim=True)).square().mean(dim=1,keepdim=True)+1e-4)"
+          ],
+          [
+            "central-absolute-deviation",
+            "row-reduction",
+            "(a-a.mean(dim=1,keepdim=True)).abs().mean(dim=1)"
+          ],
+          [
+            "fourth-moment-energy",
+            "row-reduction",
+            "a.square().square().mean(dim=1)"
+          ]
+        ]
+      },
+      "sizes": {
+        "development": {
+          "pointwise": [
+            131113,
+            3145771
+          ],
+          "row-reduction": [
+            [
+              211,
+              321
+            ],
+            [
+              773,
+              1793
+            ]
+          ]
+        }
+      },
+      "seeds": {
+        "development": [
+          263,
+          269
+        ]
+      }
+    },
+    "sha256": "80fc3f11cb2ecf8eacb2b34493ae219e753ac78923c1e4e614bc9c9892aacade"
+  },
+  "validation_tasks": [
+    "episode-development-sigmoid-sum-residual",
+    "episode-development-sigmoid-difference-gate",
+    "episode-development-smooth-root-composite",
+    "episode-development-scaled-piecewise-quadratic",
+    "episode-development-shifted-rms",
+    "episode-development-partial-center-rms",
+    "episode-development-central-absolute-deviation",
+    "episode-development-fourth-moment-energy"
+  ],
+  "repeats": 2,
+  "max_actions": 4,
+  "model": "gpt-6-astra",
+  "reasoning": "medium",
+  "max_model_requests": 192,
+  "platform_seconds": 5400,
+  "worker_seconds": 5250,
+  "validation_total_seconds": 4900,
+  "prior_confirmed_gpu_seconds": 5231.132279634476,
+  "training_manifest_sha256": "dbb5fced15ed50cfa39204dad97b0d51212b2e540b7fc00f3de36cbd6e7b4d25",
+  "order": [
+    [
+      "control",
+      "success-memory",
+      "episode-memory"
+    ],
+    [
+      "episode-memory",
+      "success-memory",
+      "control"
+    ],
+    [
+      "episode-memory",
+      "control",
+      "success-memory"
+    ],
+    [
+      "success-memory",
+      "episode-memory",
+      "control"
+    ],
+    [
+      "success-memory",
+      "control",
+      "episode-memory"
+    ],
+    [
+      "control",
+      "episode-memory",
+      "success-memory"
+    ],
+    [
+      "control",
+      "success-memory",
+      "episode-memory"
+    ],
+    [
+      "episode-memory",
+      "success-memory",
+      "control"
+    ],
+    [
+      "episode-memory",
+      "control",
+      "success-memory"
+    ],
+    [
+      "success-memory",
+      "episode-memory",
+      "control"
+    ],
+    [
+      "success-memory",
+      "control",
+      "episode-memory"
+    ],
+    [
+      "control",
+      "episode-memory",
+      "success-memory"
+    ],
+    [
+      "control",
+      "success-memory",
+      "episode-memory"
+    ],
+    [
+      "episode-memory",
+      "success-memory",
+      "control"
+    ],
+    [
+      "episode-memory",
+      "control",
+      "success-memory"
+    ],
+    [
+      "success-memory",
+      "episode-memory",
+      "control"
+    ]
+  ],
+  "comparisons": [
+    [
+      "control",
+      "success-memory"
+    ],
+    [
+      "control",
+      "episode-memory"
+    ],
+    [
+      "success-memory",
+      "episode-memory"
+    ]
+  ],
+  "selection": "Both memory arms use same deterministic AST-operation retrieval and identical complete successful source; no learned advice or stop instruction. Only representation of historical attempts differs.",
+  "primary_criteria": {
+    "screen": "Each repeat must protect aggregate quality, each task within original .02 absolute allowance, complete full correctness and <=5% cost regression; require original quality/cost benefit. Keep evaluator gates fixed.",
+    "practical": "Additionally >=10% relative quality improvement with <=5% wall/token overhead, or >=10% wall saving at protected quality and <=5% token overhead. Acquisition and selection costs explicitly separate; trial-only screening is not positive all-in return.",
+    "analysis": "Task-cluster bootstrap, all repeats together,10000 draws,seed8471; six exploratory outcome/reference comparisons use one-sided alpha .05/6. Development only, no final inference.",
+    "failure": "All attempts and unknown usage retained; incomplete pairing or missing usage forbids positive acceptance."
+  },
+  "stop_rules": [
+    "One frozen comparison, no automatic job/model retries and no further candidate resampling in this study",
+    "No final audit unless protected practical benefit; never use the prior audit set to tune selection",
+    "Prefer success-memory if complete episodes fail to beat it; do not keep complexity for its own sake"
+  ],
+  "limitations": [
+    "New formulas and sizes within two related operator families, not unseen families or production evidence",
+    "Deterministic episodic-memory prototype, not a reproduction of Meta-Harness/OpenEvolve and not proof of recursive capability improvement",
+    "Source matching is lexical AST similarity, not semantic equivalence; every new candidate still needs full evaluation",
+    "Old failed studies and their costs retained; no hypothetical amortization treated as observed gain"
+  ],
+  "analysis_overhead": "All prior training and developmental selection costs retained in total resource ledger; report incremental trial effects and all-in campaign cost separately, do not duplicate same-round validation in its own trials."
+}

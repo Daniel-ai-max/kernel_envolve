@@ -1,0 +1,56 @@
+"""Read-only collection/audit of the CLOSED GPU study; no new execution or gain claim."""
+import collections
+import hashlib
+import json
+import time
+from pathlib import Path
+
+from kernel_envolve.rsi import artifact_lineage
+from kernel_envolve.rsi.episodes import load
+
+ROOT = Path(__file__).resolve().parent
+WORK = ROOT.parent
+SOURCE = WORK / 'kernel_envolve-rsi/src'
+assert Path(artifact_lineage.__file__).is_relative_to(SOURCE)
+PRIOR = WORK / 'rsi-adaptive-budget-study-20261111/development'
+EVIDENCE = PRIOR / 'evidence'
+SUMMARY = json.loads((PRIOR/'summary.json').read_text())
+assert SUMMARY['live_pods_empty'] and SUMMARY['completed']
+raw = json.loads((EVIDENCE/'pilot-result.json').read_text())
+library = ROOT/'archive'
+assert not library.exists(), 'No overwriting/retrying an existing collection run'
+began = time.monotonic()
+rows = []
+try:
+    for item in raw['trials']:
+        name = f"{item['repeat']}-{item['task']}-{item['arm']}"
+        origin = item['result']['spec']['task_dir']
+        task = EVIDENCE/Path(origin).relative_to('/tmp/kernel-rsi-pilot')
+        profile = raw['suite']['tasks'][item['task']]['profile']
+        identity = artifact_lineage.collect(library, task, EVIDENCE/'comparison'/name, profile,
+            confirmation_run=item['result']['run'], origin_task=origin)
+        record = artifact_lineage.audit(library, identity)
+        episode = load(library/'episodes', record['episode'])
+        assert record['parent'] is None and record['kind'] in {'seed','observation'}
+        rows.append({'trial':name, 'record':identity, 'episode':record['episode'],
+            'kind':record['kind'], 'snapshot':record['snapshot'], 'reasons':record['reasons'],
+            'wrong_observations':sum(o['correctness']=='fail' for o in episode['observations'])})
+    assert len(rows)==64
+    assert collections.Counter(r['kind'] for r in rows)=={'seed':61,'observation':3}
+    assert sum(r['wrong_observations'] for r in rows)==28
+    assert len(list((library/'records').glob('*.json')))==64
+    assert set(p.name for p in library.iterdir())=={'records','episodes','views'}
+    status='passed'
+except BaseException as exc:
+    status={'error_type':type(exc).__name__,'error':str(exc)}
+    raise
+finally:
+    report={'status':status,'scope':'Retrospective verified collection only; zero new GPU/model calls, no parent activation or new generation inferred',
+        'source_job':SUMMARY['job'],'source_evidence_sha256':SUMMARY['evidence_sha256'],
+        'summary_sha256':hashlib.sha256((PRIOR/'summary.json').read_bytes()).hexdigest(),
+        'source_sha256':{n:hashlib.sha256((SOURCE/'kernel_envolve/rsi'/n).read_bytes()).hexdigest() for n in ('artifact_lineage.py','artifact_snapshot.py','episodes.py')},
+        'seconds':time.monotonic()-began,'records':rows,'counts':dict(collections.Counter(r['kind'] for r in rows)),
+        'known_wrong_observations_preserved':sum(r['wrong_observations'] for r in rows),
+        'production_activated':False,'efficacy_proven':False}
+    (ROOT/'closed-archive-verification.json').write_text(json.dumps(report,indent=2))
+    print(json.dumps({k:v for k,v in report.items() if k!='records'},indent=2))

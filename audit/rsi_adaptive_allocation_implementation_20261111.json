@@ -1,0 +1,501 @@
+{
+  "at": 1794346213.207575,
+  "source_sha256": {
+    "src/kernel_envolve/rsi/allocation.py": "15b10d02fe6753ca38402be9fc88ba8c2f7ee0e4e60eedf17aa4e3419ad90c82",
+    "src/kernel_envolve/rsi/research.py": "efd5765d49d4864cee7a6f60f56f8d4d91a53623ce1d9da8973bf30fd3318bfa",
+    "src/kernel_envolve/rsi/trials.py": "ead682c305fcea40c335e713287d8213c30139e96b0122e487acb267c14e41ac",
+    "tests/test_rsi_allocation.py": "8c7222ff5e2727b4899585877f3f5e5d756ab3880608537f9cd2e269d0dbb34f",
+    "tests/test_rsi_research.py": "1c28abbd40d92e89dfd51de2fb4c323d777125c6ce5f9e54f8638b51d2898ffc",
+    "tests/test_rsi_managed.py": "6ae0207395942acdbefe3a86649015ebfa1eb774f47a8e7778c4c05538d8ff86",
+    "tests/test_rsi.py": "d32b558ff2521bf5bf5f6aec2cd58fe059119e87d7e45b0618220b5ac3905e1a"
+  },
+  "full_cpu_suite": {
+    "passed": 567,
+    "skipped": 10,
+    "seconds": 164.73,
+    "pythonpath": "/Users/daniel/Documents/ChatGPT/\u7b97\u5b50\u4f18\u5316/kernel_envolve-rsi/src"
+  },
+  "ruff_check": "passed",
+  "ruff_format": "125files formatted",
+  "gpu_allocations_for_new_policy": 0,
+  "production_enabled": false,
+  "closed_data_probe": {
+    "at": 1794346135.1875389,
+    "source_sha256": "15b10d02fe6753ca38402be9fc88ba8c2f7ee0e4e60eedf17aa4e3419ad90c82",
+    "closed_job": "d8a9d1bae69346e9b58b8544e4abf2c8",
+    "observations": 32,
+    "rows": [
+      {
+        "repeat": 0,
+        "task": 0,
+        "arm": "reuse-2",
+        "allocation": {
+          "policy": "artifact-margin-v1",
+          "actions": 2,
+          "reason": "within_margin",
+          "case_batch_count": 24,
+          "max_baseline_slowdown": 0.014223643634984073,
+          "max_comparator_slowdown": 0.014223643634984073,
+          "baseline_margin": 0.025,
+          "comparator_margin": 0.025
+        }
+      },
+      {
+        "repeat": 0,
+        "task": 0,
+        "arm": "reuse-4",
+        "allocation": {
+          "policy": "artifact-margin-v1",
+          "actions": 2,
+          "reason": "within_margin",
+          "case_batch_count": 24,
+          "max_baseline_slowdown": 0.0019492872159818653,
+          "max_comparator_slowdown": 0.0019492872159818653,
+          "baseline_margin": 0.025,
+          "comparator_margin": 0.025
+        }
+      },
+      {
+        "repeat": 0,
+        "task": 1,
+        "arm": "reuse-4",
+        "allocation": {
+          "policy": "artifact-margin-v1",
+          "actions": 2,
+          "reason": "within_margin",
+          "case_batch_count": 24,
+          "max_baseline_slowdown": -0.0014906959210619908,
+          "max_comparator_slowdown": -0.0014906959210619908,
+          "baseline_margin": 0.025,
+          "comparator_margin": 0.025
+        }
+      },
+      {
+        "repeat": 0,
+        "task": 1,
+        "arm": "reuse-2",
+        "allocation": {
+          "policy": "artifact-margin-v1",
+          "actions": 2,
+          "reason": "within_margin",
+          "case_batch_count": 24,
+          "max_baseline_slowdown": -0.002677794876963846,
+          "max_comparator_slowdown": -0.002677794876963846,
+          "baseline_margin": 0.025,
+          "comparator_margin": 0.025
+        }
+      },
+      {
+        "repeat": 0,
+        "task": 2,
+        "arm": "reuse-4",
+        "allocation": {
+          "policy": "artifact-margin-v1",
+          "actions": 2,
+          "reason": "within_margin",
+          "case_batch_count": 24,
+          "max_baseline_slowdown": -0.5398814641652546,
+          "max_comparator_slowdown": -0.5398814641652546,
+          "baseline_margin": 0.025,
+          "comparator_margin": 0.025
+        }
+      },
+      {
+        "repeat": 0,
+        "task": 2,
+        "arm": "reuse-2",
+        "allocation": {
+          "policy": "artifact-margin-v1",
+          "actions": 2,
+          "reason": "within_margin",
+          "case_batch_count": 24,
+          "max_baseline_slowdown": -0.5380692841274475,
+          "max_comparator_slowdown": -0.5380692841274475,
+          "baseline_margin": 0.025,
+          "comparator_margin": 0.025
+        }
+      },
+      {
+        "repeat": 0,
+        "task": 3,
+        "arm": "reuse-2",
+        "allocation": {
+          "policy": "artifact-margin-v1",
+          "actions": 2,
+          "reason": "within_margin",
+          "case_batch_count": 24,
+          "max_baseline_slowdown": -0.5346048931654162,
+          "max_comparator_slowdown": -0.5346048931654162,
+          "baseline_margin": 0.025,
+          "comparator_margin": 0.025
+        }
+      },
+      {
+        "repeat": 0,
+        "task": 3,
+        "arm": "reuse-4",
+        "allocation": {
+          "policy": "artifact-margin-v1",
+          "actions": 2,
+          "reason": "within_margin",
+          "case_batch_count": 24,
+          "max_baseline_slowdown": -0.5396797417140784,
+          "max_comparator_slowdown": -0.5396797417140784,
+          "baseline_margin": 0.025,
+          "comparator_margin": 0.025
+        }
+      },
+      {
+        "repeat": 0,
+        "task": 4,
+        "arm": "reuse-2",
+        "allocation": {
+          "policy": "artifact-margin-v1",
+          "actions": 2,
+          "reason": "within_margin",
+          "case_batch_count": 24,
+          "max_baseline_slowdown": 0.015196199553338952,
+          "max_comparator_slowdown": 0.015196199553338952,
+          "baseline_margin": 0.025,
+          "comparator_margin": 0.025
+        }
+      },
+      {
+        "repeat": 0,
+        "task": 4,
+        "arm": "reuse-4",
+        "allocation": {
+          "policy": "artifact-margin-v1",
+          "actions": 2,
+          "reason": "within_margin",
+          "case_batch_count": 24,
+          "max_baseline_slowdown": 0.010645711440972816,
+          "max_comparator_slowdown": 0.010645711440972816,
+          "baseline_margin": 0.025,
+          "comparator_margin": 0.025
+        }
+      },
+      {
+        "repeat": 0,
+        "task": 5,
+        "arm": "reuse-4",
+        "allocation": {
+          "policy": "artifact-margin-v1",
+          "actions": 4,
+          "reason": "not_eligible_full"
+        }
+      },
+      {
+        "repeat": 0,
+        "task": 5,
+        "arm": "reuse-2",
+        "allocation": {
+          "policy": "artifact-margin-v1",
+          "actions": 4,
+          "reason": "not_eligible_full"
+        }
+      },
+      {
+        "repeat": 0,
+        "task": 6,
+        "arm": "reuse-4",
+        "allocation": {
+          "policy": "artifact-margin-v1",
+          "actions": 2,
+          "reason": "within_margin",
+          "case_batch_count": 24,
+          "max_baseline_slowdown": -0.17320608166150053,
+          "max_comparator_slowdown": -0.17320608166150053,
+          "baseline_margin": 0.025,
+          "comparator_margin": 0.025
+        }
+      },
+      {
+        "repeat": 0,
+        "task": 6,
+        "arm": "reuse-2",
+        "allocation": {
+          "policy": "artifact-margin-v1",
+          "actions": 2,
+          "reason": "within_margin",
+          "case_batch_count": 24,
+          "max_baseline_slowdown": -0.1800071199296489,
+          "max_comparator_slowdown": -0.1800071199296489,
+          "baseline_margin": 0.025,
+          "comparator_margin": 0.025
+        }
+      },
+      {
+        "repeat": 0,
+        "task": 7,
+        "arm": "reuse-2",
+        "allocation": {
+          "policy": "artifact-margin-v1",
+          "actions": 2,
+          "reason": "within_margin",
+          "case_batch_count": 24,
+          "max_baseline_slowdown": -0.18434967699979532,
+          "max_comparator_slowdown": -0.18434967699979532,
+          "baseline_margin": 0.025,
+          "comparator_margin": 0.025
+        }
+      },
+      {
+        "repeat": 0,
+        "task": 7,
+        "arm": "reuse-4",
+        "allocation": {
+          "policy": "artifact-margin-v1",
+          "actions": 2,
+          "reason": "within_margin",
+          "case_batch_count": 24,
+          "max_baseline_slowdown": -0.2020236163302781,
+          "max_comparator_slowdown": -0.2020236163302781,
+          "baseline_margin": 0.025,
+          "comparator_margin": 0.025
+        }
+      },
+      {
+        "repeat": 1,
+        "task": 0,
+        "arm": "reuse-2",
+        "allocation": {
+          "policy": "artifact-margin-v1",
+          "actions": 2,
+          "reason": "within_margin",
+          "case_batch_count": 24,
+          "max_baseline_slowdown": -0.006590870433056839,
+          "max_comparator_slowdown": -0.006590870433056839,
+          "baseline_margin": 0.025,
+          "comparator_margin": 0.025
+        }
+      },
+      {
+        "repeat": 1,
+        "task": 0,
+        "arm": "reuse-4",
+        "allocation": {
+          "policy": "artifact-margin-v1",
+          "actions": 2,
+          "reason": "within_margin",
+          "case_batch_count": 24,
+          "max_baseline_slowdown": -0.002450020897713956,
+          "max_comparator_slowdown": -0.002450020897713956,
+          "baseline_margin": 0.025,
+          "comparator_margin": 0.025
+        }
+      },
+      {
+        "repeat": 1,
+        "task": 1,
+        "arm": "reuse-4",
+        "allocation": {
+          "policy": "artifact-margin-v1",
+          "actions": 2,
+          "reason": "within_margin",
+          "case_batch_count": 24,
+          "max_baseline_slowdown": -0.0018448499857188772,
+          "max_comparator_slowdown": -0.0018448499857188772,
+          "baseline_margin": 0.025,
+          "comparator_margin": 0.025
+        }
+      },
+      {
+        "repeat": 1,
+        "task": 1,
+        "arm": "reuse-2",
+        "allocation": {
+          "policy": "artifact-margin-v1",
+          "actions": 2,
+          "reason": "within_margin",
+          "case_batch_count": 24,
+          "max_baseline_slowdown": -0.004719862462839841,
+          "max_comparator_slowdown": -0.004719862462839841,
+          "baseline_margin": 0.025,
+          "comparator_margin": 0.025
+        }
+      },
+      {
+        "repeat": 1,
+        "task": 2,
+        "arm": "reuse-4",
+        "allocation": {
+          "policy": "artifact-margin-v1",
+          "actions": 2,
+          "reason": "within_margin",
+          "case_batch_count": 24,
+          "max_baseline_slowdown": -0.5460891516717611,
+          "max_comparator_slowdown": -0.5460891516717611,
+          "baseline_margin": 0.025,
+          "comparator_margin": 0.025
+        }
+      },
+      {
+        "repeat": 1,
+        "task": 2,
+        "arm": "reuse-2",
+        "allocation": {
+          "policy": "artifact-margin-v1",
+          "actions": 2,
+          "reason": "within_margin",
+          "case_batch_count": 24,
+          "max_baseline_slowdown": -0.5574430717856842,
+          "max_comparator_slowdown": -0.5574430717856842,
+          "baseline_margin": 0.025,
+          "comparator_margin": 0.025
+        }
+      },
+      {
+        "repeat": 1,
+        "task": 3,
+        "arm": "reuse-2",
+        "allocation": {
+          "policy": "artifact-margin-v1",
+          "actions": 2,
+          "reason": "within_margin",
+          "case_batch_count": 24,
+          "max_baseline_slowdown": -0.5234333025080447,
+          "max_comparator_slowdown": -0.5234333025080447,
+          "baseline_margin": 0.025,
+          "comparator_margin": 0.025
+        }
+      },
+      {
+        "repeat": 1,
+        "task": 3,
+        "arm": "reuse-4",
+        "allocation": {
+          "policy": "artifact-margin-v1",
+          "actions": 2,
+          "reason": "within_margin",
+          "case_batch_count": 24,
+          "max_baseline_slowdown": -0.5410559813176331,
+          "max_comparator_slowdown": -0.5410559813176331,
+          "baseline_margin": 0.025,
+          "comparator_margin": 0.025
+        }
+      },
+      {
+        "repeat": 1,
+        "task": 4,
+        "arm": "reuse-2",
+        "allocation": {
+          "policy": "artifact-margin-v1",
+          "actions": 2,
+          "reason": "within_margin",
+          "case_batch_count": 24,
+          "max_baseline_slowdown": -0.00805364876626058,
+          "max_comparator_slowdown": -0.00805364876626058,
+          "baseline_margin": 0.025,
+          "comparator_margin": 0.025
+        }
+      },
+      {
+        "repeat": 1,
+        "task": 4,
+        "arm": "reuse-4",
+        "allocation": {
+          "policy": "artifact-margin-v1",
+          "actions": 2,
+          "reason": "within_margin",
+          "case_batch_count": 24,
+          "max_baseline_slowdown": -0.029092382631243918,
+          "max_comparator_slowdown": -0.029092382631243918,
+          "baseline_margin": 0.025,
+          "comparator_margin": 0.025
+        }
+      },
+      {
+        "repeat": 1,
+        "task": 5,
+        "arm": "reuse-4",
+        "allocation": {
+          "policy": "artifact-margin-v1",
+          "actions": 4,
+          "reason": "not_eligible_full"
+        }
+      },
+      {
+        "repeat": 1,
+        "task": 5,
+        "arm": "reuse-2",
+        "allocation": {
+          "policy": "artifact-margin-v1",
+          "actions": 4,
+          "reason": "near_performance_limit",
+          "case_batch_count": 24,
+          "max_baseline_slowdown": 0.0452360539479193,
+          "max_comparator_slowdown": 0.0452360539479193,
+          "baseline_margin": 0.025,
+          "comparator_margin": 0.025
+        }
+      },
+      {
+        "repeat": 1,
+        "task": 6,
+        "arm": "reuse-4",
+        "allocation": {
+          "policy": "artifact-margin-v1",
+          "actions": 2,
+          "reason": "within_margin",
+          "case_batch_count": 24,
+          "max_baseline_slowdown": -0.2365900569346009,
+          "max_comparator_slowdown": -0.2365900569346009,
+          "baseline_margin": 0.025,
+          "comparator_margin": 0.025
+        }
+      },
+      {
+        "repeat": 1,
+        "task": 6,
+        "arm": "reuse-2",
+        "allocation": {
+          "policy": "artifact-margin-v1",
+          "actions": 2,
+          "reason": "within_margin",
+          "case_batch_count": 24,
+          "max_baseline_slowdown": -0.20767887640565408,
+          "max_comparator_slowdown": -0.20767887640565408,
+          "baseline_margin": 0.025,
+          "comparator_margin": 0.025
+        }
+      },
+      {
+        "repeat": 1,
+        "task": 7,
+        "arm": "reuse-2",
+        "allocation": {
+          "policy": "artifact-margin-v1",
+          "actions": 2,
+          "reason": "within_margin",
+          "case_batch_count": 24,
+          "max_baseline_slowdown": -0.18956340163500507,
+          "max_comparator_slowdown": -0.18956340163500507,
+          "baseline_margin": 0.025,
+          "comparator_margin": 0.025
+        }
+      },
+      {
+        "repeat": 1,
+        "task": 7,
+        "arm": "reuse-4",
+        "allocation": {
+          "policy": "artifact-margin-v1",
+          "actions": 2,
+          "reason": "within_margin",
+          "case_batch_count": 24,
+          "max_baseline_slowdown": -0.18325158766801952,
+          "max_comparator_slowdown": -0.18325158766801952,
+          "baseline_margin": 0.025,
+          "comparator_margin": 0.025
+        }
+      }
+    ],
+    "matched_prior_independent_route_probe": true,
+    "microbenchmark_calls": 3200,
+    "median_pure_function_microseconds": 14.291,
+    "p95_pure_function_microseconds": 14.834,
+    "scope": "Local CPU function only on closed already-parsed results;excludesJSON/I/O/sourcehash/controller/GPU/model costs,not wholepipeline overhead or hypothetical utility."
+  },
+  "scope": "Implementation/boundary/real CPU Manager integration verification. No new GPU policy efficacy or two-generation claim."
+}
