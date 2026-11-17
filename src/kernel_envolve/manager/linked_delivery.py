@@ -56,8 +56,7 @@ def refresh(store, task_id=None):
     """
     from pathlib import Path
 
-    from ..storage import read_json
-    from .evidence import inspect_run
+    from ..storage import file_hash, read_json
     from .publication import publication_view
     from .views import best
 
@@ -76,15 +75,25 @@ def refresh(store, task_id=None):
             publication = publication_view(store, child_id, current)
             if not current or not publication or not publication["current_head_verified"]:
                 raise ValueError("No current verified native publication")
-            deadline = time.monotonic() + 20
-
-            def checkpoint():
-                if time.monotonic() > deadline:
-                    raise ValueError("Delivery display audit deadline exceeded")
-
-            verified = inspect_run(Path(current["run"]), child["spec"], checkpoint)
-            raw = read_json(Path(current["run"]) / "result.json")
-            cfg = read_json(Path(current["run"]) / "config.json")
+            # The existing evidence scanner already deep-audits changed native
+            # evidence (including independent confirmation) before indexing it.
+            # sync-pr also deep-audits before publishing. Do not hash the full
+            # source trees again for dashboard narration/display.
+            verified = current
+            run = Path(current["run"])
+            raw = read_json(run / "result.json")
+            cfg = read_json(run / "config.json")
+            native_receipt = read_json(run / "receipt.json")
+            if (
+                not current.get("fingerprint")
+                or not current.get("contract_verified")
+                or current["contract"] != child["spec"]["baseline"]["contract"]
+                or digest(raw) != current["result_hash"]
+                or native_receipt["result_hash"] != current["result_hash"]
+                or file_hash(run / "config.json") != native_receipt["config_hash"]
+            ):
+                value["invalid_result_hash"] = current["result_hash"]
+                raise ValueError("Native indexed result/config receipt changed")
             root = link["source_root"]
             parent = store.task(link["research_task"])["spec"]
             if (
@@ -94,10 +103,10 @@ def refresh(store, task_id=None):
                 or not verified["confirmation"]
                 or set(cfg["required_scopes"]) != {"operator", "numerical", "integration"}
                 or raw["identities"]["baseline"][root]["git_head"] != parent["baseline"]["revision"]
-                or any(verified[k] != current[k] for k in ("result_hash", "confirmation"))
                 or publication["source_root"] != root
                 or publication["evaluated_source_hash"] != digest(verified["source"])
             ):
+                value["invalid_result_hash"] = current["result_hash"]
                 raise ValueError("Native full, confirmation, baseline and publication differ")
             receipt = {
                 "link": link,
@@ -108,6 +117,7 @@ def refresh(store, task_id=None):
                 "confirmation": verified["confirmation"],
                 "publication": {k: v for k, v in publication.items() if k != "checked_at"},
             }
+            value.pop("invalid_result_hash", None)
             value.update(receipt=receipt, error=None)
             store.db.execute(
                 "INSERT OR REPLACE INTO metadata VALUES(?,?)",
@@ -126,8 +136,13 @@ def retained(store, child_id, link):
     from .publication import publication_view
 
     row = store.one("SELECT data FROM metadata WHERE key=?", ("delivery_display:" + child_id,))
-    receipt = json.loads(row["data"]).get("receipt") if row else None
-    if not receipt or receipt["link"] != link:
+    projection = json.loads(row["data"]) if row else {}
+    receipt = projection.get("receipt")
+    if (
+        not receipt
+        or receipt["link"] != link
+        or projection.get("invalid_result_hash") == receipt["result_hash"]
+    ):
         return None
     row = store.one(
         "SELECT data,error FROM runs WHERE path=? AND task=?", (receipt["run"], child_id)

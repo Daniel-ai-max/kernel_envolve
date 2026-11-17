@@ -213,7 +213,9 @@ def test_real_host_runs_after_extension_without_notes_or_consume(lane, monkeypat
     assert store.job(job)["status"] == "succeeded"
 
 
-def test_real_native_full_confirmation_is_required_before_delivery(confirmation_task, tmp_path):
+def test_real_native_full_confirmation_is_required_before_delivery(
+    confirmation_task, tmp_path, monkeypatch
+):
     """Real CPU native receipts; only the already-tested remote PR binding is supplied."""
     import shutil
     import subprocess
@@ -308,7 +310,15 @@ def test_real_native_full_confirmation_is_required_before_delivery(confirmation_
             "INSERT INTO metadata VALUES('publication:delivery',?)", (json.dumps(publication),)
         )
         assert policy.delivery_proof(store, value)
-        linked_delivery.refresh(store, task_id="delivery")
+        from kernel_envolve.manager import evidence
+
+        with monkeypatch.context() as isolated:
+            isolated.setattr(
+                evidence,
+                "inspect_run",
+                lambda *a, **kw: pytest.fail("Display must reuse the deep-audited index"),
+            )
+            linked_delivery.refresh(store, task_id="delivery")
         delivered = task_view(store, key)
         assert delivered["best"] is None and delivered["implementation_pr"] is None
         assert delivered["delivery"]["best"]["baseline_speedup"] == verified["baseline_speedup"]
@@ -333,6 +343,34 @@ def test_real_native_full_confirmation_is_required_before_delivery(confirmation_
         assert original == {k: store.task(key)[k] for k in original}
         assert not store.one("SELECT data FROM metadata WHERE key=?", ("best:" + key,))
         assert not policy.delivery_proof(store, value | {"min_gain": 0.99999999})
+        # A small receipt change is rejected even before the next deep index
+        # scan. Historical display must not bypass missing/revoked index rows.
+        receipt_path = run / "receipt.json"
+        receipt_raw = receipt_path.read_bytes()
+        receipt_path.write_text('{"result_hash":"changed"}')
+        linked_delivery.refresh(store, task_id="delivery")
+        assert task_view(store, key)["delivery"]["best"] is None
+        receipt_path.write_bytes(receipt_raw)
+        linked_delivery.refresh(store, task_id="delivery")
+        indexed = store.one("SELECT * FROM runs WHERE path=?", (str(run),))
+        store.db.execute("UPDATE runs SET error='revoked' WHERE path=?", (str(run),))
+        assert task_view(store, key)["delivery"]["best"] is None
+        store.db.execute("DELETE FROM runs WHERE path=?", (str(run),))
+        assert task_view(store, key)["delivery"]["best"] is None
+        store.db.execute(
+            "INSERT INTO runs VALUES(?,?,?,?,?)",
+            tuple(indexed[k] for k in ("path", "task", "imported", "data", "error")),
+        )
+        assert task_view(store, key)["delivery"]["best"]["run"] == str(run)
+        # Temporarily unavailable evidence is not evidence of corruption and
+        # must not erase the last verified historical record.
+        unavailable = run.with_name(run.name + "-temporarily-unavailable")
+        run.rename(unavailable)
+        try:
+            linked_delivery.refresh(store, task_id="delivery")
+            assert task_view(store, key)["delivery"]["best"]["run"] == str(run)
+        finally:
+            unavailable.rename(run)
         raw = (run / "confirmation/receipt.json").read_bytes()
         (run / "confirmation/receipt.json").write_text("{}")
         with pytest.raises((ValueError, KeyError)):
