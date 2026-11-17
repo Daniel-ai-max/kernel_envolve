@@ -122,6 +122,46 @@ def test_rejects_total_limit_reset_even_after_successor_spending(replaced, field
     assert not store.one("SELECT * FROM metadata WHERE key LIKE 'superseded:%'")
 
 
+@pytest.mark.parametrize("deadline", [None, "missing", 2_000_000_001])
+def test_replacement_cannot_remove_or_extend_absolute_deadline(replaced, deadline):
+    store = replaced
+    change_spec(store, "old", deadline_at=2_000_000_000)
+    change_spec(store, "new", deadline_at=deadline)
+    if deadline == "missing":
+        spec = store.task("new")["spec"]
+        del spec["deadline_at"]
+        store.db.execute("UPDATE tasks SET spec=? WHERE id='new'", (json.dumps(spec),))
+    original = store.rows("SELECT * FROM tasks ORDER BY id")
+    events = store.rows("SELECT * FROM events")
+    with pytest.raises(ValueError, match="predecessor's absolute deadline"):
+        store.supersede("old", "new")
+    assert store.rows("SELECT * FROM tasks ORDER BY id") == original
+    assert store.rows("SELECT * FROM events") == events
+    assert not store.one("SELECT * FROM metadata WHERE key LIKE 'superseded:%'")
+
+
+@pytest.mark.parametrize(
+    "previous,deadline",
+    [
+        (2_000_000_000, 2_000_000_000),
+        (2_000_000_000, 1_999_999_999),
+        (None, None),
+        (None, 2_000_000_000),
+    ],
+)
+def test_replacement_preserves_permitted_deadline_and_ledger(replaced, previous, deadline):
+    store = replaced
+    change_spec(store, "old", deadline_at=previous)
+    change_spec(store, "new", deadline_at=deadline)
+    original = store.rows("SELECT id,spec,wall_seconds,gpu_seconds FROM tasks ORDER BY id")
+    receipt = store.supersede("old", "new")
+    assert receipt["predecessor"]["spec"]["deadline_at"] == previous
+    assert receipt["replacement"]["spec"]["deadline_at"] == deadline
+    assert store.rows("SELECT id,spec,wall_seconds,gpu_seconds FROM tasks ORDER BY id") == original
+    assert store.task("new")["desired"] == "paused"
+    assert store.supersede("old", "new") == receipt
+
+
 @pytest.mark.parametrize("status", ["queued", "running"])
 def test_live_predecessor_cannot_be_replaced(replaced, status):
     store = replaced

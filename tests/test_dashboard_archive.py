@@ -18,6 +18,50 @@ from kernel_envolve.manager.web import server
 pytest_plugins = ["test_manager"]
 
 
+def test_archive_refuses_symlinked_job_log_root(managed, tmp_path):
+    store, _, _ = managed
+    root = store.root / "jobs"
+    external = tmp_path / "external-jobs"
+    if root.exists():
+        root.rename(external)
+    else:
+        external.mkdir()
+    (external / "external-job").mkdir()
+    (external / "external-job/stdout.log").write_text("not this state")
+    root.symlink_to(external, target_is_directory=True)
+    with pytest.raises(ValueError, match="root must be a real directory"):
+        archive.export_archive(store, tmp_path / "archive", include_logs=True)
+    assert not (tmp_path / "archive/CURRENT.json").exists()
+
+
+def test_log_coverage_follows_snapshot_jobs_and_keeps_missing_evidence_visible(managed, tmp_path):
+    store, _, _ = managed
+    job = store.enqueue(store.task("toy"), "agent", ["unused"])
+    store.db.execute("UPDATE jobs SET status='failed',started=1,ended=2 WHERE id=?", (job,))
+    logs = store.root / "jobs" / job
+    logs.mkdir(parents=True, exist_ok=True)
+    (logs / "stdout.log").write_text("completed native checks")
+    receipt = archive.export_archive(store, tmp_path / "first", include_logs=True)
+    saved = tmp_path / "first" / receipt["generation"]
+    coverage = json.loads((saved / "manifest.json").read_text())["log_coverage"]
+    assert coverage["requested"] and not coverage["complete"]
+    assert coverage["jobs"][0]["missing"] == ["stderr.log"]
+    assert (saved / "logs" / job / "stdout.log").read_text() == "completed native checks"
+    assert archive.Archive(tmp_path / "first").read()["state"]["archived"]
+    (logs / "stderr.log").write_text("")
+    receipt = archive.export_archive(store, tmp_path / "second", include_logs=True)
+    coverage = json.loads(
+        (tmp_path / "second" / receipt["generation"] / "manifest.json").read_text()
+    )["log_coverage"]
+    assert coverage["complete"]
+    store.db.execute("UPDATE jobs SET status='running',ended=NULL WHERE id=?", (job,))
+    receipt = archive.export_archive(store, tmp_path / "active", include_logs=True)
+    coverage = json.loads(
+        (tmp_path / "active" / receipt["generation"] / "manifest.json").read_text()
+    )["log_coverage"]
+    assert not coverage["complete"] and coverage["jobs"][0]["active"]
+
+
 def test_portable_history_retains_best_notes_ledger_and_rejects_writes(managed, tmp_path):
     store, _, work = managed
     run, result = evaluate(work, "full")

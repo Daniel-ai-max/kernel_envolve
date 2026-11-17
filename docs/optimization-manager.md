@@ -84,6 +84,33 @@ kernel-envolve dashboard --archive /persistent/review/snapshot-<id>
 
 临时 GPU 节点应将 `--state` 指向持久卷，或设置 `KERNEL_ENVOLVE_ARCHIVE=/persistent/review`。仅存在节点 `/tmp` 内的文件不能在节点销毁后恢复。归档带校验清单，完整写入后才原子切换；复制整个目录即可恢复，不需要原源码路径或执行主机身份。读取归档不会修改原始账本，也不提供执行控制接口。表格保留最近记录，随包 SQLite 保留完整账本；原始张量及源码产物仍由 evaluator 的产物目录保存，需要离线复现时用 `--attach` 一并带走。
 
+`--include-logs` 按快照中的真实作业检查 `jobs/<id>/stdout.log` 与 `stderr.log`，
+在 manifest 的 `log_coverage` 中记录缺失日志和仍在运行的作业。证据不齐仍可恢复看板，
+但不会被标记为完整日志归档。
+
+大型检查点和张量记录由宿主在收尾时分包，不增加研究 Agent 操作。例如：
+
+```python
+from kernel_envolve.manager.results.bundle import pack_evidence, verify_evidence
+
+receipt = pack_evidence(
+    {"dashboard": saved_snapshot, "native": completed_native_reports},
+    durable_bundle_directory,
+    retain=lambda path, size: (
+        "generated checkpoint retained on durable storage"
+        if path.startswith("native/checkpoints/") and size >= 1024 * 1024
+        else None
+    ),
+)
+verify_evidence(durable_bundle_directory, include_retained=True)
+```
+
+先使用现有归档接口取得一致性看板快照，再对已结束的证据目录分包。`evidence.json`
+与 `evidence.tar.gz` 一起回收；`retained.tar` 保留在持久存储，按需下载。
+清单绑定两包及每个文件的字节数、SHA256；大产物保存失败时不发布成功清单。
+默认不按大小或扩展名过滤，具体生成产物目录由可信宿主指定；日志、源码和报告仍进回收包。
+符号链接仅保留目标文字，不跟随复制。归档不修改验收结论、best、累计用量或任务状态。
+
 ## 独立验收接入
 
 内置 evaluator 继续自动索引原有收据。外部验收只需由部署者一次性安装可信校验脚本，之后收据发布会被后台自动识别，不要求研究 Agent 再写报告或确认结果：
