@@ -1,0 +1,23 @@
+{
+  "synthetic_only": true,
+  "gpu_used": false,
+  "model": "kimi-k3.1-pro",
+  "same_session": true,
+  "rounds": [
+    {
+      "exit_code": 0,
+      "completed": true,
+      "tool_count": 1,
+      "marker_retained": true,
+      "credential_absent_from_shell": true
+    },
+    {
+      "exit_code": 0,
+      "completed": true,
+      "tool_count": 0,
+      "marker_retained": true,
+      "credential_absent_from_shell": null
+    }
+  ],
+  "scope": "Native Codex tool execution, credential filtering, and continuation; not kernel performance."
+}
