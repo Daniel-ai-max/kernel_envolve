@@ -47,6 +47,9 @@ GPU 隔离后宿主仍可做 CPU 诊断，GPU 准入保持关闭；无法恢复�
 
 ## 持久化与复盘
 
+导出的 SQLite 使用独立数据库的 DELETE journal 模式；原运行库仍使用 WAL。
+归档不依赖会随读取而变化或消失的 `-wal`/`-shm` 临时文件，可重复校验哈希。
+
 执行节点已不可达且只剩一致性数据库备份时，可使用
 `kernel_envolve.manager.results.recovery.recover_archive` 派生独立只读归档。
 入口必须提供原始观测时间、记录时间、实际中断说明、缺失资料范围及本地证据附件；
