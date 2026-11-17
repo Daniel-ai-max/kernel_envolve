@@ -548,10 +548,27 @@ class Store:
             job = self.job(key)
             if job["status"] not in ("queued", "running"):
                 return
+            ended = time.time()
             self.db.execute(
                 "UPDATE jobs SET status=?,ended=?,error=?,exit_code=? WHERE id=?",
-                (status, time.time(), error, exit_code, key),
+                (status, ended, error, exit_code, key),
             )
+            if job["kind"] == "agent":
+                cpu = self.one(
+                    "SELECT data FROM metadata WHERE key=?", ("cpu_activity:" + job["task"],)
+                )
+                cpu = json.loads(cpu["data"]) if cpu else None
+                if cpu and cpu.get("round") == key and cpu.get("status") == "running":
+                    # A killed bridge cannot publish its own terminal CPU receipt.
+                    # Retain the interruption before a later request replaces activity.
+                    cpu.update(status="interrupted", recorded_at=ended, returncode=None)
+                    self.db.executemany(
+                        "INSERT OR REPLACE INTO metadata VALUES(?,?)",
+                        [
+                            (prefix + job["task"], encode(cpu))
+                            for prefix in ("cpu_activity:", "cpu_completed:")
+                        ],
+                    )
             if job["kind"] == "agent" and status == "yielded":
                 task = self.task(job["task"])
                 recovery = assess(self, task, job, status, None)

@@ -4,7 +4,7 @@ export const jobLabel = (status) => ({running: "执行中", succeeded: "已完�
 export const benefitLabel = (best) => typeof best?.baseline_speedup === "number" && Number.isFinite(best.baseline_speedup)
   ? `${best.baseline_speedup.toFixed(3)}×` : "—";
 // Explanatory text never participates in taskBenefit, phase or progress clocks.
-export function narrationFor(task) {
+export function narrationFor(task, { findingOnly = false } = {}) {
   const n = task?.narration;
   if (!n || n.schema !== "narration-v1" || n.task !== task.id ||
       n.baseline !== task.spec?.baseline?.revision || !n.claims || !n.sources ||
@@ -17,7 +17,10 @@ export function narrationFor(task) {
   }
   if (n.row) {
     const r = n.row, latest = r.latest_result;
-    if (!task.row_facts || r.revision !== task.row_facts.revision ||
+    const current = task.row_facts;
+    const sameEvidence = typeof n.evidence_revision === "string" && n.evidence_revision &&
+      n.evidence_revision === current?.evidence_revision;
+    if (!current || (r.revision !== current.revision && !(findingOnly && sameEvidence)) ||
         r.benefit !== "system:benefit" || r.optimization_pr !== "system:optimization_pr" ||
         r.current_progress !== "finding" || !n.claims.finding ||
         latest?.ref !== "system:latest_result" || typeof latest.text !== "string" ||
@@ -30,8 +33,10 @@ export function narrationText(task) {
   return progressSource(task).text;
 }
 export function progressSource(task) {
-  const n = narrationFor(task);
-  if (n?.row) return {text: n.claims.finding.text, kind: "narration", at: n.updated_at};
+  const n = narrationFor(task, {findingOnly: true});
+  if (n?.row) return {text: n.claims.finding.text, kind: "narration",
+    at: n.row.revision === task.row_facts.revision ? n.updated_at
+      : Math.max(...n.claims.finding.sources.map(ref => n.sources[ref].at || 0))};
   if (task.row_facts && !n) {
     const recent = recentResult(task);
     if (recent) return {text: resultSummary(recent), kind: recent.kind, at: recent.recorded_at};
@@ -185,7 +190,8 @@ export function recentResult(task) {
   return recent;
 }
 
-// One render decision for all four columns; model text is used only as a whole.
+// Formal evidence guards every model field. An earlier cited finding can survive
+// exploratory completions, but latest_result requires the exact completion revision.
 // Numbers, PR identity and execution status always come from this task snapshot.
 export function narratedRow(task) {
   const n = narrationFor(task), recent = recentResult(task);

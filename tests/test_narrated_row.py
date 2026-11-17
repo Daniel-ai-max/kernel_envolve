@@ -212,6 +212,7 @@ def test_row_version_ignores_polling_duration_and_large_execution_payloads():
     assert row_facts(task) == first
     assert "cases" not in first["execution"]
     task["recent_execution"]["status"] = "succeeded"
+    task["latest_completed_execution"] = task["recent_execution"]
     assert row_facts(task)["revision"] != first["revision"]
 
 
@@ -224,6 +225,12 @@ def test_row_version_ignores_polling_duration_and_large_execution_payloads():
         ("1.235", "1.24"),  # Decimal half-up, not binary float or ties-to-even.
         ("1.245", "1.25"),
         ("9.999", "10.0"),
+        ("12.3456789", "12.346"),
+        ("12.3456789", "12.3457"),
+        ("12.3456789", "12.34568"),
+        ("12.3456789", "12.345679"),
+        ("0.0012346", "0.001235"),
+        ("12.3455", "12.346"),
         ("123456789012345678901234567890.125", "123456789012345678901234567890.13"),
     ],
 )
@@ -250,6 +257,9 @@ def test_cited_display_rounding_preserves_sources_and_is_idempotent(source, disp
         ("88.65015983581543", "88.66"),
         ("74.19519901275635", "74.19"),  # Truncation is not rounding.
         ("88.65015983581543", "88.650159"),
+        ("12.34567895", "12.3456790"),  # Seven display places remain outside the bound.
+        ("12.3456789", "12.345"),
+        ("12.3456789", "12.345678"),
         ("88.65015983581543", "89"),  # Integer display not admitted.
         ("1.2345", "1.2"),  # Fewer than three significant digits.
         ("0.10499", "0.10"),
