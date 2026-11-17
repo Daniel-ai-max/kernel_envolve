@@ -181,14 +181,14 @@ def test_interrupt_during_evaluation_reaps_worker(research):
     pidfile = out.parent / "worker.pid"
     script = """import json,sys
 from pathlib import Path
-import kernel_envolve.cli as cli
+from kernel_envolve.evaluation.generic import evaluator
 from kernel_envolve.rsi.research import run
-original=cli.spawn
+original=evaluator.spawn
 def spawn(*args,**kwargs):
     child=original(*args,**kwargs)
     Path(sys.argv[2]).write_text(str(child.pid))
     return child
-cli.spawn=spawn
+evaluator.spawn=spawn
 run(json.load(sys.stdin),sys.argv[1],lambda *args: {"action":"stop","hypothesis":"done"})
 """
     child = subprocess.Popen(

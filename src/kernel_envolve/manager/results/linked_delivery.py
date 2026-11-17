@@ -51,7 +51,7 @@ def links(store):
 def refresh(store, task_id=None):
     """Audit frozen native delivery, independent of the current research checkout.
 
-    Stop policy deliberately has a stronger current-research-source condition.
+    Stop policy separately deep-audits its binding-time source witness.
     An unavailable refresh never erases a previously verified delivery receipt.
     """
     from pathlib import Path
