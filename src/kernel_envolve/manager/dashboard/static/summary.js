@@ -156,6 +156,7 @@ export function resultSummary(record) {
   return label;
 }
 export function phaseLabel(task) {
+  if (task.archive_recovery?.interruption) return "已中断";
   if (deliveredBest(task) && task.delivery.policy_phase === "succeeded") return "已交付";
   if (task.stale) return "会话失联";
   if (task.phase === "paused" && task.reason === "task deadline reached") return "预算结束";

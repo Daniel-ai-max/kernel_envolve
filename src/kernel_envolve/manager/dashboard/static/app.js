@@ -98,7 +98,7 @@ function render() {
     state.resources
       .map(
         (r) =>
-          `<article data-key="${escape(r.id)}" class="card"><div class="resource-head"><h3>${escape(r.id)}</h3><span>${r.problem ? "资源异常" : r.archived ? "历史记录" : r.released ? "已回收" : r.jobs.some(j => j.kind === "gpu" && j.status === "running") ? "执行中" : "空闲"}</span></div><p>${r.allocation_usage ? cardHours(r.allocation_usage) : `GPU 作业 ${duration(r.gpu_seconds)}`}</p><div class="scroll"><table><thead><tr><th>任务</th><th>类型</th><th>状态</th><th>用时</th></tr></thead><tbody>${r.jobs.map(j => `<tr><td>${escape(j.task)}</td><td>${j.kind === "agent" ? "会话" : "GPU"}</td><td>${j.status === "running" ? "运行" : "排队"}</td><td>${duration(j.seconds)}</td></tr>`).join("") || '<tr><td colspan="4">—</td></tr>'}</tbody></table></div><details><summary>设备详情</summary><p><code>${escape(r.spec.devices ? r.spec.devices.join(", ") : r.spec.device)}</code> · ${r.spec.sessions} 个会话</p>${r.problem ? `<pre>${escape(r.problem)}</pre>` : ""}</details></article>`,
+          `<article data-key="${escape(r.id)}" class="card"><div class="resource-head"><h3>${escape(r.id)}</h3><span>${r.problem ? "资源异常" : r.archived ? "历史记录" : r.released ? "已回收" : r.jobs.some(j => j.kind === "gpu" && j.status === "running") ? "执行中" : "空闲"}</span></div><p>${r.allocation_usage ? cardHours(r.allocation_usage) : `GPU 作业 ${duration(r.gpu_seconds)}`}</p><div class="scroll"><table><thead><tr><th>任务</th><th>类型</th><th>状态</th><th>用时</th></tr></thead><tbody>${r.jobs.map(j => `<tr><td>${escape(j.task)}</td><td>${j.kind === "agent" ? "会话" : "GPU"}</td><td>${r.archived ? "历史记录" : j.status === "running" ? "运行" : "排队"}</td><td>${duration(j.seconds)}</td></tr>`).join("") || '<tr><td colspan="4">—</td></tr>'}</tbody></table></div><details><summary>设备详情</summary><p><code>${escape(r.spec.devices ? r.spec.devices.join(", ") : r.spec.device)}</code> · ${r.spec.sessions} 个会话</p>${r.problem ? `<pre>${escape(r.problem)}</pre>` : ""}</details></article>`,
       )
       .join("") || '<p class="empty">尚未配置计算资源。</p>',
   );
@@ -190,7 +190,7 @@ function renderDetail(t) {
   const b = t.spec.baseline, r = t.latest_evaluation, record = t.research_record, assessment = scopedAssessment(t), benefit = taskBenefit(t);
   const rows = t.best?.decision?.cases || [];
   const fields = (pairs) => pairs.filter(([, value]) => value).map(([label, value]) => `<dt>${label}</dt><dd>${escape(value)}</dd>`).join("");
-  const diagnoses = {session: phaseLabel(t), reason: t.reason, evidence_error: t.evidence_error, latest: r, recovery: t.recovery, current_work_argv: t.current_work_argv, assessment_sync: t.assessment_sync};
+  const diagnoses = {session: phaseLabel(t), reason: t.reason, evidence_error: t.evidence_error, latest: r, recovery: t.recovery, archive_recovery: t.archive_recovery, current_work_argv: t.current_work_argv, assessment_sync: t.assessment_sync};
   patch($("detail"), `
     <div class="section-head"><h2>${escape(t.spec.name)}</h2><button id="close-detail">返回</button></div>
     <div class="detail-summary"><span>${executionLabel(t.execution_state)}</span><span>${assessment ? "算子验收通过" : evidenceSummary(t)}</span><span>${escape(benefit.label)}</span></div>
@@ -198,6 +198,7 @@ function renderDetail(t) {
     ${t.delivery_parent ? `<p>所属研究：<button class="source-link" data-task="${escape(t.delivery_parent)}">${escape(t.delivery_parent)}</button></p>` : ""}
     ${t.delivery_attempts?.length ? `<article class="card"><h3>原生交付尝试</h3><div class="lineage">${t.delivery_attempts.map(a => `<div><button class="source-link" data-task="${escape(a.task)}">${escape(a.task)}</button><span>${a.task === t.current_delivery_task ? "当前关联" : "历史尝试"}${a.bound_at ? " · " + escape(stamp(a.bound_at)) : ""}</span></div>`).join("")}</div></article>` : ""}
     ${t.delivery?.best ? `<p>已验交付：<button class="source-link" data-task="${escape(t.delivery.task)}">${escape(t.delivery.task)}</button> · ${escape(stamp(t.delivery.checked_at))}${t.delivery.implementation_pr?.commit_url ? " · " + link(t.delivery.implementation_pr.commit_url, "已验提交 " + t.delivery.implementation_pr.head.slice(0, 7)) : ""}</p>` : ""}
+    ${t.archive_recovery ? `<p>${escape(t.archive_recovery.interruption || "历史快照恢复")} · ${escape(t.archive_recovery.coverage)} · 原始观测 ${escape(stamp(t.archive_recovery.observed_at))}</p>` : ""}
     ${assessmentDetail(t)}
     ${validationDetail(t)}
     ${narrationDetail(t)}

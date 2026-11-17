@@ -296,3 +296,44 @@ def test_shared_service_stops_inflight_model_without_holding_research(
         worker.join(2)
     assert not worker.is_alive()
     assert n.get(store, "narrator_attempt")["status"] == "failed"
+
+
+def test_chat_adapter_is_explicit_tool_free_and_rejects_tool_calls(monkeypatch):
+    import json
+
+    from kernel_envolve.manager.narrator_client import respond
+
+    seen = []
+    reply = {"choices": [{"finish_reason": "stop", "message": {"content": '{"toy":null}'}}]}
+
+    class Response:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def read(self, size):
+            return json.dumps(reply).encode()
+
+    class Opener:
+        def open(self, request, timeout):
+            seen.append(json.loads(request.data))
+            return Response()
+
+    monkeypatch.setattr("urllib.request.build_opener", lambda *args: Opener())
+    monkeypatch.setenv("NARRATOR_RESPONSES_URL", "https://example.test/v1/chat/completions")
+    monkeypatch.setenv("NARRATOR_MODEL", "fixture-model")
+    monkeypatch.setenv("NARRATOR_API_KEY", "test-only")
+    monkeypatch.setenv("NARRATOR_API_STYLE", "chat_completions")
+    monkeypatch.setenv("NARRATOR_REASONING_EFFORT", "low")
+    assert respond({"instructions": "JSON only", "tasks": []}) == {"toy": None}
+    assert seen[0]["tools"] == [] and seen[0]["store"] is False
+    assert seen[0]["response_format"]["json_schema"]["strict"] is True
+    assert seen[0]["reasoning_effort"] == "low"
+    reply["choices"][0]["message"]["tool_calls"] = [{"name": "forbidden"}]
+    with pytest.raises(ValueError, match="only return text"):
+        respond({"instructions": "JSON only", "tasks": []})
+    reply["choices"][0]["finish_reason"] = "length"
+    with pytest.raises(ValueError, match="incomplete"):
+        respond({"instructions": "JSON only", "tasks": []})

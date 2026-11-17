@@ -90,6 +90,7 @@ def row_facts(task):
             )
         },
         "evidence_error": task.get("evidence_error"),
+        "archive_recovery": task.get("archive_recovery"),
         "delivery": {k: delivery.get(k) for k in ("task", "status", "policy_phase")},
         "benefit": benefit,
         "optimization_pr": {"ref": "system:optimization_pr", "value": pr},

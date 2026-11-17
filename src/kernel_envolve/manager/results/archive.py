@@ -35,7 +35,9 @@ def capture_notes(store):
                 break
 
 
-def export_archive(store, destination, *, attachments=(), include_logs=False, automatic=False):
+def export_archive(
+    store, destination, *, attachments=(), include_logs=False, automatic=False, recovery=False
+):
     """One consistent SQLite backup, original projections, hashed assets, atomic publish."""
     destination = Path(destination).resolve()
     destination.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -59,7 +61,15 @@ def export_archive(store, destination, *, attachments=(), include_logs=False, au
                             "SELECT key,data FROM metadata WHERE key LIKE 'research_source:%'"
                         )
                     }
-                    now = time.time()
+                    recovery_record = saved.one(
+                        "SELECT data FROM metadata WHERE key='archive_recovery'"
+                    )
+                    recovery_record = (
+                        json.loads(recovery_record["data"]) if recovery_record else None
+                    )
+                    if recovery and not recovery_record:
+                        raise ValueError("Recovery requires explicit provenance")
+                    now = recovery_record["observed_at"] if recovery else time.time()
                     state = overview(saved, compact=True, now=now)
                     details = {t["id"]: detail(saved, t["id"], now) for t in state["tasks"]}
                 state.update(
@@ -87,6 +97,7 @@ def export_archive(store, destination, *, attachments=(), include_logs=False, au
                 (stage / name).write_bytes(
                     files("kernel_envolve.manager.dashboard").joinpath("static", name).read_bytes()
                 )
+            missing_records = []
             for row in assessment_records:
                 record = json.loads(row["data"])
                 record_id = row["key"].rsplit(":", 1)[1]
@@ -100,6 +111,13 @@ def export_archive(store, destination, *, attachments=(), include_logs=False, au
                     else "assessments"
                 )
                 source = store.root / directory / record_id
+                if recovery and (
+                    not (source / "input.json").is_file() or not (source / "record.json").is_file()
+                ):
+                    missing_records.append(
+                        {"record": row["key"], "reason": "original receipt files unavailable"}
+                    )
+                    continue
                 if (
                     hash_file(source / "input.json") != record["input_sha256"]
                     or json.loads((source / "record.json").read_text()) != record
@@ -248,6 +266,8 @@ def export_archive(store, destination, *, attachments=(), include_logs=False, au
             manifest = {
                 "schema": "dashboard-archive-v1",
                 "automatic": automatic,
+                "recovery": recovery_record if recovery else None,
+                "missing_records": missing_records,
                 "research_source_artifacts_included": not automatic,
                 "unbound_research_source_receipts": unbound_research_receipts,
                 "unverified_validation_receipts": unverified_validation_receipts,
