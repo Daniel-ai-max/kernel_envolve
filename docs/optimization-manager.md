@@ -679,6 +679,13 @@ CPU 的最近终态独立保存在 `cpu_completed:<task>` 元数据中，新请�
 
 宿主配置一次文本模型，随后正常启动 `dashboard` 或 `manage run`：
 
+研究模型与旁白模型分别配置；`host_command` 中的模型/凭据不会自动启用旁白。
+未配置时看板明确显示“旁白未配置”，部分配置缺失显示启动失败，均不阻塞研究。
+`/api/state` 的 `narrator` 返回服务状态和最近调用状态；服务心跳不能替代成功模型响应。
+部署验收须看到真实调用完成、非空 `tasks[].narration` 和页面中的对应文字，不能仅检查
+看板 HTTP 成功或研究模型在线。模型返回空内容、接口拒绝、服务失联分别可见；
+HTTP 错误只记录状态码，不暴露响应正文或凭据。
+
 ```bash
 export NARRATOR_MODEL='<轻量文本模型>'
 # 支持推理强度配置的模型可选 NARRATOR_REASONING_EFFORT=low。
@@ -686,6 +693,12 @@ export NARRATOR_RESPONSES_URL='https://<已授权模型服务>/v1/responses'
 # NARRATOR_API_KEY 由宿主凭据环境注入。
 kernel-envolve dashboard --research /work/operator-checkout --device GPU-... --seconds 3600 -- /opt/model-host-adapter
 ```
+
+仅支持 Chat Completions 的服务应显式设置 `NARRATOR_API_STYLE=chat_completions`，
+并把 `NARRATOR_RESPONSES_URL` 指向实际 `/chat/completions` 地址；先验证模型和接口，
+不在接口失败后静默切换提供商。跨机器启动时在实际运行旁白适配器的宿主配置这些变量。
+若密钥仅允许留在本地，远端通过无凭据的 stdin/stdout relay 调用本地适配器，再由远端
+原有旁白校验器验引用、事实版本与数字；不要把研究模型的密钥复制到 GPU 节点。
 
 内置适配器按 [Responses API](https://developers.openai.com/api/reference/resources/responses/methods/create) 使用[结构化输出](https://developers.openai.com/api/docs/guides/structured-outputs?api-mode=responses)约束字段和证据引用，发起无工具、非流式文本请求，不创建远端会话，不保存凭据。也可用 `KERNEL_ENVOLVE_NARRATOR_COMMAND` 指定可信模型适配器的 JSON argv；输入为 stdin JSON（`instructions`、`tasks`），输出为任务 ID 到四项摘要的 JSON。每项为 `null` 或 `{"text":"简短结论","sources":["输入中的证据ID"]}`，字段为 `direction`、`finding`、`failure`、`next`。新整行输出仅在 `finding` 和最近结果写正文，其余三项为 `null`，避免重复生成同一结论。同时返回 `row`：绑定输入 `row_facts.revision`，用 `system:benefit`、`system:optimization_pr` 引用系统字段，`current_progress` 引用 `finding`，`latest_result` 提供引用 `system:latest_result` 的短结论与来源。模型不可填写收益值或 PR 地址。旧四项摘要仍可读取历史归档，新事实版本下须生成整行摘要。适配器只负责模型推理，不授予模型 shell 或研究工具。
 

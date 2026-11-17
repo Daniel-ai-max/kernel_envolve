@@ -289,3 +289,20 @@ test("continuous exploratory completions preserve cited findings but never old l
   task.row_facts.evidence_revision = "formal-one";
   assert.equal(extra.narrationFor(task, {findingOnly: true}), null);
 });
+
+const { narratorStatus } = await import("data:text/javascript;base64," + Buffer.from(source).toString("base64"));
+test("narrator readiness cannot mask missing setup, failure or disconnected observations", () => {
+  const ready = {narrator: {status: "ready"}};
+  assert.equal(narratorStatus(ready, true).label, "旁白在线");
+  assert.equal(narratorStatus(ready, true).warn, false);
+  for (const status of ["disabled", "configuration_error", "call_failed", "no_output", "unavailable", "stopped", "unknown"]) {
+    const result = narratorStatus({narrator: {status}}, true);
+    assert.equal(result.warn, true);
+    assert.notEqual(result.label, "旁白在线");
+  }
+  for (const [state, connected] of [[ready, false], [{...ready, observation: {stale: true}}, true]]) {
+    assert.deepEqual(narratorStatus(state, connected), {label: "旁白观测已中断", warn: true, error: ""});
+  }
+  assert.equal(narratorStatus({...ready, archived: true}, true).label, "旁白历史记录");
+  assert.equal(narratorStatus({narrator: {status: "call_failed", last_attempt: {error_code: "HTTPError:404"}}}, true).error, "HTTPError:404");
+});

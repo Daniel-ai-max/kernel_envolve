@@ -387,6 +387,8 @@ def task_view(store, key, now=None, predecessors=None, usage=None):
 
 
 def overview(store, *, compact=False, now=None):
+    from kernel_envolve.manager.dashboard.narrator import health
+
     now = time.time() if now is None else now
     coordinator = store.one("SELECT data FROM metadata WHERE key='coordinator'")
     coordinator = json.loads(coordinator["data"]) if coordinator else None
@@ -432,6 +434,7 @@ def overview(store, *, compact=False, now=None):
         "archive_status": json.loads(archive["data"]) if archive else None,
         "coordinator": coordinator,
         "observer": observer,
+        "narrator": health(store, now),
         "allocation_usage": usage_view(usage),
         "as_of": now,
         "tasks": tasks,
