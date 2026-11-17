@@ -174,12 +174,16 @@ def assess(store, task, job, status, current):
     checkpoint = bool(
         outcome and outcome != before.get("outcome") and report.get("next_action", "").strip()
     )
-    progress = status == "succeeded" and bool(novel or cpu_requests or changed)
+    # A failed host/transport exit cannot erase completed experiments or saved
+    # implementation changes. This is continuation evidence, not task success;
+    # finish() still preserves the failed job and enforces stop/budget controls.
+    progress = bool(novel or cpu_requests or changed)
     return {
         "state": ("checkpoint_received" if checkpoint else "execution_completed")
         if progress
         else "diagnosis_requested",
         "round": job["id"],
+        "round_status": status,
         "observable_progress": progress,
         "execution_observed": execution_observed,
         "implementation_changed": changed,

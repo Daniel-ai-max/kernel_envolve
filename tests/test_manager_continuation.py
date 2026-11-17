@@ -141,6 +141,104 @@ def test_empty_hosts_are_bounded_and_do_not_count_as_progress(managed):
     assert not context(store, store.task("toy"))["observable_progress"]
 
 
+@pytest.mark.parametrize("activity", ["cpu", "gpu", "source"])
+def test_failed_host_preserves_real_progress_without_report_or_consume(managed, activity):
+    store, _, work = managed
+    script = (
+        HOST[: HOST.index("if n==3:")]
+        + f"""
+if {activity!r} == 'source':
+ Path('candidate.py').write_text('def run(x): return x + %s\\n' % n)
+else:
+ result=bridge.request(store,root,task,round_id,owner,'probe',
+  {{'kind':{activity!r},'argv':[sys.executable,'-c',"print('new experiment %s')"%n],
+   'expected_seconds':10}},20)
+ assert result['status']=='succeeded',result
+raise SystemExit(1)  # The provider/transport fails after useful work was saved.
+"""
+    )
+    root = configure(managed, script)
+    original = store.task("toy")["spec"]
+    wall = gpu = 0
+    for _ in range(3):
+        store.db.execute("UPDATE tasks SET next_at=0")
+        key = store.schedule()[0]
+        process = launch(store, key)
+        process.communicate(timeout=30)
+        assert store.job(key)["status"] == "failed"
+        assert store.job(key)["exit_code"] == 1
+        task = store.task("toy")
+        state = context(store, task)
+        assert state["round_status"] == "failed"
+        assert state["observable_progress"] and not state["checkpoint_changed"]
+        assert state["implementation_changed"] == (activity == "source")
+        assert task["desired"] == "active" and task["failures"] == 0
+        assert task["report"] == {} and task["spec"] == original
+        assert task["wall_seconds"] > wall and task["gpu_seconds"] >= gpu
+        wall, gpu = task["wall_seconds"], task["gpu_seconds"]
+        assert not list((root / "toy" / key / "consumed").glob("*.json"))
+    assert (work / "iteration.txt").read_text() == "3"
+
+
+@pytest.mark.parametrize("repeat_execution", [True, False])
+def test_failed_host_still_blocks_retries_without_new_progress(managed, repeat_execution):
+    store, _, _ = managed
+    script = (
+        HOST[: HOST.index("if n==3:")]
+        + f"""
+if n==1 or {repeat_execution!r}:
+ result=bridge.request(store,root,task,round_id,owner,'probe',
+  {{'kind':'cpu','argv':[sys.executable,'-c',"print('same result')"],
+    'expected_seconds':10}},20)
+ assert result['status']=='succeeded',result
+print('Host transport disconnected; turn failed',file=sys.stderr)
+raise SystemExit(1)
+"""
+    )
+    configure(managed, script)
+    for attempt in range(4):
+        store.db.execute("UPDATE tasks SET next_at=0")
+        key = store.schedule()[0]
+        process = launch(store, key)
+        process.communicate(timeout=15)
+        assert store.job(key)["status"] == "failed"
+        state = context(store, store.task("toy"))
+        assert state["execution_observed"] == (attempt == 0 or repeat_execution)
+        assert state["observable_progress"] == (attempt == 0)
+        assert store.task("toy")["failures"] == attempt
+    assert store.task("toy")["desired"] == "blocked"
+    assert not store.schedule()
+
+
+@pytest.mark.parametrize("provider_error", ["insufficient_quota", "authentication_error"])
+def test_real_progress_never_overrides_unrecoverable_host_exit(managed, provider_error):
+    store, _, _ = managed
+    configure(
+        managed,
+        HOST[: HOST.index("if n==3:")]
+        + f"""
+result=bridge.request(store,root,task,round_id,owner,'probe',
+ {{'kind':'cpu','argv':[sys.executable,'-c',"print('saved experiment')"],
+   'expected_seconds':10}},20)
+assert result['status']=='succeeded',result
+Path('candidate.py').write_text('new source')
+# The trusted host maps a non-retryable provider response to the existing exit protocol.
+print(json.dumps({{'error':{{'code':{provider_error!r}}}}}),file=sys.stderr)
+raise SystemExit(78)
+""",
+    )
+    key = store.schedule()[0]
+    process = launch(store, key)
+    process.communicate(timeout=10)
+    state = context(store, store.task("toy"))
+    assert state["observable_progress"] and state["round_status"] == "failed"
+    assert state["new_cpu_requests"] == ["probe"] and state["implementation_changed"]
+    assert store.job(key)["status"] == "failed" and store.job(key)["exit_code"] == 78
+    assert store.task("toy")["desired"] == "blocked"
+    assert "unrecoverable" in store.task("toy")["reason"]
+    assert not store.schedule()
+
+
 @pytest.mark.parametrize("action", ["pause", "deadline", "budget"])
 def test_stop_cleans_model_descendants_without_restart(managed, action):
     store, _, _ = managed
