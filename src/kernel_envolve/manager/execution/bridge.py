@@ -557,24 +557,26 @@ def run_bridge(store, root, idle_seconds=120):
                     finished_at=time.time(),
                 )
                 if cpu_child:
-                    store.db.execute(
-                        "INSERT OR REPLACE INTO metadata VALUES(?,?)",
-                        (
-                            "cpu_activity:" + task,
-                            encode(
-                                {
-                                    "task": task,
-                                    "round": round_id,
-                                    "request": path.stem,
-                                    "kind": "cpu_request",
-                                    "command": value["argv"],
-                                    "status": receipt["status"],
-                                    "recorded_at": receipt["finished_at"],
-                                    "returncode": code,
-                                }
-                            ),
-                        ),
-                    )
+                    activity = {
+                        "task": task,
+                        "round": round_id,
+                        "request": path.stem,
+                        "kind": "cpu_request",
+                        "command": value["argv"],
+                        "status": receipt["status"],
+                        "recorded_at": receipt["finished_at"],
+                        "returncode": code,
+                    }
+                    # Starting another CPU request replaces cpu_activity, but must
+                    # not erase the last completed result used by narrated rows.
+                    with store.transaction():
+                        store.db.executemany(
+                            "INSERT OR REPLACE INTO metadata VALUES(?,?)",
+                            [
+                                (prefix + task, encode(activity))
+                                for prefix in ("cpu_activity:", "cpu_completed:")
+                            ],
+                        )
                 # A visible completion receipt must never precede its terminal
                 # activity state: clients may read the dashboard immediately.
                 atomic(directory / "results" / path.name, receipt)
@@ -591,6 +593,7 @@ def run_bridge(store, root, idle_seconds=120):
                             "status": receipt["status"],
                             "returncode": receipt["returncode"],
                             "cleanup_confirmed": True,
+                            "recorded_at": receipt["finished_at"],
                             "receipt_sha256": hashlib.sha256(
                                 (directory / "results" / path.name).read_bytes()
                             ).hexdigest(),

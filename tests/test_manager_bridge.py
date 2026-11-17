@@ -78,6 +78,10 @@ def test_result_consume_next_request_and_finish(managed):
     )
     assert activity["request"] == "first" and activity["status"] == "succeeded"
     assert activity["round"] == job and activity["command"] == payload["argv"]
+    completed = json.loads(
+        store.one("SELECT data FROM metadata WHERE key='cpu_completed:toy'")["data"]
+    )
+    assert completed == activity
     assert send(store, root, job, "first", payload) == receipt
     with pytest.raises(ValueError, match="different content"):
         send(store, root, job, "first", cpu("print('changed')"))
@@ -281,6 +285,11 @@ def test_cpu_descendants_are_reaped_without_touching_unrelated_process(managed, 
             "failed",
             "interrupted_without_receipt",
         )
+        completed = json.loads(
+            store.one("SELECT data FROM metadata WHERE key='cpu_completed:toy'")["data"]
+        )
+        assert completed["round"] == job and completed["request"] == "fork"
+        assert completed["status"] in {"failed", "interrupted"}
     finally:
         unrelated.terminate()
         unrelated.wait(timeout=5)

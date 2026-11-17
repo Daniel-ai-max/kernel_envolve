@@ -61,13 +61,80 @@ def cpu_activity(store, key):
         return None
     value = json.loads(row["data"])
     parent = store.one(
-        "SELECT status FROM jobs WHERE id=? AND task=? AND kind='agent'", (value["round"], key)
+        "SELECT status,ended FROM jobs WHERE id=? AND task=? AND kind='agent'",
+        (value["round"], key),
     )
     if not parent:
         return None
     if value["status"] == "running" and parent["status"] != "running":
         value["status"] = "interrupted"
+        value["recorded_at"] = parent["ended"] or value["recorded_at"]
     return value
+
+
+def completed_execution(store, keys, cpu, evaluation):
+    """A running request must not replace the last terminal research observation."""
+    placeholders = ",".join("?" for _ in keys)
+    gpu = store.one(
+        f"SELECT id,task,status,ended AS recorded_at FROM jobs WHERE task IN ({placeholders}) "
+        "AND kind='gpu' AND ended IS NOT NULL AND status NOT IN ('queued','running') "
+        "ORDER BY ended DESC,id DESC LIMIT 1",
+        keys,
+    )
+    candidates = [{**gpu, "kind": "gpu_job"}] if gpu else []
+    # New bridges retain the terminal receipt independently of cpu_activity. Older
+    # bridges already have durable, confirmed completion events; no migration or
+    # remote receipt scan is needed by the readonly renderer.
+    saved = []
+    for key in keys:
+        row = store.one("SELECT data FROM metadata WHERE key=?", ("cpu_completed:" + key,))
+        if row:
+            saved.append(json.loads(row["data"]))
+    event = store.one(
+        f"SELECT task,at,data FROM events WHERE task IN ({placeholders}) "
+        "AND kind='bridge_execution' AND json_extract(data,'$.cleanup_confirmed')=1 "
+        "AND json_type(data,'$.returncode')='integer' "
+        "AND json_type(data,'$.request')='text' "
+        "AND json_extract(data,'$.status') NOT IN ('queued','running') "
+        "ORDER BY at DESC,seq DESC LIMIT 1",
+        keys,
+    )
+    if event:
+        value = json.loads(event["data"])
+        if not any(
+            (v.get("task"), v.get("round"), v.get("request"))
+            == (event["task"], value.get("round"), value["request"])
+            for v in saved
+        ):
+            saved.append(
+                value
+                | {
+                    "task": event["task"],
+                    "kind": "cpu_request",
+                    "recorded_at": value.get("recorded_at", event["at"]),
+                }
+            )
+    if cpu and cpu["status"] not in {"running", "queued"}:
+        if not any(
+            (v.get("task"), v.get("round"), v.get("request"))
+            == (cpu.get("task"), cpu.get("round"), cpu.get("request"))
+            for v in saved
+        ):
+            saved.append(cpu)
+    candidates.extend(saved)
+    if evaluation:
+        candidates.append({**evaluation, "kind": "evaluation"})
+    return max(
+        candidates,
+        key=lambda v: (
+            v.get("recorded_at") or 0,
+            v["kind"],
+            v.get("task", ""),
+            v.get("round", ""),
+            v.get("id", v.get("request", "")),
+        ),
+        default=None,
+    )
 
 
 def research_summary(store, task, predecessors):
@@ -152,6 +219,7 @@ def research_summary(store, task, predecessors):
         "recent_execution": max(
             executions, key=lambda value: value.get("recorded_at") or 0, default=None
         ),
+        "latest_completed_execution": completed_execution(store, keys, cpu, recent_evaluation),
         "history_counts": {
             "current_runs": lineage[0]["run_count"],
             "previous_runs": sum(row["run_count"] for row in lineage[1:]),

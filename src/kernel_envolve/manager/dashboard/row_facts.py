@@ -71,10 +71,34 @@ def row_facts(task):
             if k
             in ("id", "task", "kind", "status", "mode", "execution", "correctness", "recorded_at")
         },
+        "completed_execution": {
+            k: v
+            for k, v in (task.get("latest_completed_execution") or {}).items()
+            if k
+            in (
+                "id",
+                "task",
+                "kind",
+                "status",
+                "request",
+                "round",
+                "returncode",
+                "mode",
+                "execution",
+                "correctness",
+                "recorded_at",
+            )
+        },
         "evidence_error": task.get("evidence_error"),
         "delivery": {k: delivery.get(k) for k in ("task", "status", "policy_phase")},
         "benefit": benefit,
         "optimization_pr": {"ref": "system:optimization_pr", "value": pr},
         "latest_result": {"ref": "system:latest_result", "kind": latest[1], "value": latest_value},
     }
-    return value | {"revision": digest(value)}
+    # Running jobs and phase labels are live presentation, not a new conclusion.
+    # A terminal execution invalidates latest_result; a cited finding can outlive it.
+    # Acceptance, retained benefit, PR or stop changes invalidate both model fields.
+    binding = {k: v for k, v in value.items() if k not in {"lifecycle", "execution"}}
+    binding["lifecycle"] = {"desired": task.get("desired")}
+    evidence_binding = {k: v for k, v in binding.items() if k != "completed_execution"}
+    return value | {"revision": digest(binding), "evidence_revision": digest(evidence_binding)}

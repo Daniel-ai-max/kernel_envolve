@@ -196,6 +196,14 @@ test("all narrated columns switch together when new system facts arrive", () => 
   assert.equal(row.outcome, "局部Graph改善");
   assert.equal(row.benefit.label, "—");
   assert.equal(row.pr, undefined);
+  // A live queue/start transition keeps the same completed-evidence revision.
+  for (const phase of ["waiting_gpu", "gpu_running", "cpu_running", "agent_running"]) {
+    task.phase = phase;
+    task.row_facts.lifecycle = {desired: "active", phase};
+    task.row_facts.execution = {id: "next-probe", status: "running"};
+    assert.equal(extra.narratedRow(task).progress.text, "保留局部候选");
+    assert.equal(extra.narratedRow(task).outcome, "局部Graph改善");
+  }
   task.row_facts.revision = "two";
   task.latest_validation = {schema: "validation-result-v1", task: "toy", baseline_revision: "base",
     promotion: false, source_sha256: "a".repeat(64), evidence_sha256: "b".repeat(64),
@@ -246,4 +254,38 @@ test("linked native delivery has one research row without transferring best", ()
   assert.equal(extra.taskBenefit(research).label,"—");
   assert.equal(extra.narratedRow(research).pr,null);
   assert.notEqual(extra.phaseLabel(research),"已交付");
+});
+
+test("continuous exploratory completions preserve cited findings but never old latest results", () => {
+  const task = {id: "toy", desired: "active", spec: {baseline: {revision: "base"}},
+    row_facts: {revision: "completed-before-inference", evidence_revision: "formal-one"},
+    narration: {schema: "narration-v1", task: "toy", baseline: "base", updated_at: 50, source_at: 30,
+      evidence_revision: "formal-one",
+      claims: {direction: null, finding: {text: "引用测量支持保留转置。", sources: ["source"]}, failure: null, next: null},
+      sources: {source: {at: 20, text: "局部转置测量。"}, later: {at: 30, text: "另一局部测量。"}},
+      row: {revision: "completed-before-inference", benefit: "system:benefit", optimization_pr: "system:optimization_pr",
+        current_progress: "finding", latest_result: {ref: "system:latest_result", text: "旧实验结论", sources: ["later"]}}}};
+  for (const [index, status] of ["succeeded", "failed", "cancelled", "interrupted"].entries()) {
+    task.row_facts.revision = `completion-${index}`;
+    task.recent_execution = {kind: "gpu_job", id: `job-${index}`, status, recorded_at: 60 + index};
+    const row = extra.narratedRow(task);
+    assert.equal(row.progress.text, "引用测量支持保留转置。");
+    assert.equal(row.progress.at, 20); // Original source time, never the newer job/inference clock.
+    assert.equal(row.outcome, extra.resultSummary(task.recent_execution));
+    assert.equal(row.outcomeAt, 60 + index);
+    assert.notEqual(row.outcome, "旧实验结论");
+    assert.equal(extra.narrationFor(task), null); // No old whole-row latest-result binding.
+    assert.equal(row.benefit.label, "—");
+  }
+  task.row_facts.evidence_revision = "new-acceptance-or-pr";
+  task.latest_validation = {schema: "validation-result-v1", task: "toy", baseline_revision: "base",
+    promotion: false, source_sha256: "a".repeat(64), evidence_sha256: "b".repeat(64),
+    recorded_at: 70, status: "no_benefit", scope: "synthetic full call", summary: "新整链验收无收益"};
+  assert.notEqual(extra.narratedRow(task).progress.text, "引用测量支持保留转置。");
+  assert.match(extra.narratedRow(task).outcome, /新整链验收无收益/);
+  assert.equal(extra.narrationFor(task, {findingOnly: true}), null);
+  // Old archives lack the system-supplied evidence binding and cannot opt into this fallback.
+  delete task.narration.evidence_revision;
+  task.row_facts.evidence_revision = "formal-one";
+  assert.equal(extra.narrationFor(task, {findingOnly: true}), null);
 });
