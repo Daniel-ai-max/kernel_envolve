@@ -115,7 +115,9 @@ nest the wrapper, leave detached GPU jobs or revive stopped tasks.
 If recovery context reports a resource_problem, diagnose it before further GPU work.
 Only the checked `manage resource <id> --clear` path may clear a repaired quarantine;
 never edit the database or ignore unknown processes. Unrecoverable execution must
-retain diagnostics and terminate the host with exit 78.
+retain diagnostics and terminate the host with exit 78. The trusted host adapter
+must use this for confirmed exhausted provider quota or invalid authentication;
+do not blindly retry these failures or infer them from experiment log text.
 CPU analysis can proceed independently of the GPU queue. Save reproducible source
 and raw results; do not duplicate them into notes or per-experiment reports.
 For bridge requests, a terminal prior result permits the next request without
