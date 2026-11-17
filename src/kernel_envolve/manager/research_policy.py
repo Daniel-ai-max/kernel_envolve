@@ -117,21 +117,43 @@ def source_link(store, key, delivery, root):
         "integration",
     }:
         raise ValueError("Delivery requires full native scopes and independent confirmation")
-    baseline = snapshot(cfg["sources"]["baseline"][root], None, cfg["artifacts"].get(root, []))
-    current = snapshot(candidate, None, cfg["artifacts"].get(root, []))
+    sources = {
+        role: {
+            name: snapshot(path, None, cfg["artifacts"].get(name, []))
+            for name, path in roots.items()
+        }
+        for role, roots in cfg["sources"].items()
+    }
     original = snapshot(research["workspace"], None, cfg["artifacts"].get(root, []))
     if (
-        baseline["git_head"] != research["baseline"]["revision"]
-        or current["files"] != original["files"]
+        sources["baseline"][root]["git_head"] != research["baseline"]["revision"]
+        or sources["candidate"][root]["files"] != original["files"]
     ):
         raise ValueError("Delivery baseline or candidate contents do not match research")
-    return {"task": delivery, "source_root": root, "identity": identity(native)}
+    link = {"task": delivery, "source_root": root, "identity": identity(native)}
+    return link | {"source_binding": source_binding(key, research, link, sources)}
+
+
+def source_binding(key, research, link, sources):
+    """Bind all evaluated roots to the research owner and this native attempt."""
+    return digest(
+        {
+            "research_task": key,
+            "research_identity": identity(research),
+            "delivery": {k: link[k] for k in ("task", "source_root", "identity")},
+            # Validation overlays are derived during evaluation and separately
+            # deep-audited; only these two roles exist at binding time.
+            "sources": {role: sources[role] for role in ("baseline", "candidate")},
+        }
+    )
 
 
 def bind_delivery(store, key, delivery, source_root):
     value = get(store, key)
     if not value or value["phase"] in TERMINAL:
         raise ValueError("An active installed research policy is required")
+    if identity(store.task(key)["spec"]) != value["identity"]:
+        raise ValueError("Research policy identity changed")
     binding = source_link(store, key, delivery, source_root)
     if not store.task(delivery)["spec"].get("observe_only"):
         raise ValueError("Linked delivery must be an observation-only native task")
@@ -159,6 +181,17 @@ def bind_delivery(store, key, delivery, source_root):
                 or old["source_root"] != binding["source_root"]
             ):
                 raise ValueError("Native delivery already has a different owner or identity")
+            if "source_binding" in old and old["source_binding"] != binding["source_binding"]:
+                raise ValueError("Native delivery source binding changed; use a new delivery task")
+            # Older links gain a witness only through an explicit successful
+            # source_link check, never by trusting an existing native result.
+            store.db.execute(
+                "UPDATE metadata SET data=? WHERE key=?",
+                (
+                    encode(old | {"source_binding": binding["source_binding"]}),
+                    "delivery_link:" + delivery,
+                ),
+            )
         else:
             store.db.execute(
                 "INSERT INTO metadata VALUES(?,?)", ("delivery_link:" + delivery, encode(relation))
@@ -227,19 +260,30 @@ def delivery_proof(store, value):
     cfg = read_json(Path(current["run"]) / "config.json")
     result = read_json(Path(current["run"]) / "result.json")
     root = link["source_root"]
-    if "confirmation" not in cfg or set(cfg["required_scopes"]) != {
-        "operator",
-        "numerical",
-        "integration",
-    }:
-        return None
-    research = store.task(value["task"])["spec"]
-    actual = snapshot(research["workspace"], None, cfg["artifacts"].get(root, []), checkpoint)
     if (
-        result["identities"]["baseline"][root]["git_head"] != research["baseline"]["revision"]
-        or verified["source"][root]["files"] != actual["files"]
+        digest(result) != verified["result_hash"]
+        or "confirmation" not in cfg
+        or set(cfg["required_scopes"]) != {"operator", "numerical", "integration"}
     ):
         return None
+    research = store.task(value["task"])["spec"]
+    if (
+        identity(research) != value["identity"]
+        or task["spec"]["baseline"]["revision"] != research["baseline"]["revision"]
+        or result["identities"]["baseline"][root]["git_head"] != research["baseline"]["revision"]
+    ):
+        return None
+    if "source_binding" in link:
+        if link["source_binding"] != source_binding(
+            value["task"], research, link, result["identities"]
+        ):
+            return None
+    else:
+        # Legacy bindings did not record provenance at freeze time. Retain
+        # their live check until an operator explicitly rebinds matching source.
+        actual = snapshot(research["workspace"], None, cfg["artifacts"].get(root, []), checkpoint)
+        if verified["source"][root]["files"] != actual["files"]:
+            return None
     child = Path(verified["confirmation"]["run"])
     held = native_decision(read_json(child / "result.json"), read_json(child / "config.json"))
     for decision in (verified["decision"], held):
@@ -267,6 +311,7 @@ def delivery_proof(store, value):
             )
         },
         "source_hash": digest(verified["source"]),
+        **({"source_binding": link["source_binding"]} if "source_binding" in link else {}),
     }
 
 
