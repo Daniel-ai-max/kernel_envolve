@@ -43,6 +43,7 @@ def codex_command(model, *, codex="codex", provider=None, effort=None, writable=
                 "model_providers.kernel_host.requires_openai_auth": False,
                 "model_providers.kernel_host.wire_api": "responses",
                 "model_providers.kernel_host.supports_websockets": False,
+                "model_providers.kernel_host.capabilities.remote_compaction": "unsupported",
                 "model_providers.kernel_host.request_max_retries": 0,
                 "model_providers.kernel_host.stream_max_retries": 0,
                 "features.enable_request_compression": False,
@@ -66,14 +67,16 @@ def codex_command(model, *, codex="codex", provider=None, effort=None, writable=
         "-m",
         model,
     ]
-    for key, value in cfg.items():
-        argv.extend(("-c", key + "=" + json.dumps(value)))
     for path in writable:
         argv.extend(("--add-dir", str(path)))
     if session is not None:
         if not isinstance(session, str) or not session or session.startswith("-"):
             raise ValueError("Invalid resumed session")
         argv.extend(("resume", session))
+    # Resume has its own config parser. Overrides before that subcommand can
+    # leave resumed thread settings on the default provider, including compact.
+    for key, value in cfg.items():
+        argv.extend(("-c", key + "=" + json.dumps(value)))
     return argv + ["-"]
 
 

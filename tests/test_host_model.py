@@ -21,11 +21,14 @@ def test_explicit_provider_preserves_session_and_never_inlines_a_secret():
     p = cfg["model_providers"]["kernel_host"]
     assert p["env_key"] == "HOST_CREDENTIAL" and p["wire_api"] == "responses"
     assert p["requires_openai_auth"] is False
+    assert p["capabilities"]["remote_compaction"] == "unsupported"
     assert p["request_max_retries"] == p["stream_max_retries"] == 0
     assert cfg["shell_environment_policy"]["filters"] == {"HOST_CREDENTIAL": "exclude"}
     assert cfg["allow_login_shell"] is False
     assert cfg["features"]["shell_snapshot"] is False
-    assert argv[-3:] == ["resume", "original", "-"]
+    assert argv[argv.index("resume") + 1] == "original"
+    assert argv[-1] == "-"
+    assert argv.index("-c") > argv.index("resume")
     assert "--ignore-user-config" in argv
     assert "model_reasoning_effort" not in cfg
 

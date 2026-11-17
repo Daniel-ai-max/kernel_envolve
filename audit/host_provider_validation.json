@@ -14,10 +14,22 @@
     {
       "exit_code": 0,
       "completed": true,
-      "tool_count": 0,
+      "tool_count": 1,
       "marker_retained": true,
-      "credential_absent_from_shell": null
+      "credential_absent_from_shell": true
     }
   ],
-  "scope": "Native Codex tool execution, credential filtering, and continuation; not kernel performance."
+  "scope": "Native Codex tool execution, credential filtering, continuation and synthetic context compaction; not kernel performance.",
+  "compaction": {
+    "synthetic_only": true,
+    "turns": 3,
+    "same_session": true,
+    "compactions": 2,
+    "marker_retained_all_turns": true,
+    "resumed_provider_preserved": true,
+    "gpu_used": false,
+    "prior_failure": "Resume overrides placed before the resume subcommand selected default provider during compaction.",
+    "fix": "Pass config overrides after resume; explicitly use local compaction for custom providers."
+  },
+  "credential_filtering_verified_on_resumed_turn": true
 }

@@ -192,7 +192,9 @@ Codex 宿主可复用 `manager.execution.host_model.codex_command`，显式指�
 Responses 服务（`base_url`、`env_key`）。密钥由宿主注入命名环境变量，不写入
 命令、任务配置或实验记录；构造的命令也会从 agent 的 shell 环境排除该变量。
 切换服务或模型需明确授权，并在下一次实际会话启动时记录选择，不自动回退其他账号。
-先在不占 GPU 的工作区验证真实工具调用和同会话恢复，再分配实验资源。
+接续参数置于 `resume` 子命令之后，避免恢复时切回默认服务；第三方服务使用本地
+上下文压缩。先在不占 GPU 的工作区验证真实工具调用、同会话恢复及跨压缩接续，
+再分配实验资源。
 
 宿主保存原始 JSONL 后，可调用 `manager.execution.host_model.terminal_failure(events, returncode)`。
 它只检查 CLI 的最终 `turn.failed`，识别明确额度耗尽或认证/权限失败，返回退出码
