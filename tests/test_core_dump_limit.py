@@ -8,7 +8,7 @@ import sys
 
 import pytest
 
-from kernel_envolve.manager import worker
+from kernel_envolve.manager import process, worker
 from kernel_envolve.manager.process import gpu_locks, identity
 
 pytest_plugins = ["test_manager"]
@@ -106,7 +106,9 @@ print(json.dumps(dict(before=before,after=resource.getrlimit(resource.RLIMIT_COR
     assert result["before"] == result["after"]
 
 
-def test_gpu_supervisor_child_inherits_limit_and_original_locks(managed, monkeypatch):
+def test_gpu_supervisor_child_inherits_limit_and_original_locks(managed, monkeypatch, tmp_path):
+    # This CPU inheritance probe must not contend with unrelated host jobs/tests.
+    monkeypatch.setattr(process, "lock_path", lambda kind, name: tmp_path / f"{kind}-{name}.lock")
     store, _, work = managed
     before = resource.getrlimit(resource.RLIMIT_CORE)
     if before[1] == 0:
@@ -123,6 +125,7 @@ def test_gpu_supervisor_child_inherits_limit_and_original_locks(managed, monkeyp
     job = store.enqueue(store.task("toy"), "gpu", [sys.executable, "-c", command], parent)
     assert store.claim(job, os.getpid(), identity(os.getpid()))
     with gpu_locks(["cpu"]) as handles:
+        assert handles is not None
         assert worker.supervise(store, job, handles) == 0
     assert json.loads((work / "limits.json").read_text()) == {"limits": [1, before[1]], "locks": 1}
     assert resource.getrlimit(resource.RLIMIT_CORE) == before

@@ -12,12 +12,12 @@ snapshots are inputs to a separately authorized validation experiment only.
 
 from pathlib import Path
 
-from ..storage import digest
-from .artifact_snapshot import COMPATIBILITY, _value
-from .episodes import MAX_EPISODE_BYTES, _identity, build, load, save
-from .model import keys, profile, read
-from .research import source_id
-from .reuse import runtime_key
+from kernel_envolve.evaluation.shared.storage import digest
+from kernel_envolve.rsi.artifact_snapshot import COMPATIBILITY, _value
+from kernel_envolve.rsi.episodes import MAX_EPISODE_BYTES, _identity, build, load, save
+from kernel_envolve.rsi.model import keys, profile, read
+from kernel_envolve.rsi.research import source_id
+from kernel_envolve.rsi.reuse import runtime_key
 
 MAX_ANCESTORS = 32
 
@@ -85,7 +85,7 @@ def _linked(provenance, episode, parent_view):
 
 
 def _form(provenance, parent_id, parent_record, parent_view):
-    from .trials import validator_identity
+    from kernel_envolve.rsi.trials import validator_identity
 
     keys(provenance, {"task", "artifacts", "profile", "confirmation_run", "origin_task"})
     episode = build(
@@ -180,7 +180,7 @@ def audit(directory, identity):
     files' content hashes still match. Hashes alone are not publisher trust.
     """
     directory = Path(directory).resolve()
-    from .trials import validator_identity
+    from kernel_envolve.rsi.trials import validator_identity
 
     def verify(current, seen):
         _identity(current)

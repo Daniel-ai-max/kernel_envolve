@@ -5,10 +5,10 @@ import math
 import time
 from pathlib import Path
 
-from ..manager.evidence import inspect_run
-from ..manager.store import Store as Manager
-from ..storage import digest, write_json
-from .model import context, keys, read, rule, select_rules, text
+from kernel_envolve.evaluation.shared.storage import digest, write_json
+from kernel_envolve.manager.results.index import inspect_run
+from kernel_envolve.manager.store import Store as Manager
+from kernel_envolve.rsi.model import context, keys, read, rule, select_rules, text
 
 
 def numeric_metrics(data):
@@ -205,7 +205,7 @@ def behavior_identity(rules):
 
 
 def learn(store):
-    from .process import invoke
+    from kernel_envolve.rsi.process import invoke
 
     if not store.get("enabled", True):
         return {"status": "disabled"}

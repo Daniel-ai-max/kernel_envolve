@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 const source = await readFile(
-  new URL("../src/kernel_envolve/manager/static/sync.js", import.meta.url),
+  new URL("../src/kernel_envolve/manager/dashboard/static/sync.js", import.meta.url),
   "utf8",
 );
 const { poller } = await import(

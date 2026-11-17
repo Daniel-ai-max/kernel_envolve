@@ -9,12 +9,12 @@ import sys
 import time
 from pathlib import Path
 
-from ..manager.process import exclusive
-from .config import initialize
-from .learning import collect, learn, stage, verify_evidence
-from .model import read
-from .store import Store
-from .trials import adopt, checked_receipt, rollback, validate
+from kernel_envolve.manager.execution.process import exclusive
+from kernel_envolve.rsi.config import initialize
+from kernel_envolve.rsi.learning import collect, learn, stage, verify_evidence
+from kernel_envolve.rsi.model import read
+from kernel_envolve.rsi.store import Store
+from kernel_envolve.rsi.trials import adopt, checked_receipt, rollback, validate
 
 
 def audit(store):

@@ -11,8 +11,8 @@ import sqlite3
 import sys
 from pathlib import Path
 
-from .model import read
-from .reuse_memory import ReuseMemory
+from kernel_envolve.rsi.model import read
+from kernel_envolve.rsi.reuse_memory import ReuseMemory
 
 
 def main(argv=None):

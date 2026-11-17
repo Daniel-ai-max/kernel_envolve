@@ -7,7 +7,7 @@ import subprocess
 import time
 from pathlib import Path
 
-from ..execution import stop
+from kernel_envolve.evaluation.shared.execution import stop
 
 
 def invoke(command, directory, packet, timeout, *, device):

@@ -13,12 +13,12 @@ import sqlite3
 import time
 from pathlib import Path
 
-from ..storage import digest, evaluator_hash
-from . import artifact_lineage as lineage
-from . import artifact_validation as validation
-from .episodes import _encoded, load, save
-from .model import number, read
-from .trials import adapter_identity, validator_identity, verify_template
+from kernel_envolve.evaluation.shared.storage import digest, evaluator_hash
+from kernel_envolve.rsi import artifact_lineage as lineage
+from kernel_envolve.rsi import artifact_validation as validation
+from kernel_envolve.rsi.episodes import _encoded, load, save
+from kernel_envolve.rsi.model import number, read
+from kernel_envolve.rsi.trials import adapter_identity, validator_identity, verify_template
 
 
 class Registry:
@@ -141,7 +141,7 @@ class Registry:
             )
 
     def _holdouts(self):
-        from ..storage import config
+        from kernel_envolve.evaluation.shared.storage import config
 
         result = set()
         for row in self.db.execute("SELECT data FROM attempts"):
@@ -221,7 +221,7 @@ class Registry:
             }
             if not receipt.get("error"):
                 try:
-                    from ..storage import config
+                    from kernel_envolve.evaluation.shared.storage import config
 
                     root = Path(receipt["provenance"]["task"])
                     if (
@@ -319,7 +319,7 @@ class Registry:
                     )
         # Retention must cover seed capabilities and every configuration in the
         # parent's admission, not just tasks labelled "retention" by the caller.
-        from ..storage import config
+        from kernel_envolve.evaluation.shared.storage import config
 
         required_retention = set()
         for scope, seed_id in catalogs["seed"].items():

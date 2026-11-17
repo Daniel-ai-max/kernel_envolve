@@ -14,10 +14,10 @@ import statistics
 import tempfile
 from pathlib import Path
 
-from ..manager.evidence import inspect_run
-from ..storage import config, contract, digest
-from .model import profile, read, text
-from .research import source_id
+from kernel_envolve.evaluation.shared.storage import config, contract, digest
+from kernel_envolve.manager.results.index import inspect_run
+from kernel_envolve.rsi.model import profile, read, text
+from kernel_envolve.rsi.research import source_id
 
 MAX_EPISODE_BYTES = 384 * 1024
 MAX_SOURCE_BYTES = 24000

@@ -14,9 +14,9 @@ import tempfile
 import time
 from pathlib import Path
 
-from ..storage import digest, read_json
-from .process import exclusive
-from .store import encode
+from kernel_envolve.evaluation.shared.storage import digest, read_json
+from kernel_envolve.manager.execution.process import exclusive
+from kernel_envolve.manager.store import encode
 
 WINDOW = 4 * 3600
 TERMINAL = {"succeeded", "exhausted", "suspended"}
@@ -29,7 +29,7 @@ def require_frozen_coordinator(store, *, owner=False):
     Health is an attestation by the lock-owning service, not a heartbeat lease.
     A CLI can bind a candidate to that service, but cannot advance its policy.
     """
-    from .process import alive
+    from kernel_envolve.manager.execution.process import alive
 
     row = store.one("SELECT data FROM metadata WHERE key='coordinator'")
     health = json.loads(row["data"]) if row else {}
@@ -72,7 +72,7 @@ def save(store, key, old, value):
 
 def install(store, key, *, started_at, min_gain, deadline_command):
     """Install once on a paused host task; retain all old counters and timestamps."""
-    from .config import positive, resource_devices
+    from kernel_envolve.manager.config import positive, resource_devices
 
     positive(started_at, "started_at")
     if not started_at <= time.time() < started_at + WINDOW:
@@ -127,8 +127,8 @@ def active_jobs(store, key):
 
 
 def source_link(store, key, delivery, root):
-    from ..native import snapshot
-    from ..native_config import load_config
+    from kernel_envolve.evaluation.native.config import load_config
+    from kernel_envolve.evaluation.native.evaluator import snapshot
 
     research = store.task(key)["spec"]
     native = store.task(delivery)["spec"]
@@ -190,7 +190,7 @@ def bind_delivery(store, key, delivery, source_root):
     binding = source_link(store, key, delivery, source_root)
     if not store.task(delivery)["spec"].get("observe_only"):
         raise ValueError("Linked delivery must be an observation-only native task")
-    from .linked_delivery import links
+    from kernel_envolve.manager.results.linked_delivery import links
 
     owner = links(store).get(delivery)
     if owner and owner["research_task"] != key:
@@ -258,10 +258,10 @@ def bind_delivery(store, key, delivery, source_root):
 
 def delivery_proof(store, value):
     """Re-audit full + confirmation + fresh source-bound PR; summaries never qualify."""
-    from ..native import native_decision, snapshot
-    from .evidence import inspect_run
-    from .publication import publication_view
-    from .views import best
+    from kernel_envolve.evaluation.native.evaluator import native_decision, snapshot
+    from kernel_envolve.manager.dashboard.views import best
+    from kernel_envolve.manager.results.index import inspect_run
+    from kernel_envolve.manager.results.publication import publication_view
 
     link = value["delivery"]
     if not link:

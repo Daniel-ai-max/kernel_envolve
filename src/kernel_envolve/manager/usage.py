@@ -4,7 +4,7 @@ import json
 import math
 import time
 
-from .store import encode
+from kernel_envolve.manager.store import encode
 
 
 def allocations(store):

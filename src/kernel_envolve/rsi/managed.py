@@ -11,12 +11,19 @@ import sys
 import time
 from pathlib import Path
 
-from ..execution import managed_lock_fd
-from ..manager.evidence import inspect_run
-from ..manager.gpu import run as gpu_run
-from ..manager.store import Store
-from ..storage import config, contract, digest, file_hash, read_json, write_json
-from .model import keys, number, read
+from kernel_envolve.evaluation.shared.execution import managed_lock_fd
+from kernel_envolve.evaluation.shared.storage import (
+    config,
+    contract,
+    digest,
+    file_hash,
+    read_json,
+    write_json,
+)
+from kernel_envolve.manager.execution.gpu import run as gpu_run
+from kernel_envolve.manager.results.index import inspect_run
+from kernel_envolve.manager.store import Store
+from kernel_envolve.rsi.model import keys, number, read
 
 
 class _DeadlineExpired(Exception):
@@ -150,7 +157,7 @@ def evaluate(task, mode, timeout, directory):
 
 
 def worker(directory):
-    from ..cli import evaluate as evaluate_direct
+    from kernel_envolve.evaluation.generic.evaluator import evaluate as evaluate_direct
 
     directory = Path(directory).resolve()
     request = read(directory / "request.json", 8192)

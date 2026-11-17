@@ -3,7 +3,7 @@
 import subprocess
 from pathlib import Path
 
-from ..storage import digest
+from kernel_envolve.evaluation.shared.storage import digest
 
 
 def baseline_revision(workspace, revision="HEAD"):

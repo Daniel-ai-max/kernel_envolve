@@ -1,0 +1,865 @@
+{
+  "schema": "a7b-acceptance-design-v1",
+  "status": "design_only",
+  "framework_revision": "ce153d32f5fd2942df19171d8e1a3033372c03c0",
+  "source_inventory": "source-inventory.json",
+  "audited_sources": {
+    "core": {
+      "repository": "https://github.com/ApodexAI/apodex-core",
+      "revision": "415c21375d871c2fd475cba37891c6cb65c658dc"
+    },
+    "megatron": {
+      "repository": "https://github.com/ApodexAI/Megatron-LM",
+      "revision": "218adfeec230963181ef994056f37d0944a1aee1"
+    }
+  },
+  "profiles": {
+    "e65": {
+      "sequence_tokens": 262144,
+      "cp": 32,
+      "ep": 32,
+      "tp": 1,
+      "pp": 1,
+      "gpu_count": 256,
+      "gpu": "B300",
+      "gbs": 64,
+      "ga": 8,
+      "recompute": false,
+      "force_balance": true,
+      "scope": "E65 profiling configuration, NOT the 2048-GPU production configuration",
+      "missing": [
+        "实际 M/N/K、stride、packed 文档长度和逐 rank token 分布须从运行配置/调用捕获补齐",
+        "生产配置前 5 层 block recompute 与 E65 无重计算分开建任务",
+        "旧 trace commit 不证明运行时无补丁；部署须核对实际源码与 pin"
+      ]
+    },
+    "e98": {
+      "sequence_tokens": 32768,
+      "cp": 4,
+      "ep": 32,
+      "tp": 1,
+      "pp": 1,
+      "gpu_count": 256,
+      "gpu": "B300",
+      "gbs": 256,
+      "mbs": 1,
+      "ga": 4,
+      "recompute": false,
+      "force_balance": true,
+      "weight_cache": true,
+      "deferred_wgrad": true,
+      "scope": "E98 profiling companion; unprofiled step benchmark is a separate measurement",
+      "missing": [
+        "逐层实际 M/N/K、stride、packed 文档分布、路由负载须从运行配置/调用捕获补齐",
+        "RMS CUDA Graph 开启不证明 Attention/GEMM/通信全部在 Graph 内"
+      ]
+    }
+  },
+  "policy": {
+    "qualification": "No design file or static check grants GPU correctness, runtime readiness, best, or PR eligibility.",
+    "stages": [
+      "freeze_task_and_baseline",
+      "baseline_qualification",
+      "operator_contract_and_numerics",
+      "module_and_distributed_integration",
+      "paired_full_performance",
+      "independent_confirmation",
+      "promote_and_source_bound_pr"
+    ],
+    "required_instance_fields": [
+      "profile_and_effective_config",
+      "core_megatron_and_submodule_revisions",
+      "candidate_and_implementation_paths",
+      "image_digest_and_backend_versions",
+      "real_input_manifest_and_weights",
+      "adapter_with_declared_tensors_outputs_mutable_state",
+      "checks_with_expected_nodes_ranks_and_reports",
+      "precision_contract_and_gate_thresholds",
+      "min_gain_max_regression_max_baseline_regression_max_peak_bytes",
+      "independent_confirmation_cases_seeds_and_consumption_record",
+      "resource_topology_and_deadlines"
+    ],
+    "performance": "复用 scoring.py：两批配对测量；总体与配对收益均越过冻结门槛/噪声护栏，逐用例限制退化，同时比较当前 best 和固定 baseline。阈值在任务建立时固定，P0/P1/P2 不改变通过标准。",
+    "precision": "逐路径继承受信原生 gate 的 reference/golden、dtype、bitwise/确定性和 U/z 判据；不以一个通用 allclose 替代。baseline parity 另报，历史 FAIL 保留。",
+    "confirmation": "在首次评测前冻结独立尺寸/布局/数值种子；只在候选选定后运行，不反馈调参。消费一次；失败或中断保留记录，已见输入进入回归。",
+    "evidence": [
+      "配置/源码/环境哈希",
+      "全部 required node 和 rank 的本轮报告，非零测试数，无意外 skip",
+      "按 case/batch/role 的原始配对计时与最差退化",
+      "前向及全部必需梯度/状态、实际后端调用证据",
+      "full/confirmation 收据及独立集消费记录",
+      "交付 PR 的源码与依赖绑定"
+    ],
+    "distributed": "Manager 仅调度同主机资源组。CP32/EP32 的实际拓扑由平台 launcher 承担，所有 rank 独立设备与超时/清理；逐 rank 报告和全局完成时间。单卡 mock、CP2 或 CP4 通过均不能覆盖 CP32/EP32。",
+    "no_hot_path_steps": "目录仅用于接入和交付。局部研究不要求逐候选读取目录、重新建任务、full 或独立确认。"
+  },
+  "operators": [
+    {
+      "id": "dense-linear",
+      "source_id": 3,
+      "title": "Dense Linear / GEMM",
+      "contract": "分别验收各投影的 fwd/dgrad/wgrad；Y=XWᵀ，包含 bias（实际启用时），保留 batch-invariant、dtype、输出布局及 main_grad 语义。",
+      "outputs": [
+        "output",
+        "grad_input",
+        "grad_weight",
+        "grad_bias_if_enabled",
+        "main_grad_if_accumulating"
+      ],
+      "case_axes": [
+        "按 Q/KV down/up、attention gate/output、dense/shared MLP、MTP、LM head 分来源捕获 M/N/K，不合并为单一方阵",
+        "真实 local-token 区间与对齐阈值邻域；2D/3D activation、合法非连续输入与 out 布局",
+        "BF16 与真实 FP32 fallback；bias on/off；默认 BI 与显式 fast path 各自成契约",
+        "冷/热 weight cache、microbatch 梯度累加、冻结权重、不合法 out alias 拒绝"
+      ],
+      "oracle": "F.linear/torch matmul 独立表达式与 FP64 golden，明确 TF32/累加及输出 dtype；不以同一 DeepGEMM kernel 的另一个 wrapper 作为 oracle。",
+      "references": [
+        {
+          "repository": "core",
+          "path": "apodex_core/batch_invariant/deepgemm/linear.py",
+          "symbols": [],
+          "kind": "source",
+          "coverage_note": "生产 dense backend；具体可改入口在接入时最小化"
+        },
+        {
+          "repository": "core",
+          "path": "apodex_core/verification/operations/local_ops.py",
+          "symbols": [
+            "local_deepgemm_linear_fwd",
+            "local_deepgemm_linear_dx",
+            "local_deepgemm_linear_wgrad"
+          ],
+          "kind": "gate",
+          "coverage_note": "基础三腿数值门；fast/bias 路径按实际选择追加"
+        },
+        {
+          "repository": "core",
+          "path": "tests/test_deepgemm.py",
+          "symbols": [
+            "test_dense_linear_forward",
+            "test_dense_linear_backward",
+            "test_dense_linear_preserves_leading_dims"
+          ],
+          "kind": "test",
+          "coverage_note": "BF16 实现与独立 torch 对照"
+        },
+        {
+          "repository": "core",
+          "path": "tests/test_deepgemm_out_layout.py",
+          "symbols": [
+            "test_deepgemm_rejects_overlapping_out",
+            "test_deepgemm_rejects_out_aliasing_an_operand"
+          ],
+          "kind": "test",
+          "coverage_note": "写目标布局/alias"
+        },
+        {
+          "repository": "megatron",
+          "path": "tests/unit_tests/apodex/test_deepgemm_dense.py",
+          "symbols": [
+            "test_row_parallel_linear_also_wired",
+            "test_dgrad_dispatches_when_n_differs_from_k",
+            "test_three_d_backward_matches_cublas_path"
+          ],
+          "kind": "test",
+          "coverage_note": "真实宿主路由与反向；不能代替全部生产 shape"
+        }
+      ],
+      "integration": "实际 Column/Row/LM head 调用与 pin；声明过的 main_grad 累加/权重缓存；Graph 仅在实际或拟交付路径启用时独立验收。",
+      "performance": {
+        "objective": "按真实投影与 fwd/dgrad/wgrad 分别计时，并报告完整 Linear F+B。",
+        "guards": [
+          "布局转换、bias、准备和累加计入调用成本",
+          "各投影逐场景退化，不能用大 GEMM 掩盖小 GEMM",
+          "若宣称训练收益，另跑未开 profiler 的同配置 step 配对"
+        ]
+      },
+      "holdout": "未参与选择的矩形比例、token 尾部和合法布局组合，数值种子独立；保持生产 dtype 和路由。",
+      "negative_controls": [
+        "故意转置 dW 或漏一个 leading dim 必须失败",
+        "错误 main_grad 覆写、输出 alias 和静默 fallback 必须检出"
+      ],
+      "gaps": [
+        "尚未绑定 E65/E98 每层实际 shape/权重/阈值",
+        "需创建调用生产 API 的任务 adapter 与逐用例配置"
+      ],
+      "priorities": {
+        "e65": "P1",
+        "e98": "P1"
+      },
+      "status": "design_only",
+      "document": "operators/dense-linear.md"
+    },
+    {
+      "id": "grouped-linear",
+      "source_id": 4,
+      "title": "Grouped Linear / GEMM",
+      "contract": "FC1/FC2 分组前向、dgrad、wgrad 与累加；每行 token 属于正确专家，padding 不参与有效结果，空专家/空 rank 的状态保持正确。",
+      "outputs": [
+        "output",
+        "grad_input",
+        "fc1_grad_weight",
+        "fc2_grad_weight",
+        "main_grad",
+        "expert_counts_and_valid_row_mapping"
+      ],
+      "case_axes": [
+        "真实专家数、local experts、top-k 和逐 rank counts；均衡、偏斜、空专家、全部本地专家为空",
+        "128 对齐及 padding 尾部：支持的输入计算，不支持的非对齐输入必须明确拒绝",
+        "不同 microbatch counts、冻结部分权重、预填 main_grad，验证加法/覆写语义",
+        "weight cache 与 deferred wgrad/私有 stream 的实际组合；有效配置 guard 保持"
+      ],
+      "oracle": "按专家独立 torch F.linear 循环+autograd/FP64，使用逻辑有效 token；DeepGEMM/TE parity 只作额外对照。",
+      "references": [
+        {
+          "repository": "core",
+          "path": "apodex_core/batch_invariant/deepgemm/grouped.py",
+          "symbols": [],
+          "kind": "source",
+          "coverage_note": "grouped backend"
+        },
+        {
+          "repository": "core",
+          "path": "apodex_core/verification/operations/local_ops.py",
+          "symbols": [
+            "local_deepgemm_grouped_fwd",
+            "local_deepgemm_grouped_dx",
+            "local_deepgemm_grouped_wgrad",
+            "local_deepgemm_grouped_accum_wgrad"
+          ],
+          "kind": "gate",
+          "coverage_note": "grouped 三腿与累加"
+        },
+        {
+          "repository": "core",
+          "path": "tests/test_deepgemm.py",
+          "symbols": [
+            "test_grouped_linear_uneven_groups",
+            "test_grouped_empty_expert_is_zero_grad",
+            "test_grouped_wgrad_accum_is_additive"
+          ],
+          "kind": "test",
+          "coverage_note": "空专家、负载、累加"
+        },
+        {
+          "repository": "megatron",
+          "path": "tests/unit_tests/apodex/test_moe_deepgemm.py",
+          "symbols": [
+            "test_skewed_routing_and_empty_expert",
+            "test_all_local_experts_empty_backward",
+            "test_forward_emits_execution_evidence_once_per_shape"
+          ],
+          "kind": "test",
+          "coverage_note": "专家模块与执行证据"
+        },
+        {
+          "repository": "megatron",
+          "path": "tests/unit_tests/apodex/test_deepgemm_fused_deferred.py",
+          "symbols": [
+            "test_fused_deferred_private_stream_matches_eager_exactly"
+          ],
+          "kind": "test",
+          "coverage_note": "异步发布完成前不得读 main_grad"
+        },
+        {
+          "repository": "megatron",
+          "path": "tests/unit_tests/apodex/test_deepgemm_wgrad_accum.py",
+          "symbols": [
+            "test_real_main_grad_accumulation_preserves_parameters_and_padding"
+          ],
+          "kind": "test",
+          "coverage_note": "真实累加缓冲"
+        }
+      ],
+      "integration": "完整 MoE 专家块，并在 EP32 实际布局验证 dispatch→FC1→激活→FC2→combine 及反向；用真实负载和 source profile 的 force-balance 分开报告。",
+      "performance": {
+        "objective": "单卡分组 F+B 与专家阶段；交付 EP 调度收益需测 EP32 完整链。",
+        "guards": [
+          "deferred wgrad 完成/发布也在测量边界内",
+          "padding、pack、weight-cache 更新/失效成本不能漏",
+          "通信重叠高，不将 GEMM 节省时间直接加到 step"
+        ]
+      },
+      "holdout": "未见专家 counts/偏斜、空专家位置、合法尾部 padding，以及独立权重/上游梯度。",
+      "negative_controls": [
+        "交换专家分组/泄漏 padding/漏空 rank 的 ready hook",
+        "延迟 wgrad 未完成即宣布结束、累加覆盖为赋值"
+      ],
+      "gaps": [
+        "需捕获 E65/E98 实际 counts 与 host flags",
+        "现有局部测试不证明 EP32 调度或生产吞吐"
+      ],
+      "priorities": {
+        "e65": "P2",
+        "e98": "P1"
+      },
+      "status": "design_only",
+      "document": "operators/grouped-linear.md"
+    },
+    {
+      "id": "router-linear",
+      "source_id": 5,
+      "title": "Router Linear",
+      "contract": "保持 FP32 路由 logits 及 dX/dW；保护后续 sigmoid/bias/top-k/归一化与辅助损失的行为。不能把 FP32 改 BF16/TF32 换速度。",
+      "outputs": [
+        "logits",
+        "grad_input",
+        "grad_weight",
+        "selected_experts_guard",
+        "routing_probs_guard",
+        "aux_loss_and_gradients_guard"
+      ],
+      "case_axes": [
+        "实际 hidden→384 experts；真实 token 数、极小/尾部 batch、合法 stride",
+        "输入实际 dtype 到 FP32 的转换，权重 FP32；精确记录 TF32 开关",
+        "logit 近并列、极端有限值、sigmoid 饱和、实际 bias 与路由配置",
+        "相同 token 不同 batch 组合、GA 累加与 padded token 排除"
+      ],
+      "oracle": "FP32 F.linear 与独立 FP64 matmul/autograd；正确性与下游边界按原路由契约，不能用只比较最终 top-k 掩盖 logits 错误。",
+      "references": [
+        {
+          "repository": "megatron",
+          "path": "megatron/core/transformer/moe/router.py",
+          "symbols": [
+            "gating"
+          ],
+          "kind": "source",
+          "coverage_note": "实际 Router.gating；配置与精度从该路径核对"
+        },
+        {
+          "repository": "megatron",
+          "path": "tests/unit_tests/apodex/operations/local_modules.py",
+          "symbols": [
+            "local_moe_native_alignment_router_dw",
+            "local_moe_block_router_dw"
+          ],
+          "kind": "module_gate",
+          "coverage_note": "模块 router 梯度回归，非独立 FP32 Linear fwd/dX/dW 完整覆盖"
+        },
+        {
+          "repository": "core",
+          "path": "apodex_core/verification/operations/local_ops.py",
+          "symbols": [
+            "local_triton_router_matmul_production",
+            "local_router_gating"
+          ],
+          "kind": "gate",
+          "coverage_note": "邻近数值入口；不能未核对 route 就当作 E65/E98 FP32 Linear 的专用门"
+        }
+      ],
+      "integration": "进入真实 Router/MoE，检查 selected experts/probs/aux 梯度；top-k tie 行为以冻结原契约为准。测试应断言新 GEMM 路径被调用。",
+      "performance": {
+        "objective": "FP32 Linear fwd+dgrad+wgrad，包括必要转换。",
+        "guards": [
+          "完整 gating 段（logits→概率/选路）退化",
+          "输入转换和布局 copy 不挪出计时",
+          "保持实际 bias、aux 和有效 token 处理"
+        ]
+      },
+      "holdout": "未见 token 数、near-tie logits/权重和不同布局，独立种子；不只换随机种子保持同一 shape。",
+      "negative_controls": [
+        "FP32 降精度或改 TF32 导致精度门违规",
+        "反向漏 dW、错误屏蔽 padded token、静默切回旧 GEMM"
+      ],
+      "gaps": [
+        "缺已核实的 E65/E98 Router FP32 Linear 独立三腿适配；应补到正确原生层",
+        "邻近 fused router/triton 门不等价于目标 Linear 覆盖"
+      ],
+      "priorities": {
+        "e65": "P2",
+        "e98": "P2"
+      },
+      "status": "design_only",
+      "document": "operators/router-linear.md"
+    },
+    {
+      "id": "mla-materialize",
+      "source_id": 12,
+      "title": "Q/K/V materialize · QK assemble",
+      "contract": "按原 head/token 顺序展开 latent、拼接 no-RoPE/RoPE 分量并组织 THD；所有输入梯度与投影权重梯度保持，明确 alias 和连续性承诺。",
+      "outputs": [
+        "q",
+        "k",
+        "v",
+        "grad_latent",
+        "grad_q_nope",
+        "grad_q_rope",
+        "grad_k_rope",
+        "grad_projection_weights"
+      ],
+      "case_axes": [
+        "实际 heads、latent rank、nope/rope/value dim，明确输入 TP/CP 后的局部尺寸",
+        "THD packed 单文档/多文档、短尾、合法非连续输入、storage offset",
+        "copy/reshape/cat 边界，改变同一输入对象数值后重跑",
+        "materialized 路径强制生效，不混入 absorb；反向与 recompute 条件单独列"
+      ],
+      "oracle": "独立 torch einsum/reshape/cat + autograd，显式 expected-index 小例检查 token/head 排列；FP64 数值腿来自独立表达式。",
+      "references": [
+        {
+          "repository": "core",
+          "path": "apodex_core/ops/mla_fa4.py",
+          "symbols": [],
+          "kind": "source",
+          "coverage_note": "page 两个 profile 均归属该文件，但旧 trace 只覆盖部分搬运/反向"
+        },
+        {
+          "repository": "core",
+          "path": "apodex_core/verification/operations/local_ops.py",
+          "symbols": [
+            "local_mla_fa4_nonabsorb_fwd",
+            "local_mla_fa4_nonabsorb_dx",
+            "local_mla_fa4_nonabsorb_wgrad"
+          ],
+          "kind": "gate",
+          "coverage_note": "完整 materialized 组合门，非独立 materialize 成本"
+        },
+        {
+          "repository": "megatron",
+          "path": "tests/unit_tests/apodex/test_mla_fa4_nonabsorb.py",
+          "symbols": [
+            "test_fa4_nonabsorb_mla_matches_eager_wiring",
+            "test_fa4_nonabsorb_gated_mla_matches_eager_wiring"
+          ],
+          "kind": "test",
+          "coverage_note": "真实宿主完整路径"
+        }
+      ],
+      "integration": "接 FA4 consumer 验证 forward/backward 和实际 dispatch；涉及 CP 前后布局时追加对应 CP32/CP4 接线。",
+      "performance": {
+        "objective": "materialize+assemble 的完整准备段（copy、BMM、cat、分配），前反向分别及合计。",
+        "guards": [
+          "完整 MLA F+B；不得移成本到 FA4 consumer",
+          "峰值显存、保存张量与重算代价",
+          "page 部分归属时长不是完整阶段基线"
+        ]
+      },
+      "holdout": "不同文档划分、输入 stride/offset 组合和投影尺寸边界，保持支持范围。",
+      "negative_controls": [
+        "交换 head/token 或 RoPE/nope 拼接顺序",
+        "detach 中间张量导致缺梯度、遗漏最后一个 token、别名修改输入"
+      ],
+      "gaps": [
+        "需独立 materialize adapter 与范围计时，现有完整 MLA 门用于集成保护",
+        "trace 无完整 shape/CPU 调用栈，不能直接反推全部布局"
+      ],
+      "priorities": {
+        "e65": "P1",
+        "e98": "P2"
+      },
+      "status": "design_only",
+      "document": "operators/mla-materialize.md"
+    },
+    {
+      "id": "varlen-attention",
+      "source_id": 13,
+      "title": "Materialized varlen Attention",
+      "contract": "同文档 causal attention：scale/mask/Softmax/LSE/PV 及 dQ/dK/dV，按实际配置保留 sink 参数梯度与高精度路径。",
+      "outputs": [
+        "attention_output",
+        "grad_q",
+        "grad_k",
+        "grad_v",
+        "grad_sink_if_enabled",
+        "lse_if_public_or_consumed"
+      ],
+      "case_axes": [
+        "真实 QK/V head dim、head 数与 packed cu_seqlens；单/多文档、极短文档、长文档与 tile 邻域",
+        "causal 对角/文档隔离；支持的非对齐长度和合法布局；非法 carrier 明确拒绝",
+        "BF16 与冻结数学精度；sink/clip 等实际开关，不混用不同后端",
+        "eager 与实际支持的 Graph 换值回放；E65/E98 无重算，生产 recompute 另建配置"
+      ],
+      "oracle": "独立逐文档 FP64 eager attention/autograd；长文档可按数学等价的有界查询块计算参考但覆盖全部声明 query/key，不能只比 FA4 与 FA4。",
+      "references": [
+        {
+          "repository": "core",
+          "path": "apodex_core/ops/mla_fa4.py",
+          "symbols": [],
+          "kind": "source",
+          "coverage_note": "materialized production API"
+        },
+        {
+          "repository": "core",
+          "path": "apodex_core/verification/operations/local_ops.py",
+          "symbols": [
+            "local_mla_fa4_nonabsorb_varlen_fwd",
+            "local_mla_fa4_nonabsorb_varlen_dx",
+            "local_mla_fa4_nonabsorb_varlen_wgrad",
+            "local_mla_fa4_nonabsorb_sink_dsink"
+          ],
+          "kind": "gate",
+          "coverage_note": "确认最终 flags 对应 registry；非 absorbed/reference 同源"
+        },
+        {
+          "repository": "megatron",
+          "path": "tests/unit_tests/apodex/test_mla_fa4_packed.py",
+          "symbols": [
+            "test_thd_single_segment_equals_unpacked",
+            "test_untrusted_carrier_with_empty_segment_is_rejected_before_rope"
+          ],
+          "kind": "test",
+          "coverage_note": "metadata/packed 契约"
+        },
+        {
+          "repository": "megatron",
+          "path": "tests/unit_tests/apodex/test_mla_fa4_nonabsorb.py",
+          "symbols": [
+            "test_true_on_policy_te_rope_matches_training_forward_and_backward"
+          ],
+          "kind": "test",
+          "coverage_note": "真实配置前反向"
+        },
+        {
+          "repository": "megatron",
+          "path": "tests/unit_tests/apodex/test_mla_fa4_module_gate.py",
+          "symbols": [],
+          "kind": "test",
+          "coverage_note": "独立 module 三腿入口；必须固定实际 test selection 与 flags"
+        }
+      ],
+      "integration": "完整 MLA（materialize→FA4→output projection）F+B 和真实 CP 路由；单卡 kernel 优化不能宣称 CP32/4 模块已通过。",
+      "performance": {
+        "objective": "FA4 forward/backward 分测且报告 F+B，反向目标不能掩盖前向退化。",
+        "guards": [
+          "完整 MLA F+B、峰值显存与长文档",
+          "Graph 与 eager 分开，不能仅靠一次 capture 数值",
+          "无 profiler 的同配置 step 才能作训练收益证据"
+        ]
+      },
+      "holdout": "未见文档长度组合、tile 边界附近形状、极端有限数值/上游梯度；长短输入均保留。",
+      "negative_controls": [
+        "跨文档泄漏或 causal mask 偏一位",
+        "忽略 sink 梯度、错误缩放 dQ/dK、旧输入缓存"
+      ],
+      "gaps": [
+        "需要获取 E65/E98 实际 packed 文档分布与精度 flags",
+        "长文档独立参考成本须先在预算内资格验证，超时不能算通过"
+      ],
+      "priorities": {
+        "e65": "P0",
+        "e98": "P0"
+      },
+      "status": "design_only",
+      "document": "operators/varlen-attention.md"
+    },
+    {
+      "id": "ihc-pre",
+      "source_id": 26,
+      "title": "Fused iHC pre",
+      "contract": "hc_mult=4 的 RMS/投影/sigmoid gates 与加权读取；验证子层输入、post gate、dx 与 fn/scale/base 参数梯度，保留 FP32 参数/状态契约。",
+      "outputs": [
+        "sublayer_input",
+        "post_gate",
+        "grad_streams",
+        "grad_fn",
+        "grad_scale",
+        "grad_base"
+      ],
+      "case_axes": [
+        "4 路 stream，真实 hidden/token，token-block 与 reduction block 阈值两侧及尾块",
+        "零/近零输入、非零 carry、sigmoid 饱和、极端有限值；bf16 stream 与 fp32 参数",
+        "所有影响的 dx backend、默认 route 和 fallback 分开；不以 opt-in 路径覆盖默认",
+        "真实 GA、post 消费 gate、启用时的 recompute 与 Graph 换值回放"
+      ],
+      "oracle": "复用 core 独立 reference 的 RMS/投影/sigmoid/求和 + FP64/autograd，不能用 Triton baseline 充当唯一 oracle；既有逐位契约单独保留。",
+      "references": [
+        {
+          "repository": "core",
+          "path": "apodex_core/verification/operations/local_ops.py",
+          "symbols": [
+            "local_fused_hc_pre_y_fwd",
+            "local_fused_hc_pre_post_fwd",
+            "local_fused_hc_pre_dx",
+            "local_fused_hc_pre_dx_blocked_tuned",
+            "local_fused_hc_pre_dfn",
+            "local_fused_hc_pre_dscale",
+            "local_fused_hc_pre_dbase"
+          ],
+          "kind": "gate",
+          "coverage_note": "pre 输出、post gate 及全部参数梯度的原生数值门；默认/opt-in dx 按实际后端选择"
+        },
+        {
+          "repository": "megatron",
+          "path": "tests/unit_tests/apodex/operations/local_modules.py",
+          "symbols": [
+            "local_ihc_pre_fused",
+            "local_ihc_pre_post_gate_fused",
+            "local_ihc_pre_fused_dx",
+            "local_ihc_pre_fused_fn_dw"
+          ],
+          "kind": "module_gate",
+          "coverage_note": "真实 iHC 模块三腿"
+        },
+        {
+          "repository": "core",
+          "path": "tests/test_fused_hc_pre_gates_tokblock.py",
+          "symbols": [
+            "test_tokblock_is_bitwise_equal_to_the_per_token_launch",
+            "test_partial_last_block_does_not_store_past_t",
+            "test_blocked_path_matches_the_public_op_end_to_end"
+          ],
+          "kind": "test",
+          "coverage_note": "launch 改动的精确/尾块与端到端"
+        },
+        {
+          "repository": "core",
+          "path": "tests/test_fused_hc_dx_blocked_tuned.py",
+          "symbols": [],
+          "kind": "test",
+          "coverage_note": "opt-in dx 路径与默认隔离，不自动代表生产选择"
+        },
+        {
+          "repository": "megatron",
+          "path": "tests/unit_tests/transformer/test_ihc.py",
+          "symbols": [
+            "test_gate_ranges_and_fn_layout",
+            "test_fp32_resident_across_bfloat16_cast"
+          ],
+          "kind": "test",
+          "coverage_note": "CPU 语义保护；不是 GPU 验收"
+        }
+      ],
+      "integration": "真实 iHC pre→子层→post 的梯度流、post gate 消费、参数驻留 dtype 和 GA；涉及重算才加对应训练路径。",
+      "performance": {
+        "objective": "完整 pre F+B 与 gates/dx 分项，包含中间张量与参数梯度归约。",
+        "guards": [
+          "pre→子层→post 链",
+          "峰值内存与保存张量",
+          "post gate 不得延迟未完成写入"
+        ]
+      },
+      "holdout": "未见 token 尾块、hidden reduction 边界、gate 饱和/非零 carry 与参数种子。",
+      "negative_controls": [
+        "pre/post gate 互换、尾块越界",
+        "漏 scale/base 梯度、FP32 gate 参数被错误转换"
+      ],
+      "gaps": [
+        "需绑定实际 iHC 后端/参数布局与 A7B hidden 维度",
+        "现有 CPU 模块测试不能替代 GPU 数值与真实训练链"
+      ],
+      "priorities": {
+        "e65": "P1",
+        "e98": "P1"
+      },
+      "status": "design_only",
+      "document": "operators/ihc-pre.md"
+    },
+    {
+      "id": "cp-alltoall",
+      "source_id": 43,
+      "title": "CP AllToAll",
+      "contract": "保持 sequence-parallel 与 head-parallel 的可逆 token/head 映射、packed 文档边界、反向梯度和异步依赖；相同 rank 组/顺序与原路径一致。",
+      "outputs": [
+        "exchanged_qkv_or_query",
+        "restored_output",
+        "grad_input_all_ranks",
+        "full_module_parameter_gradients"
+      ],
+      "case_axes": [
+        "E65 CP32 与 E98 CP4 分开；CP2 仅诊断，真实目标 rank 数/拓扑必须覆盖",
+        "用唯一 rank/token/head 编码验证双向重排；支持的 packed/zigzag/contiguous 分片分别验收",
+        "真实 message size、dtype、split、尾部/合法不均匀划分；不支持配置应拒绝",
+        "forward/backward、通信 stream 与 compute stream、重复调用/异步 buffer 生命周期"
+      ],
+      "oracle": "纯索引全局 expected tensor 验证无算术的数据交换可逐位；完整 attention 用独立 eager/FP64 数值 gate，并辅以 CP1 等值输入对照（CP1 FA4 不是独立数值 oracle）。",
+      "references": [
+        {
+          "repository": "megatron",
+          "path": "megatron/core/transformer/mla_fa4_cp.py",
+          "symbols": [
+            "get_mla_fa4_cp_a2a_params",
+            "get_mla_fa4_cp_contiguous_a2a_params"
+          ],
+          "kind": "source",
+          "coverage_note": "宿主布局/交换接线"
+        },
+        {
+          "repository": "megatron",
+          "path": "megatron/core/tensor_parallel/mappings.py",
+          "symbols": [
+            "all_to_all_sp2hp",
+            "all_to_all_hp2sp"
+          ],
+          "kind": "source",
+          "coverage_note": "真实 collective wrapper"
+        },
+        {
+          "repository": "megatron",
+          "path": "tests/unit_tests/apodex/test_mla_fa4_cp_a2a.py",
+          "symbols": [
+            "test_a2a_reuse_matches_cp1",
+            "test_a2a_transport_preserves_tokens_and_heads"
+          ],
+          "kind": "test",
+          "coverage_note": "明确是 CP2/CP4 reuse；不能当 materialized CP32 已覆盖"
+        },
+        {
+          "repository": "megatron",
+          "path": "tests/unit_tests/apodex/test_mla_fa4_cp.py",
+          "symbols": [
+            "test_cp_matches_full_window",
+            "test_cp_packed_thd_matches_full_window"
+          ],
+          "kind": "test",
+          "coverage_note": "CP 集成参考入口，需核对通信模式而非直接套用"
+        },
+        {
+          "repository": "megatron",
+          "path": "tests/unit_tests/apodex/operations/mla_fa4_cp.py",
+          "symbols": [],
+          "kind": "source",
+          "coverage_note": "独立 module 数值适配入口，须实例化目标 flags"
+        }
+      ],
+      "integration": "目标 materialized MLA 的输入交换→attention→输出交换及反向，所有 rank 与真实跨节点 launcher；若已有 A2A 测试只支持 reuse，则新增对应 materialized 入口。",
+      "performance": {
+        "objective": "完成依赖的模块 F+B/step critical path；collective 本身的完成延迟作为分项。",
+        "guards": [
+          "包含 pack/unpack 与等待；不用 NCCL kernel 驻留/overlap 推导可省时间",
+          "逐 rank 原始耗时，汇总用慢 rank；不同卡时间戳不直接拼接",
+          "改流水后检查 buffer reuse、事件顺序、数值与训练 smoke"
+        ]
+      },
+      "holdout": "不同文档分区/消息尺寸/数据种子；在相同目标 CP32 或 CP4 和真实拓扑上确认。",
+      "negative_controls": [
+        "交换 rank/head 顺序、丢一个 split、漏 backward exchange",
+        "取消必要 wait 或过早复用通信 buffer、遗漏一个 rank 报告"
+      ],
+      "gaps": [
+        "现有已核实 A2A 测试为 reuse CP2/CP4，尚不能证明 materialized CP32",
+        "跨主机 CP32 需要外部部署，单机 Manager 不能自动申请/编排"
+      ],
+      "priorities": {
+        "e65": "P0",
+        "e98": "P2"
+      },
+      "status": "design_only",
+      "document": "operators/cp-alltoall.md"
+    },
+    {
+      "id": "cp-reducescatter",
+      "source_id": 50,
+      "title": "CP ReduceScatter",
+      "contract": "先确定 E65 被归属 collective 的真实 producer/consumer、process group、SUM/缩放、scatter 轴与 backward；未经归因不能直接改同名通用函数。",
+      "outputs": [
+        "local_reduced_shard",
+        "grad_input_all_ranks",
+        "consumer_output_and_gradients"
+      ],
+      "case_axes": [
+        "仅 E65 补充观测；CP32 rank 顺序与真实 node topology",
+        "实际 tensor shape/dtype/split，padding、有效 token mask、数值相消/大动态范围",
+        "异步 overlap/dependency 与 buffer 生命周期，重复 iteration",
+        "gradient accumulation/average 的真实缩放；归约算术不套用纯搬运 bitwise 假设"
+      ],
+      "oracle": "按 rank 唯一编码构建小整数可精确检查；真实浮点用独立 FP64 sum 后按逻辑 shard 切片，按冻结数值契约验误差与反向。",
+      "references": [
+        {
+          "repository": "megatron",
+          "path": "megatron/core/tensor_parallel/mappings.py",
+          "symbols": [
+            "_reduce_scatter_along_first_dim",
+            "reduce_scatter_to_sequence_parallel_region"
+          ],
+          "kind": "source",
+          "coverage_note": "候选检索入口 ONLY；尚未证实是 E65 trace 的调用点"
+        }
+      ],
+      "integration": "归因后运行原 producer→CP ReduceScatter→consumer 的完整前反向，以及实际训练配置；保留 rank/group/scale/事件顺序的定向断言。",
+      "performance": {
+        "objective": "真实 consumer 可用时间及整体链路完成时间，报告 collective 延迟。",
+        "guards": [
+          "归约、pack、等待、消费成本一起核对",
+          "全 rank 成功与最慢 rank；无计算 overlap 不能等同于可隐藏成本",
+          "不得把 optimizer/DP/TP 的 ReduceScatter 测试当 CP 覆盖"
+        ]
+      },
+      "holdout": "固定真实调用点后预留新消息尺寸、相消输入和分片边界；使用原 CP32 拓扑。",
+      "negative_controls": [
+        "SUM 换成平均、重复/遗漏 rank、切片轴错误",
+        "去掉 event wait 或漏一个 rank 退出失败"
+      ],
+      "gaps": [
+        "阻塞项：页面没有唯一 CPU 调用链，需补运行 shape、process group 和调用栈/标记区间",
+        "目前无已核实的该 E65 路径专用测试或数值门；不能编造通过命令",
+        "只对 E65 建设计；不自动推广到 2048 卡生产或 E98"
+      ],
+      "priorities": {
+        "e65": "P0"
+      },
+      "status": "design_only",
+      "document": "operators/cp-reducescatter.md"
+    },
+    {
+      "id": "ep-dispatch-combine",
+      "source_id": 44,
+      "title": "EP dispatch / combine",
+      "contract": "Elastic DeepEP EP32 的 token/probs 分发、专家结果合并及反向；保持 token 身份、top-6 mapping、概率缩放、padding、梯度和通信完成顺序。",
+      "outputs": [
+        "dispatched_tokens",
+        "dispatched_probs",
+        "combined_output",
+        "grad_tokens",
+        "grad_probs",
+        "expert_counts_and_reverse_mapping"
+      ],
+      "case_axes": [
+        "E98 EP32、384 experts/top-6，实际 local experts 与节点拓扑",
+        "source force-balance 负载与真实偏斜负载分开：空专家、空 rank、热点、跨节点路由",
+        "有效/填充 token、重复目标专家策略、router 索引缓存/失效、GA 多批",
+        "SM 分配、deferred wgrad/weight cache/overlap 的生产组合；配置不支持应提前拒绝"
+      ],
+      "oracle": "按显式 token/rank/expert 索引建立 torch scatter/gather 与概率加权参考，autograd/FP64 验 grad_tokens/grad_probs；可以在可信参考实现中用基础 collectives 搬运，不能复用被测 DeepEP 路由。",
+      "references": [
+        {
+          "repository": "megatron",
+          "path": "megatron/core/transformer/moe/token_dispatcher.py",
+          "symbols": [],
+          "kind": "source",
+          "coverage_note": "实际 dispatch/combine 调用层，锁定 Elastic 路由"
+        },
+        {
+          "repository": "megatron",
+          "path": "tests/unit_tests/transformer/moe/test_deepep_deterministic_sort_distributed.py",
+          "symbols": [
+            "test_real_forward_backward_bitwise",
+            "test_cuda_mapping_padding_and_cached_values"
+          ],
+          "kind": "test",
+          "coverage_note": "真实 Elastic 前反向/缓存测试；需核对其 world size 与 EP32 不同之处"
+        },
+        {
+          "repository": "megatron",
+          "path": "tests/unit_tests/apodex/test_moe_deepgemm.py",
+          "symbols": [
+            "test_skewed_routing_and_empty_expert"
+          ],
+          "kind": "test",
+          "coverage_note": "专家消费者保护，不是通信全链证明"
+        }
+      ],
+      "integration": "EP32 dispatch→FC1→激活→FC2→combine 及完整反向；核对 expert 参数与 router/probs 梯度、重复 microbatch、实际 Elastic 后端和失败传播。",
+      "performance": {
+        "objective": "完整 MoE F+B 与未开 profiler 的同配置 step；dispatch/combine 双向单独列出。",
+        "guards": [
+          "通信 SM 抢占与 GEMM 延迟、wait、local epilogue 单独列明但链路不漏项",
+          "每 rank 完成时间/总字节/负载分布；不把 NCCL/DeepEP 驻留当链路带宽",
+          "forced-balanced 结果不能宣称真实偏斜生产收益"
+        ]
+      },
+      "holdout": "新的 token 路由/偏斜、空 rank、概率与梯度种子，EP32 原拓扑；保持开发/确认输入分离。",
+      "negative_controls": [
+        "错误 reverse mapping、重复 combine、漏概率梯度",
+        "未等待完成、buffer 提前释放、静默切换到普通 all-to-all"
+      ],
+      "gaps": [
+        "需 EP32 原生独立数值/集成 wrapper 与全 rank 报告，现有 sort 对照不覆盖全链",
+        "需冻结 DeepEP/NCCL 版本、网络拓扑与实际负载，平台 launcher 另行接入"
+      ],
+      "priorities": {
+        "e98": "P0"
+      },
+      "status": "design_only",
+      "document": "operators/ep-dispatch-combine.md"
+    }
+  ]
+}

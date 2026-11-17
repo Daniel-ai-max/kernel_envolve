@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
-const source = await readFile(new URL("../src/kernel_envolve/manager/static/summary.js", import.meta.url), "utf8");
+const source = await readFile(new URL("../src/kernel_envolve/manager/dashboard/static/summary.js", import.meta.url), "utf8");
 const { executionLabel, executionLabelFor, benefitLabel, noteSnippet, visibleTask } = await import("data:text/javascript;base64," + Buffer.from(source).toString("base64"));
 test("empty verified best uses a placeholder, never a parsed report speedup", () => {
   assert.equal(benefitLabel(null), "—");
@@ -173,7 +173,7 @@ test("new findings outrank older cited failures and stopped tasks have no next s
 
 
 test("system fallback keeps its own source timestamp without a narrator", async () => {
-  const {progressSource} = await import("../src/kernel_envolve/manager/static/summary.js");
+  const {progressSource} = await import("../src/kernel_envolve/manager/dashboard/static/summary.js");
   const t = {id: "toy", spec: {baseline: {revision: "base"}}, latest_validation: {
     schema: "validation-result-v1", task: "toy", promotion: false, baseline_revision: "base",
     status: "no_benefit", recorded_at: 42, summary: "no gain", scope: "full call",

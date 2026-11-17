@@ -224,8 +224,12 @@ RSI sidecar 从实验结果和研究 checkpoint 中提炼有条件的经验与�
 ## 仓库结构与开发
 
 ```text
-src/kernel_envolve/          通用/原生评测、证据保存与版本晋升
-src/kernel_envolve/manager/  持续任务、进程恢复、GPU 队列与面板
+src/kernel_envolve/cli.py                  CLI 解析与路由
+src/kernel_envolve/evaluation/{generic,native,shared}/
+                                          评测主控、worker 与共享证据规则
+src/kernel_envolve/manager/                持续任务、配置、状态和预算
+src/kernel_envolve/manager/{execution,results,dashboard}/
+                                          进程与 GPU、结果证据、看板
 skills/kernel-envolve/       Agent 优化流程、PR 规范和参考入口
 examples/                   CPU、CUDA、原生任务及管理层演示
 docs/                       配置、使用和设计说明
@@ -245,7 +249,11 @@ PyTorch 路径需要安装兼容的 PyTorch；CUDA 测试需在空闲 GPU 上设
 
 提交 PR 时使用[中文模板](.github/PULL_REQUEST_TEMPLATE.md)，说明修改前后、影响范围、实际验证结果和回滚方式。不适用项注明原因；性能收益附版本、硬件、覆盖范围和评测证据。发布前可运行 `python3 tools/check_pr_body.py --body-file /path/to/pr.md`。`Validate PR template` CI 会在创建、编辑正文和推送后检查；校验器只从默认分支加载，不执行 PR 分支代码。
 
+代码修改入口、兼容路径与收据版本边界见[代码组织说明](docs/code-organization.md)。
+
 更多资料：
+
+- [A7B P0–P2 验收设计：9 类算子、E65/E98 分开覆盖](acceptance/a7b/README.md)
 
 - [Agent 优化流程与 PR 规范](skills/kernel-envolve/SKILL.md)
 - [裸 Agent 研究流程、框架价值与参考设计对比](docs/super-agent-comparison.md)

@@ -13,12 +13,12 @@ import statistics
 import time
 from pathlib import Path
 
-from ..cli import evaluate
-from ..manager.evidence import failed_checks, inspect_run
-from ..storage import config, contract, digest, write_json
-from .learning import numeric_metrics
-from .model import keys, number, read, text
-from .trials import files
+from kernel_envolve.evaluation.generic.evaluator import evaluate
+from kernel_envolve.evaluation.shared.storage import config, contract, digest, write_json
+from kernel_envolve.manager.results.index import failed_checks, inspect_run
+from kernel_envolve.rsi.learning import numeric_metrics
+from kernel_envolve.rsi.model import keys, number, read, text
+from kernel_envolve.rsi.trials import files
 
 
 def source_id(source):
@@ -248,7 +248,7 @@ def run(
         number(value, name)
     task = Path(packet["task"]).resolve()
     if managed_evaluations:
-        from .managed import binding
+        from kernel_envolve.rsi.managed import binding
 
         binding(task)
     cfg = config(task)
@@ -284,8 +284,8 @@ def run(
         if source_validator is None:
             raise ValueError("Artifact snapshot requires an explicit source validator")
         keys(artifact_snapshot, {"path", "identity", "profile"})
-        from .episodes import _identity
-        from .model import profile
+        from kernel_envolve.rsi.episodes import _identity
+        from kernel_envolve.rsi.model import profile
 
         snapshot = json.loads(json.dumps(artifact_snapshot, allow_nan=False))
         _identity(snapshot["identity"])
@@ -399,7 +399,7 @@ def run(
         candidate.write_text(sources[identity])
         timeout = min(evaluation_seconds, remaining())
         if managed_evaluations:
-            from .managed import evaluate as evaluate_managed
+            from kernel_envolve.rsi.managed import evaluate as evaluate_managed
 
             directory, result = evaluate_managed(
                 task, mode, timeout, output / "managed-evaluations" / str(len(measured))
@@ -423,7 +423,7 @@ def run(
             previous[sig] = signal.signal(sig, interrupted)
         trace["initial_observation"] = measure(initial_id, "full")
         if snapshot is not None:
-            from .artifact_snapshot import proposal as snapshot_proposal
+            from kernel_envolve.rsi.artifact_snapshot import proposal as snapshot_proposal
 
             started = time.monotonic()
             offered, reason = snapshot_proposal(
@@ -568,7 +568,7 @@ def run(
                 raise ValueError("Research evaluation must be quick or full")
             row["observation"] = measure(identity, action["mode"])
             if adaptive_artifact_budget and reused:
-                from .allocation import POLICY, artifact_action_budget
+                from kernel_envolve.rsi.allocation import POLICY, artifact_action_budget
 
                 observed = row["observation"]
                 allocation = {"policy": POLICY, "actions": 4, "reason": "no_new_artifact_full"}

@@ -7,7 +7,7 @@ def load_best(task):
     """Load the verified snapshot, including its helpers, through a stable public entry."""
     from pathlib import Path
 
-    from .storage import load_module, read_best
+    from kernel_envolve.evaluation.shared.storage import load_module, read_best
 
     best = read_best(Path(task).resolve())
     if best is None:

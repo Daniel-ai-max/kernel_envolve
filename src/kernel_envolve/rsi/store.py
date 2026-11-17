@@ -8,8 +8,8 @@ import time
 import uuid
 from pathlib import Path
 
-from ..storage import digest, write_json
-from .model import context, number, read, select_rules
+from kernel_envolve.evaluation.shared.storage import digest, write_json
+from kernel_envolve.rsi.model import context, number, read, select_rules
 
 
 class Store:
@@ -181,7 +181,7 @@ class Store:
     def publish(self):
         """Bounded materialized views; normal agent startup reads only one small file."""
         self.owned()
-        from ..manager.store import Store as Manager
+        from kernel_envolve.manager.store import Store as Manager
 
         manager = Manager(self.config["manager"], readonly=True)
         try:

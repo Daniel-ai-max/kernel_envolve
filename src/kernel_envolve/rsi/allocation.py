@@ -7,7 +7,7 @@ No historical score, model assessment, I/O, or extra measurement is used here.
 
 import math
 
-from ..protocol import measured_cases, objective_cases
+from kernel_envolve.evaluation.shared.protocol import measured_cases, objective_cases
 
 POLICY = "artifact-margin-v1"
 
@@ -39,7 +39,7 @@ def artifact_action_budget(result, cfg):
         ):
             return keep("not_eligible_full")
         # Import lazily: reuse also exposes the research-loop proposal interface.
-        from .reuse import runtime_key
+        from kernel_envolve.rsi.reuse import runtime_key
 
         runtime = runtime_key(result["environment"])
         if str(cfg["device"]).startswith("cuda") != (runtime["gpu"] is not None):

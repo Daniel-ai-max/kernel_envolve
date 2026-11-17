@@ -9,8 +9,8 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 
-from .config import resource_devices
-from .process import (
+from kernel_envolve.manager.config import resource_devices
+from kernel_envolve.manager.execution.process import (
     alive,
     exclusive,
     gpu_group_idle,
@@ -20,7 +20,7 @@ from .process import (
     reap_registered,
     stop_recorded,
 )
-from .store import Store, encode
+from kernel_envolve.manager.store import Store, encode
 
 
 def reconcile(store):
@@ -129,33 +129,35 @@ def run(store, once=False, *, observe=False):
         evidence_error = None
         policy_error = None
         completed_once = False
-        from .narrator import start as start_narrator
+        from kernel_envolve.manager.dashboard.narrator import start as start_narrator
 
         narration = start_narrator(store.root, stopped)
 
         def scan():
-            from .evidence import refresh
+            from kernel_envolve.manager.results.index import refresh
 
             local = Store(store.root)
             try:
                 refresh(local, stop=stopped, yield_to_gpu=True)
                 if not stopped.is_set():
-                    from .publication import refresh_publications
+                    from kernel_envolve.manager.results.publication import refresh_publications
 
                     refresh_publications(local)
-                    from .evidence import gpu_work_pending
-                    from .linked_delivery import refresh as refresh_deliveries
+                    from kernel_envolve.manager.results.index import gpu_work_pending
+                    from kernel_envolve.manager.results.linked_delivery import (
+                        refresh as refresh_deliveries,
+                    )
 
                     if not stopped.is_set() and not gpu_work_pending(local):
                         refresh_deliveries(local)
-                    from .archive import checkpoint
+                    from kernel_envolve.manager.results.archive import checkpoint
 
                     checkpoint(local)
             finally:
                 local.close()
 
         def scan_policy():
-            from .research_policy import refresh as refresh_policies
+            from kernel_envolve.manager.research_policy import refresh as refresh_policies
 
             local = Store(store.root)
             try:
@@ -166,7 +168,7 @@ def run(store, once=False, *, observe=False):
 
         try:
             while not stop_requested:
-                from .research_policy import FROZEN_DELIVERY_CAPABILITY
+                from kernel_envolve.manager.research_policy import FROZEN_DELIVERY_CAPABILITY
 
                 health = {
                     "pid": os.getpid(),
@@ -239,7 +241,7 @@ def run(store, once=False, *, observe=False):
                                     [
                                         sys.executable,
                                         "-m",
-                                        "kernel_envolve.manager.worker",
+                                        "kernel_envolve.manager.execution.worker",
                                         str(store.root),
                                         key,
                                     ],
@@ -265,7 +267,7 @@ def run(store, once=False, *, observe=False):
             pool.shutdown(wait=True, cancel_futures=cancel_scan)
             stopped.set()
             narration.join(timeout=2)
-            from .archive import checkpoint
+            from kernel_envolve.manager.results.archive import checkpoint
 
             checkpoint(store, force=True)
             for sig, handler in handlers.items():

@@ -47,7 +47,7 @@ my_task/
 - `quick: false`：默认只参加 full，也可通过 `--case` 单独检查。
 - `measure: false`：只验证正确性，不计时；不能设置 `weight` 或 `max_us`。
 
-任务的 quick、full 各至少包含一个参与计时的目标用例。常用配置如下，完整配置见 [storage.py](../src/kernel_envolve/storage.py)。
+任务的 quick、full 各至少包含一个参与计时的目标用例。常用配置如下，完整配置见 [storage.py](../src/kernel_envolve/evaluation/shared/storage.py)。
 
 | 配置 | 默认值 | 含义 |
 |---|---|---|

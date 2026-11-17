@@ -8,10 +8,10 @@ No production Manager path imports this module.
 
 from pathlib import Path
 
-from ..storage import config
-from .episodes import _source, load
-from .model import profile
-from .research import source_id
+from kernel_envolve.evaluation.shared.storage import config
+from kernel_envolve.rsi.episodes import _source, load
+from kernel_envolve.rsi.model import profile
+from kernel_envolve.rsi.research import source_id
 
 
 def runtime_key(environment):

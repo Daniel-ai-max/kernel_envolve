@@ -8,7 +8,7 @@ import time
 import uuid
 from pathlib import Path
 
-from .config import positive, resource_devices, validate_host
+from kernel_envolve.manager.config import positive, resource_devices, validate_host
 
 
 def encode(value):
@@ -98,7 +98,7 @@ class Store:
             raise
 
     def _upgrade_legacy(self):
-        from .process import alive, exclusive
+        from kernel_envolve.manager.execution.process import alive, exclusive
 
         message = "Stop the schema 1 coordinator and finish existing jobs before upgrading"
         with exclusive(self.root / "coordinator.lock") as handle:
@@ -412,7 +412,7 @@ class Store:
 
     def schedule(self):
         """Reserve session capacity and commit launch intents before spawning workers."""
-        from .recovery import migrate_legacy
+        from kernel_envolve.manager.execution.recovery import migrate_legacy
 
         scheduled = []
         with self.transaction():
@@ -528,13 +528,13 @@ class Store:
     def finish(self, key, status, error=None, exit_code=None):
         if status not in ("succeeded", "failed", "interrupted", "cancelled", "yielded"):
             raise ValueError("Invalid terminal status")
-        from .recovery import assess, implementation
+        from kernel_envolve.manager.execution.recovery import assess, implementation
 
         job = self.job(key)
         if job["status"] not in ("queued", "running"):
             return
         if status == "yielded":
-            from .bridge import idle_exit
+            from kernel_envolve.manager.execution.bridge import idle_exit
 
             if not idle_exit(self, job):
                 raise ValueError("Yielded rounds require the bridge's idle receipt")

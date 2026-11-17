@@ -2,8 +2,8 @@
 
 import sys
 
-from ..storage import digest
-from .model import MAX_ADVICE_BYTES, MAX_CONTEXT_BYTES, read
+from kernel_envolve.evaluation.shared.storage import digest
+from kernel_envolve.rsi.model import MAX_ADVICE_BYTES, MAX_CONTEXT_BYTES, read
 
 
 def for_task(root, task):

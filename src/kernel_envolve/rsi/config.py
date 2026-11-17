@@ -2,9 +2,9 @@
 
 from pathlib import Path
 
-from ..manager.config import resource_devices
-from ..manager.store import Store as Manager
-from .model import argv, identifier, keys, number, profile, read, text
+from kernel_envolve.manager.config import resource_devices
+from kernel_envolve.manager.store import Store as Manager
+from kernel_envolve.rsi.model import argv, identifier, keys, number, profile, read, text
 
 
 def validate(raw, base):
@@ -175,8 +175,8 @@ def validate(raw, base):
 
 
 def initialize(root, path):
-    from ..storage import digest, write_json
-    from .trials import freeze_template
+    from kernel_envolve.evaluation.shared.storage import digest, write_json
+    from kernel_envolve.rsi.trials import freeze_template
 
     root, path = Path(root).resolve(), Path(path).resolve()
     cfg = validate(read(path), path.parent)
@@ -215,7 +215,7 @@ def initialize(root, path):
             json.dump({"state": str(root), "config_hash": digest(cfg)}, stream)
     finally:
         manager.close()
-    from .store import Store
+    from kernel_envolve.rsi.store import Store
 
     store = Store(root, create=True)
     store.close()

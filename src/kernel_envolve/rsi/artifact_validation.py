@@ -10,13 +10,13 @@ import json
 import statistics
 from pathlib import Path
 
-from ..storage import config, digest
-from . import artifact_lineage as lineage
-from .episodes import MAX_EPISODE_BYTES, build, load
-from .model import number, read
-from .research import source_id
-from .reuse import runtime_key
-from .trials import files, verdict, verify_template
+from kernel_envolve.evaluation.shared.storage import config, digest
+from kernel_envolve.rsi import artifact_lineage as lineage
+from kernel_envolve.rsi.episodes import MAX_EPISODE_BYTES, build, load
+from kernel_envolve.rsi.model import number, read
+from kernel_envolve.rsi.research import source_id
+from kernel_envolve.rsi.reuse import runtime_key
+from kernel_envolve.rsi.trials import files, verdict, verify_template
 
 ARMS = ("control", "seed", "parent", "candidate")
 

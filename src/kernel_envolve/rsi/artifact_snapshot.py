@@ -9,11 +9,11 @@ historical evidence never substitutes for a new full or a separate final full.
 import json
 from pathlib import Path
 
-from ..storage import digest
-from .episodes import _identity, build, save
-from .model import keys, profile, read
-from .research import source_id
-from .reuse import runtime_key
+from kernel_envolve.evaluation.shared.storage import digest
+from kernel_envolve.rsi.episodes import _identity, build, save
+from kernel_envolve.rsi.model import keys, profile, read
+from kernel_envolve.rsi.research import source_id
+from kernel_envolve.rsi.reuse import runtime_key
 
 MAX_SNAPSHOT_BYTES = 32768
 COMPATIBILITY = (

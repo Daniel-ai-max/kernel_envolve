@@ -15,12 +15,18 @@ import time
 from collections import Counter
 from pathlib import Path
 
-from ..manager.evidence import inspect_run
-from ..manager.process import exclusive, gpu_idle, lock_path
-from ..storage import config, digest, evaluator_hash, file_hash, write_json
-from .learning import verify_evidence
-from .model import context, read, select_rules
-from .process import invoke
+from kernel_envolve.evaluation.shared.storage import (
+    config,
+    digest,
+    evaluator_hash,
+    file_hash,
+    write_json,
+)
+from kernel_envolve.manager.execution.process import exclusive, gpu_idle, lock_path
+from kernel_envolve.manager.results.index import inspect_run
+from kernel_envolve.rsi.learning import verify_evidence
+from kernel_envolve.rsi.model import context, read, select_rules
+from kernel_envolve.rsi.process import invoke
 
 
 def validator_identity():
@@ -113,14 +119,14 @@ def freeze_template(task, target):
     target.mkdir(parents=True)
     original = Path(task["path"])
     if task["kind"] == "generic":
-        from ..storage import bundle
+        from kernel_envolve.evaluation.shared.storage import bundle
 
         cfg = config(original)
         bundle(original, target / "task", cfg)
         editable = [f"task/{name}" for name in cfg["candidate_files"]]
     else:
-        from ..native import snapshot
-        from ..native_config import load_config
+        from kernel_envolve.evaluation.native.config import load_config
+        from kernel_envolve.evaluation.native.evaluator import snapshot
 
         cfg = load_config(original)
         (target / "task").mkdir()

@@ -5,10 +5,10 @@ import subprocess
 import sys
 import threading
 import time
-from pathlib import Path
 
 import pytest
 
+from kernel_envolve._paths import IMPORT_ROOT
 from kernel_envolve.manager import narrator as n
 from kernel_envolve.manager.cli import parser
 from kernel_envolve.manager.process import exclusive
@@ -200,7 +200,7 @@ def test_cli_sigterm_releases_service_lock_without_stopping_research(managed, tm
             sys.executable,
             str(adapter),
         ],
-        env={**os.environ, "PYTHONPATH": str(Path(n.__file__).resolve().parents[2])},
+        env={**os.environ, "PYTHONPATH": str(IMPORT_ROOT)},
         stdout=subprocess.DEVNULL,
         stderr=subprocess.PIPE,
     )
