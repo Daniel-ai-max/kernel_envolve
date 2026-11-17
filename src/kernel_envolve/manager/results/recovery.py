@@ -27,6 +27,7 @@ def recover_archive(
     coverage,
     interruption,
     attachments,
+    diagnostics=(),
     usage=None,
     command=None,
     call=narrator.invoke,
@@ -59,6 +60,17 @@ def recover_archive(
         "interruption": interruption,
         "sources": provenance,
     }
+    diagnostic_sources = []
+    for path in diagnostics:
+        path = Path(path).resolve()
+        if path not in originals or path.stat().st_size > 8192:
+            raise ValueError("Diagnostics must be bounded evidence attachments")
+        diagnostic_sources.append(
+            {"path": str(path), "sha256": hash_file(path), "text": path.read_text()}
+        )
+    if sum(len(item["text"].encode()) for item in diagnostic_sources) > 16384:
+        raise ValueError("Recovery diagnostics exceed the evidence budget")
+    record["diagnostic_evidence"] = diagnostic_sources
     destination.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix=".recovery-", dir=destination.parent) as temp:
         root = Path(temp)

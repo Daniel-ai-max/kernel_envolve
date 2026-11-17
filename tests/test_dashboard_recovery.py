@@ -61,6 +61,7 @@ def test_recovery_preserves_input_and_persists_validated_narration(managed, tmp_
         coverage="Last consistent snapshot; terminal logs unavailable",
         interruption="Session quota exhausted; allocation stopped",
         attachments=[evidence],
+        diagnostics=[evidence],
         command=["synthetic"],
         call=respond,
     )
@@ -69,6 +70,7 @@ def test_recovery_preserves_input_and_persists_validated_narration(managed, tmp_
     task = view["details"]["toy"]
     assert view["state"]["as_of"] == 100
     assert task["execution_state"] == "archived"
+    assert task["archive_recovery"]["diagnostic_evidence"][0]["text"] == evidence.read_text()
     assert task["narration"]["row"]["revision"] == task["row_facts"]["revision"]
     assert task["narration"]["evidence_revision"] == task["row_facts"]["evidence_revision"]
     assert task["archive_recovery"]["sources"][0]["sha256"] == hashlib.sha256(before).hexdigest()
