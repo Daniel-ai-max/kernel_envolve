@@ -196,6 +196,14 @@ test("all narrated columns switch together when new system facts arrive", () => 
   assert.equal(row.outcome, "局部Graph改善");
   assert.equal(row.benefit.label, "—");
   assert.equal(row.pr, undefined);
+  // A live queue/start transition keeps the same completed-evidence revision.
+  for (const phase of ["waiting_gpu", "gpu_running", "cpu_running", "agent_running"]) {
+    task.phase = phase;
+    task.row_facts.lifecycle = {desired: "active", phase};
+    task.row_facts.execution = {id: "next-probe", status: "running"};
+    assert.equal(extra.narratedRow(task).progress.text, "保留局部候选");
+    assert.equal(extra.narratedRow(task).outcome, "局部Graph改善");
+  }
   task.row_facts.revision = "two";
   task.latest_validation = {schema: "validation-result-v1", task: "toy", baseline_revision: "base",
     promotion: false, source_sha256: "a".repeat(64), evidence_sha256: "b".repeat(64),
