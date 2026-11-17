@@ -46,7 +46,9 @@ agent口中的“完整调用”可能仅指局部阶段，必须写具体阶段
 最新validation必须同时被两段文字引用；整链无收益优先于旧局部加速。
 interruption仅解释会话中断，不是数值验收；环境导入/依赖故障不能写成候选无收益。
 停止验收不等于删除候选或恢复baseline；新候选失败不抹去已保留的真实best。
-can_continue=false时说明最终保留/放弃，不编造后续计划。后续局部检查通过不证明整链故障已修复。
+can_continue=false时仅说明已记录的保留/放弃；没有选择证据时说明验收未完成，不代替研究者作取舍。
+事件的job_kind=agent表示会话失败，不能称GPU评测或整链失败；未知作业类型也不能猜测。
+不编造后续计划。后续局部检查通过不证明整链故障已修复。
 每段文字引用1–3个本任务source ID，优先逐字复制该段引用原文中的数字。
 仅非负小数测量可按十进制四舍五入（ROUND_HALF_UP）显示为1–6位小数，且至少保留3位有效数字；
 非精确展示须标“约”。不截断，不推导百分比、不换算单位，不计算或编造其他数字。
@@ -197,8 +199,10 @@ def collect(store, *, scan_logs=True, replay=False):
             if event["kind"] in EVENTS:
                 data = json.loads(event["data"])
                 observed = data.get("recorded_at") if event["kind"] == "research_context" else None
+                job_kind = store.one("SELECT kind FROM jobs WHERE id=?", (data.get("job"),))
                 sources[f"event:{event['seq']}"] = {
                     "kind": event["kind"],
+                    "job_kind": job_kind["kind"] if job_kind else None,
                     "at": observed
                     if isinstance(observed, (int, float)) and 0 < observed <= event["at"]
                     else event["at"],

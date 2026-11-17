@@ -87,12 +87,15 @@ def test_recovery_preserves_input_and_persists_validated_narration(managed, tmp_
 
 def test_replay_is_readonly_and_does_not_scan_files(managed, monkeypatch):
     store, _, _ = managed
-    store.event("toy", "failed", {"error": "fixture failure"})
+    job = store.enqueue(store.task("toy"), "agent", ["true"])
+    store.event("toy", "failed", {"job": job, "error": "fixture failure"})
     before = store.rows("SELECT * FROM metadata")
     monkeypatch.setattr(narrator, "log_paths", lambda *args: pytest.fail("live log scan"))
     readonly = Store(store.root, readonly=True)
     try:
-        assert narrator.collect(readonly, replay=True)
+        batches = narrator.collect(readonly, replay=True)
+        assert batches
+        assert any(source.get("job_kind") == "agent" for source in batches[0]["sources"].values())
     finally:
         readonly.close()
     assert store.rows("SELECT * FROM metadata") == before
