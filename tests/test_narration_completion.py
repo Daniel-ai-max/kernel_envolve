@@ -76,7 +76,7 @@ def test_cancelled_before_start_is_a_new_terminal_observation(managed):
     assert revision(store) != before
 
 
-def test_late_inference_cannot_replace_a_new_completed_result(managed):
+def test_late_finding_keeps_its_original_completion_binding(managed):
     store, _, _ = managed
     before = explain(store)
     key = gpu(store, "running", 30)
@@ -86,9 +86,11 @@ def test_late_inference_cannot_replace_a_new_completed_result(managed):
         store.db.execute("UPDATE jobs SET status='failed',ended=40 WHERE id=?", (key,))
         return reply(*args)
 
-    assert n.step(store, [], call=late) == 0
+    assert n.step(store, [], call=late) == 1
     assert revision(store) != before
-    assert n.get(store, "narration:toy")["row"]["revision"] == before
+    current = n.get(store, "narration:toy")
+    assert current["row"]["revision"] == before  # Never rebound to the newer result.
+    assert current["evidence_revision"] == task_view(store, "toy")["row_facts"]["evidence_revision"]
     assert len(store.rows("SELECT * FROM metadata WHERE key LIKE 'narration_history:%'")) == 2
     assert n.step(store, [], call=reply) == 1
     assert n.get(store, "narration:toy")["row"]["revision"] == revision(store)
@@ -153,8 +155,10 @@ def test_legacy_cpu_completion_event_remains_stable_after_new_request(managed):
 def test_stopped_or_finished_research_invalidates_conclusion(managed, desired):
     store, _, _ = managed
     before = explain(store)
+    evidence_before = task_view(store, "toy")["row_facts"]["evidence_revision"]
     store.db.execute("UPDATE tasks SET desired=? WHERE id='toy'", (desired,))
     assert revision(store) != before
+    assert task_view(store, "toy")["row_facts"]["evidence_revision"] != evidence_before
 
 
 @pytest.mark.parametrize(
@@ -176,6 +180,7 @@ def test_authoritative_result_changes_remain_strongly_bound(field, value):
     updated = copy.deepcopy(task)
     updated[field] = value
     assert row_facts(updated)["revision"] != before
+    assert row_facts(updated)["evidence_revision"] != row_facts(task)["evidence_revision"]
 
 
 def test_killed_cpu_parent_retains_interruption_before_next_round(managed):
@@ -231,3 +236,33 @@ def test_late_inference_cannot_cover_a_new_acceptance(managed):
         current["sources"][ref]["kind"] == "validation"
         for ref in current["claims"]["finding"]["sources"]
     )
+
+
+def test_every_inference_can_cross_a_completion_without_starving_findings(managed):
+    store, _, _ = managed
+    gpu(store, "succeeded", 10, 20)
+    explain(store)
+    calls = []
+    findings = ["合成分块减少局部访存。", "合成转置改善局部访问。", "合成布局保留原求和顺序。"]
+    for index, finding in enumerate(findings):
+        captured = task_view(store, "toy")["row_facts"]
+        store.event("toy", "research_context", {"text": finding})
+
+        def model(*args):
+            calls.append(args[1])
+            result = reply(*args)
+            result["toy"]["finding"]["text"] = finding
+            # Adversarial cadence: every inference returns after a newer terminal
+            # result. No quiet window and no retry can make the full version match.
+            gpu(store, "failed" if index == 1 else "succeeded", 30 + 20 * index, 40 + 20 * index)
+            return result
+
+        assert n.step(store, [], call=model) == 1
+        view = task_view(store, "toy")
+        saved = view["narration"]
+        assert saved["claims"]["finding"]["text"] == finding
+        assert saved["row"]["revision"] == captured["revision"] != view["row_facts"]["revision"]
+        assert saved["evidence_revision"] == view["row_facts"]["evidence_revision"]
+        assert saved["source_at"] == max(s["at"] for s in saved["sources"].values())
+        assert view["latest_completed_execution"]["recorded_at"] == 40 + 20 * index
+    assert len(calls) == 3  # One call per new input; no retries or quiet-period requirement.

@@ -96,8 +96,9 @@ def row_facts(task):
         "latest_result": {"ref": "system:latest_result", "kind": latest[1], "value": latest_value},
     }
     # Running jobs and phase labels are live presentation, not a new conclusion.
-    # A terminal execution, acceptance, retained benefit, PR or stop still invalidates
-    # an explanation, including one whose model response arrives after that change.
+    # A terminal execution invalidates latest_result; a cited finding can outlive it.
+    # Acceptance, retained benefit, PR or stop changes invalidate both model fields.
     binding = {k: v for k, v in value.items() if k not in {"lifecycle", "execution"}}
     binding["lifecycle"] = {"desired": task.get("desired")}
-    return value | {"revision": digest(binding)}
+    evidence_binding = {k: v for k, v in binding.items() if k != "completed_execution"}
+    return value | {"revision": digest(binding), "evidence_revision": digest(evidence_binding)}

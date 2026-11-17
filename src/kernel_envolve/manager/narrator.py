@@ -544,12 +544,17 @@ def _step_locked(store, command, stop, *, scan_logs=True, call=invoke):
                 }
                 if row:
                     value["row"] = row
+                    # This binding is supplied by the system, never by model output.
+                    value["evidence_revision"] = batch["row_facts"]["evidence_revision"]
                 put(store, "narration_history:" + key + ":" + signature, value)
-                # A model response can race a new experiment. Preserve its history,
-                # but never publish it as the explanation of newer system facts.
+                # Later exploratory completions do not erase a cited finding. Its
+                # original row revision/time remain intact, so the UI uses current
+                # system facts for latest_result. New acceptance/benefit/PR/identity
+                # or stop facts still reject the whole late response.
                 from .views import task_view
 
-                if row and task_view(store, key)["row_facts"]["revision"] != row["revision"]:
+                current_facts = task_view(store, key)["row_facts"] if row else None
+                if row and current_facts["evidence_revision"] != value["evidence_revision"]:
                     put(store, "narrator_context:" + key, value)
                     continue
                 put(store, "narration:" + key, value)
