@@ -483,106 +483,124 @@ def step(store, command, stop=None, *, scan_logs=True, call=invoke):
     with exclusive(store.root / "narrator.lock") as handle:
         if handle is None:
             return 0
-        batches = collect(store, scan_logs=scan_logs)
-        if not batches or stop.is_set():
-            return 0
-        request = {
-            "instructions": PROMPT,
-            "tasks": [{k: v for k, v in b.items() if k != "cursor"} for b in batches],
-        }
-        signature = digest(request)
-        attempt = {
-            "input_sha256": signature,
-            "at": time.time(),
-            "status": "started",
-            "input_bytes": len(encode(request).encode()),
-            "tasks": [b["task"] for b in batches],
-        }
-        # Commit before the remote call: a restart must not replay an uncertain request.
+        return _step_locked(store, command, stop, scan_logs=scan_logs, call=call)
+
+
+def _step_locked(store, command, stop, *, scan_logs=True, call=invoke):
+    """Run only while the caller owns this state directory's narrator.lock."""
+    batches = collect(store, scan_logs=scan_logs)
+    if not batches or stop.is_set():
+        return 0
+    request = {
+        "instructions": PROMPT,
+        "tasks": [{k: v for k, v in b.items() if k != "cursor"} for b in batches],
+    }
+    signature = digest(request)
+    attempt = {
+        "input_sha256": signature,
+        "at": time.time(),
+        "status": "started",
+        "input_bytes": len(encode(request).encode()),
+        "tasks": [b["task"] for b in batches],
+    }
+    # Commit before the remote call: a restart must not replay an uncertain request.
+    with store.transaction():
+        for batch in batches:
+            put(store, "narrator_cursor:" + batch["task"], batch["cursor"])
+            # Consume transport deltas once, but keep their evidence even if
+            # inference fails. A later update must not lose candidate context.
+            put(
+                store,
+                "narrator_context:" + batch["task"],
+                {"sources": batch["sources"], "claims": batch["previous"]},
+            )
+        put(store, "narrator_attempt", attempt)
+    try:
+        output = validate(call(command, request, stop), batches)
+        if stop.is_set():
+            raise TimeoutError("Narrator stopped")
+        changed = 0
         with store.transaction():
             for batch in batches:
-                put(store, "narrator_cursor:" + batch["task"], batch["cursor"])
-                # Consume transport deltas once, but keep their evidence even if
-                # inference fails. A later update must not lose candidate context.
-                put(
-                    store,
-                    "narrator_context:" + batch["task"],
-                    {"sources": batch["sources"], "claims": batch["previous"]},
-                )
-            put(store, "narrator_attempt", attempt)
-        try:
-            output = validate(call(command, request, stop), batches)
-            if stop.is_set():
-                raise TimeoutError("Narrator stopped")
-            changed = 0
-            with store.transaction():
-                for batch in batches:
-                    key, claims = batch["task"], output[batch["task"]]
-                    row = claims.pop("row", None) if claims else None
-                    if claims is None or all(v is None for v in claims.values()):
-                        continue
-                    old = get(store, "narration:" + key)
-                    if old and old["claims"] == claims and old.get("row") == row:
-                        continue
-                    refs = {ref for claim in claims.values() if claim for ref in claim["sources"]}
-                    if row:
-                        refs.update(row["latest_result"]["sources"])
-                    sources = {ref: batch["sources"][ref] for ref in sorted(refs)}
-                    value = {
-                        "schema": "narration-v1",
-                        "task": key,
-                        "baseline": batch["baseline"],
-                        "claims": claims,
-                        "sources": sources,
-                        "updated_at": time.time(),
-                        "source_at": max(s["at"] for s in sources.values()),
-                        "input_sha256": signature,
-                    }
-                    if row:
-                        value["row"] = row
-                    put(store, "narration_history:" + key + ":" + signature, value)
-                    # A model response can race a new experiment. Preserve its history,
-                    # but never publish it as the explanation of newer system facts.
-                    from .views import task_view
+                key, claims = batch["task"], output[batch["task"]]
+                row = claims.pop("row", None) if claims else None
+                if claims is None or all(v is None for v in claims.values()):
+                    continue
+                old = get(store, "narration:" + key)
+                if old and old["claims"] == claims and old.get("row") == row:
+                    continue
+                refs = {ref for claim in claims.values() if claim for ref in claim["sources"]}
+                if row:
+                    refs.update(row["latest_result"]["sources"])
+                sources = {ref: batch["sources"][ref] for ref in sorted(refs)}
+                value = {
+                    "schema": "narration-v1",
+                    "task": key,
+                    "baseline": batch["baseline"],
+                    "claims": claims,
+                    "sources": sources,
+                    "updated_at": time.time(),
+                    "source_at": max(s["at"] for s in sources.values()),
+                    "input_sha256": signature,
+                }
+                if row:
+                    value["row"] = row
+                put(store, "narration_history:" + key + ":" + signature, value)
+                # A model response can race a new experiment. Preserve its history,
+                # but never publish it as the explanation of newer system facts.
+                from .views import task_view
 
-                    if row and task_view(store, key)["row_facts"]["revision"] != row["revision"]:
-                        put(store, "narrator_context:" + key, value)
-                        continue
-                    put(store, "narration:" + key, value)
-                    put(
-                        store,
-                        "narrator_context:" + key,
-                        {"sources": batch["sources"], "claims": claims},
-                    )
-                    changed += 1
+                if row and task_view(store, key)["row_facts"]["revision"] != row["revision"]:
+                    put(store, "narrator_context:" + key, value)
+                    continue
+                put(store, "narration:" + key, value)
                 put(
                     store,
-                    "narrator_attempt",
-                    attempt
-                    | {
-                        "status": "complete",
-                        "changed": changed,
-                        "seconds": time.time() - attempt["at"],
-                    },
+                    "narrator_context:" + key,
+                    {"sources": batch["sources"], "claims": claims},
                 )
-            return changed
-        except (OSError, ValueError, TypeError, KeyError, subprocess.SubprocessError) as exc:
-            # Neither raw provider errors nor log text belongs in service health.
+                changed += 1
             put(
                 store,
                 "narrator_attempt",
                 attempt
                 | {
-                    "status": "failed",
-                    "error": type(exc).__name__,
-                    **({"error_code": exc.code} if isinstance(exc, UncitedNumberError) else {}),
+                    "status": "complete",
+                    "changed": changed,
                     "seconds": time.time() - attempt["at"],
                 },
             )
-            return 0
+        return changed
+    except (OSError, ValueError, TypeError, KeyError, subprocess.SubprocessError) as exc:
+        # Neither raw provider errors nor log text belongs in service health.
+        put(
+            store,
+            "narrator_attempt",
+            attempt
+            | {
+                "status": "failed",
+                "error": type(exc).__name__,
+                **({"error_code": exc.code} if isinstance(exc, UncitedNumberError) else {}),
+                "seconds": time.time() - attempt["at"],
+            },
+        )
+        return 0
 
 
-def serve(root, command, stop, *, once=False):
+def serve(root, command, stop, *, once=False, exclusive_service=False):
+    """Optionally own narration until shutdown, without stopping the coordinator."""
+    if not exclusive_service:
+        return _serve(root, command, stop, once=once, step_fn=step)
+    while not stop.is_set():
+        with exclusive(Path(root) / "narrator.lock") as handle:
+            if handle is not None:
+                return _serve(root, command, stop, once=once, step_fn=_step_locked)
+        # An in-flight older step finishes before ownership changes. Its next step
+        # skips non-blockingly while this service holds the same lifetime lock.
+        stop.wait(0.1)
+
+
+def _serve(root, command, stop, *, once, step_fn):
     """Tail durable events; a 30s log scan catches trace-only changes and missed signals."""
     store = Store(root)
     try:
@@ -593,7 +611,7 @@ def serve(root, command, stop, *, once=False):
                 now = time.monotonic()
                 scan_logs = now - last_logs >= 30
                 if once or ((latest != seq or scan_logs) and now - last_call >= 5):
-                    step(store, command, stop, scan_logs=scan_logs or once)
+                    step_fn(store, command, stop, scan_logs=scan_logs or once)
                     seq, last_call = latest, time.monotonic()
                     if scan_logs:
                         last_logs = last_call

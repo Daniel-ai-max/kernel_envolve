@@ -625,6 +625,14 @@ kernel-envolve manage --state /work/manager-state narrate
 kernel-envolve manage --state /work/manager-state narrate --once
 ```
 
+需要替换运行中管理器的旁白版本而不重启调度器时，使用独立框架路径启动
+`narrate --exclusive-service`。服务先等待旧旁白当前批次结束，再全程持有原来的
+`narrator.lock`；旧线程后续批次会立即跳过，不读取或消费游标。新服务复用原
+SQLite、游标、模型适配器与事实版本事务，不复制状态、不启动研究或评测。
+退出或异常时自动释放锁，旧线程可继续工作。不要同时启动两个普通 `narrate`
+来替代版本。节点启动包装应绑定原管理器的 PID 与进程出生身份，并在管理器退出、
+研究结束或原分配截止时间到达时终止这个独立旁白；本命令自身不延长研究预算。
+
 旁白和引用摘录随现有 SQLite、看板归档保存，归档重开无需模型或 GPU。它是有来源的模型解释，不是数值验收；模型无依据时应留空，作业状态、卡时、指标、正式验收和 PR 继续读取系统记录。
 
 ### 外部验收结果回流
