@@ -239,6 +239,8 @@ PyTorch 路径需要安装兼容的 PyTorch；CUDA 测试需在空闲 GPU 上设
 
 更多资料：
 
+- [A7B P0–P2 验收设计：9 类算子、E65/E98 分开覆盖](acceptance/a7b/README.md)
+
 - [Agent 优化流程与 PR 规范](skills/kernel-envolve/SKILL.md)
 - [裸 Agent 研究流程、框架价值与参考设计对比](docs/super-agent-comparison.md)
 - [硬件文档与参考实现](skills/kernel-envolve/references/hardware.md)

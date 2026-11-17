@@ -1,0 +1,155 @@
+{
+  "schema": "a7b-priority-source-v1",
+  "url": "https://s.apodex.site/WJuWiAQQtVaXMvsNOPePY6",
+  "page_version": 8,
+  "observed_on": "2026-11-17",
+  "scope": "Priority extraction only; no profiler samples or credentials. Profiles are independent.",
+  "profiles": {
+    "e65": {
+      "label": "256K / E65",
+      "scope": "实现说明来自 2048 卡、256K 生产配置，保留 49 项功能。耗时来自 E65 的 256 卡测速 trace：rank 0 / 128、step 16 / 17。两者配置有差异；E65 计时不代表生产任务实测。",
+      "source_commits": {
+        "Megatron-LM": "20052e11f2dbb566e98e821f66bb21a38edec36e",
+        "apodex-core": "d2d47877c96b859224d91a184280eb1fde7236ad"
+      },
+      "items": [
+        {
+          "source_id": 3,
+          "operator": "Dense Linear / GEMM",
+          "priority": "P1",
+          "reason": "按实际 shape 和前向、dgrad、wgrad 拆分慢项，比较 GEMM tile 与布局。",
+          "partial": false
+        },
+        {
+          "source_id": 4,
+          "operator": "Grouped Linear / GEMM",
+          "priority": "P2",
+          "reason": "总耗时较大但通信重叠较高；结合专家分布、deferred wgrad 与 EP 调度验证端到端收益。",
+          "partial": false
+        },
+        {
+          "source_id": 5,
+          "operator": "Router Linear",
+          "priority": "P2",
+          "reason": "trace 中出现 SIMT SGEMM，适合专项 benchmark；保持 FP32 精度要求，检查 GEMM 选择与转换开销。",
+          "partial": false
+        },
+        {
+          "source_id": 12,
+          "operator": "Q/K/V materialize · QK assemble",
+          "priority": "P1",
+          "reason": "优先减少 materialize 前向的 contiguous / clone、拼接与中间张量搬运；当前计时只覆盖已关联路径。",
+          "partial": true
+        },
+        {
+          "source_id": 13,
+          "operator": "Materialized varlen Attention",
+          "priority": "P0",
+          "reason": "优先优化 Attention 反向核心；按实际 shape、文档长度分布测试 tile、调度与访存方案。",
+          "partial": false
+        },
+        {
+          "source_id": 26,
+          "operator": "Fused iHC pre",
+          "priority": "P1",
+          "reason": "重点检查 iHC gates 与反向 dx kernel，评估减少读写和中间结果。",
+          "partial": false
+        },
+        {
+          "source_id": 43,
+          "operator": "CP AllToAll",
+          "priority": "P0",
+          "reason": "CP AllToAll 的计算重叠较少；优先排查通信依赖、分块流水、布局转换与跨卡等待。",
+          "partial": false
+        },
+        {
+          "source_id": 49,
+          "operator": "基础 Tensor 原语",
+          "priority": "排查",
+          "reason": "先补 Cat / Stack、SplitWithSizesBackward 等事件的 shape 与模块归属，再评估布局或反向融合；不是已确认的单一优化目标。",
+          "partial": false
+        },
+        {
+          "source_id": 50,
+          "operator": "CP ReduceScatter",
+          "priority": "P0",
+          "reason": "采样中没有计算重叠；检查调用位置及前后依赖，验证提前发起或分块执行的可行性。",
+          "partial": false
+        }
+      ]
+    },
+    "e98": {
+      "label": "32K / E98",
+      "scope": "32K · E98 独立 profiling companion，256 × B300，GBS256 / GA4，CP4 / EP32 / TP1 / PP1。取 rank 0 / 128、step 21–24 共 8 个样本；与 E98 未开 profiler 的测速基线分开。配置和源码已按归档验收记录核对。",
+      "source_commits": {
+        "Megatron-LM": "25b0994c29f1b64f7871eea91c77398605dc94c1",
+        "apodex-core": "803a32def3e1e38c91438bfda0ee2bd4d665f288"
+      },
+      "items": [
+        {
+          "source_id": 3,
+          "operator": "Dense Linear / GEMM",
+          "priority": "P1",
+          "reason": "E98 Dense GEMM 约 558 ms、独占约 287 ms；按 shape 和前向/dgrad/wgrad 拆分 benchmark。",
+          "partial": false
+        },
+        {
+          "source_id": 4,
+          "operator": "Grouped Linear / GEMM",
+          "priority": "P1",
+          "reason": "E98 Grouped GEMM 约 613 ms、独占约 163 ms；结合 EP 流水与 deferred wgrad 验证端到端收益。",
+          "partial": false
+        },
+        {
+          "source_id": 5,
+          "operator": "Router Linear",
+          "priority": "P2",
+          "reason": "E98 Router FP32 Linear 约 259 ms、独占约 82 ms；保持精度要求，评估 SIMT GEMM 与转换开销。",
+          "partial": false
+        },
+        {
+          "source_id": 12,
+          "operator": "Q/K/V materialize · QK assemble",
+          "priority": "P2",
+          "reason": "E98 已关联的 materialize 部分约 112 ms、独占约 70 ms；测试减少布局 copy 与中间张量。",
+          "partial": true
+        },
+        {
+          "source_id": 13,
+          "operator": "Materialized varlen Attention",
+          "priority": "P0",
+          "reason": "E98 Attention 约 501 ms，未与其他计算/通信重叠约 412 ms；先测反向核心，按 32K 文档分布验证。",
+          "partial": false
+        },
+        {
+          "source_id": 26,
+          "operator": "Fused iHC pre",
+          "priority": "P1",
+          "reason": "E98 iHC pre 约 234 ms、独占约 121 ms；优先看 gates 与反向 dx 的读写和中间结果。",
+          "partial": false
+        },
+        {
+          "source_id": 43,
+          "operator": "CP AllToAll",
+          "priority": "P2",
+          "reason": "E98 CP4 AllToAll 约 127 ms、独占约 83 ms；可测试依赖和分块，但不沿用 E65 CP32 的 P0 优先级。",
+          "partial": false
+        },
+        {
+          "source_id": 44,
+          "operator": "EP dispatch / combine",
+          "priority": "P0",
+          "reason": "E98 EP dispatch / combine 约 1505 ms，独占约 335 ms；优先联动通信调度、专家 GEMM 与负载分布，不把等待驻留都当链路传输。",
+          "partial": false
+        },
+        {
+          "source_id": 49,
+          "operator": "基础 Tensor 原语",
+          "priority": "排查",
+          "reason": "E98 基础 Tensor 原语约 287 ms；先补 Cat / Copy 等事件的模块归属和 shape，再决定融合目标。",
+          "partial": false
+        }
+      ]
+    }
+  }
+}
