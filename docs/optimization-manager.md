@@ -59,6 +59,7 @@ GPU 隔离后宿主仍可做 CPU 诊断，GPU 准入保持关闭；无法恢复�
 旁白适配器默认使用 Responses；显式设置 `NARRATOR_API_STYLE=chat_completions`
 时，`NARRATOR_RESPONSES_URL` 可指向兼容的 Chat Completions 端点。两种协议
 均无工具、约束 JSON schema、经过相同来源与数字验证，不自动切换协议或模型。
+慢速模型可显式设置 `NARRATOR_TIMEOUT_SECONDS`（1–300秒，默认35秒），不会自动重试。
 
 
 协调器与单任务看板在后台保存一致的 SQLite、收益与评测摘要、研究记录、PR、卡时和页面资源。GPU 作业进行中让路，归档最多每分钟更新一次，记录未变则跳过；退出时补存。自动归档保留最近两份完整快照，每份 SQLite 都包含全部历史记录；任务终态和显式导出的快照不会被自动清理。运行状态仍以实际作业与最近实验为准，历史快照不显示为正在执行。

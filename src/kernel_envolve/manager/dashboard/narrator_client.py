@@ -127,7 +127,10 @@ def respond(request):
         def redirect_request(self, req, fp, code, msg, headers, newurl):
             return None
 
-    with urllib.request.build_opener(NoRedirect).open(req, timeout=35) as response:
+    timeout = int(os.environ.get("NARRATOR_TIMEOUT_SECONDS", "35"))
+    if not 1 <= timeout <= 300:
+        raise ValueError("Narrator timeout must be between 1 and 300 seconds")
+    with urllib.request.build_opener(NoRedirect).open(req, timeout=timeout) as response:
         raw = response.read(262145)
     if len(raw) > 262144:
         raise ValueError("Narrator response too large")

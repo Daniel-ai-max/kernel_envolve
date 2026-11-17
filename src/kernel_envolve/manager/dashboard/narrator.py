@@ -457,6 +457,7 @@ def validate_row(row, claims, batch):
 
 
 def invoke(command, request, stop, timeout=45):
+    timeout = max(timeout, min(300, int(os.environ.get("NARRATOR_TIMEOUT_SECONDS", "35"))) + 10)
     """A trusted tool-free model adapter, stdin JSON -> stdout JSON. No GPU visibility."""
     launcher = (
         "import os,resource,sys; resource.setrlimit(resource.RLIMIT_FSIZE,(65536,65536)); "
