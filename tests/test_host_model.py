@@ -3,7 +3,7 @@ import tomllib
 
 import pytest
 
-from kernel_envolve.manager.host_model import codex_command, terminal_failure
+from kernel_envolve.manager.execution.host_model import codex_command, terminal_failure
 
 
 def config(argv):
