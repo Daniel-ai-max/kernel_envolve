@@ -379,6 +379,9 @@ def task_view(store, key, now=None, predecessors=None, usage=None):
 
     task.update(delivery_view(store, task, now))
 
+    recovery = store.one("SELECT data FROM metadata WHERE key='archive_recovery'")
+    if recovery:
+        task["archive_recovery"] = json.loads(recovery["data"])
     task["row_facts"] = row_facts(task)
     return task
 
