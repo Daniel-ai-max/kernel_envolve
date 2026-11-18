@@ -6,6 +6,7 @@ import pytest
 from kernel_envolve.manager.execution.host_model import (
     codex_command,
     configuration_failure,
+    resume_state_failure,
     terminal_failure,
 )
 
@@ -77,6 +78,18 @@ def test_ignored_cli_configuration_is_not_successful_preflight():
             ],
             0,
         )
+        is None
+    )
+
+
+def test_empty_resume_checkpoint_is_fatal_but_tool_stderr_is_not():
+    error = "Error: thread/resume: thread/resume failed: failed to read session metadata: rollout is empty"
+    assert resume_state_failure([], 1, error)["category"] == "model_resume_state_unavailable"
+    assert resume_state_failure([{"type": "turn.started"}], 1, error) is None
+    assert resume_state_failure([], 0, error) is None
+    assert resume_state_failure([], 1, "tool says " + error) is None
+    assert (
+        resume_state_failure([], 1, "Error: thread/resume: failed to read: transient I/O error")
         is None
     )
 

@@ -62,7 +62,37 @@ class HostRecovery:
     def save(self):
         durable_json(self.path, self.data)
 
-    def failed(self, events, returncode, *, trace_sha256, now):
+    def progress(self, events, *, now, trace_sha256):
+        """End an outage only on model output/tool execution, never broker heartbeats.
+
+        The total round retry count stays spent. A later distinct outage gets its
+        own bounded window rather than inheriting a stale, already-expired window.
+        """
+        if not math.isfinite(now) or not trace_sha256:
+            raise ValueError("Progress requires a timestamp and raw trace digest")
+        if self.data["state"] != "running" or "recovery_started_at" not in self.data:
+            return False
+        meaningful = any(
+            e.get("type") == "item.completed"
+            and isinstance(e.get("item"), dict)
+            and (
+                (e["item"].get("type") == "agent_message" and e["item"].get("text", "").strip())
+                or (
+                    e["item"].get("type") == "command_execution"
+                    and e["item"].get("status") == "completed"
+                    and type(e["item"].get("exit_code")) is int
+                )
+            )
+            for e in events
+        )
+        if not meaningful:
+            return False
+        self.data.setdefault("recoveries", []).append(dict(at=now, trace_sha256=trace_sha256))
+        del self.data["recovery_started_at"]
+        self.save()
+        return True
+
+    def failed(self, events, returncode, *, trace_sha256, now, process_exited=False):
         if not math.isfinite(now) or not trace_sha256:
             raise ValueError("Failure requires an observation time and raw trace digest")
         if self.data["state"] != "running":
@@ -72,17 +102,32 @@ class HostRecovery:
             (e for e in reversed(events) if e.get("type") in ("turn.failed", "turn.completed")),
             None,
         )
-        # Unknown provider failures also get the same small recovery allowance;
-        # they are not relabelled as network errors. Missing/malformed terminal
-        # evidence and explicit credential/quota failures remain fail-closed.
+        # A killed process cannot emit turn.failed. Only an independent supervisor's
+        # exit + cleanup receipt may authorize that path, never silence/heartbeat loss.
         retryable = bool(
             not fatal
-            and terminal
-            and terminal["type"] == "turn.failed"
-            and isinstance(terminal.get("error"), dict)
+            and returncode != 78
+            and (
+                (
+                    terminal
+                    and terminal["type"] == "turn.failed"
+                    and isinstance(terminal.get("error"), dict)
+                )
+                or (
+                    process_exited is True
+                    and type(returncode) is int
+                    and (not terminal or terminal["type"] != "turn.completed" or returncode != 0)
+                )
+            )
         )
         self.data["attempts"].append(
-            dict(trace_sha256=trace_sha256, at=now, returncode=returncode, retryable=retryable)
+            dict(
+                trace_sha256=trace_sha256,
+                at=now,
+                returncode=returncode,
+                retryable=retryable,
+                process_exited=process_exited,
+            )
         )
         self.data["state"] = "recovering" if retryable else "interrupted"
         self.data["reason"] = (
@@ -90,6 +135,8 @@ class HostRecovery:
             if fatal
             else "model_transport_failure"
             if transient_failure(events)
+            else "model_process_exited"
+            if process_exited and not terminal
             else "model_execution_failure"
         )
         self.data["retry_at"] = now + min(30, 5 * 2 ** self.data["retries"])
@@ -117,6 +164,7 @@ class HostRecovery:
         else:
             self.data["retries"] += 1
             self.data["state"] = "running"
+            self.data["admitted_at"] = now
             self.save()  # Crash after admission consumes the attempt, never silently replays it.
             return "resume"
         self.save()

@@ -129,6 +129,32 @@ def configuration_failure(events, process_exit_code):
     return None
 
 
+def resume_state_failure(events, process_exit_code, stderr):
+    """Trusted CLI startup failure: a thread ID is not a durable session checkpoint.
+
+    Never inspect stderr after a model turn started, where tool output may appear.
+    Call only for an attempt explicitly resuming the original session.
+    """
+    if not process_exit_code or any(e.get("type") == "turn.started" for e in events):
+        return None
+    if any(
+        line.startswith("Error: thread/resume:")
+        and "failed to read" in line
+        and any(
+            reason in line
+            for reason in ("is empty", "empty session file", "No such file", "not found")
+        )
+        for line in stderr.splitlines()
+    ):
+        return {
+            "category": "model_resume_state_unavailable",
+            "retryable": False,
+            "exit_code": 78,
+            "process_exit_code": process_exit_code,
+        }
+    return None
+
+
 def terminal_failure(events, process_exit_code):
     """Classify only trusted CLI terminal events, never tool output or model prose.
 

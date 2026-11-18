@@ -285,6 +285,34 @@ Responses 服务（`base_url`、`env_key`）。密钥由宿主注入命名环境
 5. 恢复次数耗尽、预算不足或任务停止时返回 interrupt，宿主以 exit 78 停止接续，并将
    自主流程标为 interrupted。不得由主管接管后把该轮改成自主成功。
 
+外部宿主可用 `manager.execution.host_process.ModelHost` 执行单次 attempt；它不负责
+调度或重试。部署的 broker 必须持有独占锁，并固定模型、原会话、轮次和绝对截止时间。
+`start(request, prompt, deadline)` 先持久化 intent，再启动独立监督进程；只有监督进程
+登记完成才允许启动模型。监督进程持有跨 broker 生命周期的 attempt 锁，并独立检查
+owner 管道、绝对期限和输出停滞。`idle_seconds` 默认 300 秒，部署应按最长合法工具
+调用的预计耗时加余量显式设置，不能因 broker/bridge 心跳刷新。合法长 GPU 命令仍须
+通过原 bridge 对账，不应在模型停滞后重派。
+
+- 模型被 SIGKILL/OOM 杀掉、没有 `turn.failed` 时，只有独立 exit/cleanup 收据确认退出、
+  且原会话可恢复，才向 `HostRecovery.failed(..., process_exited=True)` 提供这一证据。
+  活着但没有输出的模型由监督进程在停滞上限终止，再走相同恢复准入。
+- broker 重启先 `restore(attempt_id)` 与 `collect()`，等待旧监督进程完成 owner-loss
+  清理；这两个接口不会启动模型。已落盘 result 原样重放，失败时间沿用原收据时间，
+  停机时间计入恢复窗口。成功结果不能因为投递响应丢失而重新执行。
+- 已准入但尚无 launch intent 的 attempt，只能在独占锁内确认未启动、对账原请求和
+  原 deadline 后启动一次。存在 intent 时必须 restore，禁止覆盖目录重跑。
+- 监督进程消失、会话不明、未完成的工具没有确认清理等情况返回不可恢复失败。
+  `thread.started` 中的 session ID 不代表 CLI 已保存完整会话；若启动期崩溃后原会话
+  无法读取，可信 CLI resume 启动错误直接中断，不能伪造原会话或改开新会话计为恢复。
+  `process_exited` 不可由心跳消失或 PID 不存在推断；自行脱离受监督进程组的后台工具
+  不能据此视为已清理。部署须将此类情况标记中断并释放，不能并发启动替代模型。
+- 恢复后的真实模型输出或已完成工具可调用 `HostRecovery.progress()` 结束本次故障窗口；
+  必须提供当前 attempt 的原始 trace。后续独立故障获得新的有界窗口，但整轮重试次数
+  不退还。启动通知、管理心跳和重启本身均不算恢复进展。
+
+部署还需配置 broker 的进程监管或显式重启入口；仅有恢复账本不会重启整个桌面宿主。
+整个宿主不可用时由节点看守释放资源，而非宣称原模型仍在自主研究。
+
 部署前在不占 GPU 的环境验证真实工具调用、同会话恢复和实际旁白输出。CPU 模拟只证明
 恢复策略分支，不证明供应商断流后的真实恢复。故障注入须单独标注，不能伪装自然故障。
 
@@ -294,6 +322,7 @@ Responses 服务（`base_url`、`env_key`）。密钥由宿主注入命名环境
 ```json
 {"deadline": 1795000000, "lease_path": "/work/host-lease.json",
  "release_marker": "/work/RELEASE", "receipt": "/work/release-receipt.json",
+ "heartbeat_path": "/work/watchdog-heartbeat.json",
  "reserve_seconds": 180, "cleanup_timeout": 30,
  "cleanup_commands": [["/work/pause-and-archive"]]}
 ```
@@ -303,6 +332,8 @@ lease 内容为 `{"expires_at":1794990000,"state":"running"}`，只在宿主真�
 `state=interrupted` 触发释放，包括仍有 GPU 作业在途的情况。cleanup_timeout 是全部
 清理命令共享的总时限；清理失败仍写 RELEASE。部署入口必须消费该标记退出分配，
 而不是仅停研究进程。此模块不直接调用云平台 API；节点整体失效时由平台 TTL 兜底。
+分配入口还须监控看守自身退出/心跳超时，否则看守被杀掉后仅有模型 lease 不足以
+证明释放机制正常。lease 的时间、状态及清理超时均校验，异常输入不能无限续租。
 结束后仍须以平台作业终态、Pod 消失和完整占卡账单确认释放。
 
 ### 同主机多卡资源
