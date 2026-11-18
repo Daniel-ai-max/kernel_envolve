@@ -3,7 +3,11 @@ import tomllib
 
 import pytest
 
-from kernel_envolve.manager.execution.host_model import codex_command, terminal_failure
+from kernel_envolve.manager.execution.host_model import (
+    codex_command,
+    configuration_failure,
+    terminal_failure,
+)
 
 
 def config(argv):
@@ -21,7 +25,8 @@ def test_explicit_provider_preserves_session_and_never_inlines_a_secret():
     p = cfg["model_providers"]["kernel_host"]
     assert p["env_key"] == "HOST_CREDENTIAL" and p["wire_api"] == "responses"
     assert p["requires_openai_auth"] is False
-    assert p["capabilities"]["remote_compaction"] == "unsupported"
+    assert "capabilities" not in p  # Codex 0.157 ignores this newer config namespace.
+    assert cfg["model"] == "example-model"
     assert p["request_max_retries"] == p["stream_max_retries"] == 0
     assert cfg["shell_environment_policy"]["filters"] == {"HOST_CREDENTIAL": "exclude"}
     assert cfg["allow_login_shell"] is False
@@ -31,6 +36,49 @@ def test_explicit_provider_preserves_session_and_never_inlines_a_secret():
     assert argv.index("-c") > argv.index("resume")
     assert "--ignore-user-config" in argv
     assert "model_reasoning_effort" not in cfg
+
+
+def test_explicit_context_limits_survive_resume():
+    argv = codex_command(
+        "external-model", session="original", context_window=64000, auto_compact_tokens=48000
+    )
+    cfg = config(argv)
+    assert cfg["model_context_window"] == 64000
+    assert cfg["model_auto_compact_token_limit"] == 48000
+    assert argv.index("-c") > argv.index("resume")
+
+
+@pytest.mark.parametrize(
+    "values",
+    [
+        {"context_window": True},
+        {"context_window": 0},
+        {"auto_compact_tokens": 1},
+        {"context_window": 10, "auto_compact_tokens": 10},
+    ],
+)
+def test_invalid_context_limits_rejected(values):
+    with pytest.raises(ValueError):
+        codex_command("model", **values)
+
+
+def test_ignored_cli_configuration_is_not_successful_preflight():
+    message = "Codex is ignoring 1 unrecognized configuration setting."
+    trusted = {"type": "item.completed", "item": {"type": "error", "message": message}}
+    assert configuration_failure([trusted, {"type": "turn.completed"}], 0)["exit_code"] == 78
+    assert terminal_failure([trusted, {"type": "turn.completed"}], 0)["exit_code"] == 78
+    assert (
+        configuration_failure(
+            [
+                {
+                    "type": "item.completed",
+                    "item": {"type": "command_execution", "aggregated_output": message},
+                }
+            ],
+            0,
+        )
+        is None
+    )
 
 
 @pytest.mark.parametrize(
