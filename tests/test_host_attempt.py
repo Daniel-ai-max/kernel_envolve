@@ -280,6 +280,21 @@ else:
             owner.wait()
 
 
+def test_completed_model_racing_owner_loss_is_replayed_not_retried(tmp_path):
+    attempt = start(tmp_path / "attempt", STARTED + "print(json.dumps({'type':'turn.completed'}))")
+    try:
+        receipt = wait_for(attempt.outcome)
+        assert receipt["returncode"] == 0 and receipt["cleanup_confirmed"]
+        # EOF and model exit can be observed in the same selector iteration.
+        receipt["reason"] = "owner_lost"
+        (attempt.directory / "exit.json").write_text(json.dumps(receipt))
+        result = model_result(attempt.directory)
+        assert result["status"] == "succeeded"
+        assert model_result(attempt.directory) == result
+    finally:
+        attempt.stop()
+
+
 def test_bridge_owner_eof_cleans_a_still_running_model(tmp_path):
     pid_file = tmp_path / "model.pid"
     supervisor = subprocess.Popen(

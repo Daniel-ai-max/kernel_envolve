@@ -162,7 +162,11 @@ def model_result(directory):
     )
     status = (
         "succeeded"
-        if (code == 0 and last.get("type") == "turn.completed" and outcome["reason"] == "exit")
+        if (
+            code == 0
+            and last.get("type") == "turn.completed"
+            and outcome["reason"] in {"exit", "owner_lost"}
+        )
         else "failed"
     )
     exit_code = code if type(code) is int and code >= 0 else 128 - code if type(code) is int else 78
