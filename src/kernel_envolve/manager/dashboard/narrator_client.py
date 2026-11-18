@@ -82,6 +82,9 @@ def respond(request):
     style = os.environ.get("NARRATOR_API_STYLE", "responses")
     if style not in ("responses", "chat_completions"):
         raise ValueError("Unsupported narrator API style")
+    output_mode = os.environ.get("NARRATOR_OUTPUT_MODE", "json_schema")
+    if output_mode not in ("json_schema", "prompt_json"):
+        raise ValueError("Unsupported narrator output mode")
     key = os.environ["NARRATOR_API_KEY"]
     body = {
         "model": os.environ["NARRATOR_MODEL"],
@@ -117,6 +120,18 @@ def respond(request):
         }
         if effort:
             body["reasoning_effort"] = effort
+    if output_mode == "prompt_json":
+        # Explicit compatibility choice, never an automatic fallback/retry.
+        # The service still validates JSON shape, source references and facts.
+        instruction = "\nReturn only JSON matching this schema, without Markdown: " + json.dumps(
+            response_format(request["tasks"])["schema"], ensure_ascii=False
+        )
+        if style == "chat_completions":
+            body.pop("response_format")
+            body["messages"][0]["content"] += instruction
+        else:
+            body.pop("text")
+            body["instructions"] += instruction
     req = urllib.request.Request(
         endpoint,
         json.dumps(body).encode(),

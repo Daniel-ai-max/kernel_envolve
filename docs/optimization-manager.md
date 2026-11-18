@@ -245,20 +245,65 @@ Codex 宿主可复用 `manager.execution.host_model.codex_command`，显式指�
 Responses 服务（`base_url`、`env_key`）。密钥由宿主注入命名环境变量，不写入
 命令、任务配置或实验记录；构造的命令也会从 agent 的 shell 环境排除该变量。
 切换服务或模型需明确授权，并在下一次实际会话启动时记录选择，不自动回退其他账号。
-接续参数置于 `resume` 子命令之后，避免恢复时切回默认服务；第三方服务使用本地
-上下文压缩。先在不占 GPU 的工作区验证真实工具调用、同会话恢复及跨压缩接续，
+接续参数（含模型名）置于 `resume` 子命令之后，避免恢复时切回默认服务。
+可显式传 `context_window` 与更小的 `auto_compact_tokens`，避免外部模型沿用未知模型的
+默认上下文大小。Codex 0.157 会忽略新版 provider capabilities 参数，因此构造器不传该
+参数；压缩行为必须实测，不能凭一项被忽略的配置宣称本地压缩已启用。
+先在不占 GPU 的工作区验证真实工具调用、同会话恢复及跨压缩接续，
 再分配实验资源。
 
 宿主保存原始 JSONL 后，可调用 `manager.execution.host_model.terminal_failure(events, returncode)`。
 它只检查 CLI 的最终 `turn.failed`，识别明确额度耗尽或认证/权限失败，返回退出码
 `78` 及原始进程退出码；不会把工具输出中的报错文字或已恢复的错误当成模型故障。
-宿主应保留该结构化原因并使用返回的退出码。普通限流、断网与未知错误继续使用原有
+它还会拒绝 CLI 明确报告忽略配置的启动，即使进程退出码为零；普通工具输出中的相同
+文字不触发该判定。宿主应保留该结构化原因并使用返回的退出码。普通限流、断网与未知错误继续使用原有
 有界退避，不增加第二套重试循环。
 
 模型宿主不暴露 CUDA 设备、不持有 GPU 设备锁；实验仍经现有 `gpu-run`。清理覆盖宿主
 及登记后代。此处控制本机进程与设备使用，云平台申请/释放仍由部署入口负责；部署入口
 应根据待运行实验申请资源、在预算结束或不可恢复故障后释放，不能把无 GPU 命令误报为
 零占卡费用。既有 allocation 账本保留准备与空闲占卡时间。
+
+### 模型自主流程的验收
+
+算子收益与模型自主流程分别判定。前者通过正式 full/confirm，不代表后者通过。
+自主流程必须留存同一模型的方案、代码、实验、验证和收尾证据，以及主管干预记录。
+主管提供关键优化方向、修改候选或接管验证时，标为「模型 + 主管协作优化」，不能
+计入纯模型自主成绩。报告分别列出模型产出、主管干预、接管原因、恢复证据与总占卡时间。
+既有协作成果可作新轮基线，但不能重新归因为模型自主发现；已消费确认集只用于回归。
+
+远程宿主可在现有 broker 的独占锁内使用
+`manager.execution.host_recovery.HostRecovery` 保存有界恢复准入记录：
+
+1. 保存失败原始 JSONL、哈希与退出码，使用可信终态事件判断网络断流。
+2. 固定原模型、原会话、原轮次与绝对截止时间；默认最多两次恢复，不换账号或模型。
+3. 先对账已有 bridge 请求 ID 和在途 GPU 作业。响应未知时查询原 ID；不能生成新 ID 重派。
+   对账未完成时 `admit(reconciled=False, ...)` 只返回 wait；默认最多等待 180 秒，
+   该恢复窗口持久化且包含恢复尝试与对账，不能靠续租延长。绝对截止时间仍继续推进。
+4. 获得 resume 后用原会话启动宿主，保留每次 attempt 的独立日志。恢复 admission 已持久化
+   而进程状态未知时，须先核对存活进程和日志，不能重放 admission。
+5. 恢复次数耗尽、预算不足或任务停止时返回 interrupt，宿主以 exit 78 停止接续，并将
+   自主流程标为 interrupted。不得由主管接管后把该轮改成自主成功。
+
+部署前在不占 GPU 的环境验证真实工具调用、同会话恢复和实际旁白输出。CPU 模拟只证明
+恢复策略分支，不证明供应商断流后的真实恢复。故障注入须单独标注，不能伪装自然故障。
+
+资源部署必须同时提供平台绝对 TTL（零自动重启）和独立于桌面连接的节点看守。
+`python -m kernel_envolve.manager.execution.allocation_guard config.json` 可监控以下配置：
+
+```json
+{"deadline": 1795000000, "lease_path": "/work/host-lease.json",
+ "release_marker": "/work/RELEASE", "receipt": "/work/release-receipt.json",
+ "reserve_seconds": 180, "cleanup_timeout": 30,
+ "cleanup_commands": [["/work/pause-and-archive"]]}
+```
+
+lease 内容为 `{"expires_at":1794990000,"state":"running"}`，只在宿主真实运行或处于
+有界恢复、且对账成功时续期；不能仅凭 bridge 心跳续期。缺失/无效/过期 lease 或
+`state=interrupted` 触发释放，包括仍有 GPU 作业在途的情况。cleanup_timeout 是全部
+清理命令共享的总时限；清理失败仍写 RELEASE。部署入口必须消费该标记退出分配，
+而不是仅停研究进程。此模块不直接调用云平台 API；节点整体失效时由平台 TTL 兜底。
+结束后仍须以平台作业终态、Pod 消失和完整占卡账单确认释放。
 
 ### 同主机多卡资源
 
@@ -697,6 +742,10 @@ kernel-envolve dashboard --research /work/operator-checkout --device GPU-... --s
 仅支持 Chat Completions 的服务应显式设置 `NARRATOR_API_STYLE=chat_completions`，
 并把 `NARRATOR_RESPONSES_URL` 指向实际 `/chat/completions` 地址；先验证模型和接口，
 不在接口失败后静默切换提供商。跨机器启动时在实际运行旁白适配器的宿主配置这些变量。
+若该服务不支持 `response_format/json_schema`，可显式设置
+`NARRATOR_OUTPUT_MODE=prompt_json`，将同一 schema 放入提示并要求纯 JSON；默认仍为
+`json_schema`，不自动降级或重试。原有 JSON、来源引用、事实版本与数字校验继续执行。
+不支持推理强度的服务不要设置 `NARRATOR_REASONING_EFFORT`。
 若密钥仅允许留在本地，远端通过无凭据的 stdin/stdout relay 调用本地适配器，再由远端
 原有旁白校验器验引用、事实版本与数字；不要把研究模型的密钥复制到 GPU 节点。
 
