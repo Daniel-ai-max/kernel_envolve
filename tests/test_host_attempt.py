@@ -7,6 +7,7 @@ import signal
 import subprocess
 import sys
 import time
+from pathlib import Path
 
 import pytest
 
@@ -23,6 +24,24 @@ def wait_for(check, timeout=10):
             return value
         time.sleep(0.03)
     raise AssertionError("Process transition did not finish")
+
+
+def test_linux_identity_handles_exit_during_proc_read_without_hiding_permissions(monkeypatch):
+    original_is_dir = Path.is_dir
+    monkeypatch.setattr(Path, "is_dir", lambda p: True if str(p) == "/proc" else original_is_dir(p))
+
+    def vanished(_path, *args, **kwargs):
+        raise ProcessLookupError(3, "No such process")
+
+    monkeypatch.setattr(Path, "read_text", vanished)
+    assert identity(1234) is None
+
+    def denied(_path, *args, **kwargs):
+        raise PermissionError(13, "Permission denied")
+
+    monkeypatch.setattr(Path, "read_text", denied)
+    with pytest.raises(PermissionError):
+        identity(1234)
 
 
 def start(path, script, *, seconds=30):

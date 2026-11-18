@@ -22,7 +22,7 @@ def identity(pid, *, include_zombie=False):
             if stat[0] == "Z" and not include_zombie:
                 return None
             return Path("/proc/sys/kernel/random/boot_id").read_text().strip() + ":" + stat[19]
-        except FileNotFoundError:
+        except (FileNotFoundError, ProcessLookupError):
             return None
     reply = subprocess.run(
         ["ps", "-p", str(pid), "-o", "lstart=", "-o", "stat="],
