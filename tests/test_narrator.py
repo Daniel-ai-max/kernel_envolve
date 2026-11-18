@@ -331,9 +331,17 @@ def test_chat_adapter_is_explicit_tool_free_and_rejects_tool_calls(monkeypatch):
     assert seen[0]["tools"] == [] and seen[0]["store"] is False
     assert seen[0]["response_format"]["json_schema"]["strict"] is True
     assert seen[0]["reasoning_effort"] == "low"
+    monkeypatch.setenv("NARRATOR_OUTPUT_MODE", "prompt_json")
+    assert respond({"instructions": "JSON only", "tasks": []}) == {"toy": None}
+    assert "response_format" not in seen[-1]
+    assert "additionalProperties" in seen[-1]["messages"][0]["content"]
+    assert seen[-1]["tools"] == []
     reply["choices"][0]["message"]["tool_calls"] = [{"name": "forbidden"}]
     with pytest.raises(ValueError, match="only return text"):
         respond({"instructions": "JSON only", "tasks": []})
     reply["choices"][0]["finish_reason"] = "length"
     with pytest.raises(ValueError, match="incomplete"):
+        respond({"instructions": "JSON only", "tasks": []})
+    monkeypatch.setenv("NARRATOR_OUTPUT_MODE", "unrecognized")
+    with pytest.raises(ValueError, match="output mode"):
         respond({"instructions": "JSON only", "tasks": []})

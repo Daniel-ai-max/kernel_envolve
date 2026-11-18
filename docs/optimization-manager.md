@@ -738,6 +738,10 @@ kernel-envolve dashboard --research /work/operator-checkout --device GPU-... --s
 仅支持 Chat Completions 的服务应显式设置 `NARRATOR_API_STYLE=chat_completions`，
 并把 `NARRATOR_RESPONSES_URL` 指向实际 `/chat/completions` 地址；先验证模型和接口，
 不在接口失败后静默切换提供商。跨机器启动时在实际运行旁白适配器的宿主配置这些变量。
+若该服务不支持 `response_format/json_schema`，可显式设置
+`NARRATOR_OUTPUT_MODE=prompt_json`，将同一 schema 放入提示并要求纯 JSON；默认仍为
+`json_schema`，不自动降级或重试。原有 JSON、来源引用、事实版本与数字校验继续执行。
+不支持推理强度的服务不要设置 `NARRATOR_REASONING_EFFORT`。
 若密钥仅允许留在本地，远端通过无凭据的 stdin/stdout relay 调用本地适配器，再由远端
 原有旁白校验器验引用、事实版本与数字；不要把研究模型的密钥复制到 GPU 节点。
 
