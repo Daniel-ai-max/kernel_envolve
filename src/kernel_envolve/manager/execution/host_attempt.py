@@ -16,7 +16,7 @@ import time
 from pathlib import Path
 
 from kernel_envolve._io import durable_json
-from kernel_envolve.manager.execution.host_model import terminal_failure
+from kernel_envolve.manager.execution.host_model import resume_state_failure, terminal_failure
 from kernel_envolve.manager.execution.process import (
     exclusive,
     group_alive,
@@ -157,6 +157,8 @@ def model_result(directory):
     sessions.discard(None)
     session = next(iter(sessions)) if len(sessions) == 1 else None
     code = outcome["returncode"]
+    stderr_path = directory / "stderr.log"
+    stderr = stderr_path.read_text(errors="replace")[-8000:] if stderr_path.exists() else ""
     last = next(
         (e for e in reversed(events) if e.get("type") in {"turn.failed", "turn.completed"}), {}
     )
@@ -173,6 +175,8 @@ def model_result(directory):
     if status == "failed" and exit_code == 0:
         exit_code = 2
     failure = terminal_failure(events, code)
+    if metadata.get("session"):
+        failure = failure or resume_state_failure(events, code, stderr)
     active_tools = set()
     for event in events:
         item = event.get("item", {})
@@ -209,7 +213,6 @@ def model_result(directory):
         for e in events
         if e.get("type") == "item.completed" and e.get("item", {}).get("type") == "agent_message"
     ]
-    stderr = directory / "stderr.log"
     value = dict(
         schema_version=1,
         id=directory.name,
@@ -219,7 +222,7 @@ def model_result(directory):
         process_exited=outcome["cleanup_confirmed"],
         termination_reason=outcome["reason"],
         stdout="\n".join(messages)[-16000:],
-        stderr=stderr.read_text(errors="replace")[-8000:] if stderr.exists() else "",
+        stderr=stderr,
         started_at=intent["created_at"],
         finished_at=outcome["finished_at"],
         session_id=session,

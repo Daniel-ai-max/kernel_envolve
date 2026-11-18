@@ -201,6 +201,10 @@ def test_absolute_deadline_and_missing_session_do_not_become_success(tmp_path):
     [
         ("pass", None),
         (
+            "import sys; sys.stderr.write('Error: thread/resume: failed to read session metadata: rollout is empty'); sys.exit(1)",
+            "model_resume_state_unavailable",
+        ),
+        (
             STARTED
             + "print(json.dumps({'type':'item.started','item':{'id':'tool','type':'command_execution'}})); print(json.dumps({'type':'turn.completed'}))",
             "host_tool_cleanup_unconfirmed",
@@ -216,7 +220,7 @@ def test_absolute_deadline_and_missing_session_do_not_become_success(tmp_path):
         ),
     ],
 )
-def test_process_zero_without_valid_terminal_is_not_success(tmp_path, script, category):
+def test_only_verified_model_completion_is_successful(tmp_path, script, category):
     attempt = start(tmp_path / "attempt", script)
     try:
         result = wait_for(lambda: model_result(attempt.directory))

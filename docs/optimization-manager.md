@@ -302,6 +302,8 @@ owner 管道、绝对期限和输出停滞。`idle_seconds` 默认 300 秒，部
 - 已准入但尚无 launch intent 的 attempt，只能在独占锁内确认未启动、对账原请求和
   原 deadline 后启动一次。存在 intent 时必须 restore，禁止覆盖目录重跑。
 - 监督进程消失、会话不明、未完成的工具没有确认清理等情况返回不可恢复失败。
+  `thread.started` 中的 session ID 不代表 CLI 已保存完整会话；若启动期崩溃后原会话
+  无法读取，可信 CLI resume 启动错误直接中断，不能伪造原会话或改开新会话计为恢复。
   `process_exited` 不可由心跳消失或 PID 不存在推断；自行脱离受监督进程组的后台工具
   不能据此视为已清理。部署须将此类情况标记中断并释放，不能并发启动替代模型。
 - 恢复后的真实模型输出或已完成工具可调用 `HostRecovery.progress()` 结束本次故障窗口；
