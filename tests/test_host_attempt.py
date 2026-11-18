@@ -232,12 +232,14 @@ def test_only_verified_model_completion_is_successful(tmp_path, script, category
         attempt.stop()
 
 
-def test_model_adapter_restores_original_attempt_and_resumes_exact_session(tmp_path):
+def test_model_adapter_restores_original_attempt_and_resumes_exact_session(tmp_path, monkeypatch):
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "0,1")
     codex = tmp_path / "fake-codex"
     codex.write_text(
         "#!/usr/bin/env python3\n"
-        + """import json,sys,time
+        + """import json,sys,time,os
 from pathlib import Path
+assert os.environ['CUDA_VISIBLE_DEVICES']==''
 prompt=sys.stdin.read()
 print(json.dumps({'type':'thread.started','thread_id':'original'}),flush=True)
 Path('argv.json').write_text(json.dumps(sys.argv))
@@ -297,6 +299,14 @@ def test_completed_model_racing_owner_loss_is_replayed_not_retried(tmp_path):
         assert model_result(attempt.directory) == result
     finally:
         attempt.stop()
+
+
+def test_model_host_cannot_nest_inside_gpu_job(tmp_path, monkeypatch):
+    monkeypatch.setenv("KERNEL_ENVOLVE_GPU_JOB", "owned-gpu-job")
+    host = ModelHost(tmp_path / "host", tmp_path, model_options={"model": "fixture"})
+    with pytest.raises(ValueError, match="inside a managed GPU job"):
+        host.start({"id": "attempt"}, "continue", time.time() + 30)
+    assert not (tmp_path / "host/turns").exists()
 
 
 def test_bridge_owner_eof_cleans_a_still_running_model(tmp_path):

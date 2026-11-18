@@ -49,6 +49,9 @@ class ModelHost:
         session = self._session()
         argv = codex_command(codex=self.codex, writable=self.writable, session=session, **options)
         env = os.environ.copy()
+        if env.get("KERNEL_ENVOLVE_GPU_JOB"):
+            raise ValueError("Model host cannot run inside a managed GPU job")
+        env["CUDA_VISIBLE_DEVICES"] = ""
         if options.get("provider"):
             key_name = options["provider"]["env_key"]
             if key_file:
