@@ -4,6 +4,7 @@ import contextlib
 import hashlib
 import json
 import os
+import select
 import signal
 import subprocess
 import sys
@@ -646,7 +647,12 @@ def cpu_supervisor(completed, prompt=None):
             else contextlib.nullcontext(subprocess.DEVNULL) as input_stream
         ):
             command = subprocess.Popen(json.loads(line), stdin=input_stream)
-            outcome = {"returncode": command.wait()}
+            while command.poll() is None:
+                if select.select([sys.stdin], [], [], 0.1)[0] and not sys.stdin.read(1):
+                    # Ownership loss must clean the group while the command is
+                    # running, not only after command.wait() eventually returns.
+                    os.killpg(os.getpid(), signal.SIGKILL)
+            outcome = {"returncode": command.returncode}
     except (OSError, ValueError, TypeError) as exc:
         outcome = {"returncode": None, "error": str(exc)}
     atomic(completed, outcome)

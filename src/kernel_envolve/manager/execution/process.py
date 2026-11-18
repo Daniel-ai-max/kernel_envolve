@@ -132,11 +132,29 @@ def gpu_group_idle(devices):
         raise ValueError("; ".join(errors)) from exc
 
 
+def group_alive(pgid):
+    """Observe live group members, including descendants of an exited leader."""
+    reply = subprocess.run(
+        ["ps", "-axo", "pgid=,stat="], capture_output=True, text=True, check=True, timeout=2
+    )
+    return any(
+        int(fields[0]) == pgid and not fields[1].startswith("Z")
+        for line in reply.stdout.splitlines()
+        if len(fields := line.split()) == 2
+    )
+
+
 def terminate(process, grace=3):
     """The caller owns this Popen and group; finish descendants even if the leader exited."""
     try:
         os.killpg(process.pid, signal.SIGTERM)
     except ProcessLookupError:
+        return
+    except PermissionError:
+        # Some hosts reject signalling an already-empty group with EPERM.
+        if group_alive(process.pid):
+            raise
+        process.wait()
         return
     try:
         process.wait(timeout=grace)
@@ -150,6 +168,9 @@ def terminate(process, grace=3):
         os.killpg(process.pid, signal.SIGKILL)
     except ProcessLookupError:
         pass
+    except PermissionError:
+        if group_alive(process.pid):
+            raise
     process.wait()
 
 

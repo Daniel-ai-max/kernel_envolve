@@ -85,6 +85,92 @@ def test_unknown_provider_failure_is_bounded_without_misclassifying_as_network(t
     assert admit(h) == "resume"
 
 
+@pytest.mark.parametrize("returncode", [-9, 137, 1, 0])
+def test_missing_terminal_requires_independent_exit_evidence(tmp_path, returncode):
+    h = ledger(tmp_path)
+    h.failed([], returncode, trace_sha256="partial-trace", now=10, process_exited=True)
+    assert h.data["reason"] == "model_process_exited"
+    assert admit(h) == "resume"
+
+
+@pytest.mark.parametrize("returncode", [None, 78])
+def test_uncertain_or_explicitly_stopped_host_never_resumes(tmp_path, returncode):
+    h = ledger(tmp_path)
+    h.failed([], returncode, trace_sha256="trace", now=10, process_exited=True)
+    assert admit(h) == "interrupt"
+
+
+def test_silence_is_not_exit_and_restart_does_not_extend_failure_window(tmp_path):
+    h = ledger(tmp_path)
+    h.failed([], -9, trace_sha256="trace", now=10)
+    assert admit(h) == "interrupt"
+
+
+def test_real_model_progress_ends_outage_without_refunding_retry_budget(tmp_path):
+    h = ledger(tmp_path)
+    h.failed(NETWORK, 1, trace_sha256="first-failure", now=10)
+    assert admit(h) == "resume"
+    assert not h.progress([{"type": "thread.started"}], now=21, trace_sha256="startup")
+    assert h.progress(
+        [
+            {
+                "type": "item.completed",
+                "item": {"type": "command_execution", "status": "completed", "exit_code": 0},
+            }
+        ],
+        now=22,
+        trace_sha256="new-tool",
+    )
+    h = ledger(tmp_path)
+    assert h.data["retries"] == 1
+    assert "recovery_started_at" not in h.data
+    h.failed(NETWORK, 1, trace_sha256="later-failure", now=500)
+    assert admit(h, now=520) == "resume"
+    h.failed(NETWORK, 1, trace_sha256="last-failure", now=550)
+    assert admit(h, now=590) == "interrupt"
+
+
+@pytest.mark.parametrize(
+    "lease",
+    [
+        {"expires_at": 10**400, "state": "running"},
+        {"expires_at": 1e20, "state": "unknown"},
+        {"expires_at": "Infinity", "state": "running"},
+    ],
+)
+def test_real_watchdog_releases_malformed_lease(tmp_path, lease):
+    (tmp_path / "lease.json").write_text(json.dumps(lease))
+    config = dict(
+        deadline=time.time() + 3600,
+        lease_path=str(tmp_path / "lease.json"),
+        release_marker=str(tmp_path / "RELEASE"),
+        receipt=str(tmp_path / "receipt.json"),
+    )
+    (tmp_path / "config.json").write_text(json.dumps(config))
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "kernel_envolve.manager.execution.allocation_guard",
+            str(tmp_path / "config.json"),
+        ],
+        check=True,
+        timeout=5,
+    )
+    assert (tmp_path / "RELEASE").exists()
+
+
+@pytest.mark.parametrize("value", [None, "1000", True, 10**400, float("inf")])
+def test_malformed_allocation_controls_fail_closed(value):
+    assert release_reason(now=1, deadline=value, lease_expires=500) == "invalid_allocation_control"
+
+
+@pytest.mark.parametrize("timeout", [None, "30", float("nan"), float("inf"), -1])
+def test_bad_cleanup_timeout_still_releases(tmp_path, timeout):
+    release(tmp_path / "RELEASE", tmp_path / "receipt.json", reason="expired", timeout=timeout)
+    assert (tmp_path / "RELEASE").exists()
+
+
 def test_unresolved_gpu_receipt_cannot_renew_recovery_forever(tmp_path):
     h = ledger(tmp_path)
     h.failed(NETWORK, 1, trace_sha256="trace", now=10)
