@@ -39,11 +39,11 @@ def test_resumes_exact_identity_after_reconciliation_and_survives_restart(tmp_pa
 
 def test_exhaustion_stops_instead_of_starting_fresh_session(tmp_path):
     h = ledger(tmp_path)
-    for now in (10, 100):
+    for now in (10, 60):
         h.failed(NETWORK, 1, trace_sha256=str(now), now=now)
         assert admit(h, now=now + 40) == "resume"
-    h.failed(NETWORK, 1, trace_sha256="last", now=200)
-    assert admit(h, now=240) == "interrupt"
+    h.failed(NETWORK, 1, trace_sha256="last", now=110)
+    assert admit(h, now=150) == "interrupt"
     assert ledger(tmp_path).data["reason"] == "same_model_recovery_exhausted"
 
 
@@ -83,6 +83,14 @@ def test_unknown_provider_failure_is_bounded_without_misclassifying_as_network(t
     )
     assert h.data["reason"] == "model_execution_failure"
     assert admit(h) == "resume"
+
+
+def test_unresolved_gpu_receipt_cannot_renew_recovery_forever(tmp_path):
+    h = ledger(tmp_path)
+    h.failed(NETWORK, 1, trace_sha256="trace", now=10)
+    assert admit(h, now=189, reconciled=False) == "wait"
+    assert admit(ledger(tmp_path), now=190, reconciled=False) == "interrupt"
+    assert ledger(tmp_path).data["reason"] == "recovery_window_exhausted"
 
 
 def test_release_lease_and_deadline_are_independent_of_inflight_gpu():

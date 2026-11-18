@@ -32,14 +32,23 @@ def transient_failure(events):
 class HostRecovery:
     """Use under the adapter's exclusive owner lock; identities never reset on restart."""
 
-    def __init__(self, path, *, model, session, round_id, deadline, max_retries=2):
+    def __init__(
+        self, path, *, model, session, round_id, deadline, max_retries=2, recovery_seconds=180
+    ):
         if not model or not session or not round_id:
             raise ValueError("Recovery requires original model, session and round identities")
         if not math.isfinite(deadline) or type(max_retries) is not int or max_retries < 0:
             raise ValueError("Recovery must be bounded")
+        if not math.isfinite(recovery_seconds) or recovery_seconds <= 0:
+            raise ValueError("Recovery wait must be bounded")
         self.path = Path(path)
         identity = dict(
-            model=model, session=session, round=round_id, deadline=deadline, max_retries=max_retries
+            model=model,
+            session=session,
+            round=round_id,
+            deadline=deadline,
+            max_retries=max_retries,
+            recovery_seconds=recovery_seconds,
         )
         if self.path.exists():
             self.data = json.loads(self.path.read_text())
@@ -84,6 +93,7 @@ class HostRecovery:
             else "model_execution_failure"
         )
         self.data["retry_at"] = now + min(30, 5 * 2 ** self.data["retries"])
+        self.data.setdefault("recovery_started_at", now)
         self.save()
 
     def admit(self, *, now, active, reconciled, session, model, reserve_seconds=90):
@@ -98,6 +108,8 @@ class HostRecovery:
             self.data.update(state="interrupted", reason="stopped_or_budget_exhausted")
         elif self.data["state"] != "recovering":
             raise ValueError("No failed attempt to resume")
+        elif now >= self.data["recovery_started_at"] + identity["recovery_seconds"]:
+            self.data.update(state="interrupted", reason="recovery_window_exhausted")
         elif self.data["retries"] >= identity["max_retries"]:
             self.data.update(state="interrupted", reason="same_model_recovery_exhausted")
         elif now < self.data["retry_at"] or not reconciled:
